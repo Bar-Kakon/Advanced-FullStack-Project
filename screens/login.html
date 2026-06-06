@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sign In — Contractor Platform</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="login.css" />
+</head>
+<body>
+
+  <div class="auth-layout">
+
+    <!-- ── Left: brand panel ── -->
+    <aside class="brand-panel" aria-hidden="true">
+      <div class="brand-panel__inner">
+
+        <div class="brand-logo">
+          <!-- Icon: two connected nodes — coordination concept -->
+          <svg class="brand-logo__icon" width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <circle cx="8"  cy="20" r="6" fill="rgba(255,255,255,0.25)" stroke="rgba(255,255,255,0.9)" stroke-width="2"/>
+            <circle cx="32" cy="8"  r="6" fill="rgba(255,255,255,0.25)" stroke="rgba(255,255,255,0.9)" stroke-width="2"/>
+            <circle cx="32" cy="32" r="6" fill="rgba(255,255,255,0.25)" stroke="rgba(255,255,255,0.9)" stroke-width="2"/>
+            <line x1="14" y1="17" x2="26" y2="11" stroke="rgba(255,255,255,0.6)" stroke-width="1.5" stroke-dasharray="3 2"/>
+            <line x1="14" y1="23" x2="26" y2="29" stroke="rgba(255,255,255,0.6)" stroke-width="1.5" stroke-dasharray="3 2"/>
+            <line x1="32" y1="14" x2="32" y2="26" stroke="rgba(255,255,255,0.4)" stroke-width="1.5" stroke-dasharray="3 2"/>
+          </svg>
+          <span class="brand-logo__name">FieldSync</span>
+          <span class="brand-logo__badge">Beta</span>
+        </div>
+
+        <div class="brand-copy">
+          <h1 class="brand-headline">
+            Coordination that moves at the speed of construction.
+          </h1>
+          <p class="brand-sub">
+            Tasks, dependencies, and reschedules handled inside the platform —
+            not over the phone.
+          </p>
+        </div>
+
+        <ul class="brand-features" aria-label="Platform highlights">
+          <li class="brand-feature">
+            <span class="brand-feature__dot" aria-hidden="true"></span>
+            Cascade scheduling with one-click negotiation
+          </li>
+          <li class="brand-feature">
+            <span class="brand-feature__dot" aria-hidden="true"></span>
+            Confidential delegation, invisible to the party above
+          </li>
+          <li class="brand-feature">
+            <span class="brand-feature__dot" aria-hidden="true"></span>
+            Trust scores built from real behaviour — not self-reported
+          </li>
+        </ul>
+
+        <p class="brand-footer-note">
+          The same contractor can be a GC on one project and a sub on another.
+          Roles follow the work, not the person.
+        </p>
+
+      </div>
+    </aside>
+
+    <!-- ── Right: form panel ── -->
+    <main class="form-panel">
+      <div class="form-panel__inner">
+
+        <!-- Mobile-only logo -->
+        <div class="mobile-logo" aria-hidden="true">
+          <svg width="28" height="28" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="8"  cy="20" r="6" fill="rgba(35,56,77,0.15)" stroke="#23384D" stroke-width="2"/>
+            <circle cx="32" cy="8"  r="6" fill="rgba(35,56,77,0.15)" stroke="#23384D" stroke-width="2"/>
+            <circle cx="32" cy="32" r="6" fill="rgba(35,56,77,0.15)" stroke="#23384D" stroke-width="2"/>
+            <line x1="14" y1="17" x2="26" y2="11" stroke="#23384D" stroke-width="1.5" stroke-dasharray="3 2"/>
+            <line x1="14" y1="23" x2="26" y2="29" stroke="#23384D" stroke-width="1.5" stroke-dasharray="3 2"/>
+            <line x1="32" y1="14" x2="32" y2="26" stroke="#23384D" stroke-width="1.5" stroke-dasharray="3 2"/>
+          </svg>
+          <span class="mobile-logo__name">FieldSync</span>
+        </div>
+
+        <header class="form-header">
+          <h2 class="form-title">Welcome back</h2>
+          <p class="form-subtitle">Sign in to your account to continue</p>
+        </header>
+
+        <!--
+          Error state:
+          - Add class  "alert--visible"  to show the error.
+          - Unified message — never reveals which field is wrong (security: prevents enumeration).
+          - Remove "alert--visible" to hide it in the default state.
+        -->
+        <div class="alert alert--error alert--visible" role="alert" aria-live="polite">
+          <svg class="alert__icon" width="18" height="18" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+            <circle cx="10" cy="10" r="9" stroke="currentColor" stroke-width="1.8"/>
+            <line x1="10" y1="6" x2="10" y2="11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+            <circle cx="10" cy="14" r="1" fill="currentColor"/>
+          </svg>
+          <span>Invalid email or password. Please try again.</span>
+        </div>
+
+        <form class="login-form" action="#" method="post" novalidate>
+
+          <div class="form-group">
+            <label class="form-label" for="email">Email address</label>
+            <input
+              class="form-input"
+              type="email"
+              id="email"
+              name="email"
+              placeholder="you@example.com"
+              autocomplete="email"
+              required
+            />
+          </div>
+
+          <div class="form-group">
+            <div class="form-label-row">
+              <label class="form-label" for="password">Password</label>
+              <a href="forgot-password.html" class="form-link form-link--small">
+                Forgot password?
+              </a>
+            </div>
+            <div class="input-wrapper">
+              <input
+                class="form-input"
+                type="password"
+                id="password"
+                name="password"
+                placeholder="••••••••"
+                autocomplete="current-password"
+                required
+              />
+              <!-- Show/hide requires JS — stubbed as a visible button for the mockup -->
+              <button type="button" class="input-action" aria-label="Toggle password visibility" tabindex="-1">
+                <!-- Eye icon -->
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                  <circle cx="12" cy="12" r="3"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn--primary btn--full">
+            Sign in
+          </button>
+
+        </form>
+
+        <div class="divider" aria-hidden="true">
+          <span class="divider__line"></span>
+          <span class="divider__label">or</span>
+          <span class="divider__line"></span>
+        </div>
+
+        <!-- Google OAuth — button only; OAuth flow wired in Stage 2 -->
+        <button type="button" class="btn btn--google btn--full">
+          <!-- Official Google "G" colours kept per Google brand guidelines — not part of the platform palette -->
+          <svg class="google-icon" width="18" height="18" viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844a4.14 4.14 0 0 1-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="#4285F4"/>
+            <path d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z" fill="#34A853"/>
+            <path d="M3.964 10.706A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.706V4.962H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.038l3.007-2.332z" fill="#FBBC05"/>
+            <path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.962L3.964 7.294C4.672 5.163 6.656 3.58 9 3.58z" fill="#EA4335"/>
+          </svg>
+          Continue with Google
+        </button>
+
+        <p class="form-footer">
+          Don't have an account?
+          <a href="register.html" class="form-link form-link--strong">Create one</a>
+        </p>
+
+      </div>
+    </main>
+
+  </div>
+
+</body>
+</html>
