@@ -263,7 +263,9 @@ _Later stages live in the [Roadmap](#4-roadmap-stages); we'll expand the next on
 
 | Feature | Stage | Status | Notes |
 |---|---|---|---|
-| Landing / Register / Login | 1–2 | In progress | Login screen HTML/CSS done (`screens/login.html`) |
+| Landing | 1–2 | Planned | |
+| Register | 1–2 | Planned | |
+| Login | 1–2 | In progress | HTML/CSS screen done (`screens/login.html`) |
 | JWT auth + protected routes (both sides) | 1–2 | Planned | bcrypt for passwords |
 | Profile completion wizard | 2 | Planned | Part of registration |
 | My profile / Public profile | 2 | Planned | Public profile = feature, not standalone route |
@@ -382,6 +384,7 @@ _No entries yet._
 >
 > **Format:** `[YYYY-MM-DD] What changed — why.`
 
+- `[2026-06-07]` **Feature registry: split "Landing / Register / Login" into three separate rows; Login marked "In progress"** — granularity needed so each screen can track its own status independently as they are built at different times.
 - `[2026-06-07]` **Login screen built as static HTML/CSS** (`screens/login.html` + `screens/login.css`) — instructor requires plain HTML/CSS before the React migration. Split-panel layout: left brand-gradient panel, right form. Implements email + password fields, unified "invalid credentials" error (no per-field hint — prevents credential enumeration), and a Google OAuth button stub (wired in Stage 2). One palette extension approved: `--error: #A63232` / `--error-bg` / `--error-border` added solely for the error alert; red is required by accessibility conventions (WCAG) and has no brand meaning. Password show/hide button is stubbed in the markup — toggling `type` requires JS, wired in Stage 2. Working name "FieldSync" used as placeholder (codename still TBD). `screens/` folder created at project root to hold all static screen prototypes before React migration.
 - `[2026-06-02]` **D7 (delegation depth) CLOSED: single-level only, no re-delegation** — a chain would
   multiply the serializer's visibility cases and make "invisible to the party above" relative/ambiguous;
