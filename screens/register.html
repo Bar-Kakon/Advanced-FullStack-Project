@@ -216,7 +216,9 @@
                   <option value="electrical">חשמל</option>
                   <option value="plumbing">אינסטלציה</option>
                   <option value="drilling">קידוחים וביסוס</option>
-                  <option value="concrete">בטון ותבניות</option>
+                  <option value="shell">קבלן שלד</option>
+                  <option value="concrete">בטון</option>
+                  <option value="saferoom">בניית ממ"דים</option>
                   <option value="carpentry">נגרות</option>
                   <option value="aluminum">אלומיניום וזיגוג</option>
                   <option value="hvac">מיזוג אוויר</option>
@@ -234,7 +236,9 @@
                   <option value="electrical">Electrical</option>
                   <option value="plumbing">Plumbing</option>
                   <option value="drilling">Drilling &amp; foundations</option>
-                  <option value="concrete">Concrete &amp; formwork</option>
+                  <option value="shell">Shell</option>
+                  <option value="concrete">Concrete</option>
+                  <option value="saferoom">Safe rooms (mamad)</option>
                   <option value="carpentry">Carpentry</option>
                   <option value="aluminum">Aluminum &amp; glazing</option>
                   <option value="hvac">HVAC / air conditioning</option>
@@ -253,6 +257,25 @@
                   </svg>
                 </span>
               </div>
+
+              <!-- Free-text trade — revealed by CSS only when "Other" is selected
+                   (.form-group:has(option[value="other"]:checked)). Two language
+                   variants keep the label + placeholder bilingual, like the select. -->
+              <div class="other-trade">
+                <span class="form-label form-label--plain">
+                  <span class="he-text">פירוט התחום</span>
+                  <span class="en-text">Specify your trade</span>
+                </span>
+                <input class="form-input he-field" type="text"
+                       name="trade-other" maxlength="60"
+                       placeholder="לדוגמה: פיגומים, גינון, מעליות"
+                       aria-label="פירוט התחום" />
+                <input class="form-input en-field" type="text"
+                       name="trade-other" maxlength="60"
+                       placeholder="e.g. scaffolding, landscaping, elevators"
+                       aria-label="Specify your trade" />
+              </div>
+
               <p class="field-hint">
                 <span class="he-text">אפשר להוסיף ולשנות תחומים בהמשך</span>
                 <span class="en-text">You can add or change trades later</span>

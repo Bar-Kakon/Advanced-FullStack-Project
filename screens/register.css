@@ -426,6 +426,20 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   pointer-events: none;
 }
 
+/* Free-text trade — revealed only when "Other" is selected (pure CSS, no JS).
+   :has() lets the form-group react to the currently-checked <option>; works for
+   whichever language select is active since both carry an option[value="other"]. */
+.other-trade { display: none; }
+.form-group:has(.form-select option[value="other"]:checked) .other-trade {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+/* Visual-only label (a <span>, no for=) — drop the pointer affordance */
+.form-label--plain { cursor: default; }
+
 /* Hint line under a field (neutral helper, not an error) */
 .field-hint {
   font-size: 12px;
@@ -692,6 +706,10 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 .he-select { display: block; }
 .en-select { display: none; }
 
+/* "Other" free-text language variants — same toggle as the select */
+.he-field { display: block; }
+.en-field { display: none; }
+
 /* ── Default: content panels are RTL (Hebrew) ── */
 .brand-panel__inner { direction: rtl; }
 .form-panel         { direction: rtl; }
@@ -709,9 +727,11 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 #lang-en:checked ~ .auth-layout .he-text  { display: none;   }
 #lang-en:checked ~ .auth-layout .en-text  { display: inline; }
 
-/* Swap the trade select variant with language */
+/* Swap the trade select + "Other" free-text variant with language */
 #lang-en:checked ~ .auth-layout .he-select { display: none;  }
 #lang-en:checked ~ .auth-layout .en-select { display: block; }
+#lang-en:checked ~ .auth-layout .he-field  { display: none;  }
+#lang-en:checked ~ .auth-layout .en-field  { display: block; }
 
 #lang-en:checked ~ .auth-layout .brand-panel__inner { direction: ltr; }
 #lang-en:checked ~ .auth-layout .form-panel         { direction: ltr; }
