@@ -6,7 +6,7 @@
 > Update it **as we go** — before or right after a change, never "later."
 >
 > Codename: _TBD_ · Owner: _(you)_ · Stack: React (Vite) · Node/Express · MongoDB/Mongoose · JWT · Multer
-> Last updated: **2026-06-02**
+> Last updated: **2026-06-15**
 
 ---
 
@@ -263,9 +263,7 @@ _Later stages live in the [Roadmap](#4-roadmap-stages); we'll expand the next on
 
 | Feature | Stage | Status | Notes |
 |---|---|---|---|
-| Landing | 1–2 | Planned | |
-| Register | 1–2 | In progress | HTML/CSS done (`screens/register.html` + `register.css`). Sibling of login: same split-panel layout, palette, blueprint aesthetic, CSS-only HE/EN toggle. Fields: name, email, primary trade (specialty), location, password + confirm, terms consent. |
-| Login | 1–2 | In progress | HTML/CSS done (`screens/login.html` + `login.css`). Bilingual HE/EN via CSS radio-button hack — no JS. Hebrew default, English on toggle. |
+| Landing / Register / Login | 1–2 | In progress | Register screen HTML/CSS redesigned (`screens/register.html` + `screens/register.css`); static screens stay plain HTML/CSS before React migration |
 | JWT auth + protected routes (both sides) | 1–2 | Planned | bcrypt for passwords |
 | Profile completion wizard | 2 | Planned | Part of registration |
 | My profile / Public profile | 2 | Planned | Public profile = feature, not standalone route |
@@ -374,7 +372,17 @@ into a proper section or the logs below._
 > - Notes: anything to remember / how to avoid it next time
 > ```
 
-_No entries yet._
+### [2026-06-15] Approved color exceptions restored for register screen
+- Symptom: after enforcing the strict palette rule, the Google sign-up icon no longer used Google's recognizable brand colors and error states no longer appeared red.
+- Cause: the palette cleanup removed useful visual conventions that the project owner wants to keep as explicit exceptions.
+- Fix: restored Google's original SVG fills and restored the red error token in `screens/register.css`.
+- Notes: the standing rule is still the approved project palette, but Google logo colors and red error states are allowed exceptions after owner approval.
+
+### [2026-06-15] Register screen contained non-palette functional/brand colors
+- Symptom: the register screen used a red error token and the Google OAuth SVG carried Google's default blue/green/yellow/red fills.
+- Cause: those colors came from common UI conventions and third-party branding, but the current project rule is stricter: only the approved palette may be used unless explicit approval is given.
+- Fix: changed register error states to palette-derived primary/secondary treatments and removed hard-coded Google SVG fills from the HTML; the icon is now colored through CSS using only `--primary` and `--secondary`.
+- Notes: superseded later on 2026-06-15 after explicit owner approval to keep Google logo colors and red error states.
 
 ---
 
@@ -384,12 +392,8 @@ _No entries yet._
 >
 > **Format:** `[YYYY-MM-DD] What changed — why.`
 
-- `[2026-06-15]` **Register: trade list updated** — added `קבלן שלד` (Shell) and `בניית ממ"דים` (Safe rooms / mamad) to the primary-trade dropdown; fixed the concrete option from `בטון ותבניות` (concrete & formwork) to `בטון` (Concrete) so formwork now sits under the שלד/structural work, not under concrete. Both language selects (he/en) kept in sync — same 17 values + placeholder + Other.
-- `[2026-06-15]` **Register: free-text trade when "Other" is selected** — a contractor whose specialty isn't listed can now type it. Reveal is pure CSS, no JS: `.form-group:has(.form-select option[value="other"]:checked) .other-trade` shows a free-text input only when Other/אחר is chosen (same `:has()` technique the login screen uses). Bilingual like the select — two language-variant inputs (`he-field`/`en-field`, `name="trade-other"`, `maxlength=60`). Not marked `required` (a hidden required field blocks native submit and CSS can't toggle `required`) — real enforcement comes with JS in Stage 2.
-- `[2026-06-15]` **Register screen built as static HTML/CSS** (`screens/register.html` + `screens/register.css`) — instructor requires plain HTML/CSS before the React migration; built as a deliberate **sibling of the login screen** (same split-panel layout, palette tokens, blueprint aesthetic, and CSS-only Hebrew/English toggle) so the two auth screens stay visually interchangeable and consolidate cleanly into shared React components later. **Field scope = "credentials + basic profile"** (chosen over minimal): full name, email, **primary trade** (specialty dropdown), location, password, confirm-password, Terms/Privacy consent checkbox, Google OAuth stub. Deeper profile (bio, avatar, ratings) stays in the separate Stage-2 profile wizard. **No account-type/role picker on purpose** — roles aren't fixed to a person (only `admin` is global, per §3.2), so a *trade* is captured as a specialty, not a role; hint text "you can add/change trades later" reinforces this. Palette unchanged — same six tokens verbatim + the already-approved `--error` family (2026-06-07) reused for invalid-field states; all other values are opacity-derived from the five palette colors. CSS-only validation mirrors login (email pattern + password `minlength=8` via `:invalid`/`:has()` to disable submit); **password-match check is deferred to JS (Stage 2)** because CSS can't compare two field values — markup/error line are staged and ready. Bilingual `<select>` handled by rendering **two language-variant controls** (Hebrew/English) toggled by the radio-hack, since `<option>` text can't be swapped with the `.he-text`/`.en-text` span trick. Eye-toggle and Google buttons are stubs wired in Stage 2. CSS duplicated per-screen (not shared) to match the existing standalone-prototype pattern (`login.css`); real reuse happens at the React migration.
-- `[2026-06-07]` **Login: email pattern tightened — rejects addresses without a valid TLD** — browser `type="email"` accepts `user@gm` (no dot, no TLD) which is not a real address. Added `pattern="[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}"` to the input, requiring at least one dot and a 2+ character TLD after the domain. Existing `:invalid` CSS and disabled-button rule already react to `pattern` mismatches — no CSS changes needed.
-- `[2026-06-07]` **Login: email field validation enforced (CSS only)** — removed `novalidate` from the form so the browser actually blocks submission on an invalid email (`type="email"` + `required` now enforced at submit). Added CSS `:invalid`/`:valid` feedback: non-empty invalid input gets a red border and glow (`var(--error)`); valid input gets a `var(--secondary)` border confirmation; a bilingual inline error message (HE/EN, same `he-text`/`en-text` pattern) appears below the field via `input:not(:placeholder-shown):invalid ~ .field-error`. Added CSS `:has()` rule to grey out and disable the submit button while the email is non-empty but invalid — gives immediate visual feedback before attempting to submit. Empty field intentionally left clickable so the browser can show its own "required" prompt.
-- `[2026-06-07]` **Login screen redesigned: palette violations fixed, bilingual toggle added** — original CSS used off-palette colors (`#6B7280`, `#DDD8CF`, `#182838`, broken `#2c4considere` value) and a frosted-glass card pattern flagged as banal. Rewrote `login.css` to use only the five approved palette colors and their opacity variants; the previously approved `--error: #A63232` / `--error-bg` / `--error-border` extension is retained (functional only, not brand). Removed backdrop-filter glass card; form now sits directly on `var(--surface)` with a `border-left: 3px solid var(--secondary)` accent as the panel divider. Added CSS-only bilingual EN/HE support via hidden radio-button hack (`#lang-he` / `#lang-en`) — no JavaScript, as required by instructor. Hebrew is the default language; toggling to EN swaps all `he-text`/`en-text` spans, flips direction to LTR, and overrides fonts to Inter/Fraunces via a `#lang-en:checked ~ .auth-layout` CSS custom-property override. Password eye-icon uses physical `right`/`padding-right` so it stays on the correct side in both LTR and RTL. Feature registry row split into Landing / Register / Login separately.
+- `[2026-06-15]` **Approved color exceptions restored on the register screen** (`screens/register.html` + `screens/register.css`) — the owner explicitly requested keeping Google's logo colors and using red for errors. This creates two documented exceptions to the palette rule: provider branding for recognizability, and red error states for familiar validation feedback.
+- `[2026-06-15]` **Register screen restyled as a unique static HTML/CSS prototype** (`screens/register.css`, minor cleanup in `screens/register.html`) — instructor currently requires plain HTML/CSS, so the redesign stays CSS-driven without React or JavaScript. The new visual direction uses a blueprint-inspired brand panel, technical document-style form surface, stronger registration marks, numbered feature rows, refined focus/hover states, and responsive mobile adjustments to make the screen more eye-catching while still understandable for a second-year academic project. Palette discipline was initially tightened so register errors and the Google button used only approved palette colors; that color sub-decision was later superseded by the approved exceptions above.
 - `[2026-06-07]` **Login screen built as static HTML/CSS** (`screens/login.html` + `screens/login.css`) — instructor requires plain HTML/CSS before the React migration. Split-panel layout: left brand-gradient panel, right form. Implements email + password fields, unified "invalid credentials" error (no per-field hint — prevents credential enumeration), and a Google OAuth button stub (wired in Stage 2). One palette extension approved: `--error: #A63232` / `--error-bg` / `--error-border` added solely for the error alert; red is required by accessibility conventions (WCAG) and has no brand meaning. Password show/hide button is stubbed in the markup — toggling `type` requires JS, wired in Stage 2. Working name "FieldSync" used as placeholder (codename still TBD). `screens/` folder created at project root to hold all static screen prototypes before React migration.
 - `[2026-06-02]` **D7 (delegation depth) CLOSED: single-level only, no re-delegation** — a chain would
   multiply the serializer's visibility cases and make "invisible to the party above" relative/ambiguous;
