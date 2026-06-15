@@ -6,7 +6,7 @@
 > Update it **as we go** — before or right after a change, never "later."
 >
 > Codename: _TBD_ · Owner: _(you)_ · Stack: React (Vite) · Node/Express · MongoDB/Mongoose · JWT · Multer
-> Last updated: **2026-06-15**
+> Last updated: **2026-06-16**
 
 ---
 
@@ -263,7 +263,9 @@ _Later stages live in the [Roadmap](#4-roadmap-stages); we'll expand the next on
 
 | Feature | Stage | Status | Notes |
 |---|---|---|---|
-| Landing / Register / Login | 1–2 | In progress | Register screen HTML/CSS redesigned (`screens/register.html` + `screens/register.css`); static screens stay plain HTML/CSS before React migration |
+| Landing | 1–2 | Planned | Not started yet; will stay plain HTML/CSS before React migration |
+| Register | 1–2 | In progress | Register screen HTML/CSS is actively being refined as a luxury blueprint-board prototype (`screens/register.html` + `screens/register.css`) |
+| Login | 1–2 | In progress | Login screen HTML/CSS exists (`screens/login.html` + `screens/login.css`), but its CSS still needs to be updated to match the newer register-screen visual direction |
 | JWT auth + protected routes (both sides) | 1–2 | Planned | bcrypt for passwords |
 | Profile completion wizard | 2 | Planned | Part of registration |
 | My profile / Public profile | 2 | Planned | Public profile = feature, not standalone route |
@@ -372,6 +374,24 @@ into a proper section or the logs below._
 > - Notes: anything to remember / how to avoid it next time
 > ```
 
+### [2026-06-16] Left register panel looked visually inconsistent with the right panel
+- Symptom: the left side appeared to use a different shade/feeling of blue than the right side.
+- Cause: the left brand panel had a stronger dark overlay/gradient treatment than the right blueprint-board surface, even though the colors were derived from the approved palette.
+- Fix: changed only the left panel background so it uses the same calmer dark blueprint-board base as the right side.
+- Notes: future split-screen screens should keep both sides on the same board/surface system unless a deliberate contrast is needed.
+
+### [2026-06-16] Decorative `01` appeared on the left side of the register screen
+- Symptom: a large generated `01` was visible in the left/brand panel.
+- Cause: CSS pseudo-element content on `.brand-panel__inner::after` was used as decoration.
+- Fix: removed the generated pseudo-element text.
+- Notes: avoid decorative generated text unless it has clear product meaning; it can look like accidental content.
+
+### [2026-06-16] Register validation needed clearer CSS-only error feedback
+- Symptom: empty required fields did not get a clear red border after user interaction/submission, and password length had no inline bilingual error message.
+- Cause: the first static prototype relied partly on native browser validation and only had inline text for some errors.
+- Fix: added a bilingual password-length error in the HTML and CSS `:user-invalid` red borders for required inputs/selects/checkboxes.
+- Notes: browser-native validation popups may follow browser language; inline `.he-text`/`.en-text` errors are the reliable bilingual layer until JavaScript validation is added.
+
 ### [2026-06-15] Approved color exceptions restored for register screen
 - Symptom: after enforcing the strict palette rule, the Google sign-up icon no longer used Google's recognizable brand colors and error states no longer appeared red.
 - Cause: the palette cleanup removed useful visual conventions that the project owner wants to keep as explicit exceptions.
@@ -392,6 +412,10 @@ into a proper section or the logs below._
 >
 > **Format:** `[YYYY-MM-DD] What changed — why.`
 
+- `[2026-06-16]` **Register screen refined into a luxury blueprint-board visual system** (`screens/register.css`) — the previous styling still felt too generic/website-like. The new direction uses a mounted blueprint-board background, double board frame, side measuring strips, layered technical grid, calm vellum/spec-sheet form surface, and precise annotation-style fields to communicate reliability, luxury, calmness, and a clear upgrade from phone/manual coordination workflows while staying HTML/CSS-only.
+- `[2026-06-16]` **Register validation improved for the static prototype** (`screens/register.html` + `screens/register.css`) — added a bilingual inline password-length error and red `:user-invalid` required-field borders so Hebrew mode shows Hebrew errors and English mode shows English errors. CSS-only validation is intentionally limited until Stage 2 JavaScript/React logic, so inline text carries the bilingual guarantee better than native browser popups.
+- `[2026-06-16]` **Left brand panel background aligned with the right blueprint-board surface** (`screens/register.css`) — the owner wanted both sides to feel visually connected and questioned the different blue tone. The left panel now uses the same calmer board-base treatment as the right side; no new colors were added.
+- `[2026-06-16]` **Removed generated `01` decoration from the register brand panel** (`screens/register.css`) — it appeared as unintended visible content on the left side and did not add clear product meaning.
 - `[2026-06-15]` **Approved color exceptions restored on the register screen** (`screens/register.html` + `screens/register.css`) — the owner explicitly requested keeping Google's logo colors and using red for errors. This creates two documented exceptions to the palette rule: provider branding for recognizability, and red error states for familiar validation feedback.
 - `[2026-06-15]` **Register screen restyled as a unique static HTML/CSS prototype** (`screens/register.css`, minor cleanup in `screens/register.html`) — instructor currently requires plain HTML/CSS, so the redesign stays CSS-driven without React or JavaScript. The new visual direction uses a blueprint-inspired brand panel, technical document-style form surface, stronger registration marks, numbered feature rows, refined focus/hover states, and responsive mobile adjustments to make the screen more eye-catching while still understandable for a second-year academic project. Palette discipline was initially tightened so register errors and the Google button used only approved palette colors; that color sub-decision was later superseded by the approved exceptions above.
 - `[2026-06-07]` **Login screen built as static HTML/CSS** (`screens/login.html` + `screens/login.css`) — instructor requires plain HTML/CSS before the React migration. Split-panel layout: left brand-gradient panel, right form. Implements email + password fields, unified "invalid credentials" error (no per-field hint — prevents credential enumeration), and a Google OAuth button stub (wired in Stage 2). One palette extension approved: `--error: #A63232` / `--error-bg` / `--error-border` added solely for the error alert; red is required by accessibility conventions (WCAG) and has no brand meaning. Password show/hide button is stubbed in the markup — toggling `type` requires JS, wired in Stage 2. Working name "FieldSync" used as placeholder (codename still TBD). `screens/` folder created at project root to hold all static screen prototypes before React migration.
