@@ -1,0 +1,722 @@
+/* ─────────────────────────────────────────────
+   FieldSync — Register / Create account
+   Sibling of login.css — identical tokens, layout,
+   and component vocabulary so the two auth screens
+   stay visually interchangeable.
+
+   Palette: --primary #23384D · --secondary #C7B89D
+            --background #F3F0EA · --surface #FFFDF8
+            --text #1F2428 · --brand-gradient
+   All opacity values derived from the five palette
+   colors only. No external grays or whites.
+   ───────────────────────────────────────────── */
+
+:root {
+  /* ── Approved brand palette ── */
+  --primary:         #23384D;
+  --secondary:       #C7B89D;
+  --background:      #F3F0EA;
+  --surface:         #FFFDF8;
+  --text:            #1F2428;
+  --brand-gradient:  linear-gradient(135deg, #23384D 0%, #4A5D6E 55%, #C7B89D 100%);
+
+  /* Error — approved 2026-06-07, functional only */
+  --error:           #A63232;
+  --error-bg:        rgba(166, 50, 50, 0.06);
+  --error-border:    rgba(166, 50, 50, 0.30);
+
+  /* ── Derived: opacity variants of palette colors ── */
+  --primary-08:      rgba(35, 56, 77, 0.08);
+  --primary-12:      rgba(35, 56, 77, 0.12);
+  --primary-20:      rgba(35, 56, 77, 0.20);
+  --secondary-15:    rgba(199, 184, 157, 0.15);
+  --secondary-30:    rgba(199, 184, 157, 0.30);
+  --secondary-55:    rgba(199, 184, 157, 0.55);
+  --text-40:         rgba(31, 36, 40, 0.40);
+  --text-55:         rgba(31, 36, 40, 0.55);
+  --surface-08:      rgba(255, 253, 248, 0.08);
+  --surface-15:      rgba(255, 253, 248, 0.15);
+  --surface-50:      rgba(255, 253, 248, 0.50);
+  --surface-75:      rgba(255, 253, 248, 0.75);
+  --surface-90:      rgba(255, 253, 248, 0.90);
+
+  /* Grid lines derived from palette */
+  --grid-dark:       rgba(35, 56, 77, 0.05);
+  --grid-light:      rgba(255, 253, 248, 0.06);
+
+  /* ── Typography — Hebrew is the default UI language ── */
+  --font-sans:  'Heebo', 'Inter', system-ui, sans-serif;
+  --font-serif: 'Frank Ruhl Libre', 'Fraunces', serif;
+  --font-mono:  'IBM Plex Mono', ui-monospace, 'SF Mono', monospace;
+
+  /* ── Shape ── */
+  --r-sm:      6px;
+  --r-md:      10px;
+  --panel-max: 460px; /* slightly wider than login (440) to host two-column rows */
+}
+
+/* ─────────────────────────────────────────────
+   Reset
+   ───────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+
+body {
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--text);
+  background: var(--background);
+  -webkit-font-smoothing: antialiased;
+}
+
+a    { text-decoration: none; color: inherit; }
+button { font-family: inherit; cursor: pointer; border: none; background: none; }
+
+/* ─────────────────────────────────────────────
+   Language switcher — fixed pill, trailing corner
+   ───────────────────────────────────────────── */
+.lang-switch {
+  position: fixed;
+  top: 18px;
+  inset-inline-end: 22px;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 8px 5px 10px;
+  background: var(--surface-90);
+  border: 1px solid var(--secondary-30);
+  border-radius: 999px;
+  box-shadow: 0 4px 16px -8px var(--primary-20);
+}
+
+.lang-switch__globe { color: var(--text-40); flex-shrink: 0; }
+
+.lang-switch__btn {
+  font-family: var(--font-sans);
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--text-55);
+  padding: 4px 10px;
+  border-radius: 999px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  transition: color 0.18s, background 0.18s;
+}
+.lang-switch__btn:hover { color: var(--primary); }
+
+.lang-switch__sep {
+  width: 1px;
+  height: 14px;
+  background: var(--secondary-30);
+}
+
+/* ─────────────────────────────────────────────
+   Layout — two-column split
+   ───────────────────────────────────────────── */
+.auth-layout {
+  display: grid;
+  grid-template-columns: 44% 1fr;
+  min-height: 100vh;
+}
+
+/* ─────────────────────────────────────────────
+   Brand panel (left) — dark, grid, animated mesh
+   ───────────────────────────────────────────── */
+.brand-panel {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 56px 52px;
+  overflow: hidden;
+  background: var(--primary);
+}
+
+/* Drifting colour mesh — palette colors only */
+.brand-panel::before {
+  content: '';
+  position: absolute;
+  inset: -25%;
+  background:
+    radial-gradient(38% 38% at 22% 30%, rgba(199, 184, 157, 0.25) 0%, transparent 60%),
+    radial-gradient(42% 42% at 82% 24%, rgba(35, 56, 77, 0.85)   0%, transparent 62%),
+    radial-gradient(46% 46% at 70% 88%, rgba(199, 184, 157, 0.18) 0%, transparent 60%);
+  filter: blur(8px);
+  animation: meshDrift 22s ease-in-out infinite alternate;
+  pointer-events: none;
+}
+
+/* Engineering grid */
+.brand-panel::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(var(--grid-light) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-light) 1px, transparent 1px);
+  background-size: 30px 30px;
+  -webkit-mask-image: radial-gradient(130% 100% at 50% 0%, #000 55%, transparent 100%);
+          mask-image: radial-gradient(130% 100% at 50% 0%, #000 55%, transparent 100%);
+  pointer-events: none;
+}
+
+@keyframes meshDrift {
+  0%   { transform: translate3d(0, 0, 0) scale(1); }
+  50%  { transform: translate3d(2%, -2%, 0) scale(1.06); }
+  100% { transform: translate3d(-2%, 1%, 0) scale(1.02); }
+}
+
+/* Blueprint corner registration marks */
+.reg-mark {
+  position: absolute;
+  width: 26px;
+  height: 26px;
+  border: 1.5px solid var(--secondary-30);
+  pointer-events: none;
+}
+.reg-mark--tl { top: 24px; inset-inline-start: 24px; border-right: 0; border-bottom: 0; }
+.reg-mark--br { bottom: 24px; inset-inline-end: 24px; border-left: 0; border-top: 0; }
+
+/* Small crosshairs */
+.crosshair { position: absolute; width: 12px; height: 12px; pointer-events: none; opacity: 0.5; }
+.crosshair::before, .crosshair::after { content: ''; position: absolute; background: var(--secondary-55); }
+.crosshair::before { inset: 5px 0; width: 100%; height: 1.5px; }
+.crosshair::after  { inset: 0 5px; width: 1.5px; height: 100%; }
+.crosshair--a { top: 30%; inset-inline-end: 16%; }
+.crosshair--b { bottom: 22%; inset-inline-start: 12%; }
+
+.brand-panel__inner {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 38px;
+  max-width: 390px;
+  width: 100%;
+}
+
+/* Logo row */
+.brand-logo { display: flex; align-items: center; gap: 12px; }
+
+.brand-logo__mark {
+  display: inline-flex;
+  padding: 7px;
+  border-radius: 12px;
+  background: var(--surface-08);
+  border: 1px solid var(--surface-15);
+}
+
+.brand-logo__name {
+  font-size: 21px;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+  color: var(--surface);
+}
+
+.brand-logo__badge {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--primary);
+  background: var(--secondary);
+  padding: 3px 8px;
+  border-radius: 999px;
+}
+
+/* Headline copy */
+.brand-eyebrow {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  color: var(--secondary);
+  margin-bottom: 16px;
+}
+
+.brand-headline {
+  font-family: var(--font-serif);
+  font-size: 33px;
+  font-weight: 500;
+  line-height: 1.18;
+  letter-spacing: -0.4px;
+  color: var(--surface);
+  text-wrap: balance;
+}
+
+.brand-sub {
+  font-size: 14.5px;
+  line-height: 1.62;
+  margin-top: 16px;
+  max-width: 34ch;
+  color: var(--surface-75);
+}
+
+/* Feature list */
+.brand-features { list-style: none; display: flex; flex-direction: column; gap: 15px; }
+
+.brand-feature {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  font-size: 13.5px;
+  line-height: 1.45;
+  color: var(--surface-90);
+}
+
+.brand-feature__mark {
+  flex-shrink: 0;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  line-height: 1;
+  color: var(--secondary);
+  transform: translateY(1px);
+}
+
+.brand-footer-note {
+  font-size: 12px;
+  line-height: 1.6;
+  max-width: 38ch;
+  color: var(--surface-50);
+  border-top: 1px solid var(--surface-15);
+  padding-top: 22px;
+}
+
+/* ─────────────────────────────────────────────
+   Form panel (right) — clean surface, no glass
+   Secondary accent on the reading-start edge.
+   ───────────────────────────────────────────── */
+.form-panel {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 44px 32px;
+  background: var(--surface);
+  overflow-y: auto;
+  border-left: 3px solid var(--secondary);
+}
+
+/* No ::before grid overlay — clean right panel intentional.
+   Visual texture lives in the brand panel only. */
+
+.form-card {
+  width: 100%;
+  max-width: var(--panel-max);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Mobile-only logo */
+.mobile-logo { display: none; align-items: center; gap: 10px; justify-content: center; }
+.mobile-logo__name { font-size: 18px; font-weight: 700; color: var(--primary); }
+
+/* Form header */
+.form-header { display: flex; flex-direction: column; gap: 7px; }
+
+.form-title {
+  font-family: var(--font-serif);
+  font-size: 28px;
+  font-weight: 500;
+  letter-spacing: -0.3px;
+  line-height: 1.15;
+  color: var(--primary);
+}
+
+.form-subtitle { font-size: 14px; color: var(--text-55); }
+
+/* ─────────────────────────────────────────────
+   Alert
+   ───────────────────────────────────────────── */
+.alert {
+  display: none;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 16px;
+  border-radius: var(--r-sm);
+  font-size: 13.5px;
+  line-height: 1.5;
+  border: 1px solid transparent;
+}
+.alert--visible  { display: flex; }
+.alert--error    { color: var(--error); background: var(--error-bg); border-color: var(--error-border); }
+.alert__icon     { flex-shrink: 0; margin-top: 1px; }
+
+/* ─────────────────────────────────────────────
+   Form fields
+   ───────────────────────────────────────────── */
+.register-form { display: flex; flex-direction: column; gap: 18px; }
+.form-group    { display: flex; flex-direction: column; gap: 8px; }
+
+/* Two-column row — collapses to one column on narrow widths */
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px;
+  align-items: start;
+}
+
+.form-label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-55);
+  cursor: pointer;
+}
+
+.form-label-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+
+/* Shared field look for text inputs and the trade select */
+.form-input,
+.form-select {
+  width: 100%;
+  height: 48px;
+  padding: 0 15px;
+  font-family: var(--font-sans);
+  font-size: 14.5px;
+  color: var(--text);
+  background: var(--background);
+  border: 1.5px solid var(--secondary-30);
+  border-radius: var(--r-sm);
+  outline: none;
+  transition: border-color 0.16s, box-shadow 0.16s, background 0.16s;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.form-input::placeholder { color: var(--text-40); }
+.form-input:hover,
+.form-select:hover       { border-color: var(--secondary-55); }
+
+.form-input:focus,
+.form-select:focus {
+  border-color: var(--primary);
+  background: var(--surface);
+  box-shadow: 0 0 0 4px var(--primary-08);
+}
+
+/* ── Trade select — native <select> dressed as a field ──
+   Two language variants live side by side (option text can't
+   be toggled with the .he-text/.en-text span trick), so we
+   show/hide the whole control by language instead. */
+.select-wrap { position: relative; }
+.form-select {
+  padding-inline-end: 40px; /* room for the chevron */
+  cursor: pointer;
+}
+/* Placeholder option (value="") reads as muted until a real trade is picked */
+.form-select:required:invalid { color: var(--text-40); }
+
+.select-chevron {
+  position: absolute;
+  inset-inline-end: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-flex;
+  color: var(--text-40);
+  pointer-events: none;
+}
+
+/* Hint line under a field (neutral helper, not an error) */
+.field-hint {
+  font-size: 12px;
+  color: var(--text-55);
+  margin-top: 5px;
+  line-height: 1.4;
+}
+
+/* Email/password validation — CSS only, no JS.
+   :invalid/:valid pseudo-classes fire normally. */
+.field-error {
+  display: none;
+  font-size: 12px;
+  color: var(--error);
+  margin-top: 5px;
+  line-height: 1.4;
+}
+
+/* Non-empty + invalid → red border + glow (email & password) */
+.form-input[type="email"]:not(:placeholder-shown):invalid,
+.form-input[type="password"]:not(:placeholder-shown):invalid {
+  border-color: var(--error);
+  box-shadow: 0 0 0 4px var(--error-bg);
+}
+
+/* Non-empty + invalid email → show inline message */
+.form-input[type="email"]:not(:placeholder-shown):invalid ~ .field-error {
+  display: block;
+}
+
+/* Non-empty + valid email → secondary accent confirms it */
+.form-input[type="email"]:not(:placeholder-shown):valid {
+  border-color: var(--secondary);
+}
+
+/* Disable submit while a filled email OR password is still invalid.
+   :has() lets the form reach down to the button.
+   Empty fields pass through so the browser can show its own
+   "required" prompt on submit. Password-match is checked in JS
+   (Stage 2) — CSS can't compare two field values. */
+.register-form:has(.form-input[type="email"]:not(:placeholder-shown):invalid) .btn--primary,
+.register-form:has(.form-input[type="password"]:not(:placeholder-shown):invalid) .btn--primary {
+  opacity: 0.4;
+  pointer-events: none;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Password + reveal toggle
+   Physical right/padding-right used intentionally:
+   the password field is always LTR regardless of UI language. */
+.input-wrapper { position: relative; }
+.input-wrapper .form-input { padding-right: 46px; }
+
+.input-action {
+  position: absolute;
+  right: 0;
+  top: 0;
+  height: 48px;
+  width: 46px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-40);
+  transition: color 0.15s;
+}
+.input-action:hover { color: var(--primary); }
+
+/* Eye / eye-off state swap driven by JS class (Stage 2) */
+.icon-eye-off                           { display: none; }
+.input-action.is-revealed .icon-eye     { display: none; }
+.input-action.is-revealed .icon-eye-off { display: block; }
+
+/* ─────────────────────────────────────────────
+   Custom checkbox — Terms & Privacy consent
+   ───────────────────────────────────────────── */
+.checkbox-field {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  cursor: pointer;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-55);
+}
+
+.checkbox-input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+}
+
+.checkbox-box {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  margin-top: 1px;
+  border: 1.5px solid var(--secondary-55);
+  border-radius: var(--r-sm);
+  background: var(--background);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--surface);
+  transition: background 0.15s, border-color 0.15s;
+}
+.checkbox-box svg { opacity: 0; transition: opacity 0.15s; }
+
+.checkbox-input:checked + .checkbox-box {
+  background: var(--primary);
+  border-color: var(--primary);
+}
+.checkbox-input:checked + .checkbox-box svg { opacity: 1; }
+
+.checkbox-input:focus-visible + .checkbox-box {
+  box-shadow: 0 0 0 4px var(--primary-08);
+}
+
+.checkbox-label a {
+  color: var(--primary);
+  font-weight: 600;
+}
+.checkbox-label a:hover { text-decoration: underline; }
+
+/* ─────────────────────────────────────────────
+   Buttons
+   ───────────────────────────────────────────── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  height: 48px;
+  padding: 0 20px;
+  font-family: var(--font-sans);
+  font-size: 14.5px;
+  font-weight: 600;
+  border: 1.5px solid transparent;
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  transition: background 0.16s, box-shadow 0.2s, transform 0.12s, border-color 0.16s;
+  white-space: nowrap;
+}
+.btn--full { width: 100%; }
+
+/* Primary: solid primary, gradient on hover */
+.btn--primary {
+  color: var(--surface);
+  background: var(--primary);
+  border-color: var(--primary);
+  box-shadow: 0 8px 20px -8px var(--primary-20);
+}
+.btn--primary:hover {
+  background: var(--brand-gradient);
+  box-shadow: 0 12px 28px -10px var(--primary-20);
+  transform: translateY(-1px);
+}
+.btn--primary:active { transform: translateY(1px); }
+
+/* Google OAuth stub */
+.btn--google {
+  background: var(--background);
+  color: var(--text);
+  border-color: var(--secondary-30);
+  font-weight: 500;
+}
+.btn--google:hover  { background: var(--surface); border-color: var(--secondary-55); }
+.btn--google:active { transform: translateY(1px); }
+.google-icon { flex-shrink: 0; }
+
+/* ─────────────────────────────────────────────
+   Divider
+   ───────────────────────────────────────────── */
+.divider { display: flex; align-items: center; gap: 14px; }
+.divider__line { flex: 1; height: 1px; background: var(--secondary-30); }
+.divider__label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-40);
+  flex-shrink: 0;
+}
+
+/* ─────────────────────────────────────────────
+   Links & footer text
+   ───────────────────────────────────────────── */
+.form-link           { font-size: 13px; color: var(--text-55); transition: color 0.15s; }
+.form-link:hover     { color: var(--primary); }
+.form-link--small    { font-size: 12.5px; }
+.form-link--strong   { font-size: inherit; font-weight: 600; color: var(--primary); }
+.form-link--strong:hover { text-decoration: underline; }
+
+.form-footer { text-align: center; font-size: 13.5px; color: var(--text-55); }
+
+.secure-note {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.04em;
+  color: var(--text-40);
+}
+.secure-note svg { flex-shrink: 0; }
+
+/* ─────────────────────────────────────────────
+   Responsive
+   ───────────────────────────────────────────── */
+@media (max-width: 860px) {
+  .auth-layout { grid-template-columns: 1fr; }
+  .brand-panel { display: none; }
+  .form-panel  {
+    padding: 72px 18px 40px;
+    align-items: flex-start;
+    border-left: none;
+    border-top: 3px solid var(--secondary);
+  }
+  .mobile-logo { display: flex; margin-bottom: 4px; }
+  .form-title  { font-size: 24px; }
+}
+
+/* Stack the two-column rows on narrow screens */
+@media (max-width: 560px) {
+  .form-row { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 1024px) and (min-width: 861px) {
+  .auth-layout    { grid-template-columns: 40% 1fr; }
+  .brand-panel    { padding: 44px 38px; }
+  .brand-headline { font-size: 28px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .brand-panel::before { animation: none; }
+  .btn--primary:hover  { transform: none; }
+}
+
+/* ─────────────────────────────────────────────
+   CSS-only bilingual toggle — radio button hack
+   #lang-he checked = Hebrew + RTL  (DEFAULT)
+   #lang-en checked = English + LTR
+   ───────────────────────────────────────────── */
+
+/* Visually hidden; still keyboard/screen-reader accessible */
+.lang-radio {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+}
+
+/* ── Default: Hebrew shown, English hidden ── */
+.he-text { display: inline; }
+.en-text { display: none; }
+
+/* Trade select language variants (whole control, not option text) */
+.he-select { display: block; }
+.en-select { display: none; }
+
+/* ── Default: content panels are RTL (Hebrew) ── */
+.brand-panel__inner { direction: rtl; }
+.form-panel         { direction: rtl; }
+
+/* ── Toggle button active states ──
+   CSS resolves which is active from which radio is :checked */
+#lang-he:checked ~ .lang-switch label[for="lang-he"] { color: var(--surface); background: var(--primary); }
+#lang-he:checked ~ .lang-switch label[for="lang-en"] { color: var(--text-55); background: none; }
+#lang-en:checked ~ .lang-switch label[for="lang-en"] { color: var(--surface); background: var(--primary); }
+#lang-en:checked ~ .lang-switch label[for="lang-he"] { color: var(--text-55); background: none; }
+
+/* ── English selected: swap text + direction + fonts ── */
+#lang-en:checked ~ .lang-switch .he-text  { display: none;   }
+#lang-en:checked ~ .lang-switch .en-text  { display: inline; }
+#lang-en:checked ~ .auth-layout .he-text  { display: none;   }
+#lang-en:checked ~ .auth-layout .en-text  { display: inline; }
+
+/* Swap the trade select variant with language */
+#lang-en:checked ~ .auth-layout .he-select { display: none;  }
+#lang-en:checked ~ .auth-layout .en-select { display: block; }
+
+#lang-en:checked ~ .auth-layout .brand-panel__inner { direction: ltr; }
+#lang-en:checked ~ .auth-layout .form-panel         { direction: ltr; }
+
+#lang-en:checked ~ .auth-layout {
+  --font-sans:  'Inter', system-ui, -apple-system, sans-serif;
+  --font-serif: 'Fraunces', 'Georgia', serif;
+}
