@@ -1,14 +1,16 @@
 /* ─────────────────────────────────────────────
    FieldSync — Register / Create account
-   Sibling of login.css — identical tokens, layout,
-   and component vocabulary so the two auth screens
-   stay visually interchangeable.
+   Static HTML/CSS prototype for the academic project.
+   The visual language is a luxury blueprint board:
+   deep technical grid, warm vellum sheet, precise
+   registration marks, and calm construction geometry.
 
    Palette: --primary #23384D · --secondary #C7B89D
             --background #F3F0EA · --surface #FFFDF8
             --text #1F2428 · --brand-gradient
-   All opacity values derived from the five palette
-   colors only. No external grays or whites.
+   Most colors come from the approved palette. The only
+   exceptions are documented functional/provider colors:
+   red for errors and Google brand colors inside its logo.
    ───────────────────────────────────────────── */
 
 :root {
@@ -20,7 +22,7 @@
   --text:            #1F2428;
   --brand-gradient:  linear-gradient(135deg, #23384D 0%, #4A5D6E 55%, #C7B89D 100%);
 
-  /* Error — approved 2026-06-07, functional only */
+  /* Approved functional exception: red for error states. */
   --error:           #A63232;
   --error-bg:        rgba(166, 50, 50, 0.06);
   --error-border:    rgba(166, 50, 50, 0.30);
@@ -29,9 +31,12 @@
   --primary-08:      rgba(35, 56, 77, 0.08);
   --primary-12:      rgba(35, 56, 77, 0.12);
   --primary-20:      rgba(35, 56, 77, 0.20);
+  --primary-30:      rgba(35, 56, 77, 0.30);
+  --primary-45:      rgba(35, 56, 77, 0.45);
   --secondary-15:    rgba(199, 184, 157, 0.15);
   --secondary-30:    rgba(199, 184, 157, 0.30);
   --secondary-55:    rgba(199, 184, 157, 0.55);
+  --secondary-70:    rgba(199, 184, 157, 0.70);
   --text-40:         rgba(31, 36, 40, 0.40);
   --text-55:         rgba(31, 36, 40, 0.55);
   --surface-08:      rgba(255, 253, 248, 0.08);
@@ -39,6 +44,7 @@
   --surface-50:      rgba(255, 253, 248, 0.50);
   --surface-75:      rgba(255, 253, 248, 0.75);
   --surface-90:      rgba(255, 253, 248, 0.90);
+  --surface-96:      rgba(255, 253, 248, 0.96);
 
   /* Grid lines derived from palette */
   --grid-dark:       rgba(35, 56, 77, 0.05);
@@ -50,8 +56,16 @@
   --font-mono:  'IBM Plex Mono', ui-monospace, 'SF Mono', monospace;
 
   /* ── Shape ── */
-  --r-sm:      6px;
-  --r-md:      10px;
+  --shadow-soft:     0 22px 60px -42px rgba(35, 56, 77, 0.70);
+  --shadow-lift:     0 18px 36px -24px rgba(31, 36, 40, 0.70);
+  --shadow-stacked:  18px 18px 0 rgba(199, 184, 157, 0.18),
+                     0 30px 70px -46px rgba(35, 56, 77, 0.85);
+  --board-shadow:    inset 0 0 0 1px rgba(255, 253, 248, 0.08),
+                     inset 0 0 0 12px rgba(199, 184, 157, 0.08),
+                     0 34px 90px -54px rgba(31, 36, 40, 0.90);
+
+  --r-sm:      8px;
+  --r-md:      8px;
   --panel-max: 460px; /* slightly wider than login (440) to host two-column rows */
 }
 
@@ -66,8 +80,44 @@ body {
   font-size: 15px;
   line-height: 1.5;
   color: var(--text);
-  background: var(--background);
+  background:
+    radial-gradient(circle at 14% 16%, rgba(199, 184, 157, 0.18) 0 11%, transparent 26%),
+    radial-gradient(circle at 86% 12%, rgba(255, 253, 248, 0.10) 0 9%, transparent 24%),
+    var(--brand-gradient);
+  background-attachment: fixed;
   -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+body::before,
+body::after {
+  content: '';
+  position: fixed;
+  inset: 18px;
+  z-index: 0;
+  pointer-events: none;
+}
+
+body::before {
+  background:
+    linear-gradient(var(--surface-08) 1px, transparent 1px),
+    linear-gradient(90deg, var(--surface-08) 1px, transparent 1px),
+    linear-gradient(var(--surface-15) 2px, transparent 2px),
+    linear-gradient(90deg, var(--surface-15) 2px, transparent 2px),
+    repeating-linear-gradient(135deg, transparent 0 42px, rgba(199, 184, 157, 0.13) 42px 43px),
+    repeating-linear-gradient(45deg, transparent 0 96px, rgba(255, 253, 248, 0.06) 96px 97px);
+  background-size: 24px 24px, 24px 24px, 120px 120px, 120px 120px, 170px 170px, 220px 220px;
+  border: 1px solid var(--surface-15);
+  box-shadow: var(--board-shadow);
+}
+
+body::after {
+  inset: 34px;
+  border: 1px solid var(--secondary-30);
+  background:
+    linear-gradient(90deg, var(--secondary-30) 0 1px, transparent 1px calc(100% - 1px), var(--secondary-30) calc(100% - 1px)),
+    linear-gradient(0deg, var(--secondary-30) 0 1px, transparent 1px calc(100% - 1px), var(--secondary-30) calc(100% - 1px));
+  opacity: 0.7;
 }
 
 a    { text-decoration: none; color: inherit; }
@@ -84,11 +134,14 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 5px 8px 5px 10px;
-  background: var(--surface-90);
-  border: 1px solid var(--secondary-30);
+  padding: 6px 9px 6px 11px;
+  background: var(--surface-96);
+  border: 1px solid var(--secondary-55);
   border-radius: 999px;
-  box-shadow: 0 4px 16px -8px var(--primary-20);
+  box-shadow: var(--shadow-lift);
+  backdrop-filter: blur(10px);
+  outline: 1px solid var(--surface-50);
+  outline-offset: -4px;
 }
 
 .lang-switch__globe { color: var(--text-40); flex-shrink: 0; }
@@ -118,9 +171,43 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
    Layout — two-column split
    ───────────────────────────────────────────── */
 .auth-layout {
+  position: relative;
+  z-index: 1;
   display: grid;
-  grid-template-columns: 44% 1fr;
+  grid-template-columns: minmax(390px, 46%) 1fr;
   min-height: 100vh;
+  isolation: isolate;
+}
+
+.auth-layout::before,
+.auth-layout::after {
+  content: '';
+  position: fixed;
+  inset-block: 44px;
+  z-index: 3;
+  width: 36px;
+  pointer-events: none;
+  opacity: 0.52;
+}
+
+.auth-layout::before {
+  inset-inline-start: 34px;
+  border-inline-start: 2px solid var(--secondary-55);
+  border-block: 1px solid var(--secondary-30);
+  background:
+    repeating-linear-gradient(0deg, var(--surface-15) 0 1px, transparent 1px 12px),
+    repeating-linear-gradient(90deg, var(--surface-08) 0 1px, transparent 1px 9px),
+    linear-gradient(90deg, var(--surface-08), transparent);
+}
+
+.auth-layout::after {
+  inset-inline-end: 34px;
+  border-inline-end: 2px solid var(--secondary-55);
+  border-block: 1px solid var(--secondary-30);
+  background:
+    repeating-linear-gradient(0deg, var(--surface-15) 0 1px, transparent 1px 12px),
+    repeating-linear-gradient(90deg, var(--surface-08) 0 1px, transparent 1px 9px),
+    linear-gradient(270deg, var(--surface-08), transparent);
 }
 
 /* ─────────────────────────────────────────────
@@ -131,23 +218,32 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 56px 52px;
+  padding: 68px 68px 68px 74px;
   overflow: hidden;
-  background: var(--primary);
+  background:
+    radial-gradient(circle at 78% 22%, rgba(255, 253, 248, 0.09) 0 10%, transparent 24%),
+    rgba(35, 56, 77, 0.72);
+  isolation: isolate;
+  border-inline-end: 1px solid var(--surface-15);
 }
 
 /* Drifting colour mesh — palette colors only */
 .brand-panel::before {
   content: '';
   position: absolute;
-  inset: -25%;
+  inset: 28px;
   background:
-    radial-gradient(38% 38% at 22% 30%, rgba(199, 184, 157, 0.25) 0%, transparent 60%),
-    radial-gradient(42% 42% at 82% 24%, rgba(35, 56, 77, 0.85)   0%, transparent 62%),
-    radial-gradient(46% 46% at 70% 88%, rgba(199, 184, 157, 0.18) 0%, transparent 60%);
-  filter: blur(8px);
-  animation: meshDrift 22s ease-in-out infinite alternate;
+    radial-gradient(circle at 15% 35%, var(--secondary-55) 0 2px, transparent 3px),
+    radial-gradient(circle at 42% 18%, var(--surface-50) 0 2px, transparent 3px),
+    radial-gradient(circle at 74% 62%, var(--secondary-55) 0 2px, transparent 3px),
+    linear-gradient(32deg, transparent 0 21%, var(--surface-15) 21% 21.4%, transparent 21.4%),
+    linear-gradient(148deg, transparent 0 34%, var(--surface-15) 34% 34.35%, transparent 34.35%),
+    linear-gradient(84deg, transparent 0 54%, var(--secondary-30) 54% 54.25%, transparent 54.25%),
+    radial-gradient(circle at 28% 80%, rgba(199, 184, 157, 0.14) 0%, transparent 22%);
+  filter: none;
+  animation: boardPulse 18s ease-in-out infinite alternate;
   pointer-events: none;
+  border: 1px solid var(--surface-15);
 }
 
 /* Engineering grid */
@@ -156,26 +252,28 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   position: absolute;
   inset: 0;
   background-image:
+    linear-gradient(var(--surface-15) 2px, transparent 2px),
+    linear-gradient(90deg, var(--surface-15) 2px, transparent 2px),
     linear-gradient(var(--grid-light) 1px, transparent 1px),
-    linear-gradient(90deg, var(--grid-light) 1px, transparent 1px);
-  background-size: 30px 30px;
-  -webkit-mask-image: radial-gradient(130% 100% at 50% 0%, #000 55%, transparent 100%);
-          mask-image: radial-gradient(130% 100% at 50% 0%, #000 55%, transparent 100%);
+    linear-gradient(90deg, var(--grid-light) 1px, transparent 1px),
+    repeating-linear-gradient(115deg, transparent 0 18px, var(--surface-08) 18px 19px);
+  background-size: 120px 120px, 120px 120px, 24px 24px, 24px 24px, 96px 96px;
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, rgba(31, 36, 40, 1) 9%, rgba(31, 36, 40, 1) 91%, transparent 100%);
+          mask-image: linear-gradient(90deg, transparent 0, rgba(31, 36, 40, 1) 9%, rgba(31, 36, 40, 1) 91%, transparent 100%);
   pointer-events: none;
 }
 
-@keyframes meshDrift {
-  0%   { transform: translate3d(0, 0, 0) scale(1); }
-  50%  { transform: translate3d(2%, -2%, 0) scale(1.06); }
-  100% { transform: translate3d(-2%, 1%, 0) scale(1.02); }
+@keyframes boardPulse {
+  0%   { opacity: 0.72; transform: scale(1); }
+  100% { opacity: 1; transform: scale(1.015); }
 }
 
 /* Blueprint corner registration marks */
 .reg-mark {
   position: absolute;
-  width: 26px;
-  height: 26px;
-  border: 1.5px solid var(--secondary-30);
+  width: 42px;
+  height: 42px;
+  border: 1.5px solid var(--surface-50);
   pointer-events: none;
 }
 .reg-mark--tl { top: 24px; inset-inline-start: 24px; border-right: 0; border-bottom: 0; }
@@ -194,9 +292,34 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   z-index: 1;
   display: flex;
   flex-direction: column;
-  gap: 38px;
-  max-width: 390px;
+  gap: 34px;
+  max-width: 410px;
   width: 100%;
+  padding: 38px;
+  overflow: hidden;
+  border: 1px solid var(--surface-50);
+  background:
+    linear-gradient(90deg, var(--surface-15) 0 1px, transparent 1px calc(100% - 1px), var(--surface-15) calc(100% - 1px)),
+    linear-gradient(0deg, var(--surface-15) 0 1px, transparent 1px calc(100% - 1px), var(--surface-15) calc(100% - 1px)),
+    linear-gradient(135deg, transparent 0 24px, var(--secondary-30) 24px 25px, transparent 25px),
+    linear-gradient(180deg, var(--surface-08), rgba(255, 253, 248, 0.03)),
+    rgba(35, 56, 77, 0.18);
+  box-shadow:
+    12px 12px 0 rgba(199, 184, 157, 0.10),
+    0 30px 80px -52px rgba(31, 36, 40, 0.90);
+  backdrop-filter: blur(8px);
+}
+
+.brand-panel__inner::before {
+  content: '';
+  position: absolute;
+  inset: 16px;
+  border: 1px solid var(--surface-15);
+  border-inline-start: 5px solid var(--secondary);
+  background:
+    linear-gradient(90deg, transparent 0 64%, var(--surface-08) 64% 64.5%, transparent 64.5%),
+    linear-gradient(0deg, transparent 0 70%, var(--surface-08) 70% 70.5%, transparent 70.5%);
+  pointer-events: none;
 }
 
 /* Logo row */
@@ -204,10 +327,13 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 
 .brand-logo__mark {
   display: inline-flex;
-  padding: 7px;
+  padding: 8px;
   border-radius: 12px;
-  background: var(--surface-08);
-  border: 1px solid var(--surface-15);
+  background: var(--surface-15);
+  border: 1px solid var(--surface-50);
+  box-shadow:
+    inset 0 0 0 6px var(--surface-08),
+    0 0 0 1px var(--secondary-30);
 }
 
 .brand-logo__name {
@@ -223,8 +349,9 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   font-weight: 500;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: var(--primary);
-  background: var(--secondary);
+  color: var(--surface);
+  background: var(--surface-08);
+  border: 1px solid var(--secondary-55);
   padding: 3px 8px;
   border-radius: 999px;
 }
@@ -238,14 +365,16 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   letter-spacing: 0.18em;
   color: var(--secondary);
   margin-bottom: 16px;
+  padding-inline-start: 12px;
+  border-inline-start: 3px solid var(--secondary);
 }
 
 .brand-headline {
   font-family: var(--font-serif);
-  font-size: 33px;
+  font-size: clamp(31px, 4vw, 44px);
   font-weight: 500;
-  line-height: 1.18;
-  letter-spacing: -0.4px;
+  line-height: 1.06;
+  letter-spacing: 0;
   color: var(--surface);
   text-wrap: balance;
 }
@@ -254,29 +383,72 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   font-size: 14.5px;
   line-height: 1.62;
   margin-top: 16px;
-  max-width: 34ch;
+  max-width: 38ch;
   color: var(--surface-75);
+  border-inline-start: 1px solid var(--surface-15);
+  padding-inline-start: 14px;
 }
 
 /* Feature list */
-.brand-features { list-style: none; display: flex; flex-direction: column; gap: 15px; }
+.brand-features {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  counter-reset: feature;
+}
 
 .brand-feature {
+  counter-increment: feature;
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: 12px;
+  min-height: 52px;
+  padding: 12px 14px;
   font-size: 13.5px;
   line-height: 1.45;
   color: var(--surface-90);
+  background:
+    linear-gradient(90deg, var(--surface-08), rgba(255, 253, 248, 0.03)),
+    rgba(35, 56, 77, 0.16);
+  border: 1px solid var(--surface-15);
+  border-inline-start: 4px solid var(--secondary);
+  border-radius: var(--r-sm);
+  position: relative;
+  overflow: hidden;
+}
+
+.brand-feature:nth-child(2) { margin-inline-start: 18px; }
+.brand-feature:nth-child(3) { margin-inline-start: 36px; }
+
+.brand-feature::after {
+  content: '';
+  position: absolute;
+  inset-block: 0;
+  inset-inline-end: 0;
+  width: 42%;
+  background: linear-gradient(90deg, transparent, var(--surface-08));
+  pointer-events: none;
 }
 
 .brand-feature__mark {
   flex-shrink: 0;
+  display: inline-grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
   font-family: var(--font-mono);
-  font-size: 14px;
+  font-size: 0;
   line-height: 1;
-  color: var(--secondary);
-  transform: translateY(1px);
+  color: var(--surface);
+  background: var(--primary-45);
+  border: 1px solid var(--secondary-70);
+  border-radius: 50%;
+}
+.brand-feature__mark::before {
+  content: counter(feature, decimal-leading-zero);
+  font-size: 9px;
+  font-weight: 600;
 }
 
 .brand-footer-note {
@@ -289,7 +461,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 }
 
 /* ─────────────────────────────────────────────
-   Form panel (right) — clean surface, no glass
+   Form panel (right) — warm technical sheet
    Secondary accent on the reading-start edge.
    ───────────────────────────────────────────── */
 .form-panel {
@@ -297,21 +469,88 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 44px 32px;
-  background: var(--surface);
+  padding: 44px 36px;
+  background:
+    radial-gradient(circle at 78% 22%, rgba(255, 253, 248, 0.09) 0 10%, transparent 24%),
+    linear-gradient(var(--surface-08) 1px, transparent 1px),
+    linear-gradient(90deg, var(--surface-08) 1px, transparent 1px),
+    linear-gradient(var(--surface-15) 2px, transparent 2px),
+    linear-gradient(90deg, var(--surface-15) 2px, transparent 2px),
+    repeating-linear-gradient(0deg, transparent 0 47px, var(--secondary-15) 47px 48px),
+    linear-gradient(115deg, transparent 0 42%, var(--secondary-15) 42% 43%, transparent 43% 100%),
+    rgba(35, 56, 77, 0.72);
+  background-size: auto, 24px 24px, 24px 24px, 140px 140px, 140px 140px, auto, 160px 160px, auto;
   overflow-y: auto;
-  border-left: 3px solid var(--secondary);
+  border-inline-start: 1px solid var(--surface-15);
 }
 
-/* No ::before grid overlay — clean right panel intentional.
-   Visual texture lives in the brand panel only. */
+.form-panel::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 20% 18%, rgba(199, 184, 157, 0.16) 0 13%, transparent 30%),
+    linear-gradient(32deg, transparent 0 38%, var(--surface-08) 38% 38.25%, transparent 38.25%),
+    linear-gradient(148deg, transparent 0 64%, var(--surface-08) 64% 64.25%, transparent 64.25%);
+  pointer-events: none;
+}
+
+.form-panel::after {
+  content: '';
+  position: absolute;
+  inset: 28px;
+  border: 1px solid var(--surface-15);
+  border-block-start: 6px solid var(--secondary-30);
+  pointer-events: none;
+  clip-path: polygon(0 0, calc(100% - 34px) 0, 100% 34px, 100% 100%, 0 100%);
+}
 
 .form-card {
+  position: relative;
+  z-index: 1;
   width: 100%;
   max-width: var(--panel-max);
   display: flex;
   flex-direction: column;
   gap: 20px;
+  padding: 32px;
+  background:
+    linear-gradient(135deg, transparent 0 24px, var(--surface-96) 24px),
+    linear-gradient(90deg, rgba(35, 56, 77, 0.035) 1px, transparent 1px),
+    linear-gradient(0deg, rgba(35, 56, 77, 0.035) 1px, transparent 1px),
+    linear-gradient(180deg, rgba(255, 253, 248, 0.98), rgba(243, 240, 234, 0.95));
+  background-size: auto, 22px 22px, 22px 22px, auto;
+  border: 1px solid var(--surface-75);
+  border-radius: var(--r-md);
+  box-shadow:
+    18px 18px 0 rgba(199, 184, 157, 0.20),
+    28px 28px 0 rgba(255, 253, 248, 0.08),
+    0 30px 70px -44px rgba(31, 36, 40, 0.95);
+  outline: 1px solid rgba(35, 56, 77, 0.08);
+  outline-offset: -8px;
+}
+
+.form-card::before,
+.form-card::after {
+  content: '';
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  border-color: var(--secondary);
+  border-style: solid;
+  pointer-events: none;
+}
+
+.form-card::before {
+  top: 14px;
+  inset-inline-start: 14px;
+  border-width: 2px 0 0 2px;
+}
+
+.form-card::after {
+  inset-inline-end: 14px;
+  bottom: 14px;
+  border-width: 0 2px 2px 0;
 }
 
 /* Mobile-only logo */
@@ -319,15 +558,33 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 .mobile-logo__name { font-size: 18px; font-weight: 700; color: var(--primary); }
 
 /* Form header */
-.form-header { display: flex; flex-direction: column; gap: 7px; }
+.form-header {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--secondary-30);
+  position: relative;
+}
+
+.form-header::after {
+  content: '';
+  position: absolute;
+  inset-inline-start: 0;
+  bottom: -1px;
+  width: 92px;
+  height: 3px;
+  background: var(--primary);
+}
 
 .form-title {
   font-family: var(--font-serif);
-  font-size: 28px;
+  font-size: 31px;
   font-weight: 500;
-  letter-spacing: -0.3px;
+  letter-spacing: 0;
   line-height: 1.15;
   color: var(--primary);
+  text-shadow: 1px 1px 0 var(--secondary-15);
 }
 
 .form-subtitle { font-size: 14px; color: var(--text-55); }
@@ -344,6 +601,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   font-size: 13.5px;
   line-height: 1.5;
   border: 1px solid transparent;
+  box-shadow: inset 5px 0 0 var(--error), 0 10px 22px -18px rgba(166, 50, 50, 0.70);
 }
 .alert--visible  { display: flex; }
 .alert--error    { color: var(--error); background: var(--error-bg); border-color: var(--error-border); }
@@ -364,6 +622,9 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 }
 
 .form-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
   font-family: var(--font-mono);
   font-size: 11px;
   font-weight: 500;
@@ -373,35 +634,61 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   cursor: pointer;
 }
 
+.form-label::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border: 1px solid var(--secondary);
+  background: var(--primary-08);
+  transform: rotate(45deg);
+  flex-shrink: 0;
+}
+
 .form-label-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 
 /* Shared field look for text inputs and the trade select */
 .form-input,
 .form-select {
   width: 100%;
-  height: 48px;
-  padding: 0 15px;
+  height: 50px;
+  padding: 0 16px;
   font-family: var(--font-sans);
   font-size: 14.5px;
   color: var(--text);
-  background: var(--background);
+  background:
+    linear-gradient(90deg, rgba(35, 56, 77, 0.035) 1px, transparent 1px),
+    var(--surface);
+  background-size: 14px 100%, auto;
   border: 1.5px solid var(--secondary-30);
+  border-inline-start-width: 5px;
   border-radius: var(--r-sm);
   outline: none;
-  transition: border-color 0.16s, box-shadow 0.16s, background 0.16s;
+  box-shadow:
+    inset 0 -2px 0 var(--secondary-15),
+    4px 4px 0 rgba(199, 184, 157, 0.08);
+  transition: border-color 0.16s, box-shadow 0.16s, background 0.16s, transform 0.16s;
   -webkit-appearance: none;
   appearance: none;
 }
 
 .form-input::placeholder { color: var(--text-40); }
 .form-input:hover,
-.form-select:hover       { border-color: var(--secondary-55); }
+.form-select:hover {
+  border-color: var(--secondary-55);
+  border-inline-start-color: var(--secondary);
+  transform: translateY(-1px);
+}
 
 .form-input:focus,
 .form-select:focus {
   border-color: var(--primary);
+  border-inline-start-color: var(--primary);
   background: var(--surface);
-  box-shadow: 0 0 0 4px var(--primary-08);
+  box-shadow:
+    0 0 0 4px var(--primary-08),
+    inset 0 -2px 0 var(--primary),
+    4px 4px 0 rgba(35, 56, 77, 0.10);
+  transform: translateY(-1px);
 }
 
 /* ── Trade select — native <select> dressed as a field ──
@@ -435,6 +722,11 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   flex-direction: column;
   gap: 8px;
   margin-top: 10px;
+  padding: 12px;
+  background: var(--background);
+  border: 1px dashed var(--secondary-55);
+  border-inline-start: 5px solid var(--secondary);
+  border-radius: var(--r-sm);
 }
 
 /* Visual-only label (a <span>, no for=) — drop the pointer affordance */
@@ -454,19 +746,48 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   display: none;
   font-size: 12px;
   color: var(--error);
-  margin-top: 5px;
+  margin-top: 4px;
+  padding: 8px 10px;
   line-height: 1.4;
+  background: var(--error-bg);
+  border: 1px solid var(--error-border);
+  border-inline-start: 4px solid var(--error);
+  border-radius: var(--r-sm);
+  box-shadow: 3px 3px 0 rgba(166, 50, 50, 0.08);
 }
 
-/* Non-empty + invalid → red border + glow (email & password) */
+/* Non-empty + invalid → red warning border + glow (email & password) */
 .form-input[type="email"]:not(:placeholder-shown):invalid,
 .form-input[type="password"]:not(:placeholder-shown):invalid {
+  border-color: var(--error);
+  box-shadow:
+    0 0 0 4px var(--error-bg),
+    inset 0 -2px 0 var(--error),
+    4px 4px 0 rgba(166, 50, 50, 0.08);
+}
+
+/* Empty required fields become red after user interaction/submission. */
+.form-input:user-invalid,
+.form-select:user-invalid {
+  border-color: var(--error);
+  border-inline-start-color: var(--error);
+  box-shadow:
+    0 0 0 4px var(--error-bg),
+    inset 0 -2px 0 var(--error),
+    4px 4px 0 rgba(166, 50, 50, 0.08);
+}
+
+.checkbox-input:user-invalid + .checkbox-box {
   border-color: var(--error);
   box-shadow: 0 0 0 4px var(--error-bg);
 }
 
 /* Non-empty + invalid email → show inline message */
 .form-input[type="email"]:not(:placeholder-shown):invalid ~ .field-error {
+  display: block;
+}
+
+.form-group:has(#password:not(:placeholder-shown):invalid) .password-error {
   display: block;
 }
 
@@ -493,14 +814,14 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
    Physical right/padding-right used intentionally:
    the password field is always LTR regardless of UI language. */
 .input-wrapper { position: relative; }
-.input-wrapper .form-input { padding-right: 46px; }
+.input-wrapper .form-input { padding-right: 48px; }
 
 .input-action {
   position: absolute;
   right: 0;
   top: 0;
-  height: 48px;
-  width: 46px;
+  height: 50px;
+  width: 48px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -525,6 +846,13 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   font-size: 13px;
   line-height: 1.5;
   color: var(--text-55);
+  padding: 12px;
+  background:
+    linear-gradient(90deg, rgba(35, 56, 77, 0.035) 1px, transparent 1px),
+    var(--background);
+  background-size: 18px 100%, auto;
+  border: 1px solid var(--secondary-30);
+  border-radius: var(--r-sm);
 }
 
 .checkbox-input {
@@ -541,7 +869,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   margin-top: 1px;
   border: 1.5px solid var(--secondary-55);
   border-radius: var(--r-sm);
-  background: var(--background);
+  background: var(--surface);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -574,7 +902,8 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   align-items: center;
   justify-content: center;
   gap: 10px;
-  height: 48px;
+  position: relative;
+  height: 50px;
   padding: 0 20px;
   font-family: var(--font-sans);
   font-size: 14.5px;
@@ -584,31 +913,52 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   cursor: pointer;
   transition: background 0.16s, box-shadow 0.2s, transform 0.12s, border-color 0.16s;
   white-space: nowrap;
+  overflow: hidden;
 }
 .btn--full { width: 100%; }
 
 /* Primary: solid primary, gradient on hover */
 .btn--primary {
   color: var(--surface);
-  background: var(--primary);
-  border-color: var(--primary);
-  box-shadow: 0 8px 20px -8px var(--primary-20);
-}
-.btn--primary:hover {
   background: var(--brand-gradient);
-  box-shadow: 0 12px 28px -10px var(--primary-20);
-  transform: translateY(-1px);
+  border-color: var(--primary);
+  box-shadow:
+    8px 8px 0 var(--secondary-30),
+    0 14px 28px -16px rgba(35, 56, 77, 0.80);
 }
+.btn--primary::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, var(--surface-15), transparent);
+  transform: translateX(-100%);
+  transition: transform 0.4s ease;
+}
+.btn--primary > span,
+.btn--primary > svg { position: relative; z-index: 1; }
+.btn--primary:hover {
+  box-shadow:
+    5px 5px 0 var(--secondary-55),
+    0 18px 32px -18px rgba(35, 56, 77, 0.90);
+  transform: translate(3px, 3px);
+}
+.btn--primary:hover::before { transform: translateX(100%); }
 .btn--primary:active { transform: translateY(1px); }
 
 /* Google OAuth stub */
 .btn--google {
-  background: var(--background);
+  background: var(--surface);
   color: var(--text);
   border-color: var(--secondary-30);
   font-weight: 500;
+  box-shadow: inset 0 -2px 0 var(--secondary-15), 6px 6px 0 var(--primary-08);
 }
-.btn--google:hover  { background: var(--surface); border-color: var(--secondary-55); }
+.btn--google:hover  {
+  background: var(--background);
+  border-color: var(--secondary-55);
+  transform: translate(2px, 2px);
+  box-shadow: inset 0 -2px 0 var(--secondary-15), 3px 3px 0 var(--primary-12);
+}
 .btn--google:active { transform: translateY(1px); }
 .google-icon { flex-shrink: 0; }
 
@@ -635,7 +985,12 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 .form-link--strong   { font-size: inherit; font-weight: 600; color: var(--primary); }
 .form-link--strong:hover { text-decoration: underline; }
 
-.form-footer { text-align: center; font-size: 13.5px; color: var(--text-55); }
+.form-footer {
+  text-align: center;
+  font-size: 13.5px;
+  color: var(--text-55);
+  padding-top: 2px;
+}
 
 .secure-note {
   display: flex;
@@ -658,8 +1013,14 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   .form-panel  {
     padding: 72px 18px 40px;
     align-items: flex-start;
-    border-left: none;
+    border-inline-start: none;
     border-top: 3px solid var(--secondary);
+  }
+  .form-panel::after { inset: 18px; }
+  .form-card {
+    max-width: 560px;
+    margin-inline: auto;
+    padding: 26px 22px;
   }
   .mobile-logo { display: flex; margin-bottom: 4px; }
   .form-title  { font-size: 24px; }
@@ -668,6 +1029,18 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 /* Stack the two-column rows on narrow screens */
 @media (max-width: 560px) {
   .form-row { grid-template-columns: 1fr; }
+  .lang-switch {
+    top: 12px;
+    inset-inline-end: 12px;
+  }
+  .form-panel { padding-inline: 12px; }
+  .form-card {
+    padding: 24px 16px;
+    border-radius: var(--r-sm);
+  }
+  .form-card::before,
+  .form-card::after { display: none; }
+  .form-panel::after { display: none; }
 }
 
 @media (max-width: 1024px) and (min-width: 861px) {
@@ -678,7 +1051,13 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 
 @media (prefers-reduced-motion: reduce) {
   .brand-panel::before { animation: none; }
-  .btn--primary:hover  { transform: none; }
+  .btn--primary:hover,
+  .btn--google:hover,
+  .form-input:hover,
+  .form-select:hover,
+  .form-input:focus,
+  .form-select:focus { transform: none; }
+  .btn--primary::before { display: none; }
 }
 
 /* ─────────────────────────────────────────────
