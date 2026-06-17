@@ -1,0 +1,849 @@
+<!DOCTYPE html>
+<html lang="he">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>עיון בקבלנים / Browse contractors — FieldSync</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <!--
+    Heebo + Frank Ruhl Libre → Hebrew (default)
+    Inter + Fraunces          → English (on toggle)
+    IBM Plex Mono             → both (technical/monospace accents)
+    Same font stack as login.html / register.html so the three screens match.
+  -->
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=IBM+Plex+Mono:wght@400;500&family=Heebo:wght@400;500;600;700&family=Frank+Ruhl+Libre:wght@500;700&display=swap"
+    rel="stylesheet" />
+  <link rel="stylesheet" href="browse-contractors.css" />
+</head>
+<body>
+
+  <!--
+    CSS-only bilingual toggle (same mechanism as login/register).
+    Two radios at the top of <body> drive all language state via sibling selectors.
+    Everything else lives inside .app, so one selector family (#lang-en:checked ~ .app …)
+    swaps text, direction and fonts across the whole screen. Hebrew (#lang-he) default.
+  -->
+  <input type="radio" name="lang" id="lang-he" class="lang-radio" checked>
+  <input type="radio" name="lang" id="lang-en" class="lang-radio">
+
+  <div class="app">
+
+    <!-- ═══════════════════════════════════════════════
+         REUSABLE APP NAVBAR  (.app-nav)
+         First screen to need it; built as a self-contained block
+         so it lifts cleanly into a React <Navbar/> later. Every
+         Stage-2+ authenticated screen will reuse this markup.
+         ═══════════════════════════════════════════════ -->
+    <header class="app-nav">
+      <div class="app-nav__inner">
+
+        <!-- Brand -->
+        <a href="#" class="app-nav__brand" aria-label="FieldSync — home">
+          <span class="app-nav__mark" aria-hidden="true">
+            <svg width="26" height="26" viewBox="0 0 40 40" fill="none">
+              <circle cx="8"  cy="20" r="6" fill="rgba(199,184,157,0.30)" stroke="rgba(255,253,248,0.92)" stroke-width="2"/>
+              <circle cx="32" cy="8"  r="6" fill="rgba(199,184,157,0.30)" stroke="rgba(255,253,248,0.92)" stroke-width="2"/>
+              <circle cx="32" cy="32" r="6" fill="rgba(199,184,157,0.30)" stroke="rgba(255,253,248,0.92)" stroke-width="2"/>
+              <line x1="14" y1="17" x2="26" y2="11" stroke="rgba(255,253,248,0.55)" stroke-width="1.5" stroke-dasharray="3 2"/>
+              <line x1="14" y1="23" x2="26" y2="29" stroke="rgba(255,253,248,0.55)" stroke-width="1.5" stroke-dasharray="3 2"/>
+              <line x1="32" y1="14" x2="32" y2="26" stroke="rgba(255,253,248,0.40)" stroke-width="1.5" stroke-dasharray="3 2"/>
+            </svg>
+          </span>
+          <span class="app-nav__name">FieldSync</span>
+        </a>
+
+        <!-- Primary navigation -->
+        <nav class="app-nav__links" aria-label="Main">
+          <a href="browse-contractors.html" class="app-nav__link is-active" aria-current="page">
+            <span class="he-text">עיון בקבלנים</span>
+            <span class="en-text">Browse</span>
+          </a>
+          <a href="#" class="app-nav__link">
+            <span class="he-text">הרשת שלי</span>
+            <span class="en-text">Network</span>
+          </a>
+          <a href="#" class="app-nav__link">
+            <span class="he-text">פרויקטים</span>
+            <span class="en-text">Projects</span>
+          </a>
+          <a href="#" class="app-nav__link">
+            <span class="he-text">המשימות שלי</span>
+            <span class="en-text">My Tasks</span>
+          </a>
+        </nav>
+
+        <!-- Trailing actions: notifications · profile · language -->
+        <div class="app-nav__actions">
+
+          <!-- Notifications bell (visual; opens notifications popup in Stage 2) -->
+          <button type="button" class="nav-icon-btn has-dot" aria-label="Notifications">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/>
+              <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+            </svg>
+          </button>
+
+          <!-- Profile menu trigger (visual; dropdown wired in Stage 2) -->
+          <button type="button" class="nav-profile" aria-label="Account menu" aria-haspopup="true">
+            <!-- Initials: first letter of first name + surname, per language -->
+            <span class="nav-profile__avatar" aria-hidden="true">
+              <span class="he-text">בכ</span><span class="en-text">BK</span>
+            </span>
+            <span class="nav-profile__name">
+              <span class="he-text">בר כאכון</span>
+              <span class="en-text">Bar Kakon</span>
+            </span>
+            <svg class="nav-profile__chevron" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M6 9l6 6 6-6"/>
+            </svg>
+          </button>
+
+          <!-- Language switcher (moved into the navbar for app screens) -->
+          <div class="lang-switch" role="group" aria-label="Language / שפה">
+            <svg class="lang-switch__globe" width="15" height="15" viewBox="0 0 24 24"
+                 fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+              <circle cx="12" cy="12" r="9"/>
+              <path d="M3 12h18M12 3c2.5 2.7 2.5 15.3 0 18M12 3c-2.5 2.7-2.5 15.3 0 18"/>
+            </svg>
+            <label for="lang-he" class="lang-switch__btn">עב</label>
+            <span class="lang-switch__sep" aria-hidden="true"></span>
+            <label for="lang-en" class="lang-switch__btn">EN</label>
+          </div>
+
+        </div>
+      </div>
+    </header>
+
+    <!-- ═══════════════════════════════════════════════
+         BROWSE CONTRACTORS — page body
+         ═══════════════════════════════════════════════ -->
+    <main class="browse">
+
+      <!-- Page header: eyebrow · title · subtitle · sort -->
+      <header class="browse__head">
+        <div class="browse__heading">
+          <h1 class="browse__title">
+            <span class="he-text">עיון בקבלנים</span>
+            <span class="en-text">Browse contractors</span>
+          </h1>
+          <p class="browse__sub">
+            <span class="he-text">מצאו בעלי מקצוע לפי תחום, אזור, דירוג וציון גמישות — ושלחו בקשת התחברות.</span>
+            <span class="en-text">Find pros by trade, region, rating and flexibility score — then send a connection request.</span>
+          </p>
+        </div>
+
+        <!-- Sort control (visual; real sorting wired in React Stage 2) -->
+        <div class="browse__sort">
+          <span class="form-label form-label--plain" id="sort-label">
+            <span class="he-text">מיון</span>
+            <span class="en-text">Sort</span>
+          </span>
+          <div class="select-wrap">
+            <select class="form-select he-select" aria-labelledby="sort-label">
+              <option>רלוונטיות</option>
+              <option>דירוג — מהגבוה לנמוך</option>
+              <option>גמישות — מהגבוה לנמוך</option>
+              <option>הכי קרוב אליי</option>
+            </select>
+            <select class="form-select en-select" aria-label="Sort">
+              <option>Relevance</option>
+              <option>Rating — high to low</option>
+              <option>Flexibility — high to low</option>
+              <option>Nearest to me</option>
+            </select>
+            <span class="select-chevron" aria-hidden="true">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                   stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M6 9l6 6 6-6"/>
+              </svg>
+            </span>
+          </div>
+        </div>
+      </header>
+
+      <div class="browse__body">
+
+        <!-- ── Filter rail ───────────────────────────────
+             Reuses .form-input / .form-select look from register.
+             All controls are presentational — real filtering is
+             wired in React (Stage 2), same as the login/register stubs.
+             ─────────────────────────────────────────────── -->
+        <aside class="filters" aria-label="Filters">
+          <div class="filters__card">
+
+            <div class="filters__head">
+              <h2 class="filters__title">
+                <span class="he-text">סינון</span>
+                <span class="en-text">Filters</span>
+              </h2>
+              <a href="#" class="filters__clear">
+                <span class="he-text">ניקוי</span>
+                <span class="en-text">Clear</span>
+              </a>
+            </div>
+
+            <form class="filters__form" action="#" method="get">
+
+              <!-- Search -->
+              <div class="form-group">
+                <label class="form-label" for="q">
+                  <span class="he-text">חיפוש</span>
+                  <span class="en-text">Search</span>
+                </label>
+                <div class="search-field">
+                  <svg class="search-field__icon" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                       stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <circle cx="11" cy="11" r="7"/>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                  </svg>
+                  <input class="form-input form-input--search" type="search" id="q" name="q"
+                         placeholder="שם או חברה" aria-label="חיפוש לפי שם או חברה" />
+                </div>
+              </div>
+
+              <!-- Specialty / trade (reuses register's trade list, HE + EN) -->
+              <div class="form-group">
+                <label class="form-label" for="trade-he">
+                  <span class="he-text">תחום</span>
+                  <span class="en-text">Specialty</span>
+                </label>
+                <div class="select-wrap">
+                  <select class="form-select he-select" id="trade-he" name="trade">
+                    <option value="">כל התחומים</option>
+                    <option value="general">קבלנות כללית</option>
+                    <option value="electrical">חשמל</option>
+                    <option value="plumbing">אינסטלציה</option>
+                    <option value="drilling">קידוחים וביסוס</option>
+                    <option value="shell">קבלן שלד</option>
+                    <option value="concrete">בטון</option>
+                    <option value="saferoom">בניית ממ"דים</option>
+                    <option value="carpentry">נגרות</option>
+                    <option value="aluminum">אלומיניום וזיגוג</option>
+                    <option value="hvac">מיזוג אוויר</option>
+                    <option value="painting">צביעה</option>
+                    <option value="tiling">ריצוף וחיפוי</option>
+                    <option value="plastering">טיח</option>
+                    <option value="earthworks">עבודות עפר</option>
+                    <option value="waterproofing">איטום</option>
+                    <option value="supply">אספקה וחומרים</option>
+                    <option value="other">אחר</option>
+                  </select>
+                  <select class="form-select en-select" id="trade-en" name="trade" aria-label="Specialty">
+                    <option value="">All specialties</option>
+                    <option value="general">General contracting</option>
+                    <option value="electrical">Electrical</option>
+                    <option value="plumbing">Plumbing</option>
+                    <option value="drilling">Drilling &amp; foundations</option>
+                    <option value="shell">Shell</option>
+                    <option value="concrete">Concrete</option>
+                    <option value="saferoom">Safe rooms (mamad)</option>
+                    <option value="carpentry">Carpentry</option>
+                    <option value="aluminum">Aluminum &amp; glazing</option>
+                    <option value="hvac">HVAC / air conditioning</option>
+                    <option value="painting">Painting</option>
+                    <option value="tiling">Tiling &amp; flooring</option>
+                    <option value="plastering">Plastering</option>
+                    <option value="earthworks">Earthworks</option>
+                    <option value="waterproofing">Waterproofing</option>
+                    <option value="supply">Supply / materials</option>
+                    <option value="other">Other</option>
+                  </select>
+                  <span class="select-chevron" aria-hidden="true">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M6 9l6 6 6-6"/>
+                    </svg>
+                  </span>
+                </div>
+              </div>
+
+              <!-- Region -->
+              <div class="form-group">
+                <label class="form-label" for="region-he">
+                  <span class="he-text">אזור</span>
+                  <span class="en-text">Region</span>
+                </label>
+                <div class="select-wrap">
+                  <select class="form-select he-select" id="region-he" name="region">
+                    <option value="">כל הארץ</option>
+                    <option value="north">צפון</option>
+                    <option value="haifa">חיפה והקריות</option>
+                    <option value="sharon">השרון</option>
+                    <option value="center">מרכז</option>
+                    <option value="telaviv">תל אביב</option>
+                    <option value="jerusalem">ירושלים והסביבה</option>
+                    <option value="lowlands">שפלה</option>
+                    <option value="south">דרום</option>
+                  </select>
+                  <select class="form-select en-select" id="region-en" name="region" aria-label="Region">
+                    <option value="">All regions</option>
+                    <option value="north">North</option>
+                    <option value="haifa">Haifa &amp; Krayot</option>
+                    <option value="sharon">Sharon</option>
+                    <option value="center">Center</option>
+                    <option value="telaviv">Tel Aviv</option>
+                    <option value="jerusalem">Jerusalem area</option>
+                    <option value="lowlands">Lowlands (Shfela)</option>
+                    <option value="south">South</option>
+                  </select>
+                  <span class="select-chevron" aria-hidden="true">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M6 9l6 6 6-6"/>
+                    </svg>
+                  </span>
+                </div>
+              </div>
+
+              <!-- Minimum rating — pure-CSS star selector (radio).
+                   Forced LTR so the row-reverse fill trick is direction-proof. -->
+              <div class="form-group">
+                <span class="form-label form-label--plain">
+                  <span class="he-text">דירוג מינימלי</span>
+                  <span class="en-text">Minimum rating</span>
+                </span>
+                <fieldset class="star-select" aria-label="Minimum rating">
+                  <input type="radio" name="minrating" id="mr5" value="5"><label for="mr5" title="5">★</label>
+                  <input type="radio" name="minrating" id="mr4" value="4"><label for="mr4" title="4">★</label>
+                  <input type="radio" name="minrating" id="mr3" value="3"><label for="mr3" title="3">★</label>
+                  <input type="radio" name="minrating" id="mr2" value="2"><label for="mr2" title="2">★</label>
+                  <input type="radio" name="minrating" id="mr1" value="1"><label for="mr1" title="1">★</label>
+                </fieldset>
+                <p class="field-hint">
+                  <span class="he-text">לחצו על מספר הכוכבים המינימלי</span>
+                  <span class="en-text">Tap the minimum number of stars</span>
+                </p>
+              </div>
+
+              <!-- Minimum flexibility — progress-bar slider + number box.
+                   accent-color fills the bar as you drag (direction-aware, so it
+                   fills correctly in both RTL and LTR). The slider and the number
+                   box are kept in sync by a small vanilla-JS snippet at the end of
+                   <body> so the user can drag OR type and always see the value. -->
+              <div class="form-group">
+                <label class="form-label form-label--plain" for="flexRange">
+                  <span class="he-text">גמישות מינימלית</span>
+                  <span class="en-text">Minimum flexibility</span>
+                </label>
+                <!-- Value indicator sits directly above the bar (not by the title) -->
+                <div class="flex-value">
+                  <input class="flex-num" type="number" id="flexNum" min="0" max="100" value="0"
+                         step="1" inputmode="numeric" aria-label="גמישות מינימלית / Minimum flexibility value" />
+                </div>
+                <input class="flex-range" type="range" id="flexRange" min="0" max="100" value="0" step="1"
+                       aria-label="גמישות מינימלית / Minimum flexibility" />
+                <div class="flex-range__scale" aria-hidden="true">
+                  <span>0</span>
+                  <span>50</span>
+                  <span>100</span>
+                </div>
+              </div>
+
+              <button type="submit" class="btn btn--primary btn--full">
+                <span class="he-text">החלת סינון</span>
+                <span class="en-text">Apply filters</span>
+              </button>
+            </form>
+          </div>
+        </aside>
+
+        <!-- ── Results ──────────────────────────────────── -->
+        <section class="results" aria-label="Contractors">
+
+          <!-- Result count (text only; static placeholder data) -->
+          <p class="results__count">
+            <span class="he-text">מציג <strong>9</strong> מתוך <strong>128</strong> קבלנים</span>
+            <span class="en-text">Showing <strong>9</strong> of <strong>128</strong> contractors</span>
+          </p>
+
+          <!--
+            PLACEHOLDER CARDS — throwaway sample data so every feature is
+            visible (stars, flexibility gauge, trade tags, connection states).
+            Replaced by real database data when this becomes React (Stage 2+).
+            Connection states shown statically via modifier classes:
+              (default) = Connect · --pending = request sent · --connected = ✓ + Message
+          -->
+          <ul class="card-grid">
+
+            <!-- 1 · Connect (default) -->
+            <li class="contractor-card">
+              <div class="contractor-card__top">
+                <span class="avatar" aria-hidden="true">אכ</span>
+                <div class="contractor-card__id">
+                  <h3 class="contractor-card__name">
+                    <span class="he-text">אבי כהן</span>
+                    <span class="en-text">Avi Cohen</span>
+                  </h3>
+                  <p class="contractor-card__org">
+                    <span class="he-text">כהן חשמל ותשתיות</span>
+                    <span class="en-text">Cohen Electric &amp; Infrastructure</span>
+                  </p>
+                </div>
+              </div>
+              <div class="tags">
+                <span class="tag"><span class="he-text">חשמל</span><span class="en-text">Electrical</span></span>
+              </div>
+              <p class="meta-row">
+                <svg class="meta-row__pin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M21 10c0 7-9 12-9 12s-9-5-9-12a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                <span class="he-text">תל אביב</span><span class="en-text">Tel Aviv</span>
+              </p>
+              <div class="card-metrics">
+                <div class="rating" title="4.6">
+                  <span class="rating__stars" style="--rating: 4.6" aria-hidden="true"><span class="rating__fill"></span></span>
+                  <span class="rating__value">4.6</span>
+                </div>
+                <div class="flex-meter">
+                  <div class="flex-meter__head">
+                    <span class="flex-meter__label"><span class="he-text">גמישות</span><span class="en-text">Flexibility</span></span>
+                    <span class="flex-meter__value">82</span>
+                  </div>
+                  <span class="flex-meter__track"><span class="flex-meter__fill" style="--score: 82"></span></span>
+                </div>
+              </div>
+              <div class="contractor-card__actions">
+                <a href="public-profile.html" class="btn btn--ghost btn--sm">
+                  <span class="he-text">פרופיל</span><span class="en-text">View profile</span>
+                </a>
+                <button type="button" class="btn btn--primary btn--sm js-connect">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                  <span class="he-text">התחברות</span><span class="en-text">Connect</span>
+                </button>
+              </div>
+            </li>
+
+            <!-- 2 · Connected (gate open → Message) -->
+            <li class="contractor-card contractor-card--connected">
+              <span class="conn-badge" aria-hidden="true">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 6"/></svg>
+                <span class="he-text">מחובר</span><span class="en-text">Connected</span>
+              </span>
+              <div class="contractor-card__top">
+                <span class="avatar" aria-hidden="true">דל</span>
+                <div class="contractor-card__id">
+                  <h3 class="contractor-card__name">
+                    <span class="he-text">דנה לוי</span>
+                    <span class="en-text">Dana Levi</span>
+                  </h3>
+                  <p class="contractor-card__org">
+                    <span class="he-text">לוי אינסטלציה</span>
+                    <span class="en-text">Levi Plumbing</span>
+                  </p>
+                </div>
+              </div>
+              <div class="tags">
+                <span class="tag"><span class="he-text">אינסטלציה</span><span class="en-text">Plumbing</span></span>
+                <span class="tag"><span class="he-text">איטום</span><span class="en-text">Waterproofing</span></span>
+              </div>
+              <p class="meta-row">
+                <svg class="meta-row__pin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M21 10c0 7-9 12-9 12s-9-5-9-12a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                <span class="he-text">מרכז</span><span class="en-text">Center</span>
+              </p>
+              <div class="card-metrics">
+                <div class="rating" title="4.9">
+                  <span class="rating__stars" style="--rating: 4.9" aria-hidden="true"><span class="rating__fill"></span></span>
+                  <span class="rating__value">4.9</span>
+                </div>
+                <div class="flex-meter">
+                  <div class="flex-meter__head">
+                    <span class="flex-meter__label"><span class="he-text">גמישות</span><span class="en-text">Flexibility</span></span>
+                    <span class="flex-meter__value">91</span>
+                  </div>
+                  <span class="flex-meter__track"><span class="flex-meter__fill" style="--score: 91"></span></span>
+                </div>
+              </div>
+              <div class="contractor-card__actions">
+                <a href="public-profile.html" class="btn btn--ghost btn--sm">
+                  <span class="he-text">פרופיל</span><span class="en-text">View profile</span>
+                </a>
+                <button type="button" class="btn btn--primary btn--sm">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                  <span class="he-text">הודעה</span><span class="en-text">Message</span>
+                </button>
+              </div>
+            </li>
+
+            <!-- 3 · Pending (request sent) -->
+            <li class="contractor-card contractor-card--pending">
+              <span class="conn-badge" aria-hidden="true">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+                <span class="he-text">ממתין</span><span class="en-text">Pending</span>
+              </span>
+              <div class="contractor-card__top">
+                <span class="avatar" aria-hidden="true">מח</span>
+                <div class="contractor-card__id">
+                  <h3 class="contractor-card__name">
+                    <span class="he-text">מוסא חורי</span>
+                    <span class="en-text">Musa Khoury</span>
+                  </h3>
+                  <p class="contractor-card__org">
+                    <span class="he-text">חורי קידוחים וביסוס</span>
+                    <span class="en-text">Khoury Drilling &amp; Foundations</span>
+                  </p>
+                </div>
+              </div>
+              <div class="tags">
+                <span class="tag"><span class="he-text">קידוחים וביסוס</span><span class="en-text">Drilling &amp; foundations</span></span>
+              </div>
+              <p class="meta-row">
+                <svg class="meta-row__pin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M21 10c0 7-9 12-9 12s-9-5-9-12a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                <span class="he-text">צפון</span><span class="en-text">North</span>
+              </p>
+              <div class="card-metrics">
+                <div class="rating" title="4.2">
+                  <span class="rating__stars" style="--rating: 4.2" aria-hidden="true"><span class="rating__fill"></span></span>
+                  <span class="rating__value">4.2</span>
+                </div>
+                <div class="flex-meter">
+                  <div class="flex-meter__head">
+                    <span class="flex-meter__label"><span class="he-text">גמישות</span><span class="en-text">Flexibility</span></span>
+                    <span class="flex-meter__value">67</span>
+                  </div>
+                  <span class="flex-meter__track"><span class="flex-meter__fill" style="--score: 67"></span></span>
+                </div>
+              </div>
+              <div class="contractor-card__actions">
+                <a href="public-profile.html" class="btn btn--ghost btn--sm">
+                  <span class="he-text">פרופיל</span><span class="en-text">View profile</span>
+                </a>
+                <button type="button" class="btn btn--muted btn--sm" disabled>
+                  <span class="he-text">בקשה נשלחה</span><span class="en-text">Request sent</span>
+                </button>
+              </div>
+            </li>
+
+            <!-- 4 · Connect -->
+            <li class="contractor-card">
+              <div class="contractor-card__top">
+                <span class="avatar" aria-hidden="true">ימ</span>
+                <div class="contractor-card__id">
+                  <h3 class="contractor-card__name">
+                    <span class="he-text">יוסי מזרחי</span>
+                    <span class="en-text">Yossi Mizrahi</span>
+                  </h3>
+                  <p class="contractor-card__org">
+                    <span class="he-text">מזרחי שלד ובטון</span>
+                    <span class="en-text">Mizrahi Shell &amp; Concrete</span>
+                  </p>
+                </div>
+              </div>
+              <div class="tags">
+                <span class="tag"><span class="he-text">קבלן שלד</span><span class="en-text">Shell</span></span>
+                <span class="tag"><span class="he-text">בטון</span><span class="en-text">Concrete</span></span>
+              </div>
+              <p class="meta-row">
+                <svg class="meta-row__pin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M21 10c0 7-9 12-9 12s-9-5-9-12a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                <span class="he-text">דרום</span><span class="en-text">South</span>
+              </p>
+              <div class="card-metrics">
+                <div class="rating" title="3.8">
+                  <span class="rating__stars" style="--rating: 3.8" aria-hidden="true"><span class="rating__fill"></span></span>
+                  <span class="rating__value">3.8</span>
+                </div>
+                <div class="flex-meter">
+                  <div class="flex-meter__head">
+                    <span class="flex-meter__label"><span class="he-text">גמישות</span><span class="en-text">Flexibility</span></span>
+                    <span class="flex-meter__value">55</span>
+                  </div>
+                  <span class="flex-meter__track"><span class="flex-meter__fill" style="--score: 55"></span></span>
+                </div>
+              </div>
+              <div class="contractor-card__actions">
+                <a href="public-profile.html" class="btn btn--ghost btn--sm">
+                  <span class="he-text">פרופיל</span><span class="en-text">View profile</span>
+                </a>
+                <button type="button" class="btn btn--primary btn--sm js-connect">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                  <span class="he-text">התחברות</span><span class="en-text">Connect</span>
+                </button>
+              </div>
+            </li>
+
+            <!-- 5 · Connect -->
+            <li class="contractor-card">
+              <div class="contractor-card__top">
+                <span class="avatar" aria-hidden="true">רש</span>
+                <div class="contractor-card__id">
+                  <h3 class="contractor-card__name">
+                    <span class="he-text">רונית שגב</span>
+                    <span class="en-text">Ronit Segev</span>
+                  </h3>
+                  <p class="contractor-card__org">
+                    <span class="he-text">שגב מיזוג אוויר</span>
+                    <span class="en-text">Segev HVAC</span>
+                  </p>
+                </div>
+              </div>
+              <div class="tags">
+                <span class="tag"><span class="he-text">מיזוג אוויר</span><span class="en-text">HVAC</span></span>
+              </div>
+              <p class="meta-row">
+                <svg class="meta-row__pin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M21 10c0 7-9 12-9 12s-9-5-9-12a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                <span class="he-text">חיפה והקריות</span><span class="en-text">Haifa &amp; Krayot</span>
+              </p>
+              <div class="card-metrics">
+                <div class="rating" title="4.7">
+                  <span class="rating__stars" style="--rating: 4.7" aria-hidden="true"><span class="rating__fill"></span></span>
+                  <span class="rating__value">4.7</span>
+                </div>
+                <div class="flex-meter">
+                  <div class="flex-meter__head">
+                    <span class="flex-meter__label"><span class="he-text">גמישות</span><span class="en-text">Flexibility</span></span>
+                    <span class="flex-meter__value">88</span>
+                  </div>
+                  <span class="flex-meter__track"><span class="flex-meter__fill" style="--score: 88"></span></span>
+                </div>
+              </div>
+              <div class="contractor-card__actions">
+                <a href="public-profile.html" class="btn btn--ghost btn--sm">
+                  <span class="he-text">פרופיל</span><span class="en-text">View profile</span>
+                </a>
+                <button type="button" class="btn btn--primary btn--sm js-connect">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                  <span class="he-text">התחברות</span><span class="en-text">Connect</span>
+                </button>
+              </div>
+            </li>
+
+            <!-- 6 · Connect -->
+            <li class="contractor-card">
+              <div class="contractor-card__top">
+                <span class="avatar" aria-hidden="true">סע</span>
+                <div class="contractor-card__id">
+                  <h3 class="contractor-card__name">
+                    <span class="he-text">סמיר עבדאללה</span>
+                    <span class="en-text">Samir Abdallah</span>
+                  </h3>
+                  <p class="contractor-card__org">
+                    <span class="he-text">עבדאללה ריצוף וחיפוי</span>
+                    <span class="en-text">Abdallah Tiling &amp; Cladding</span>
+                  </p>
+                </div>
+              </div>
+              <div class="tags">
+                <span class="tag"><span class="he-text">ריצוף וחיפוי</span><span class="en-text">Tiling &amp; flooring</span></span>
+              </div>
+              <p class="meta-row">
+                <svg class="meta-row__pin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M21 10c0 7-9 12-9 12s-9-5-9-12a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                <span class="he-text">ירושלים והסביבה</span><span class="en-text">Jerusalem area</span>
+              </p>
+              <div class="card-metrics">
+                <div class="rating" title="4.4">
+                  <span class="rating__stars" style="--rating: 4.4" aria-hidden="true"><span class="rating__fill"></span></span>
+                  <span class="rating__value">4.4</span>
+                </div>
+                <div class="flex-meter">
+                  <div class="flex-meter__head">
+                    <span class="flex-meter__label"><span class="he-text">גמישות</span><span class="en-text">Flexibility</span></span>
+                    <span class="flex-meter__value">73</span>
+                  </div>
+                  <span class="flex-meter__track"><span class="flex-meter__fill" style="--score: 73"></span></span>
+                </div>
+              </div>
+              <div class="contractor-card__actions">
+                <a href="public-profile.html" class="btn btn--ghost btn--sm">
+                  <span class="he-text">פרופיל</span><span class="en-text">View profile</span>
+                </a>
+                <button type="button" class="btn btn--primary btn--sm js-connect">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                  <span class="he-text">התחברות</span><span class="en-text">Connect</span>
+                </button>
+              </div>
+            </li>
+
+            <!-- 7 · Connect -->
+            <li class="contractor-card">
+              <div class="contractor-card__top">
+                <span class="avatar" aria-hidden="true">נפ</span>
+                <div class="contractor-card__id">
+                  <h3 class="contractor-card__name">
+                    <span class="he-text">נועה פרידמן</span>
+                    <span class="en-text">Noa Friedman</span>
+                  </h3>
+                  <p class="contractor-card__org">
+                    <span class="he-text">פרידמן אלומיניום וזיגוג</span>
+                    <span class="en-text">Friedman Aluminum &amp; Glazing</span>
+                  </p>
+                </div>
+              </div>
+              <div class="tags">
+                <span class="tag"><span class="he-text">אלומיניום וזיגוג</span><span class="en-text">Aluminum &amp; glazing</span></span>
+              </div>
+              <p class="meta-row">
+                <svg class="meta-row__pin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M21 10c0 7-9 12-9 12s-9-5-9-12a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                <span class="he-text">השרון</span><span class="en-text">Sharon</span>
+              </p>
+              <div class="card-metrics">
+                <div class="rating" title="4.1">
+                  <span class="rating__stars" style="--rating: 4.1" aria-hidden="true"><span class="rating__fill"></span></span>
+                  <span class="rating__value">4.1</span>
+                </div>
+                <div class="flex-meter">
+                  <div class="flex-meter__head">
+                    <span class="flex-meter__label"><span class="he-text">גמישות</span><span class="en-text">Flexibility</span></span>
+                    <span class="flex-meter__value">60</span>
+                  </div>
+                  <span class="flex-meter__track"><span class="flex-meter__fill" style="--score: 60"></span></span>
+                </div>
+              </div>
+              <div class="contractor-card__actions">
+                <a href="public-profile.html" class="btn btn--ghost btn--sm">
+                  <span class="he-text">פרופיל</span><span class="en-text">View profile</span>
+                </a>
+                <button type="button" class="btn btn--primary btn--sm js-connect">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                  <span class="he-text">התחברות</span><span class="en-text">Connect</span>
+                </button>
+              </div>
+            </li>
+
+            <!-- 8 · Connect (top performer) -->
+            <li class="contractor-card">
+              <div class="contractor-card__top">
+                <span class="avatar" aria-hidden="true">אב</span>
+                <div class="contractor-card__id">
+                  <h3 class="contractor-card__name">
+                    <span class="he-text">איתי ברק</span>
+                    <span class="en-text">Itai Barak</span>
+                  </h3>
+                  <p class="contractor-card__org">
+                    <span class="he-text">ברק אספקה וחומרי בניין</span>
+                    <span class="en-text">Barak Supply &amp; Materials</span>
+                  </p>
+                </div>
+              </div>
+              <div class="tags">
+                <span class="tag"><span class="he-text">אספקה וחומרים</span><span class="en-text">Supply / materials</span></span>
+              </div>
+              <p class="meta-row">
+                <svg class="meta-row__pin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M21 10c0 7-9 12-9 12s-9-5-9-12a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                <span class="he-text">תל אביב</span><span class="en-text">Tel Aviv</span>
+              </p>
+              <div class="card-metrics">
+                <div class="rating" title="4.8">
+                  <span class="rating__stars" style="--rating: 4.8" aria-hidden="true"><span class="rating__fill"></span></span>
+                  <span class="rating__value">4.8</span>
+                </div>
+                <div class="flex-meter">
+                  <div class="flex-meter__head">
+                    <span class="flex-meter__label"><span class="he-text">גמישות</span><span class="en-text">Flexibility</span></span>
+                    <span class="flex-meter__value">94</span>
+                  </div>
+                  <span class="flex-meter__track"><span class="flex-meter__fill" style="--score: 94"></span></span>
+                </div>
+              </div>
+              <div class="contractor-card__actions">
+                <a href="public-profile.html" class="btn btn--ghost btn--sm">
+                  <span class="he-text">פרופיל</span><span class="en-text">View profile</span>
+                </a>
+                <button type="button" class="btn btn--primary btn--sm js-connect">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                  <span class="he-text">התחברות</span><span class="en-text">Connect</span>
+                </button>
+              </div>
+            </li>
+
+            <!-- 9 · Connect -->
+            <li class="contractor-card">
+              <div class="contractor-card__top">
+                <span class="avatar" aria-hidden="true">חמ</span>
+                <div class="contractor-card__id">
+                  <h3 class="contractor-card__name">
+                    <span class="he-text">ח'אלד מנסור</span>
+                    <span class="en-text">Khaled Mansour</span>
+                  </h3>
+                  <p class="contractor-card__org">
+                    <span class="he-text">מנסור עבודות עפר</span>
+                    <span class="en-text">Mansour Earthworks</span>
+                  </p>
+                </div>
+              </div>
+              <div class="tags">
+                <span class="tag"><span class="he-text">עבודות עפר</span><span class="en-text">Earthworks</span></span>
+              </div>
+              <p class="meta-row">
+                <svg class="meta-row__pin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M21 10c0 7-9 12-9 12s-9-5-9-12a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                <span class="he-text">צפון</span><span class="en-text">North</span>
+              </p>
+              <div class="card-metrics">
+                <div class="rating" title="4.0">
+                  <span class="rating__stars" style="--rating: 4.0" aria-hidden="true"><span class="rating__fill"></span></span>
+                  <span class="rating__value">4.0</span>
+                </div>
+                <div class="flex-meter">
+                  <div class="flex-meter__head">
+                    <span class="flex-meter__label"><span class="he-text">גמישות</span><span class="en-text">Flexibility</span></span>
+                    <span class="flex-meter__value">64</span>
+                  </div>
+                  <span class="flex-meter__track"><span class="flex-meter__fill" style="--score: 64"></span></span>
+                </div>
+              </div>
+              <div class="contractor-card__actions">
+                <a href="public-profile.html" class="btn btn--ghost btn--sm">
+                  <span class="he-text">פרופיל</span><span class="en-text">View profile</span>
+                </a>
+                <button type="button" class="btn btn--primary btn--sm js-connect">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                  <span class="he-text">התחברות</span><span class="en-text">Connect</span>
+                </button>
+              </div>
+            </li>
+
+          </ul>
+
+          <!-- Pagination (visual; real paging wired in React Stage 2) -->
+          <nav class="pager" aria-label="Pagination">
+            <a href="#" class="pager__arrow" aria-label="Previous page" aria-disabled="true">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
+            </a>
+            <a href="#" class="pager__page is-active" aria-current="page">1</a>
+            <a href="#" class="pager__page">2</a>
+            <a href="#" class="pager__page">3</a>
+            <a href="#" class="pager__page">4</a>
+            <span class="pager__gap" aria-hidden="true">…</span>
+            <a href="#" class="pager__page">9</a>
+            <a href="#" class="pager__arrow" aria-label="Next page">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>
+            </a>
+          </nav>
+
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <!--
+    The single bit of JavaScript on this screen (plain vanilla JS, no framework).
+    It only keeps the "minimum flexibility" slider and its number box in sync so
+    the user can drag the bar OR type a number and always see the current value.
+    Everything else (real filtering, search, pagination) is still wired up later
+    in React (Stage 2), same as the login/register stubs.
+  -->
+  <script>
+    (function () {
+      var range = document.getElementById('flexRange');
+      var num   = document.getElementById('flexNum');
+      if (!range || !num) return;
+
+      function clamp(v) {
+        v = Math.round(Number(v) || 0);
+        return Math.max(0, Math.min(100, v));
+      }
+
+      // Drag the bar → number box follows
+      range.addEventListener('input', function () { num.value = range.value; });
+      // Type a number → bar follows
+      num.addEventListener('input', function () { range.value = clamp(num.value); });
+      // Tidy the typed value when the field loses focus
+      num.addEventListener('change', function () {
+        num.value = clamp(num.value);
+        range.value = num.value;
+      });
+    })();
+  </script>
+
+</body>
+</html>
