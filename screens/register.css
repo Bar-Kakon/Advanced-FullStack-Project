@@ -66,7 +66,7 @@
 
   --r-sm:      8px;
   --r-md:      8px;
-  --panel-max: 460px; /* slightly wider than login (440) to host two-column rows */
+  --panel-max: 500px; /* widened to keep proportion with the larger, more readable type */
 }
 
 /* ─────────────────────────────────────────────
@@ -77,7 +77,7 @@ html, body { height: 100%; }
 
 body {
   font-family: var(--font-sans);
-  font-size: 15px;
+  font-size: 16px;
   line-height: 1.5;
   color: var(--text);
   background:
@@ -292,10 +292,10 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   z-index: 1;
   display: flex;
   flex-direction: column;
-  gap: 34px;
-  max-width: 410px;
+  gap: 38px;
+  max-width: 460px;
   width: 100%;
-  padding: 38px;
+  padding: 44px;
   overflow: hidden;
   border: 1px solid var(--surface-50);
   background:
@@ -303,7 +303,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
     linear-gradient(0deg, var(--surface-15) 0 1px, transparent 1px calc(100% - 1px), var(--surface-15) calc(100% - 1px)),
     linear-gradient(135deg, transparent 0 24px, var(--secondary-30) 24px 25px, transparent 25px),
     linear-gradient(180deg, var(--surface-08), rgba(255, 253, 248, 0.03)),
-    rgba(35, 56, 77, 0.18);
+    var(--secondary-15); /* warm tan glass — no navy-on-navy (lecturer: no blue on blue) */
   box-shadow:
     12px 12px 0 rgba(199, 184, 157, 0.10),
     0 30px 80px -52px rgba(31, 36, 40, 0.90);
@@ -345,30 +345,18 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 
 .brand-logo__badge {
   font-family: var(--font-mono);
-  font-size: 9.5px;
+  font-size: 12px;
   font-weight: 500;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--surface);
   background: var(--surface-08);
   border: 1px solid var(--secondary-55);
-  padding: 3px 8px;
+  padding: 4px 9px;
   border-radius: 999px;
 }
 
 /* Headline copy */
-.brand-eyebrow {
-  display: block;
-  font-family: var(--font-mono);
-  font-size: 11px;
-  font-weight: 500;
-  letter-spacing: 0.18em;
-  color: var(--secondary);
-  margin-bottom: 16px;
-  padding-inline-start: 12px;
-  border-inline-start: 3px solid var(--secondary);
-}
-
 .brand-headline {
   font-family: var(--font-serif);
   font-size: clamp(31px, 4vw, 44px);
@@ -380,7 +368,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 }
 
 .brand-sub {
-  font-size: 14.5px;
+  font-size: 19px;
   line-height: 1.62;
   margin-top: 16px;
   max-width: 38ch;
@@ -394,7 +382,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   list-style: none;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 13px;
   counter-reset: feature;
 }
 
@@ -403,14 +391,14 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   display: flex;
   align-items: center;
   gap: 12px;
-  min-height: 52px;
-  padding: 12px 14px;
-  font-size: 13.5px;
-  line-height: 1.45;
+  min-height: 64px;
+  padding: 16px 18px;
+  font-size: 18px;
+  line-height: 1.5;
   color: var(--surface-90);
   background:
     linear-gradient(90deg, var(--surface-08), rgba(255, 253, 248, 0.03)),
-    rgba(35, 56, 77, 0.16);
+    rgba(199, 184, 157, 0.18); /* tan card fill (was navy) — kills blue-on-blue, lifts off canvas */
   border: 1px solid var(--surface-15);
   border-inline-start: 4px solid var(--secondary);
   border-radius: var(--r-sm);
@@ -435,24 +423,24 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   flex-shrink: 0;
   display: inline-grid;
   place-items: center;
-  width: 24px;
-  height: 24px;
+  width: 30px;
+  height: 30px;
   font-family: var(--font-mono);
   font-size: 0;
   line-height: 1;
-  color: var(--surface);
-  background: var(--primary-45);
-  border: 1px solid var(--secondary-70);
+  color: var(--primary);            /* navy number on tan — high contrast, not blue-on-blue */
+  background: var(--secondary);     /* solid tan badge (was navy) */
+  border: 1px solid var(--secondary);
   border-radius: 50%;
 }
 .brand-feature__mark::before {
   content: counter(feature, decimal-leading-zero);
-  font-size: 9px;
+  font-size: 13px;
   font-weight: 600;
 }
 
 .brand-footer-note {
-  font-size: 12px;
+  font-size: 15px;
   line-height: 1.6;
   max-width: 38ch;
   color: var(--surface-50);
@@ -469,7 +457,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 44px 36px;
+  padding: 52px 44px;
   background:
     radial-gradient(circle at 78% 22%, rgba(255, 253, 248, 0.09) 0 10%, transparent 24%),
     linear-gradient(var(--surface-08) 1px, transparent 1px),
@@ -512,8 +500,8 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   max-width: var(--panel-max);
   display: flex;
   flex-direction: column;
-  gap: 20px;
-  padding: 32px;
+  gap: 24px;
+  padding: 38px;
   background:
     linear-gradient(135deg, transparent 0 24px, var(--surface-96) 24px),
     linear-gradient(90deg, rgba(35, 56, 77, 0.035) 1px, transparent 1px),
@@ -587,7 +575,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   text-shadow: 1px 1px 0 var(--secondary-15);
 }
 
-.form-subtitle { font-size: 14px; color: var(--text-55); }
+.form-subtitle { font-size: 17.5px; color: var(--text-55); }
 
 /* ─────────────────────────────────────────────
    Alert
@@ -598,7 +586,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   gap: 10px;
   padding: 12px 16px;
   border-radius: var(--r-sm);
-  font-size: 13.5px;
+  font-size: 15.5px;
   line-height: 1.5;
   border: 1px solid transparent;
   box-shadow: inset 5px 0 0 var(--error), 0 10px 22px -18px rgba(166, 50, 50, 0.70);
@@ -626,7 +614,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   align-items: center;
   gap: 8px;
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 14px;
   font-weight: 500;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -650,10 +638,10 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 .form-input,
 .form-select {
   width: 100%;
-  height: 50px;
+  height: 54px;
   padding: 0 16px;
   font-family: var(--font-sans);
-  font-size: 14.5px;
+  font-size: 17px;
   color: var(--text);
   background:
     linear-gradient(90deg, rgba(35, 56, 77, 0.035) 1px, transparent 1px),
@@ -734,7 +722,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 
 /* Hint line under a field (neutral helper, not an error) */
 .field-hint {
-  font-size: 12px;
+  font-size: 14.5px;
   color: var(--text-55);
   margin-top: 5px;
   line-height: 1.4;
@@ -744,7 +732,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
    :invalid/:valid pseudo-classes fire normally. */
 .field-error {
   display: none;
-  font-size: 12px;
+  font-size: 14.5px;
   color: var(--error);
   margin-top: 4px;
   padding: 8px 10px;
@@ -766,9 +754,12 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
     4px 4px 0 rgba(166, 50, 50, 0.08);
 }
 
-/* Empty required fields become red after user interaction/submission. */
-.form-input:user-invalid,
-.form-select:user-invalid {
+/* Red state ONLY for fields the user actually touched (focused then left) and
+   left empty/invalid. The `.touched` class is added on blur by register.js, so
+   reddening is per-field — never the whole form, never on initial load.
+   :not(:focus) hides the red while the user is back in the field fixing it. */
+.form-input.touched:not(:focus):invalid,
+.form-select.touched:not(:focus):invalid {
   border-color: var(--error);
   border-inline-start-color: var(--error);
   box-shadow:
@@ -777,7 +768,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
     4px 4px 0 rgba(166, 50, 50, 0.08);
 }
 
-.checkbox-input:user-invalid + .checkbox-box {
+.checkbox-input.touched:not(:focus):invalid + .checkbox-box {
   border-color: var(--error);
   box-shadow: 0 0 0 4px var(--error-bg);
 }
@@ -796,14 +787,21 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   border-color: var(--secondary);
 }
 
-/* Disable submit while a filled email OR password is still invalid.
-   :has() lets the form reach down to the button.
-   Empty fields pass through so the browser can show its own
-   "required" prompt on submit. Password-match is checked in JS
-   (Stage 2) — CSS can't compare two field values. */
-.register-form:has(.form-input[type="email"]:not(:placeholder-shown):invalid) .btn--primary,
-.register-form:has(.form-input[type="password"]:not(:placeholder-shown):invalid) .btn--primary {
-  opacity: 0.4;
+/* Disable "Create account" until every required field is filled and valid (pure CSS, no JS).
+   The bilingual trade/location fields are checked ONLY in the active language, so the hidden
+   copy of the other language can't keep the button disabled forever. */
+.register-form:has(#fullname:placeholder-shown) .btn--primary,
+.register-form:has(#email:placeholder-shown) .btn--primary,
+.register-form:has(#email:not(:placeholder-shown):invalid) .btn--primary,
+.register-form:has(#password:placeholder-shown) .btn--primary,
+.register-form:has(#password:not(:placeholder-shown):invalid) .btn--primary,
+.register-form:has(#password-confirm:placeholder-shown) .btn--primary,
+.register-form:has(.checkbox-input:not(:checked)) .btn--primary,
+#lang-he:checked ~ .auth-layout .register-form:has(.he-select option[value=""]:checked) .btn--primary,
+#lang-en:checked ~ .auth-layout .register-form:has(.en-select option[value=""]:checked) .btn--primary,
+#lang-he:checked ~ .auth-layout .register-form:has(.form-group > .he-field:placeholder-shown) .btn--primary,
+#lang-en:checked ~ .auth-layout .register-form:has(.form-group > .en-field:placeholder-shown) .btn--primary {
+  opacity: 0.45;
   pointer-events: none;
   cursor: not-allowed;
   transform: none;
@@ -843,7 +841,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   align-items: flex-start;
   gap: 11px;
   cursor: pointer;
-  font-size: 13px;
+  font-size: 16px;
   line-height: 1.5;
   color: var(--text-55);
   padding: 12px;
@@ -903,10 +901,10 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   justify-content: center;
   gap: 10px;
   position: relative;
-  height: 50px;
-  padding: 0 20px;
+  height: 54px;
+  padding: 0 22px;
   font-family: var(--font-sans);
-  font-size: 14.5px;
+  font-size: 17px;
   font-weight: 600;
   border: 1.5px solid transparent;
   border-radius: var(--r-sm);
@@ -969,7 +967,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 .divider__line { flex: 1; height: 1px; background: var(--secondary-30); }
 .divider__label {
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 13px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--text-40);
@@ -979,15 +977,15 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 /* ─────────────────────────────────────────────
    Links & footer text
    ───────────────────────────────────────────── */
-.form-link           { font-size: 13px; color: var(--text-55); transition: color 0.15s; }
+.form-link           { font-size: 15.5px; color: var(--text-55); transition: color 0.15s; }
 .form-link:hover     { color: var(--primary); }
-.form-link--small    { font-size: 12.5px; }
+.form-link--small    { font-size: 14px; }
 .form-link--strong   { font-size: inherit; font-weight: 600; color: var(--primary); }
 .form-link--strong:hover { text-decoration: underline; }
 
 .form-footer {
   text-align: center;
-  font-size: 13.5px;
+  font-size: 16px;
   color: var(--text-55);
   padding-top: 2px;
 }
@@ -998,7 +996,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   justify-content: center;
   gap: 6px;
   font-family: var(--font-mono);
-  font-size: 10.5px;
+  font-size: 13px;
   letter-spacing: 0.04em;
   color: var(--text-40);
 }

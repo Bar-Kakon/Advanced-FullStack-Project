@@ -69,10 +69,6 @@
         </div>
 
         <div class="brand-copy">
-          <span class="brand-eyebrow">
-            <span class="he-text">// יצירת חשבון</span>
-            <span class="en-text">// CREATE ACCOUNT</span>
-          </span>
           <h1 class="brand-headline">
             <span class="he-text">חשבון אחד. כל הפרויקטים שלך.</span>
             <span class="en-text">One account. Every project you run.</span>
@@ -153,7 +149,7 @@
           </span>
         </div>
 
-        <form class="register-form" action="#" method="post">
+        <form class="register-form" action="#" method="post" novalidate>
 
           <!-- Full name -->
           <div class="form-group">
@@ -230,7 +226,7 @@
                   <option value="supply">אספקה וחומרים</option>
                   <option value="other">אחר</option>
                 </select>
-                <select class="form-select en-select" id="trade-en" name="trade" aria-label="Primary trade">
+                <select class="form-select en-select" id="trade-en" name="trade" aria-label="Primary trade" required>
                   <option value="" disabled selected>Select your trade…</option>
                   <option value="general">General contracting</option>
                   <option value="electrical">Electrical</option>
@@ -284,18 +280,28 @@
 
             <!-- Location -->
             <div class="form-group">
-              <label class="form-label" for="location">
+              <label class="form-label">
                 <span class="he-text">אזור פעילות</span>
                 <span class="en-text">Location</span>
               </label>
-              <!-- No dir: follows the active UI language direction -->
+              <!-- Two language variants so the placeholder stays in the active language
+                   (placeholder is an attribute — can't be swapped with he-text/en-text spans) -->
               <input
-                class="form-input"
+                class="form-input he-field"
                 type="text"
-                id="location"
                 name="location"
                 autocomplete="address-level2"
                 placeholder="תל אביב, מרכז"
+                aria-label="אזור פעילות"
+                required
+              />
+              <input
+                class="form-input en-field"
+                type="text"
+                name="location"
+                autocomplete="address-level2"
+                placeholder="Tel Aviv, Central"
+                aria-label="Location"
                 required
               />
             </div>
@@ -457,6 +463,10 @@
     </main>
 
   </div>
+
+  <!-- Touched-state validation (progressive enhancement; no framework).
+       Source: register.ts → compiled to register.js (browsers can't run .ts directly). -->
+  <script src="register.js" defer></script>
 
 </body>
 </html>
