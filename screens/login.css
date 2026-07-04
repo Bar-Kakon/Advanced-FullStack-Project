@@ -350,7 +350,8 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 /* ─────────────────────────────────────────────
    Form fields
    ───────────────────────────────────────────── */
-.login-form  { display: flex; flex-direction: column; gap: 20px; }
+.login-form,
+.reset-form  { display: flex; flex-direction: column; gap: 20px; }
 .form-group  { display: flex; flex-direction: column; gap: 8px; }
 
 .form-label {
@@ -390,9 +391,8 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   box-shadow: 0 0 0 4px var(--primary-08);
 }
 
-/* Email validation — CSS only, no JS.
-   novalidate on the form suppresses browser tooltips;
-   :invalid/:valid pseudo-classes still fire normally. */
+/* Touched-field validation — same behavior as signup, but CSS-only.
+   :user-invalid goes red only after a field is edited/left, never on load. */
 .field-error {
   display: none;
   font-size: 12px;
@@ -401,39 +401,25 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   line-height: 1.4;
 }
 
-/* Non-empty + invalid → red border + glow */
-.form-input[type="email"]:not(:placeholder-shown):invalid {
-  border-color: var(--error);
-  box-shadow: 0 0 0 4px var(--error-bg);
-}
+/* Invalid after interaction → red field + in-field hard-hat warning */
+.form-input:user-invalid { border-color: var(--error); box-shadow: 0 0 0 4px var(--error-bg); }
+.form-input:user-invalid ~ .input-warn { display: flex; }
 
-/* Non-empty + invalid → show inline message */
-.form-input[type="email"]:not(:placeholder-shown):invalid ~ .field-error {
-  display: block;
-}
-
-/* Non-empty + valid → secondary accent confirms it */
-.form-input[type="email"]:not(:placeholder-shown):valid {
-  border-color: var(--secondary);
-}
-
-/* Disable submit when the email field has content but isn't valid yet.
-   :has() lets the parent form reach back up to control the button.
-   Empty field is allowed through so the browser can show its own
-   "required" message on submit attempt. */
-.login-form:has(.form-input[type="email"]:not(:placeholder-shown):invalid) .btn--primary {
-  opacity: 0.4;
+/* Grey the submit until email is valid AND password is filled */
+.login-form:has(.form-input:invalid) .btn--primary {
+  opacity: 0.45;
   pointer-events: none;
   cursor: not-allowed;
   transform: none;
   box-shadow: none;
 }
 
-/* Password + reveal toggle
-   Physical right/padding-right used intentionally:
-   the password field is always LTR regardless of UI language. */
+/* Trailing-edge affordances (physical right: fields are always LTR):
+   reveal toggle for password, warning icon for any invalid field.
+   Padding is reserved so the icon never shifts the layout. */
 .input-wrapper { position: relative; }
-.input-wrapper .form-input { padding-right: 46px; }
+.input-wrapper .form-input                    { padding-right: 40px; }
+.input-wrapper:has(.input-action) .form-input { padding-right: 70px; }
 
 .input-action {
   position: absolute;
@@ -448,6 +434,19 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   transition: color 0.15s;
 }
 .input-action:hover { color: var(--primary); }
+
+/* Hard-hat warning inside an invalid field; sits left of the eye toggle */
+.input-warn {
+  position: absolute;
+  top: 0;
+  right: 12px;
+  height: 48px;
+  display: none;
+  align-items: center;
+  color: var(--error);
+  pointer-events: none;
+}
+.input-wrapper:has(.input-action) .input-warn { right: 46px; }
 
 /* Eye / eye-off state swap driven by JS class */
 .icon-eye-off                          { display: none; }
@@ -520,6 +519,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 .form-link           { font-size: 13px; color: var(--text-55); transition: color 0.15s; }
 .form-link:hover     { color: var(--primary); }
 .form-link--small    { font-size: 12.5px; }
+.forgot-link         { align-self: flex-end; margin-top: 2px; } /* beneath the password field */
 .form-link--strong   { font-size: inherit; font-weight: 600; color: var(--primary); }
 .form-link--strong:hover { text-decoration: underline; }
 
@@ -609,3 +609,90 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   --font-sans:  'Inter', system-ui, -apple-system, sans-serif;
   --font-serif: 'Fraunces', 'Georgia', serif;
 }
+
+/* ─────────────────────────────────────────────
+   Password-reset flow — forgot-password + reset-password
+   CSS-only stepper; backend wiring in Stage 2
+   ───────────────────────────────────────────── */
+
+/* Hidden step radios (same recipe as .lang-radio) */
+.step-radio {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+}
+
+/* Checked radio reveals its matching step */
+.auth-step { display: none; flex-direction: column; gap: 22px; }
+
+#fp-step-1:checked ~ .auth-step--1,
+#fp-step-2:checked ~ .auth-step--2,
+#rp-step-1:checked ~ .auth-step--1,
+#rp-step-2:checked ~ .auth-step--2 { display: flex; }
+
+/* Confirmation / success steps are centered */
+.auth-step--center              { align-items: center; text-align: center; }
+.auth-step--center .form-header { align-items: center; }
+
+/* Dim the advance label while the gating field is invalid */
+.auth-step:has(.form-input[type="email"]:not(:placeholder-shown):invalid) .btn--advance,
+.auth-step:has(#new-password:not(:placeholder-shown):invalid) .btn--advance {
+  opacity: 0.4;
+  pointer-events: none;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Back-to-sign-in link; chevron points to the reading start */
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: max-content;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-55);
+  transition: color 0.15s;
+}
+.back-link:hover { color: var(--primary); }
+.back-link__chev { flex-shrink: 0; transform: scaleX(-1); } /* RTL: point right */
+#lang-en:checked ~ .auth-layout .back-link__chev { transform: none; }
+
+/* Status badge — envelope (sent) / check (done) */
+.status-badge {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--primary);
+  background: var(--secondary-15);
+  border: 1.5px solid var(--secondary-30);
+}
+.status-badge--solid {
+  color: var(--surface);
+  background: var(--primary);
+  border-color: var(--primary);
+  box-shadow: 0 10px 24px -10px var(--primary-20);
+}
+
+/* Neutral field helper (e.g. password rules) */
+.form-hint {
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--text-55);
+  margin-top: 5px;
+}
+
+/* Inline field error appears after a field is touched-invalid (forgot/reset screens) */
+.form-group:has(.form-input:user-invalid) .field-error { display: block; }
+

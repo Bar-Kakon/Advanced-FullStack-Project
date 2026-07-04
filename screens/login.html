@@ -153,43 +153,45 @@
           </span>
         </div>
 
-        <form class="login-form" action="#" method="post">
+        <!-- novalidate: no native popups; :user-invalid still drives the CSS -->
+        <form class="login-form" action="#" method="post" novalidate>
 
           <div class="form-group">
             <label class="form-label" for="email">
               <span class="he-text">כתובת אימייל</span>
               <span class="en-text">Email address</span>
             </label>
-            <!-- dir="ltr" kept: email addresses are always left-to-right -->
-            <input
-              class="form-input"
-              type="email"
-              id="email"
-              name="email"
-              dir="ltr"
-              placeholder="you@example.com"
-              autocomplete="email"
-              pattern="[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}"
-              required
-            />
-            <!-- Shown by CSS when input is non-empty and fails type="email" validation -->
-            <p class="field-error" aria-live="polite">
-              <span class="he-text">יש להזין כתובת אימייל תקינה</span>
-              <span class="en-text">Please enter a valid email address</span>
-            </p>
+            <div class="input-wrapper">
+              <!-- dir="ltr": emails are always LTR -->
+              <input
+                class="form-input"
+                type="email"
+                id="email"
+                name="email"
+                dir="ltr"
+                placeholder="you@example.com"
+                autocomplete="email"
+                pattern="[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}"
+                required
+              />
+              <!-- Hard-hat warning; CSS shows it only when the field is :user-invalid -->
+              <span class="input-warn" aria-hidden="true">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                     stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M2.5 18h19"/>
+                  <path d="M5 18v-2.5a7 7 0 0 1 14 0V18"/>
+                  <line x1="12" y1="9" x2="12" y2="12.7"/>
+                  <circle cx="12" cy="15.4" r="0.5" fill="currentColor"/>
+                </svg>
+              </span>
+            </div>
           </div>
 
           <div class="form-group">
-            <div class="form-label-row">
-              <label class="form-label" for="password">
-                <span class="he-text">סיסמה</span>
-                <span class="en-text">Password</span>
-              </label>
-              <a href="forgot-password.html" class="form-link form-link--small">
-                <span class="he-text">שכחת סיסמה?</span>
-                <span class="en-text">Forgot password?</span>
-              </a>
-            </div>
+            <label class="form-label" for="password">
+              <span class="he-text">סיסמה</span>
+              <span class="en-text">Password</span>
+            </label>
             <div class="input-wrapper">
               <!-- dir="ltr" kept: passwords are always left-to-right -->
               <input
@@ -202,6 +204,16 @@
                 autocomplete="current-password"
                 required
               />
+              <!-- Hard-hat warning; CSS shows it only when the field is :user-invalid -->
+              <span class="input-warn" aria-hidden="true">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                     stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M2.5 18h19"/>
+                  <path d="M5 18v-2.5a7 7 0 0 1 14 0V18"/>
+                  <line x1="12" y1="9" x2="12" y2="12.7"/>
+                  <circle cx="12" cy="15.4" r="0.5" fill="currentColor"/>
+                </svg>
+              </span>
               <!-- Eye toggle: wired with JS in Stage 2 -->
               <button type="button" class="input-action" aria-label="Toggle password visibility" aria-pressed="false">
                 <svg class="icon-eye" width="18" height="18" viewBox="0 0 24 24" fill="none"
@@ -217,6 +229,11 @@
                 </svg>
               </button>
             </div>
+            <!-- Forgot-password link sits beneath the field -->
+            <a href="forgot-password.html" class="form-link form-link--small forgot-link">
+              <span class="he-text">שכחת סיסמה?</span>
+              <span class="en-text">Forgot password?</span>
+            </a>
           </div>
 
           <button type="submit" class="btn btn--primary btn--full">
@@ -271,5 +288,7 @@
 
   </div>
 
+  <!-- Persists the language choice across screens -->
+  <script src="lang.js"></script>
 </body>
 </html>
