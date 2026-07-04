@@ -6,3 +6,6 @@ dist/
 build/
 .claude/settings.local.json
 Approved list of screens.rtf
+
+# Compiled TypeScript output — source of truth is the .ts
+screens/*.js
