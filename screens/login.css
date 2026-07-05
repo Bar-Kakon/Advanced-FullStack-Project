@@ -391,8 +391,9 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   box-shadow: 0 0 0 4px var(--primary-08);
 }
 
-/* Touched-field validation — same behavior as signup, but CSS-only.
-   :user-invalid goes red only after a field is edited/left, never on load. */
+/* Touched-field validation — same behavior as signup.
+   validation.ts adds .touched on blur; red shows only after leaving an
+   invalid field (empty required included), never on load or while editing. */
 .field-error {
   display: none;
   font-size: 12px;
@@ -401,9 +402,9 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   line-height: 1.4;
 }
 
-/* Invalid after interaction → red field + in-field hard-hat warning */
-.form-input:user-invalid { border-color: var(--error); box-shadow: 0 0 0 4px var(--error-bg); }
-.form-input:user-invalid ~ .input-warn { display: flex; }
+/* Touched + left + invalid → red field + in-field hard-hat warning */
+.form-input.touched:not(:focus):invalid { border-color: var(--error); box-shadow: 0 0 0 4px var(--error-bg); }
+.form-input.touched:not(:focus):invalid ~ .input-warn { display: flex; }
 
 /* Grey the submit until email is valid AND password is filled */
 .login-form:has(.form-input:invalid) .btn--primary {
@@ -694,5 +695,5 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 }
 
 /* Inline field error appears after a field is touched-invalid (forgot/reset screens) */
-.form-group:has(.form-input:user-invalid) .field-error { display: block; }
+.form-group:has(.form-input.touched:not(:focus):invalid) .field-error { display: block; }
 
