@@ -6,7 +6,11 @@
 > Update it **as we go** — before or right after a change, never "later."
 >
 > Codename: _TBD_ · Owner: _(you)_ · Stack: React (Vite) · Node/Express · MongoDB/Mongoose · JWT · Multer
-> Last updated: **2026-06-28**
+> Last updated: **2026-08-01**
+>
+> **Companion document:** the full database design lives in [`docs/database-design.html`](docs/database-design.html)
+> — an interactive entity map, per-collection schemas, and the reasoning behind every modelling choice.
+> This MD stays the source of truth for *decisions*; that file is the source of truth for the *schema*.
 
 ---
 
@@ -24,16 +28,26 @@
 
 Use `[ ]` / `[x]` checkboxes inside task lists.
 
-**Two golden rules:**
+**Three golden rules:**
 
 1. **Every change** to the project (code, structure, or scope) gets a one-line entry in the
    [Decision Log](#11-decision-log) with the *reason*. Future-you needs to know *why*, not just *what*.
 2. **Every bug or problem solved** gets an entry in the [Bug & Issue Log](#10-bug--issue-log),
    so we never debug the same thing twice.
+3. **Every change that touches the data model updates
+   [`docs/database-design.html`](docs/database-design.html) in the same sitting** — a new collection,
+   a new or renamed field, a changed relationship, an added index, a resolved open decision, or a new
+   privacy/visibility rule. That file is a teaching document *and* the schema reference; a stale one is
+   worse than none, because it will be trusted. It is data-driven: the whole page renders from the
+   `COLLECTIONS` array (plus `FLOWS`, `TASK_FIELDS`, `OPEN_DECISIONS`…) near the top of its single
+   `<script>` block, so an update usually means editing one object, not touching any markup.
 
 **Definition of "Done":** it works, it's tested, and it didn't break existing behavior or drift
-the design. Anything touching **visibility/privacy** also gets an explicit *"who must NOT see this?"*
-check before it's marked Done.
+the design. Two extra gates:
+
+- Anything touching **visibility/privacy** gets an explicit *"who must NOT see this?"* check.
+- Anything with a **UI** is checked in **both languages and both directions** — Hebrew RTL *and*
+  English LTR — before it's marked Done. A screen that only works in one direction is not Done. See [§3.4](#34-bilingual--bidirectional-ui-hebrew-rtl-default--english-ltr).
 
 ---
 
@@ -63,6 +77,11 @@ instead of over the phone. Everything is logged.
   contractor actually behaves on reschedules (accept / reject / counter) — not self-reported.
 - **Connection-gated messaging.** LinkedIn-style: request a connection → they accept → then you can
   message. Stops the platform becoming a supplier sales-spam channel.
+- **Hebrew-first and genuinely bilingual.** The people using this are on Israeli job sites, so Hebrew
+  (**RTL**) is the default language *and* the default reading direction, with English (**LTR**) as a
+  complete second language rather than a fallback. This is a product requirement, not polish: a
+  subcontractor who can't comfortably read the screen won't use the platform, and the whole value
+  depends on *every* party being in the system. Full rules in [§3.4](#34-bilingual--bidirectional-ui-hebrew-rtl-default--english-ltr).
 
 **Deliberate non-goals** (these protect the trust model — don't "helpfully" add them later):
 
@@ -84,6 +103,7 @@ actions on top of the coordination layer.
 | Database | MongoDB + Mongoose |
 | Auth | JWT, bcrypt |
 | File upload | Multer (storage approach is an [open decision](#7-open-decisions)) |
+| Localization | Hebrew (**RTL**, default) + English (**LTR**) — mechanism under React is [D10](#7-open-decisions) |
 | Deployment | Client → Vercel (or Netlify); Server → Heroku |
 
 ---
@@ -139,24 +159,34 @@ project-root/
 └── PROJECT.md               # this file
 ```
 
-### 3.2 Data model (provisional entity list — schemas designed per stage)
+### 3.2 Data model (entity index — full design in the companion HTML)
 
-> Entities and their *purpose* only. Relationships (embed vs. reference) and fields are **TBD** and
-> get decided when we build the stage that needs them.
+> **This table is the index; the design lives in [`docs/database-design.html`](docs/database-design.html).**
+> That file holds every field, every index, the Mongoose schema, a sample document, and the *reason* for
+> each embed-vs-reference call — plus an interactive entity map, a serializer/visibility simulator, and
+> step-by-step flows. The design is still confirmed stage by stage as we build (we do not pre-optimise),
+> but it is no longer "TBD": it is a worked model with its assumptions written down and its remaining
+> [open decisions](#7-open-decisions) mapped to the exact fields they would change.
+>
+> Golden rule 3 applies: **change the model, change that file in the same sitting.**
 
-| Entity | Purpose | Notes |
+| Collection | Purpose | Notes |
 |---|---|---|
-| `User` | Account + identity (specialties, location, bio, avatar), ratings, flexibility score, global `isAdmin` flag | The **only** global role is `admin` |
-| `Connection` | The request → accept graph between users | Gates messaging |
-| `Project` | Container for tasks; has an owner | |
-| `Membership` | A `user × project` link holding the **per-project role** | Role lives here, *not* on the user |
-| `Task` | Project task or standalone job; binary status; dependencies; assignee | DAG via dependency refs. `assignee` is GC-visible (= delegator); a separate `delegate` field is visible only delegator-and-down — see §3.3 |
-| `WorkPlan`/file | Versioned uploaded files (PDF/images) | Storage approach TBD (open decision) |
-| `RescheduleProposal` | The negotiation object; carries the proposal state machine | Semantics TBD (open decision) |
-| `Thread`/`Message` | Direct (connection-gated), project, and GC-moderated conversations | |
-| `Notification` | Invitations, schedule changes, approvals/counters, etc. | Delivery method TBD |
-| `Report` | User-filed reports for admin review | Admin module (late stage) |
-| `Rule` | Personal automation rules | **Stretch only** |
+| `users` | Account + identity (specialties, location, bio, avatar), computed rating + flexibility, global `isAdmin` flag | The **only** global role is `admin`. Secrets carry `select: false`. Holds `language` (`he`/`en`) — see [§3.4](#34-bilingual--bidirectional-ui-hebrew-rtl-default--english-ltr) |
+| `connections` | The request → accept graph between users | Gates messaging. Junction with a sorted `pair` + unique index = one edge per pair in either direction |
+| `ratings` | One peer score per shared **completed** task | Gate enforced by a unique index; feeds `users.ratingSummary` |
+| `projects` | Container for tasks; has an owner | Deliberately thin — members and tasks live in their own collections |
+| `memberships` | A `user × project` link holding the **per-project role** | Role lives here, *not* on the user. Also the write-side authorisation table |
+| `tasks` | Project task **or** standalone job (`project: null`); binary status; dependencies; assignee | DAG via `dependencies` + a multikey index (the cascade's core query). `assignee` is GC-visible (= delegator); `delegate` and the whole private layer are delegator-and-down only — see §3.3 |
+| `fileassets` | Versioned uploaded files (PDF/images), GridFS-backed | 16 MB document cap makes inline bytes impossible for 30 MB uploads → D1. `visibility: private` = delegation-private upload |
+| `rescheduleproposals` | The negotiation object; carries the proposal state machine | Embedded `items[]` = one atomic document, so concurrent responses cannot interleave. Semantics still D2 |
+| `auditentries` | Append-only history of what changed and who changed it | `actor` is **always the delegator**, never the delegate. Snapshots the actor name so history survives soft-delete → D8 |
+| `threads` | Direct (connection-gated), project, and GC-moderated conversations | Denormalised `lastMessageAt`/preview so the inbox is one query |
+| `messages` | One document per message; attachments; agreement form → auto-task | The canonical never-embed case (unbounded + 16 MB cap) |
+| `notifications` | Invitations, schedule changes, approvals/counters, etc. | Self-contained `payload` snapshot → no joins at render. Delivery method is D3 (no schema impact) |
+| `mutes` | Contractor / project / conversation mutes | One collection, not three arrays, so Settings can list them all in one query |
+| `reports` | User-filed reports for admin review | Snapshots the reported content — evidence must outlive it. Admin module (late stage) |
+| `rules` | Personal automation rules | **Stretch only** — deliberately referenced by nothing else, so it can be cut without a migration |
 
 ### 3.3 Delegation visibility model (depth = 1)
 
@@ -206,6 +236,76 @@ project-root/
 **Note for the still-open D6 (flexibility formula):** D7 means a contractor accrues reschedule behaviour in
 *two* roles — as a delegator negotiating up toward a GC, and as a delegate negotiating toward a delegator.
 Whether those roll into one score or stay contextual is part of D6, now with this wrinkle attached.
+
+### 3.4 Bilingual & bidirectional UI (Hebrew RTL default · English LTR)
+
+> **A product requirement, not a feature.** Every screen, every label, every error, every notification
+> exists in **both** Hebrew and English. Hebrew is the default. This is cross-cutting: it is not a row in
+> the roadmap that can be cut, it is a constraint on every row.
+
+**Two axes that must not be confused.** *Language* is which strings appear; *direction* is which way the
+layout flows. They happen to move together here, but they are handled by different mechanisms — swapping
+strings does not mirror a layout, and mirroring a layout does not translate anything.
+
+| | Hebrew (default) | English |
+|---|---|---|
+| `lang` | `he` | `en` |
+| `dir` | `rtl` | `ltr` |
+| Sans | Heebo | Inter |
+| Serif | Frank Ruhl Libre | Fraunces |
+| Mono | IBM Plex Mono (both) | IBM Plex Mono (both) |
+
+**Rules for every screen from here on:**
+
+1. **Direction lives on `<html>` and nowhere else.** `<html lang="he" dir="rtl">` ⇄ `<html lang="en" dir="ltr">`.
+   Everything below inherits. *Current debt:* the static prototypes hard-code `<html lang="he">` and flip
+   `direction: ltr` on individual containers instead — so a screen reader announces the English text as
+   Hebrew. Tracked in [§8](#8-known-issues--risks); it resolves in the React migration.
+2. **Logical CSS properties only — never `left`/`right`.** Use `margin-inline-start`, `padding-inline-end`,
+   `inset-inline-start`, `border-inline-start`, `text-align: start` / `end`. A layout built from logical
+   properties mirrors itself for free. A single hard-coded `left` is a bug that is invisible in one
+   language and obvious in the other.
+3. **Mirror what is directional; leave everything else alone.** Mirror: arrows, chevrons, back/next
+   buttons, progress-bar fill, the timeline and the dependency-DAG flow direction. Do **not** mirror:
+   logos, avatars, photos, the hard-hat warning icon, clocks, phone numbers, or media controls.
+4. **`dir="auto"` on every field that renders user-generated content.** A bio, a task title, a project
+   name, a message body — these are in whatever language the person typed, which is **not** necessarily
+   the UI language. A Hebrew message inside an English UI renders with its punctuation in the wrong place
+   unless the browser is allowed to decide per string.
+5. **Isolate mixed-direction runs.** Hebrew text containing Latin digits, a model number or a brand name
+   is bidirectional *within a single string*. Wrap the embedded run in `<bdi>` (or `unicode-bidi: isolate`)
+   so the surrounding text can't reorder it. Format dates and numbers with `Intl.DateTimeFormat` /
+   `Intl.NumberFormat`, never by concatenating strings.
+6. **Both languages are checked before anything is Done** — see the definition of Done above.
+
+**Data-model consequences.** Bilingualism is not only a UI concern; it constrains what may be *stored*.
+All of this is reflected in [`docs/database-design.html`](docs/database-design.html):
+
+- **`users.language`** (`'he' | 'en'`, default `'he'`). `localStorage` is per-device — a contractor who
+  switches to English on the site-office desktop should not be back in Hebrew on their phone. localStorage
+  stays as the pre-login default only.
+- **Enums are stored as language-neutral codes.** Trades, regions, roles, statuses, notification types and
+  audit actions are stable ASCII keys (`'concrete'`, `'gc'`, `'not_started'`) translated at render time.
+  Storing the Hebrew label would make the English UI impossible *and* would invalidate every index the
+  first time a translation is corrected.
+- **Nothing user-visible is stored pre-rendered.** `notifications.payload` holds the *parts*
+  (`taskTitle`, `proposerName`, dates) and the client composes the sentence from `type`. Otherwise a
+  notification created in Hebrew stays Hebrew forever, including after the user switches to English.
+  Same reasoning for `auditentries`: an `action` enum plus a `changes` diff, composed client-side.
+- **The API returns error *codes*, not error *messages*.** `{ error: 'INVALID_CREDENTIALS' }`, translated
+  by the client. Otherwise the unified login error only exists in one language.
+- **Sorting Hebrew needs a collation.** MongoDB sorts byte-wise by default, which is not alphabetical for
+  Hebrew. Sorting contractors by name uses a MongoDB collation (`{ locale: 'he' }`) or `Intl.Collator`
+  client-side. Rating and flexibility sort numerically and are unaffected.
+
+**Migration path — the current approach does not scale.** The static prototypes duplicate every string as
+`.he-text` / `.en-text` and swap them with a hidden-radio CSS toggle, because that is the only way to do it
+with no JavaScript. The cost is already visible on the register screen: the DOM carries every string twice,
+the trade `<select>` had to be duplicated wholesale (option text can't use the span trick), and the form
+needs `novalidate` because the hidden inactive-language inputs would otherwise block submit. Across 36
+screens this is unmaintainable. **Under React it becomes one set of components plus a translation resource
+file**, with the active language in Context and `dir` set on `<html>`; the duplicate-markup pattern is
+dropped entirely. Exactly how is [D10](#7-open-decisions).
 
 ---
 
@@ -263,6 +363,8 @@ _Later stages live in the [Roadmap](#4-roadmap-stages); we'll expand the next on
 
 | Feature | Stage | Status | Notes |
 |---|---|---|---|
+| **Bilingual UI (Hebrew RTL default / English LTR)** | **all** | In progress | **Cross-cutting — constrains every row below, and cannot be cut.** Static screens use `.he-text`/`.en-text` duplication + a CSS-only toggle; becomes a React resource file + Context (D10). Every new screen ships bilingual and is checked in both directions. See [§3.4](#34-bilingual--bidirectional-ui-hebrew-rtl-default--english-ltr) |
+| Language preference saved to the account | 2 | Planned | `users.language`; `localStorage` (`screens/lang.ts`) stays the pre-login default only |
 | Landing | 1–2 | Planned | Not started yet; will stay plain HTML/CSS before React migration |
 | Register | 1–2 | In progress | Register screen HTML/CSS is actively being refined as a luxury blueprint-board prototype (`screens/register.html` + `screens/register.css`) |
 | Login | 1–2 | In progress | Login screen HTML/CSS exists (`screens/login.html` + `screens/login.css`), but its CSS still needs to be updated to match the newer register-screen visual direction |
@@ -311,6 +413,7 @@ _Later stages live in the [Roadmap](#4-roadmap-stages); we'll expand the next on
 | D7 | **Delegation depth** | ✅ **CLOSED (2026-06-02): single-level only, no re-delegation.** A delegate cannot delegate onward; if the first delegate can't do it, the original assignee picks a different one. Visibility stops one hop in each direction (GC sees delegator; delegator sees delegate; delegate sees delegator but **not** the GC). Full model + derived constraints in **[§3.3](#33-delegation-visibility-model-depth--1)**. | — | **Closed** |
 | D8 | **User removal semantics** | Deactivate vs. delete: what happens to the user's projects, tasks, connections, messages, and audit-log entries. You can't hard-delete someone referenced in other people's audit history without breaking it → likely forces soft-delete. | Stage 2 (settings) | Open |
 | D9 | **Messaging gate scope** | Gated by *connection only*, or *connection OR shared project*? And what happens to an existing thread on disconnect / block / mute? | Stage 6 | Open |
+| D10 | **i18n mechanism under React** | Hand-rolled — a `LanguageContext` plus `strings.he.json` / `strings.en.json` (no dependency, full control, but ~36 screens of keys maintained by hand and pluralisation written from scratch) **vs.** a library such as `react-i18next` (interpolation, pluralisation, lazy namespaces — at the cost of a dependency and a learning curve). Open sub-questions: does the URL carry the locale (`/he/projects`) or is it invisible state? Which language do **server-side** artifacts use — password-reset emails, notification digests — the stored `users.language`, or the request's `Accept-Language`? And does the Hebrew/English toggle stay in the navbar on every screen, or move into Settings once the preference is saved to the account? | Stage 2 | Open |
 
 ---
 
@@ -325,11 +428,14 @@ _Later stages live in the [Roadmap](#4-roadmap-stages); we'll expand the next on
   server through one viewer-aware serializer; add explicit *"GC must NOT see X"* tests. This privacy/
   authorization suite is the one place automated tests genuinely earn their keep — most other testing
   can be manual.
-- **Authorization is a separate concern from the serializer (and is currently missing from this doc).**
-  The serializer governs what a user can *see* (read side). It says nothing about what a user is allowed
-  to *do* (write side): reschedule this task, invite to this project, delegate this work. That check
-  ("can this user perform this action on this resource?") must also be centralized, or it ends up
-  scattered and inconsistent across controllers. (Tracked further in D-decisions where relevant.)
+- **Authorization is a separate concern from the serializer.** The serializer governs what a user can
+  *see* (read side). It says nothing about what a user is allowed to *do* (write side): reschedule this
+  task, invite to this project, delegate this work. That check ("can this user perform this action on
+  this resource?") must also be centralized, or it ends up scattered and inconsistent across controllers.
+  **Where it lives is now decided:** the `memberships` collection is the authorization table — one helper
+  resolves `(user, project) → role | null` and every controller asks it the same question. See
+  [`docs/database-design.html`](docs/database-design.html) → Collections → `memberships`. The two checks
+  must stay distinct: a project member is *authorized* to read a task and still must not *see* its delegate.
 - **DAG cycles.** Creating dependency edge X→Y must be rejected if Y is already an ancestor of X, or the
   cascade loops forever. Cycle prevention ships with the dependency picker (Stage 3).
 - **Cascade complexity creep.** Start with naive delta-propagation (shift dependents by the same amount).
@@ -346,6 +452,19 @@ _Later stages live in the [Roadmap](#4-roadmap-stages); we'll expand the next on
 - **Admin suite is a second app.** Orthogonal to core value and not in the syllabus — build last, trim first.
 - **Date / timezone handling.** The whole app is dates and "X days late" math — a classic bug source.
   Standardize early: store dates in UTC and use a date library rather than hand-rolling arithmetic.
+- **RTL/LTR is a tax on every screen, and it fails silently.** A hard-coded `left` or `right` in CSS is a
+  bug that looks perfect in one language and broken in the other, so it survives review easily. Mirroring
+  mistakes are worse than missing translations — a back arrow pointing the wrong way reads as *broken*,
+  not as *untranslated*. Second half of the problem is **text length**: English strings are usually longer
+  than their Hebrew equivalents, so a layout tuned until it just fits in Hebrew will overflow in English
+  (buttons, table headers, and the navbar are the usual casualties). Mitigations: logical properties only,
+  no fixed widths on anything containing text, and the both-directions check is part of the definition of
+  Done. Full rules in [§3.4](#34-bilingual--bidirectional-ui-hebrew-rtl-default--english-ltr).
+- **The current bilingual mechanism is known debt, not a pattern to copy.** Duplicating every string as
+  `.he-text`/`.en-text` was the right call for JS-free static prototypes and is the wrong call for 36 React
+  screens. It also leaves a real accessibility bug today: `<html lang="he">` is hard-coded, so English text
+  is announced by screen readers with Hebrew pronunciation. Do not extend the pattern to new screens beyond
+  the ones already built — resolve it in the React migration (D10).
 - **Demo seed data is a deliverable risk.** The Live Demo is graded, and a multi-party coordination
   platform is useless to demo from one empty account. You need a seed script (several users, a project
   with dependencies, a pending reschedule, a delegation). Build it incrementally as features land — not
@@ -413,6 +532,8 @@ into a proper section or the logs below._
 >
 > **Format:** `[YYYY-MM-DD] What changed — why.`
 
+- `[2026-08-01]` **Bilingual Hebrew/English + RTL/LTR promoted from an implementation detail to a documented product requirement** (new **§3.4**, plus edits across §1, §2, §3.2, §6, §7, §8 and the definition of Done) — bilingualism was real in the code since the first register screen but existed in this document *only* as passing mentions inside decision-log entries, and RTL was named exactly once (in the flexibility-slider note). Nothing stated that every screen must ship in both languages, and nothing captured the direction rules — so each new screen was re-deriving them. Now recorded: **Hebrew RTL is the default, English LTR is a complete second language, and the requirement is cross-cutting** (a constraint on every roadmap row, not a row that can be cut). Key content: language and direction are separate concerns handled by different mechanisms; `dir` belongs on `<html>` alone; **logical CSS properties only** (`margin-inline-start`, `text-align: start`) because a hard-coded `left` is a bug that is invisible in one language; an explicit mirror / do-not-mirror list; `dir="auto"` on user-generated content, since a contractor's bio is in whatever language they typed, not the UI language; and `<bdi>` isolation for Latin digits inside Hebrew strings. Added a **both-languages-and-both-directions check to the definition of Done** — that is the part that actually prevents drift. Also logged two pieces of **known debt** in §8: `<html lang="he">` is hard-coded so screen readers announce English text as Hebrew, and the `.he-text`/`.en-text` duplication (right for JS-free prototypes, wrong for 36 React screens — it doubles the DOM, forced the trade `<select>` to be duplicated wholesale, and is why the register form needs `novalidate`). Parked the React mechanism as new **D10** (hand-rolled Context + resource files vs. `react-i18next`; whether the URL carries the locale; which language server-side emails use). **Data-model consequences also written down and reflected in `docs/database-design.html` per golden rule 3:** new `users.language` (localStorage is per-device, so a saved preference belongs on the account); enums stay **language-neutral codes** translated at render, never stored Hebrew labels — storing the label would make the English UI impossible and would break every index the first time a translation is corrected; `notifications.payload` and `auditentries.changes` stay **structured, never pre-rendered sentences**, or a notification written in Hebrew stays Hebrew after the user switches; the API returns error **codes** rather than messages; and sorting contractors by Hebrew name needs a MongoDB **collation** (`{ locale: 'he' }`), because the default sort is byte-wise and not alphabetical for Hebrew.
+- `[2026-07-29]` **Full database design built as an interactive HTML companion document** (`docs/database-design.html`, new `docs/` folder) — the data model was the largest remaining "TBD" in this file, and §3.2 had only a ten-row purpose table while §3.3 described a privacy model that no schema existed to enforce. Designing it now (rather than per stage, as originally planned) was worth breaking that rule for one reason: the delegation privacy model in §3.3 is a **field-layout** problem, and discovering at Stage 5 that the field layout cannot express it would mean rewriting `tasks` and every endpoint that touches it. **15 collections, 35 relationships, 166 fields, 40 indexes** — each with the Mongoose schema, a realistic sample document, and the reasoning behind every embed-vs-reference call. Chose **one self-contained HTML file over adding sections to this MD** because the valuable parts are things prose cannot do: an entity map you click to isolate one collection's edges, a **serializer simulator** that renders the same task document as the GC / delegator / delegate / other member / outsider see it (§3.3 made executable, and the fastest way to catch a leak in the design before writing code), and six steppable flows that name the exact collections read and written at each step. Everything renders from a `COLLECTIONS` data array so updates mean editing one object, not the markup — recorded as **golden rule 3** at the top of this file, per the standing "update the doc as we go" rule. Three sub-decisions worth flagging: **(a)** the file carries **inline vanilla JS**, not TypeScript with a build step — a documented exception to the register/login-branch rule, because a project *document* must open by double-clicking with no toolchain, and a build artifact that is gitignored would make the doc unopenable from a fresh clone. **(b)** It takes a position on two open decisions without closing them: **D5** → one polymorphic `tasks` collection with a nullable `project` (splitting jobs from tasks would duplicate ~80% of the fields and force "My Tasks" to query two collections and sort in memory), and **D1** → GridFS (the 16 MB document cap makes a 30 MB inline Buffer not merely bad practice but impossible). Both stay **Open** here; the HTML labels them as working assumptions and maps each remaining decision to the exact fields it would change. **(c)** Two things the design surfaced that were not previously written down: `rescheduleproposals` needs an **`expiresAt`** — "one round" is meaningless without a clock, and without it one unresponsive sub freezes the schedule forever — and `items[].respondent` must be **copied from `task.assignee` at proposal time**, so reassigning a task mid-negotiation cannot silently move somebody else's vote. Uses only the approved palette (no new colors, no blue-on-blue).
 - `[2026-07-05]` **Login validation: switched from `:user-invalid` to a JS `touched` marker (`screens/validation.ts`)** (on `feature/login-screen`) — `:user-invalid` only activates after a field's value is *changed*, so focusing an empty required field and tabbing out **without typing** left it un-flagged — the red border + hard-hat never appeared (owner-reported). Matched the signup approach instead: new `validation.ts` (compiled `validation.js`) adds a `.touched` class on `blur`, and the CSS now keys off `.form-input.touched:not(:focus):invalid` — red is hidden on load and while editing, shown once an invalid field is left (empty required now included). The `:has(.form-input:invalid)` button-disable gate is unchanged. Wired into login, forgot-password, and reset-password (unifies the touched model across all auth screens; the forgot/reset inline `.field-error` trigger updated to match). This means the earlier same-day "zero JS / CSS-only" login-validation note below no longer holds — the empty-field case forced a small JS marker (second TS file on the login branch; compiled `.js` stays gitignored).
 - `[2026-07-05]` **Login/reset polish: forgot-password link relocated, prototype link removed, language choice now persists across screens** (on `feature/login-screen`) — three fixes from review: **(a)** moved the "Forgot password?" link out of the password label row to **beneath the password field** (`.forgot-link`, aligned to the row end) — it was there before but easy to miss opposite the label. **(b)** Removed the prototype-only "preview the reset screen" link from the forgot-password "check your inbox" step; in production the reset screen is reached only from the emailed link, so surfacing it in the UI was misleading (`reset-password.html` stays reachable by URL, exactly as the email link would open it). **(c)** **Language now persists across screens** via `screens/lang.ts` (compiled to `lang.js`): the CSS-only Hebrew/English toggle can't carry state across page loads, so a tiny script stores the choice in `localStorage` and re-applies it on load (Hebrew stays the default). Authored in **TypeScript, not hand-written JS** (owner rule); `.ts` is the tracked source and compiled `screens/*.js` is now gitignored as a build artifact — matching the register-screen decision, and the **first TS on the login branch**. Wired into login, forgot-password, and reset-password.
 - `[2026-07-05]` **Login validation reworked to match the signup flow — still CSS-only** (on `feature/login-screen`) — replaced the email-only `:not(:placeholder-shown)` checks with the modern **`:user-invalid`** pseudo-class, so a field goes red **only after it's edited/left** (touched), never on load. This reproduces the register screen's TypeScript "touched" behavior with **zero JS** — register needed JS only because it duplicates inputs per language; login has single inputs, so pure CSS suffices and it stays within the HTML/CSS-only line. Rules: email must be a valid format; password only needs to be **non-empty** (no strength check). The **Sign in** button stays greyed/disabled via a `.login-form:has(.form-input:invalid)` gate until both are valid, then enables. Dropped the inline email error text (it shifted layout) for an **in-field warning icon** — a construction **hard-hat with an exclamation mark** (`--error` red), revealed by `.form-input:user-invalid ~ .input-warn`; on the password field it sits left of the reveal eye, with input padding reserved so nothing reflows. Form carries `novalidate` (no native popups); a failed attempt still shows the single unified "incorrect email or password" alert (anti-enumeration). Unified the inline-error trigger to `.form-group:has(.form-input:user-invalid) .field-error` so the forgot/reset screens keep their inline messages. (Also confirmed the login's "Forgot password?" link was already present, just muted.)
