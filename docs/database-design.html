@@ -359,7 +359,7 @@ footer.foot { margin-top: 56px; padding-top: 22px; border-top: 1px solid var(--p
       <span class="meta-chip">Collections <b id="stat-collections">—</b></span>
       <span class="meta-chip">Relations <b id="stat-relations">—</b></span>
       <span class="meta-chip">Source of truth <b>Contractor Coordination Platform — Pro.md</b></span>
-      <span class="meta-chip">Updated <b>2026-07-29</b></span>
+      <span class="meta-chip">Updated <b>2026-08-02</b></span>
     </div>
   </div>
 </header>
@@ -622,7 +622,8 @@ const DOMAINS = {
   work:     { label: 'Work',             color: '#4A5D6E', blurb: 'Projects, who is on them and in what role, the tasks themselves, and the files attached to them.' },
   coord:    { label: 'Coordination',     color: '#8A7C63', blurb: 'The negotiation layer: reschedule proposals and the append-only history of what was agreed.' },
   comm:     { label: 'Communication',    color: '#6E7F8C', blurb: 'Threads, messages, notifications and mutes — everything that reaches a user outside the work itself.' },
-  gov:      { label: 'Governance',       color: '#A38F6A', blurb: 'Moderation and the stretch-goal automation layer. Built last, cut first.' }
+  gov:      { label: 'Governance',       color: '#A38F6A', blurb: 'Moderation and the stretch-goal automation layer. Built last, cut first.' },
+  billing:  { label: 'Billing & usage',  color: '#C7B89D', blurb: 'What a user is paying for, the limits that buys, and the metered counters that enforce them. Every number here is provisional.' }
 };
 
 const COLLECTIONS = [
@@ -659,6 +660,9 @@ const COLLECTIONS = [
     { name: 'ratingSummary', type: '{ average: Number, count: Number }', denorm: true, idx: true, note: 'Recomputed whenever a [[ratings]] document is written. Never edited by hand.' },
     { name: 'flexibility', type: '{ score: Number, sampleSize: Number, lastComputedAt: Date }', denorm: true, idx: true, note: 'Recomputed when a [[rescheduleproposals]] document resolves. The formula itself is still open (D6). `sampleSize` exists so the UI can distinguish a 90 from five responses from a 90 from ninety.' },
 
+    { group: 'Subscription', groupNote: 'denormalised from the active subscription — see the reasoning below' },
+    { name: 'planCode', type: "'free' | 'basic' | 'premium'", req: true, denorm: true, idx: true, note: 'Snapshot of whichever [[subscriptions]] document is currently `active`, defaulting to `free`. Written **only** by the subscription lifecycle, never by a profile edit. Every authorization check needs the tier, and joining [[subscriptions]] on each request to learn one enum would be wasteful.' },
+
     { group: 'Preferences' },
     { name: 'language', type: "'he' | 'en'", req: true, note: "UI language, **default `he`**. Hebrew is RTL and English is LTR, so this value also selects the page direction. Stored on the account because `localStorage` is per-device — switching to English on the site-office desktop should not leave the phone in Hebrew. localStorage remains the pre-login default only." },
     { name: 'notificationPrefs', type: 'Map<String, Boolean>', note: 'Per-notification-type toggles. A `Map` rather than fixed fields so a new notification type does not require a migration.' },
@@ -680,6 +684,7 @@ const COLLECTIONS = [
     '**JWT is stateless, so there is no sessions collection.** Nothing is stored server-side per login. `security.passwordChangedAt` is the escape hatch: the auth middleware rejects any token whose `iat` predates it, which is how a password change logs out other devices.',
     '**Removal is a status change, not a delete** (D8). A user appears in other people audit entries, ratings and messages; deleting the document would leave dangling references in histories that must stay truthful.',
     '**`specialties` stores language-neutral codes, never Hebrew or English labels.** The app is bilingual (Hebrew RTL by default, English LTR), so `"concrete"` is a key the UI translates at render time. Storing the displayed label would make the second language impossible, and would invalidate this multikey index the first time a translation was corrected. The same rule applies to every enum in the schema — roles, statuses, notification types, audit actions.',
+    '**`planCode` is denormalised, and is the third computed value here.** It follows the same rule as `ratingSummary` and `flexibility`: the authorization layer reads the tier on effectively every request, so the cost belongs on the rare write — a purchase, a cancellation, an expiry sweep — rather than on the common read. [[subscriptions]] stays the source of truth; this field is a cache with exactly one writer.',
     '**Sorting by name needs a collation.** MongoDB sorts byte-wise by default, which is not alphabetical for Hebrew. Browse-contractors name sort has to pass a collation (`{ locale: "he" }`) or sort client-side with `Intl.Collator`. `ratingSummary` and `flexibility` sort numerically and are unaffected.'
   ],
   relations: [],
@@ -707,6 +712,7 @@ const COLLECTIONS = [
   ratingSummary: { average: 4.6, count: 23 },   // denormalised from ratings
   flexibility:   { score: 78, sampleSize: 31, lastComputedAt: ISODate("2026-07-20T09:12:00Z") },
 
+  planCode: "free",                             // denormalised from the active subscription
   language: "he",                               // UI language + page direction (he = RTL)
   notificationPrefs: { scheduleChange: true, connectionRequest: true, rating: false },
   createdAt: ISODate("2026-03-02T08:00:00Z"),
@@ -743,6 +749,7 @@ const userSchema = new Schema({
                    lastComputedAt: Date },
 
   // he = RTL, en = LTR. Drives both the strings and the page direction
+  planCode: { type: String, enum: ['free','basic','premium'], default: 'free' },
   language: { type: String, enum: ['he','en'], default: 'he' },
   notificationPrefs: { type: Map, of: Boolean, default: {} },
 
@@ -1760,6 +1767,314 @@ module.exports = mongoose.model('Report', reportSchema);`
 ruleSchema.index({ owner: 1, enabled: 1 });
 
 module.exports = mongoose.model('Rule', ruleSchema);`
+},
+
+/* ─────────── plans ─────────── */
+{
+  id: 'plans', model: 'Plan', domain: 'billing', stage: 2,
+  tag: 'tier catalogue, prices, limits',
+  pos: { x: 1070, y: 350 },
+  purpose: 'The catalogue of subscription tiers — one document per tier (`free`, `basic`, `premium`). Holds the price in each supported currency and every numeric limit a quota check reads. Seeded data: three documents that change rarely and are never written by a user.',
+  callout: 'Every limit in this collection is **provisional**. The numbers come from the subscriptions screen prototype and are expected to change, which is precisely why they live in a document rather than a constant in the server: adjusting a limit becomes a data edit, not a deploy. The `provisional` flag records that status explicitly instead of leaving it as tribal knowledge.',
+  fields: [
+    { group: 'Identity' },
+    { name: '_id', type: 'ObjectId', note: '' },
+    { name: 'code', type: "'free' | 'basic' | 'premium'", req: true, uniq: true, idx: true, note: 'The language-neutral key the rest of the system uses. **No display name is stored** — the UI is bilingual, so the label is translated at render time from this code. Storing a Hebrew label would make the English pricing screen impossible.' },
+    { name: 'sortOrder', type: 'Number', req: true, note: 'Display order on the pricing screen: free 0, basic 1, premium 2.' },
+    { name: 'active', type: 'Boolean', req: true, idx: true, note: 'A retired tier stays in the collection because historical [[subscriptions]] still reference it. It is simply hidden from the pricing screen.' },
+
+    { group: 'Pricing', groupNote: 'one row per supported currency — never one amount plus a conversion' },
+    { name: 'prices', type: '[{ currency, amountMinor, taxIncluded }]', req: true, note: 'Embedded array, one row per currency. Storing both amounts rather than converting at runtime means a displayed price cannot drift with the exchange rate. `taxIncluded` is per row because the Hebrew site quotes VAT-inclusive prices while the USD price is quoted before local tax — without this flag the two numbers silently mean different things.' },
+    { name: 'prices[].amountMinor', type: 'Number', req: true, note: 'Minor units — agorot and cents — as an integer. Floating-point money is a classic rounding bug and there is no reason to invite it.' },
+    { name: 'interval', type: "'month'", req: true, note: 'Only monthly billing exists today. Kept as a field rather than assumed, so an annual tier becomes a new document instead of a schema change.' },
+
+    { group: 'Limits', groupNote: '`null` means unlimited — never 0, and never a magic number' },
+    { name: 'limits.activeProjects', type: 'Number | null', req: true, note: 'Projects the user **owns**. Participation in projects owned by other people is unlimited on every tier and is deliberately absent from this list.' },
+    { name: 'limits.tasksPerProject', type: 'Number | null', req: true, note: 'Counted against [[tasks]] carrying a non-null `project`.' },
+    { name: 'limits.membersPerProject', type: 'Number | null', req: true, note: 'Counted against [[memberships]] for one project.' },
+    { name: 'limits.connections', type: 'Number | null', req: true, note: 'Accepted [[connections]] the user may hold.' },
+    { name: 'limits.fileMaxBytes', type: 'Number', req: true, note: 'Per-upload ceiling for [[fileassets]]: 5 MB on free, 30 MB on the paid tiers.' },
+    { name: 'limits.fileVersioning', type: 'Boolean', req: true, note: 'When false, only the latest version of a work plan is retained.' },
+    { name: 'limits.auditRetentionDays', type: 'Number | null', req: true, note: 'How far back [[auditentries]] are **readable**. Entries are never deleted — this filters the query, because an audit trail that deletes itself is not an audit trail.' },
+    { name: 'limits.simulationsPerWeek', type: 'Number | null', req: true, note: 'The metered allowance enforced through [[usagecounters]]: 3, 30, and null for unlimited.' },
+    { name: 'limits.canOpenReschedule', type: 'Boolean', req: true, note: 'Free may **respond** to a [[rescheduleproposals]] document but not create one. Responding is never gated on any tier, or the multi-party model would break the moment one party did not pay.' },
+    { name: 'limits.canDelegate', type: 'Boolean', req: true, note: 'Confidential delegation — the `delegate` field on [[tasks]]. Premium only.' },
+    { name: 'limits.privateExecutionLayer', type: 'Boolean', req: true, note: 'Private sub-tasks and notes on [[tasks]]. Premium only.' },
+    { name: 'limits.emailNotifications', type: 'Boolean', req: true, note: 'Whether [[notifications]] are also delivered by email.' },
+    { name: 'limits.supportTier', type: "'community' | 'email' | 'priority'", req: true, note: 'A code, not a sentence — translated at render like every other enum in this schema.' },
+
+    { group: 'Status' },
+    { name: 'provisional', type: 'Boolean', req: true, note: 'True while the tier definition is a working assumption rather than a decided product. Currently true on all three documents.' },
+    { name: 'createdAt / updatedAt', type: 'Date', note: 'Mongoose `timestamps: true`.' }
+  ],
+  indexes: [
+    { def: '{ code: 1 }', opts: 'unique', serves: 'Every quota check, and the pricing screen', why: 'Correctness rather than speed. Two documents carrying `code: "basic"` would make the question "what are the limits for this user?" ambiguous, and nothing downstream could resolve it.' },
+    { def: '{ active: 1, sortOrder: 1 }', serves: 'Rendering the pricing screen in order', why: 'Covers the only list query this collection serves and returns it already sorted, so no in-memory sort is needed.' }
+  ],
+  why: [
+    '**A collection rather than a constant in the code.** Every limit here is provisional, so a pricing change should be a data edit and not a deploy. It also lets a [[subscriptions]] document point at the exact tier definition it was sold under.',
+    '**Limits are one embedded sub-object, not fifteen top-level fields.** They are always read together — the authorization layer loads the whole `limits` object once per request — and nothing ever queries by an individual limit.',
+    '**`null` means unlimited.** Using `0` would collide with a genuine limit of zero, and a sentinel such as `999999` turns an unlimited plan into a defect that appears only for the heaviest user, which is the worst possible moment to discover it.',
+    '**Prices are stored per currency, not converted.** A stored shekel amount cannot move with the exchange rate. `taxIncluded` records that the two amounts are quoted on different tax bases — the single detail most likely to be forgotten, and the one that makes the two prices non-comparable.',
+    '**No display names, only codes.** Exactly as with `specialties` on [[users]]: the bilingual rule applied to a new collection rather than re-derived per screen.'
+  ],
+  relations: [],
+  sample: `{
+  _id: ObjectId("66a1f0a0c2b9e30012af2101"),
+  code: "basic",
+  sortOrder: 1,
+  active: true,
+
+  prices: [
+    { currency: "ILS", amountMinor: 6000, taxIncluded: true  },   // 60.00 incl. VAT
+    { currency: "USD", amountMinor: 2000, taxIncluded: false }    // 20.00 before local tax
+  ],
+  interval: "month",
+
+  limits: {
+    activeProjects:        5,
+    tasksPerProject:       100,
+    membersPerProject:     25,
+    connections:           null,          // unlimited
+    fileMaxBytes:          31457280,      // 30 MB
+    fileVersioning:        true,
+    auditRetentionDays:    null,
+    simulationsPerWeek:    30,
+    canOpenReschedule:     true,
+    canDelegate:           false,
+    privateExecutionLayer: false,
+    emailNotifications:    true,
+    supportTier:           "email"
+  },
+
+  provisional: true,
+  createdAt: ISODate("2026-08-02T00:00:00Z"),
+  updatedAt: ISODate("2026-08-02T00:00:00Z")
+}`,
+  schema: `const mongoose = require('mongoose');
+const { Schema } = mongoose;
+
+const PLAN_CODES = ['free', 'basic', 'premium'];
+
+const priceSchema = new Schema({
+  currency:    { type: String, enum: ['ILS', 'USD'], required: true },
+  amountMinor: { type: Number, required: true, min: 0 },   // agorot / cents
+  taxIncluded: { type: Boolean, required: true }
+}, { _id: false });
+
+const limitsSchema = new Schema({
+  activeProjects:        { type: Number, default: null },  // null = unlimited
+  tasksPerProject:       { type: Number, default: null },
+  membersPerProject:     { type: Number, default: null },
+  connections:           { type: Number, default: null },
+  fileMaxBytes:          { type: Number, required: true },
+  fileVersioning:        { type: Boolean, required: true },
+  auditRetentionDays:    { type: Number, default: null },
+  simulationsPerWeek:    { type: Number, default: null },
+  canOpenReschedule:     { type: Boolean, required: true },
+  canDelegate:           { type: Boolean, required: true },
+  privateExecutionLayer: { type: Boolean, required: true },
+  emailNotifications:    { type: Boolean, required: true },
+  supportTier:           { type: String, required: true,
+                           enum: ['community', 'email', 'priority'] }
+}, { _id: false });
+
+const planSchema = new Schema({
+  code:        { type: String, enum: PLAN_CODES, required: true, unique: true },
+  sortOrder:   { type: Number, required: true },
+  active:      { type: Boolean, default: true },
+  prices:      { type: [priceSchema], required: true },
+  interval:    { type: String, enum: ['month'], default: 'month' },
+  limits:      { type: limitsSchema, required: true },
+  provisional: { type: Boolean, default: true }
+}, { timestamps: true });
+
+planSchema.index({ active: 1, sortOrder: 1 });
+
+module.exports = mongoose.model('Plan', planSchema);`
+},
+
+/* ─────────── subscriptions ─────────── */
+{
+  id: 'subscriptions', model: 'Subscription', domain: 'billing', stage: 2,
+  tag: 'what a user bought, and until when',
+  pos: { x: 1070, y: 510 },
+  purpose: 'One document per subscription period a user has held. The single document with `status: "active"` is the current subscription; the older ones are the billing history the subscriptions screen lists. Records what was sold, at what price, in which currency, and when the period ends.',
+  callout: '`planCode`, `currency`, `amountMinor` and `taxIncluded` are **copied onto this document at purchase time** rather than read through the [[plans]] reference. This is the same rule the schema already applies to `items[].respondent` on [[rescheduleproposals]]: editing the catalogue must never retroactively change what somebody already bought.',
+  fields: [
+    { group: 'Who and what' },
+    { name: '_id', type: 'ObjectId', note: '' },
+    { name: 'user', type: 'ObjectId', ref: 'users', req: true, idx: true, note: 'Owner of the subscription.' },
+    { name: 'plan', type: 'ObjectId', ref: 'plans', req: true, note: 'The catalogue document this period was bought from.' },
+    { name: 'planCode', type: "'free' | 'basic' | 'premium'", req: true, denorm: true, note: 'Snapshot of `plans.code` at purchase. Lets a query answer "which tier was this?" without a join, and keeps the history truthful when the catalogue moves on.' },
+
+    { group: 'Money', groupNote: 'a snapshot of the sale, never a live lookup' },
+    { name: 'currency', type: "'ILS' | 'USD'", req: true, note: 'Derived from the **account country**, not from the UI language. The static prototype couples currency to language only because a page with no account has no other signal; the real system must not repeat that.' },
+    { name: 'amountMinor', type: 'Number', req: true, note: 'Minor units as an integer, copied from the matching `plans.prices` row.' },
+    { name: 'taxIncluded', type: 'Boolean', req: true, note: 'Copied with the amount so an invoice can be reconstructed exactly, years later, without consulting the catalogue.' },
+
+    { group: 'Lifecycle' },
+    { name: 'status', type: "'active' | 'past_due' | 'canceled' | 'expired'", req: true, idx: true, note: '`canceled` still serves the user until `currentPeriodEnd`; `expired` is after it. Keeping the two distinct is exactly what makes "cancel now, keep access until the period ends" expressible.' },
+    { name: 'currentPeriodStart', type: 'Date', req: true, note: '' },
+    { name: 'currentPeriodEnd', type: 'Date', req: true, idx: true, note: 'Drives the renewal and expiry sweep, and the read-only downgrade rule described on the subscriptions screen.' },
+    { name: 'cancelAtPeriodEnd', type: 'Boolean', req: true, note: 'Set by the user. The sweep turns it into `expired` once the date passes; nothing is deleted.' },
+    { name: 'canceledAt', type: 'Date | null', note: 'When the user asked, which is not when access ends.' },
+
+    { group: 'Payment provider', groupNote: 'a stub — no provider has been chosen' },
+    { name: 'provider', type: "{ name: 'none' | 'stripe' | 'paddle', customerId, subscriptionId }", note: 'Embedded 1:1. `name` is `none` on every document today, because the screen is a prototype and no checkout exists. Kept as a sub-object so adding a provider is a value change rather than a migration.' },
+    { name: 'createdAt / updatedAt', type: 'Date', note: 'Mongoose `timestamps: true`.' }
+  ],
+  indexes: [
+    { def: '{ user: 1 }', opts: "unique, partialFilterExpression: { status: 'active' }", serves: 'Loading the current subscription, and preventing a double purchase', why: 'A **partial unique** index: it constrains only the documents where `status` is `active`, so a user may hold any number of historical rows but never two live ones. An application-level check has a race between two concurrent checkouts; this does not.' },
+    { def: '{ user: 1, createdAt: -1 }', serves: 'Billing history on the subscriptions screen', why: 'Returns the history already ordered newest-first, so paging never sorts in memory.' },
+    { def: '{ status: 1, currentPeriodEnd: 1 }', serves: 'The nightly renew-or-expire sweep', why: 'Lets the job find exactly the documents whose period has lapsed, instead of scanning every subscription ever sold.' }
+  ],
+  why: [
+    '**A collection, not a sub-document on [[users]].** A user accumulates one document per period, so embedding would grow the user document without bound — the same reasoning that keeps [[memberships]] out of [[projects]]. It also makes billing history a query rather than an array walk.',
+    '**The sale is snapshotted, not referenced.** `planCode`, `amountMinor`, `currency` and `taxIncluded` are copied at purchase. A price change or a corrected translation must never rewrite an invoice that has already been issued.',
+    '**One active subscription is a database guarantee, not a convention.** The partial unique index on `{ user: 1 }` is the only thing that survives two checkout requests arriving at the same moment.',
+    '**`canceled` and `expired` are separate states.** Collapsing them would either cut off a paying user early or keep serving one who has lapsed; the distinction is what the period-end sweep acts on.',
+    '**Money is stored in minor units as integers.** Storing 60.00 as a float invites a rounding error that surfaces only in aggregate reporting, long after anyone remembers why.',
+    '**`users.planCode` caches the tier; this collection owns it.** Every authorization check reads the cache, and only the lifecycle here writes it. One writer, one source of truth.'
+  ],
+  relations: [
+    { to: 'users', via: 'user', store: 'ref', card: 'N:1', why: 'Many historical subscriptions per user, exactly one of them active — and the partial unique index enforces that rather than trusting the application to.' },
+    { to: 'plans', via: 'plan', store: 'ref', card: 'N:1', why: 'Points at the catalogue document, while the copied `planCode` and `amountMinor` preserve an immutable record of what was actually sold.' }
+  ],
+  sample: `{
+  _id: ObjectId("66a2b1c0c2b9e30012af2201"),
+  user: ObjectId("6650a1f4c2b9e30012af0b21"),      // Dana
+  plan: ObjectId("66a1f0a0c2b9e30012af2101"),      // -> plans (basic)
+  planCode: "basic",                               // snapshot, not a live lookup
+
+  currency: "ILS",
+  amountMinor: 6000,                               // 60.00
+  taxIncluded: true,
+
+  status: "active",
+  currentPeriodStart: ISODate("2026-08-01T00:00:00Z"),
+  currentPeriodEnd:   ISODate("2026-09-01T00:00:00Z"),
+  cancelAtPeriodEnd: false,
+  canceledAt: null,
+
+  provider: { name: "none", customerId: null, subscriptionId: null },
+  createdAt: ISODate("2026-08-01T09:14:00Z"),
+  updatedAt: ISODate("2026-08-01T09:14:00Z")
+}`,
+  schema: `const mongoose = require('mongoose');
+const { Schema } = mongoose;
+
+const subscriptionSchema = new Schema({
+  user:     { type: Schema.Types.ObjectId, ref: 'User', required: true },
+  plan:     { type: Schema.Types.ObjectId, ref: 'Plan', required: true },
+  planCode: { type: String, required: true, enum: ['free', 'basic', 'premium'] },
+
+  currency:    { type: String, enum: ['ILS', 'USD'], required: true },
+  amountMinor: { type: Number, required: true, min: 0 },
+  taxIncluded: { type: Boolean, required: true },
+
+  status: { type: String, required: true, default: 'active',
+            enum: ['active', 'past_due', 'canceled', 'expired'] },
+  currentPeriodStart: { type: Date, required: true },
+  currentPeriodEnd:   { type: Date, required: true },
+  cancelAtPeriodEnd:  { type: Boolean, default: false },
+  canceledAt:         { type: Date, default: null },
+
+  provider: {
+    name:           { type: String, enum: ['none', 'stripe', 'paddle'], default: 'none' },
+    customerId:     { type: String, default: null },
+    subscriptionId: { type: String, default: null }
+  }
+}, { timestamps: true });
+
+// Exactly ONE active subscription per user - enforced by the database, not the app
+subscriptionSchema.index(
+  { user: 1 },
+  { unique: true, partialFilterExpression: { status: 'active' } }
+);
+subscriptionSchema.index({ user: 1, createdAt: -1 });
+subscriptionSchema.index({ status: 1, currentPeriodEnd: 1 });
+
+module.exports = mongoose.model('Subscription', subscriptionSchema);`
+},
+
+/* ─────────── usagecounters ─────────── */
+{
+  id: 'usagecounters', model: 'UsageCounter', domain: 'billing', stage: 4,
+  tag: 'metered allowances, per window',
+  pos: { x: 30, y: 510 },
+  purpose: 'One document per user, per metered action, per time window. The only metric today is `cascade_simulation` — the what-if preview of a date change, which the free and basic tiers ration. Premium is unmetered and writes no document at all.',
+  callout: 'The quota is enforced **inside the update filter**, never by reading the counter and then deciding. A read-then-write check lets two concurrent requests both pass while the counter sits on its last unit; putting the comparison in the filter makes the database the arbiter, which is the only place the answer can be correct under concurrency.',
+  fields: [
+    { name: '_id', type: 'ObjectId', note: '' },
+    { name: 'user', type: 'ObjectId', ref: 'users', req: true, idx: true, note: 'Whose allowance this is.' },
+    { name: 'metric', type: "'cascade_simulation'", req: true, idx: true, note: 'An enum with a single value today. Because a metric is a code, adding a second meter later is a new value rather than a new collection.' },
+    { name: 'windowStart', type: 'Date', req: true, idx: true, note: 'Start of the usage window, normalised to **Monday 00:00 UTC**. Fixed boundaries rather than a rolling seven days, so that "3 per week" resets on a date the user can predict instead of one they have to remember.' },
+    { name: 'windowEnd', type: 'Date', req: true, note: '`windowStart` plus seven days. Stored rather than derived so the TTL index has a field to expire on.' },
+    { name: 'count', type: 'Number', req: true, note: 'Incremented atomically by the guarded update. Never written directly.' },
+    { name: 'limit', type: 'Number', req: true, note: '**Copied from the plan when the window document is first created.** An upgrade mid-week therefore raises the ceiling from the *next* window rather than rewriting the current one — the alternative silently changes what the user was allowed yesterday.' },
+    { name: 'createdAt / updatedAt', type: 'Date', note: 'Mongoose `timestamps: true`.' }
+  ],
+  indexes: [
+    { def: '{ user: 1, metric: 1, windowStart: 1 }', opts: 'unique', serves: 'The atomic increment-with-quota-check', why: 'Correctness: it is what makes the upsert safe. Without it, two parallel requests can create two counter documents for the same window and each is then granted the full allowance.' },
+    { def: '{ windowEnd: 1 }', opts: 'expireAfterSeconds: 7776000', serves: 'Housekeeping', why: 'A TTL index drops counters ninety days after their window closes. Usage metering is not an audit record — [[auditentries]] is — so there is no reason to retain it forever.' }
+  ],
+  why: [
+    '**A document per window, not a running total on [[users]].** A total cannot express "3 per week" without a reset job, and a reset job that fails silently hands somebody unlimited usage. A window document simply stops matching once the week rolls over.',
+    '**The limit is copied in, not joined.** The counter has to answer the quota question in a single atomic update; a join would force a read first, which is exactly the race this design avoids.',
+    '**Unlimited writes nothing.** When `limits.simulationsPerWeek` is null the request skips this collection entirely, so premium usage costs no writes and leaves no rows to expire.',
+    '**Fixed windows over rolling ones.** A rolling seven-day window is fairer in theory but cannot be answered by a single indexed lookup, and it makes "when do I get more?" unanswerable for the user.',
+    '**Metering lives here, not in [[auditentries]].** The audit trail records what happened to the work; this records consumption of a paid allowance. Mixing them would put billing pressure on a collection whose integrity the privacy model depends on.'
+  ],
+  relations: [
+    { to: 'users', via: 'user', store: 'ref', card: 'N:1', why: 'Many counters per user — one per metric per week — and the compound unique index is what keeps a window from being duplicated.' }
+  ],
+  sample: `{
+  _id: ObjectId("66a3c2d0c2b9e30012af2301"),
+  user: ObjectId("6650a1f4c2b9e30012af0b21"),
+  metric: "cascade_simulation",
+
+  windowStart: ISODate("2026-07-27T00:00:00Z"),    // Monday 00:00 UTC
+  windowEnd:   ISODate("2026-08-03T00:00:00Z"),
+  count: 12,
+  limit: 30,                                       // copied from the plan at creation
+
+  createdAt: ISODate("2026-07-27T06:41:00Z"),
+  updatedAt: ISODate("2026-08-01T15:02:00Z")
+}`,
+  schema: `const mongoose = require('mongoose');
+const { Schema } = mongoose;
+
+const usageCounterSchema = new Schema({
+  user:        { type: Schema.Types.ObjectId, ref: 'User', required: true },
+  metric:      { type: String, enum: ['cascade_simulation'], required: true },
+  windowStart: { type: Date, required: true },
+  windowEnd:   { type: Date, required: true },
+  count:       { type: Number, required: true, default: 0 },
+  limit:       { type: Number, required: true }
+}, { timestamps: true });
+
+usageCounterSchema.index({ user: 1, metric: 1, windowStart: 1 }, { unique: true });
+usageCounterSchema.index({ windowEnd: 1 }, { expireAfterSeconds: 7776000 });
+
+const UsageCounter = mongoose.model('UsageCounter', usageCounterSchema);
+
+// The quota check and the increment are ONE atomic operation.
+// Reading the count and then deciding would let two concurrent
+// requests both pass on the last remaining unit.
+async function consume(userId, limit) {
+  if (limit === null) return true;               // unlimited: no document, no write
+  const windowStart = startOfIsoWeekUtc(new Date());
+  const doc = await UsageCounter.findOneAndUpdate(
+    { user: userId, metric: 'cascade_simulation', windowStart,
+      $expr: { $lt: ['$count', '$limit'] } },
+    { $inc: { count: 1 } },
+    { new: true }
+  );
+  return Boolean(doc);                           // null => allowance exhausted
+}
+
+module.exports = { UsageCounter, consume };`
 }
 
 ];
@@ -2362,7 +2677,9 @@ const OPEN_DECISIONS = [
   { id: 'D9', title: 'Messaging gate scope', affects: ['connections', 'threads'],
     impact: 'Connection only, or connection **or** shared project? Today the gate is one `findOne` against [[connections]] at thread-creation time. Widening it adds a second check against [[memberships]] — no new fields. What is genuinely open is what happens to an existing thread on disconnect, block or mute.' },
   { id: 'D10', title: 'i18n mechanism under React', affects: ['users', 'notifications'],
-    impact: 'The **storage** side is settled — `users.language`, language-neutral enum codes, and structured rather than pre-rendered payloads. What is open is the client mechanism: a hand-rolled `LanguageContext` with `strings.he.json` / `strings.en.json`, or a library such as `react-i18next`. Two sub-questions do reach the server: which language **outbound email** uses (the stored `users.language`, or the request `Accept-Language`), and whether the URL carries the locale. Neither adds a field.' }
+    impact: 'The **storage** side is settled — `users.language`, language-neutral enum codes, and structured rather than pre-rendered payloads. What is open is the client mechanism: a hand-rolled `LanguageContext` with `strings.he.json` / `strings.en.json`, or a library such as `react-i18next`. Two sub-questions do reach the server: which language **outbound email** uses (the stored `users.language`, or the request `Accept-Language`), and whether the URL carries the locale. Neither adds a field.' },
+  { id: 'D11', title: 'Subscription storage & quota enforcement', affects: ['plans', 'subscriptions', 'usagecounters', 'users'],
+    impact: 'The **storage shape is now designed**: a seeded [[plans]] catalogue, one [[subscriptions]] document per period with a partial unique index permitting exactly one active row per user, a [[usagecounters]] document per user per metric per week, and a denormalised `users.planCode` for the authorization check. What remains open is **product, not shape** — every limit and price carries `provisional: true` and is expected to move; no payment provider has been chosen, so `provider.name` is `none` on every document; what a *read-only* project concretely forbids after a downgrade is unspecified; and whether the account country that selects `currency` becomes a field on [[users]] or is derived at checkout is undecided. None of this is an agreed price or a required feature — it is the structure that lets those answers land later without a migration.' }
 ];
 
 /* ══════════════════════════════════════════════════════
