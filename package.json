@@ -1,0 +1,13 @@
+{
+  "name": "contractor-coordination-platform",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Static screen prototypes (HTML/CSS/TS) before the React migration.",
+  "scripts": {
+    "build": "tsc",
+    "watch": "tsc --watch"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0"
+  }
+}
