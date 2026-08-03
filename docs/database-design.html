@@ -1790,15 +1790,14 @@ module.exports = mongoose.model('Rule', ruleSchema);`
 
     { group: 'Limits', groupNote: '`null` means unlimited — never 0, and never a magic number' },
     { name: 'limits.activeProjects', type: 'Number | null', req: true, note: 'Projects the user **owns**. Participation in projects owned by other people is unlimited on every tier and is deliberately absent from this list.' },
-    { name: 'limits.tasksPerProject', type: 'Number | null', req: true, note: 'Counted against [[tasks]] carrying a non-null `project`.' },
-    { name: 'limits.membersPerProject', type: 'Number | null', req: true, note: 'Counted against [[memberships]] for one project.' },
+    { name: 'limits.tasksPerProject', type: 'Number | null', req: true, note: 'Counted against [[tasks]] carrying a non-null `project`. **`null` on every current tier** — capping the number of tasks would cap the size of a real building job, which is the product itself. Kept as a field so the catalogue *can* express the limit if it is ever needed.' },
+    { name: 'limits.membersPerProject', type: 'Number | null', req: true, note: 'Counted against [[memberships]] for one project. **`null` on every current tier**, for the same reason: a job has the trades it has, and the platform only works when every party is in it.' },
     { name: 'limits.connections', type: 'Number | null', req: true, note: 'Accepted [[connections]] the user may hold.' },
-    { name: 'limits.fileMaxBytes', type: 'Number', req: true, note: 'Per-upload ceiling for [[fileassets]]: 5 MB on free, 30 MB on the paid tiers.' },
+    { name: 'limits.fileMaxBytes', type: 'Number', req: true, note: 'Per-upload ceiling for [[fileassets]]: 10 MB on free, 30 MB on the paid tiers.' },
     { name: 'limits.fileVersioning', type: 'Boolean', req: true, note: 'When false, only the latest version of a work plan is retained.' },
     { name: 'limits.auditRetentionDays', type: 'Number | null', req: true, note: 'How far back [[auditentries]] are **readable**. Entries are never deleted — this filters the query, because an audit trail that deletes itself is not an audit trail.' },
-    { name: 'limits.simulationsPerWeek', type: 'Number | null', req: true, note: 'The metered allowance enforced through [[usagecounters]]: 3, 30, and null for unlimited.' },
-    { name: 'limits.canOpenReschedule', type: 'Boolean', req: true, note: 'Free may **respond** to a [[rescheduleproposals]] document but not create one. Responding is never gated on any tier, or the multi-party model would break the moment one party did not pay.' },
-    { name: 'limits.canDelegate', type: 'Boolean', req: true, note: 'Confidential delegation — the `delegate` field on [[tasks]]. Premium only.' },
+    { name: 'limits.simulationsPerWeek', type: 'Number | null', req: true, note: 'How many **visual simulations** the user may create in a week — a simulation being a visual representation the simulator builds from the details and selections the contractor entered. Metered through [[usagecounters]]: 3, 40, and null for unlimited. This is a **capacity** limit on a generated artifact, not a gate on any coordination feature.' },
+    { name: 'limits.activeDelegations', type: 'Number | null', req: true, note: 'How many confidential delegations may be **open at once** — the `delegate` field on [[tasks]], counted where the delegated task is not yet complete. 1, 10, null. Replaced an earlier `canDelegate` boolean: gating the product signature feature entirely meant free and basic users could never see what they would be buying, so it became a concurrency limit instead of an on/off switch.' },
     { name: 'limits.privateExecutionLayer', type: 'Boolean', req: true, note: 'Private sub-tasks and notes on [[tasks]]. Premium only.' },
     { name: 'limits.emailNotifications', type: 'Boolean', req: true, note: 'Whether [[notifications]] are also delivered by email.' },
     { name: 'limits.supportTier', type: "'community' | 'email' | 'priority'", req: true, note: 'A code, not a sentence — translated at render like every other enum in this schema.' },
@@ -1816,7 +1815,8 @@ module.exports = mongoose.model('Rule', ruleSchema);`
     '**Limits are one embedded sub-object, not fifteen top-level fields.** They are always read together — the authorization layer loads the whole `limits` object once per request — and nothing ever queries by an individual limit.',
     '**`null` means unlimited.** Using `0` would collide with a genuine limit of zero, and a sentinel such as `999999` turns an unlimited plan into a defect that appears only for the heaviest user, which is the worst possible moment to discover it.',
     '**Prices are stored per currency, not converted.** A stored shekel amount cannot move with the exchange rate. `taxIncluded` records that the two amounts are quoted on different tax bases — the single detail most likely to be forgotten, and the one that makes the two prices non-comparable.',
-    '**No display names, only codes.** Exactly as with `specialties` on [[users]]: the bilingual rule applied to a new collection rather than re-derived per screen.'
+    '**No display names, only codes.** Exactly as with `specialties` on [[users]]: the bilingual rule applied to a new collection rather than re-derived per screen.',
+    '**Nothing in the coordination loop is priced.** There is deliberately no field for opening or answering a [[rescheduleproposals]] document, for creating [[tasks]], or for adding [[memberships]] — the platform only works when every party on a job is in it, so charging for the loop itself would break the product before it earned anything. Every limit above is **capacity, storage, history or convenience**. An earlier draft carried a `canOpenReschedule` boolean; it was removed rather than set to true on all three tiers, because a field that can never legitimately be false is an invitation to set it false later.'
   ],
   relations: [],
   sample: `{
@@ -1832,16 +1832,15 @@ module.exports = mongoose.model('Rule', ruleSchema);`
   interval: "month",
 
   limits: {
-    activeProjects:        5,
-    tasksPerProject:       100,
-    membersPerProject:     25,
+    activeProjects:        25,
+    tasksPerProject:       null,          // never capped on any tier
+    membersPerProject:     null,          // never capped on any tier
     connections:           null,          // unlimited
     fileMaxBytes:          31457280,      // 30 MB
     fileVersioning:        true,
     auditRetentionDays:    null,
-    simulationsPerWeek:    30,
-    canOpenReschedule:     true,
-    canDelegate:           false,
+    simulationsPerWeek:    40,
+    activeDelegations:     10,
     privateExecutionLayer: false,
     emailNotifications:    true,
     supportTier:           "email"
@@ -1871,8 +1870,7 @@ const limitsSchema = new Schema({
   fileVersioning:        { type: Boolean, required: true },
   auditRetentionDays:    { type: Number, default: null },
   simulationsPerWeek:    { type: Number, default: null },
-  canOpenReschedule:     { type: Boolean, required: true },
-  canDelegate:           { type: Boolean, required: true },
+  activeDelegations:     { type: Number, default: null },
   privateExecutionLayer: { type: Boolean, required: true },
   emailNotifications:    { type: Boolean, required: true },
   supportTier:           { type: String, required: true,
@@ -2003,12 +2001,12 @@ module.exports = mongoose.model('Subscription', subscriptionSchema);`
   id: 'usagecounters', model: 'UsageCounter', domain: 'billing', stage: 4,
   tag: 'metered allowances, per window',
   pos: { x: 30, y: 510 },
-  purpose: 'One document per user, per metered action, per time window. The only metric today is `cascade_simulation` — the what-if preview of a date change, which the free and basic tiers ration. Premium is unmetered and writes no document at all.',
+  purpose: 'One document per user, per metered action, per time window. The only metric today is `visual_simulation` — a visual representation the simulator builds from the details and selections a contractor entered, which the free and basic tiers ration. Premium is unmetered and writes no document at all.',
   callout: 'The quota is enforced **inside the update filter**, never by reading the counter and then deciding. A read-then-write check lets two concurrent requests both pass while the counter sits on its last unit; putting the comparison in the filter makes the database the arbiter, which is the only place the answer can be correct under concurrency.',
   fields: [
     { name: '_id', type: 'ObjectId', note: '' },
     { name: 'user', type: 'ObjectId', ref: 'users', req: true, idx: true, note: 'Whose allowance this is.' },
-    { name: 'metric', type: "'cascade_simulation'", req: true, idx: true, note: 'An enum with a single value today. Because a metric is a code, adding a second meter later is a new value rather than a new collection.' },
+    { name: 'metric', type: "'visual_simulation'", req: true, idx: true, note: 'An enum with a single value today. Because a metric is a code, adding a second meter later is a new value rather than a new collection.' },
     { name: 'windowStart', type: 'Date', req: true, idx: true, note: 'Start of the usage window, normalised to **Monday 00:00 UTC**. Fixed boundaries rather than a rolling seven days, so that "3 per week" resets on a date the user can predict instead of one they have to remember.' },
     { name: 'windowEnd', type: 'Date', req: true, note: '`windowStart` plus seven days. Stored rather than derived so the TTL index has a field to expire on.' },
     { name: 'count', type: 'Number', req: true, note: 'Incremented atomically by the guarded update. Never written directly.' },
@@ -2032,7 +2030,7 @@ module.exports = mongoose.model('Subscription', subscriptionSchema);`
   sample: `{
   _id: ObjectId("66a3c2d0c2b9e30012af2301"),
   user: ObjectId("6650a1f4c2b9e30012af0b21"),
-  metric: "cascade_simulation",
+  metric: "visual_simulation",
 
   windowStart: ISODate("2026-07-27T00:00:00Z"),    // Monday 00:00 UTC
   windowEnd:   ISODate("2026-08-03T00:00:00Z"),
@@ -2047,7 +2045,7 @@ const { Schema } = mongoose;
 
 const usageCounterSchema = new Schema({
   user:        { type: Schema.Types.ObjectId, ref: 'User', required: true },
-  metric:      { type: String, enum: ['cascade_simulation'], required: true },
+  metric:      { type: String, enum: ['visual_simulation'], required: true },
   windowStart: { type: Date, required: true },
   windowEnd:   { type: Date, required: true },
   count:       { type: Number, required: true, default: 0 },
@@ -2066,7 +2064,7 @@ async function consume(userId, limit) {
   if (limit === null) return true;               // unlimited: no document, no write
   const windowStart = startOfIsoWeekUtc(new Date());
   const doc = await UsageCounter.findOneAndUpdate(
-    { user: userId, metric: 'cascade_simulation', windowStart,
+    { user: userId, metric: 'visual_simulation', windowStart,
       $expr: { $lt: ['$count', '$limit'] } },
     { $inc: { count: 1 } },
     { new: true }
