@@ -1794,12 +1794,16 @@ module.exports = mongoose.model('Rule', ruleSchema);`
     { name: 'limits.membersPerProject', type: 'Number | null', req: true, note: 'Counted against [[memberships]] for one project. **`null` on every current tier**, for the same reason: a job has the trades it has, and the platform only works when every party is in it.' },
     { name: 'limits.connections', type: 'Number | null', req: true, note: 'Accepted [[connections]] the user may hold.' },
     { name: 'limits.fileMaxBytes', type: 'Number', req: true, note: 'Per-upload ceiling for [[fileassets]]: 10 MB on free, 30 MB on the paid tiers.' },
-    { name: 'limits.fileVersioning', type: 'Boolean', req: true, note: 'When false, only the latest version of a work plan is retained.' },
-    { name: 'limits.auditRetentionDays', type: 'Number | null', req: true, note: 'How far back [[auditentries]] are **readable**. Entries are never deleted — this filters the query, because an audit trail that deletes itself is not an audit trail.' },
+    { name: 'limits.fileVersions', type: 'Number | null', req: true, note: 'How many versions of a work plan are retained: 1 (latest only), 5, or null for every version. Replaced a `fileVersioning` boolean — retention depth is a real ladder across the tiers, and an on/off flag could not express the middle step.' },
+    { name: 'limits.moderatedThreads', type: 'Boolean', req: true, note: 'GC-moderated conversations in the inbox. A coordination convenience for whoever runs the job, not a gate on messaging itself — direct and project threads are available on every tier.' },
+    { name: 'limits.muteControls', type: 'Boolean', req: true, note: 'Per-contractor / per-project / per-conversation mutes. Convenience, and only valuable once a user carries enough concurrent work to need it.' },
+    { name: 'limits.agreementForm', type: 'Boolean', req: true, note: 'The agreement form that creates its task automatically — a refinement over plain task creation, so gating it withholds convenience rather than capability.' },
+    { name: 'limits.notificationDigest', type: 'Boolean', req: true, note: 'Daily summary email in addition to per-event notifications.' },
+    { name: 'limits.auditRetentionDays', type: 'Number | null', req: true, note: 'How far back [[auditentries]] are **readable**: 30, 365, or null for the complete history. Entries are never deleted — this filters the query, because an audit trail that deletes itself is not an audit trail.' },
     { name: 'limits.simulationsPerWeek', type: 'Number | null', req: true, note: 'How many **visual simulations** the user may create in a week — a simulation being a visual representation the simulator builds from the details and selections the contractor entered. Metered through [[usagecounters]]: 3, 40, and null for unlimited. This is a **capacity** limit on a generated artifact, not a gate on any coordination feature.' },
     { name: 'limits.activeDelegations', type: 'Number | null', req: true, note: 'How many confidential delegations may be **open at once** — the `delegate` field on [[tasks]], counted where the delegated task is not yet complete. 1, 10, null. Replaced an earlier `canDelegate` boolean: gating the product signature feature entirely meant free and basic users could never see what they would be buying, so it became a concurrency limit instead of an on/off switch.' },
     { name: 'limits.privateExecutionLayer', type: 'Boolean', req: true, note: 'Private sub-tasks and notes on [[tasks]]. Premium only.' },
-    { name: 'limits.emailNotifications', type: 'Boolean', req: true, note: 'Whether [[notifications]] are also delivered by email.' },
+    { name: 'limits.emailNotifications', type: 'Boolean', req: true, note: 'Whether [[notifications]] are also delivered by email. In-app delivery is never gated.' },
     { name: 'limits.supportTier', type: "'community' | 'email' | 'priority'", req: true, note: 'A code, not a sentence — translated at render like every other enum in this schema.' },
 
     { group: 'Status' },
@@ -1835,12 +1839,16 @@ module.exports = mongoose.model('Rule', ruleSchema);`
     activeProjects:        25,
     tasksPerProject:       null,          // never capped on any tier
     membersPerProject:     null,          // never capped on any tier
-    connections:           null,          // unlimited
+    connections:           500,
     fileMaxBytes:          31457280,      // 30 MB
-    fileVersioning:        true,
-    auditRetentionDays:    null,
-    simulationsPerWeek:    40,
-    activeDelegations:     10,
+    fileVersions:          5,             // free 1 · basic 5 · premium null (all)
+    auditRetentionDays:    365,           // free 30 · basic 365 · premium null
+    simulationsPerWeek:    10,            // free 3 · basic 10 · premium 60
+    activeDelegations:     5,             // free 1 · basic 5 · premium null
+    moderatedThreads:      true,
+    muteControls:          true,
+    agreementForm:         false,         // premium only
+    notificationDigest:    false,         // premium only
     privateExecutionLayer: false,
     emailNotifications:    true,
     supportTier:           "email"
@@ -1867,10 +1875,14 @@ const limitsSchema = new Schema({
   membersPerProject:     { type: Number, default: null },
   connections:           { type: Number, default: null },
   fileMaxBytes:          { type: Number, required: true },
-  fileVersioning:        { type: Boolean, required: true },
+  fileVersions:          { type: Number, default: null },   // null = every version
   auditRetentionDays:    { type: Number, default: null },
   simulationsPerWeek:    { type: Number, default: null },
   activeDelegations:     { type: Number, default: null },
+  moderatedThreads:      { type: Boolean, required: true },
+  muteControls:          { type: Boolean, required: true },
+  agreementForm:         { type: Boolean, required: true },
+  notificationDigest:    { type: Boolean, required: true },
   privateExecutionLayer: { type: Boolean, required: true },
   emailNotifications:    { type: Boolean, required: true },
   supportTier:           { type: String, required: true,
