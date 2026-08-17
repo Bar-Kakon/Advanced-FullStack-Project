@@ -654,7 +654,7 @@ const COLLECTIONS = [
     { name: 'specialties', type: '[String]', idx: true, note: 'Enum of trades, reused from the register screen list. An embedded array of primitives — small, bounded, and directly filterable through a multikey index.' },
     { name: 'location', type: '{ city, region, country, geo: { type: "Point", coordinates: [lng, lat] } }', idx: true, note: 'Embedded 1:1. GeoJSON so a `2dsphere` index can answer travel-radius searches.' },
     { name: 'travelRadiusKm', type: 'Number', note: 'How far this contractor will travel. Onboarding step 2.' },
-    { name: 'schedulingPrefs', type: '{ delayToleranceDays, noticeRequiredDays }', note: 'Embedded 1:1. Feeds the tolerance signal shown on a reschedule proposal, and later the rules engine.' },
+    { name: 'schedulingPrefs', type: '{ delayToleranceDays, noticeRequiredDays }', note: 'Embedded 1:1. Feeds the tolerance signal shown on a reschedule proposal, and later the rules engine. **Public (decided 2026-08-18):** both numbers are serialized onto the public profile, so a GC can propose a workable date first time instead of learning the constraint from a rejected proposal. Edited on My profile; bounds (0–30 and 0–14 days) are provisional.' },
 
     { group: 'Computed trust signals', groupNote: 'denormalised on purpose — see the reasoning below' },
     { name: 'ratingSummary', type: '{ average: Number, count: Number }', denorm: true, idx: true, note: 'Recomputed whenever a [[ratings]] document is written. Never edited by hand.' },
@@ -840,9 +840,9 @@ module.exports = mongoose.model('Connection', connectionSchema);`
   purpose: 'One score a user gave another user for one piece of shared, completed work. Kept as its own collection so the raw reviews survive independently of the average shown on a profile.',
   fields: [
     { name: '_id', type: 'ObjectId', note: '' },
-    { name: 'rater', type: 'ObjectId', ref: 'users', req: true, idx: true, note: 'Who wrote it.' },
+    { name: 'rater', type: 'ObjectId', ref: 'users', req: true, idx: true, note: 'Who wrote it. **Never serialized toward the ratee (decided 2026-08-18)** — a contractor sees the scores and comments on their own profile, never the names. Stored, so moderation and the gate stay auditable; withheld by the serializer, not by omitting the field.' },
     { name: 'ratee', type: 'ObjectId', ref: 'users', req: true, idx: true, note: 'Who it is about. Recomputing this person `ratingSummary` is a side effect of every write here.' },
-    { name: 'context', type: '{ project: ObjectId | null, task: ObjectId }', ref: 'tasks', req: true, note: 'The shared completed work that unlocks the rating. Storing it is what makes the gate auditable rather than a claim.' },
+    { name: 'context', type: '{ project: ObjectId | null, task: ObjectId }', ref: 'tasks', req: true, note: 'The shared completed work that unlocks the rating. Storing it is what makes the gate auditable rather than a claim. **Also withheld from the ratee**, for a non-obvious reason: a task with a single rater identifies the writer exactly, so serializing the context would undo the anonymity of `rater` above.' },
     { name: 'score', type: 'Number (1–5)', req: true, note: '' },
     { name: 'comment', type: 'String', note: 'Optional.' },
     { name: 'createdAt', type: 'Date', note: '' }
@@ -854,7 +854,8 @@ module.exports = mongoose.model('Connection', connectionSchema);`
   why: [
     '**A junction collection with a payload.** Same shape as [[connections]] — a many-to-many between users — but this one is directed and repeatable, so no `pair` trick: A rating B is genuinely a different fact from B rating A.',
     '**The average lives on [[users]], the reviews live here.** This split is the standard denormalisation pattern: keep the source of truth in its own collection, and keep a cheap summary where it is read. `users.ratingSummary` is rebuilt from this collection whenever a document is inserted.',
-    '**`context` freezes the justification.** Without it, "were these two ever on the same job?" would have to be recomputed from tasks that may since have been edited. Storing the task id makes the gate provable after the fact.'
+    '**`context` freezes the justification.** Without it, "were these two ever on the same job?" would have to be recomputed from tasks that may since have been edited. Storing the task id makes the gate provable after the fact.',
+    '**Anonymity toward the ratee is a serializer rule, not a storage decision** (2026-08-18). Everything is stored; the viewer decides what comes out. A contractor reading their own profile gets the score, the comment and the month — never `rater`, never `context`, never the exact date. The reason is behavioural rather than technical: in a trade network this size a named low rating is a confrontation, so naming the writer quietly converts an honest signal into a polite one, and §1 depends on the trust signals being real. The same rule has a trap attached — **withholding the name alone is not enough**, because a task with one rater identifies them completely, which is why the context and the precise date go too. The rating still renders in full for admins and still proves its own gate.'
   ],
   relations: [
     { to: 'users', via: 'rater / ratee', store: 'junction', card: 'N:M', why: 'Directed and repeatable — the same rater can rate the same ratee again for a different task, which is why the unique index includes `context.task`.' },
