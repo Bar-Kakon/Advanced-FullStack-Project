@@ -3,13 +3,15 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>הפרופיל שלי / My profile — FieldSync</title>
+  <title>עריכת הפרופיל / Edit profile — FieldSync</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <!-- Same font stack as login / register / browse-contractors / subscriptions -->
   <link
     href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=IBM+Plex+Mono:wght@400;500&family=Heebo:wght@400;500;600;700&family=Frank+Ruhl+Libre:wght@500;700&display=swap"
     rel="stylesheet" />
+  <!-- Shared profile structure first, then edit-only styles -->
+  <link rel="stylesheet" href="profile.css" />
   <link rel="stylesheet" href="edit-profile.css" />
 </head>
 <body>
@@ -67,8 +69,8 @@
             </svg>
           </button>
 
-          <!-- This screen is reached from the account menu, not a nav link -->
-          <button type="button" class="nav-profile is-open-context" aria-label="Account menu" aria-haspopup="true">
+          <!-- Reached from the account menu, not a nav link -->
+          <a href="my-profile.html" class="nav-profile is-open-context" aria-label="Account menu">
             <span class="nav-profile__avatar" aria-hidden="true">
               <span class="he-text">בכ</span><span class="en-text">BK</span>
             </span>
@@ -80,7 +82,7 @@
                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
               <path d="M6 9l6 6 6-6"/>
             </svg>
-          </button>
+          </a>
 
           <div class="lang-switch" role="group" aria-label="Language / שפה">
             <svg class="lang-switch__globe" width="15" height="15" viewBox="0 0 24 24"
@@ -97,21 +99,23 @@
       </div>
     </header>
 
-    <!-- ═══ MY PROFILE — page body ═══ -->
+    <!-- ═══ EDIT PROFILE — page body ═══ -->
     <main class="profile">
 
       <header class="profile__head">
-        <h1 class="profile__title">
-          <span class="he-text">הפרופיל שלי</span>
-          <span class="en-text">My profile</span>
-        </h1>
-        <p class="profile__sub">
-          <span class="he-text">כאן נמצא מה שקבלנים אחרים רואים עליכם, ואיך אתם מעדיפים שיתאמו אתכם תאריכים. הדירוג וציון הגמישות מחושבים לבד — אי אפשר לערוך אותם.</span>
-          <span class="en-text">This is what other contractors see about you, and how you prefer dates to be coordinated with you. Your rating and flexibility score are calculated for you — they cannot be edited.</span>
-        </p>
+        <div class="profile__head-text">
+          <h1 class="profile__title">
+            <span class="he-text">עריכת הפרופיל</span>
+            <span class="en-text">Edit profile</span>
+          </h1>
+          <p class="profile__sub">
+            <span class="he-text">עדכנו את הפרטים שקבלנים אחרים רואים עליכם ואת העדפות התיאום שלכם. הדירוג וציון הגמישות מחושבים לבד — אי אפשר לערוך אותם.</span>
+            <span class="en-text">Update the details other contractors see about you and your coordination preferences. Your rating and flexibility score are calculated for you — they cannot be edited.</span>
+          </p>
+        </div>
       </header>
 
-      <!-- ── Trust panel: computed signals, deliberately read-only ── -->
+      <!-- ── Trust panel: computed signals, read-only here too ── -->
       <section class="trust" aria-labelledby="trust-title">
 
         <h2 id="trust-title" class="sr-only">
@@ -156,7 +160,7 @@
 
         <div class="trust__metrics">
 
-          <!-- Rating: average + count, both denormalised on users.ratingSummary -->
+          <!-- Rating: average + count, denormalised on users.ratingSummary -->
           <div class="metric">
             <p class="metric__label">
               <span class="he-text">הדירוג שלכם</span>
@@ -205,478 +209,567 @@
 
         </div>
 
-        <details class="explain">
+        <details class="explain trust__explain">
           <summary class="explain__q">
-            <span class="he-text">איך מחושב ציון הגמישות?</span>
-            <span class="en-text">How is the flexibility score calculated?</span>
+            <span class="he-text">למה אי אפשר לערוך את הדירוג ואת ציון הגמישות?</span>
+            <span class="en-text">Why can the rating and flexibility score not be edited?</span>
           </summary>
           <div class="explain__a">
             <p>
-              <span class="he-text">הציון נבנה מהאופן שבו אתם עונים בפועל לבקשות לשינוי תאריך — אישור, דחייה או הצעה נגדית. אתם לא מדרגים את עצמכם ואי אפשר לערוך אותו, ולכן הוא אומר משהו אמיתי לקבלן שרואה אותו.</span>
-              <span class="en-text">The score is built from how you actually answer requests to change a date — approving, rejecting or proposing an alternative. You do not rate yourself and it cannot be edited, which is what makes it mean something to a contractor reading it.</span>
+              <span class="he-text">שניהם מחושבים מהתנהגות בפועל — הדירוג מקבלנים שעבדתם איתם, וציון הגמישות מהאופן שבו אתם עונים לבקשות לשינוי תאריך. אתם לא מדרגים את עצמכם, ולכן הם אומרים משהו אמיתי לקבלן שרואה אותם.</span>
+              <span class="en-text">Both are calculated from actual behaviour — the rating from contractors you worked with, the flexibility score from how you answer requests to change a date. You do not rate yourself, which is what makes them mean something to a contractor reading them.</span>
             </p>
             <p>
-              <span class="he-text">כל עוד אין מספיק תגובות, לא מוצג ציון כלל — עדיף בלי ציון מאשר ציון שנשען על תגובה אחת.</span>
-              <span class="en-text">While there are not enough responses, no score is shown at all — no score is better than one resting on a single answer.</span>
+              <span class="he-text">כל עוד אין מספיק תגובות, לא מוצג ציון גמישות כלל — עדיף בלי ציון מאשר ציון שנשען על תגובה אחת.</span>
+              <span class="en-text">While there are not enough responses, no flexibility score is shown at all — no score is better than one resting on a single answer.</span>
             </p>
           </div>
         </details>
 
       </section>
 
-      <!-- novalidate: the instructor rule is no native validation popups -->
-      <form class="profile-form" novalidate>
+      <!-- novalidate: the instructor rule is no native validation popups.
+           The GET action gives the static prototype its Save → My profile flow. -->
+      <form class="profile-form" action="my-profile.html" method="get" novalidate>
 
-        <!-- ── Identity ── -->
-        <section class="panel" aria-labelledby="identity-title">
-          <h2 id="identity-title" class="panel__title">
-            <span class="he-text">פרטים מזהים</span>
-            <span class="en-text">Identity</span>
-          </h2>
-          <p class="panel__lede">
-            <span class="he-text">אלה הפרטים שקבלנים אחרים מוצאים לפיהם בעיון בקבלנים.</span>
-            <span class="en-text">These are the details other contractors find you by when browsing.</span>
-          </p>
+        <div class="profile-grid">
 
-          <!-- Avatar: upload is a visual stub — file storage is still an open decision -->
-          <div class="avatar-row">
-            <span class="avatar avatar--lg" aria-hidden="true">
-              <span class="he-text">בכ</span><span class="en-text">BK</span>
-            </span>
-            <div class="avatar-row__actions">
-              <button type="button" class="btn btn--ghost btn--sm">
-                <span class="he-text">העלאת תמונה</span>
-                <span class="en-text">Upload photo</span>
-              </button>
-              <button type="button" class="btn btn--quiet btn--sm">
-                <span class="he-text">הסרה</span>
-                <span class="en-text">Remove</span>
-              </button>
-              <p class="field-hint">
-                <span class="he-text">\u200EJPG או PNG, עד <bdi>5</bdi> מ״ב.</span>
-                <span class="en-text">JPG or PNG, up to <bdi>5</bdi> MB.</span>
+          <!-- ── Column A: identity ── -->
+          <div class="profile-grid__col">
+            <section class="panel" aria-labelledby="identity-title">
+              <h2 id="identity-title" class="panel__title">
+                <span class="he-text">פרטים מזהים</span>
+                <span class="en-text">Identity</span>
+              </h2>
+              <p class="panel__lede">
+                <span class="he-text">אלה הפרטים שקבלנים אחרים מוצאים לפיהם בעיון בקבלנים.</span>
+                <span class="en-text">These are the details other contractors find you by when browsing.</span>
               </p>
-            </div>
-          </div>
 
-          <div class="form-row">
-            <div class="form-group">
-              <label class="form-label" for="first-name">
-                <span class="he-text">שם פרטי</span>
-                <span class="en-text">First name</span>
-              </label>
-              <input class="form-input" type="text" id="first-name" name="firstName"
-                     dir="auto" value="בר" required />
-            </div>
-
-            <div class="form-group">
-              <label class="form-label" for="last-name">
-                <span class="he-text">שם משפחה</span>
-                <span class="en-text">Last name</span>
-              </label>
-              <input class="form-input" type="text" id="last-name" name="lastName"
-                     dir="auto" value="כאכון" required />
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label class="form-label" for="phone">
-              <span class="he-text">טלפון</span>
-              <span class="en-text">Phone</span>
-            </label>
-            <!-- dir="ltr" kept: phone numbers are never mirrored -->
-            <input class="form-input" type="tel" id="phone" name="phone"
-                   dir="ltr" value="052-555-0123" autocomplete="tel" />
-            <p class="field-hint">
-              <span class="he-text">מוצג רק למי שאתם מחוברים אליו.</span>
-              <span class="en-text">Only shown to people you are connected with.</span>
-            </p>
-          </div>
-
-          <div class="form-group">
-            <label class="form-label" for="bio">
-              <span class="he-text">תיאור קצר</span>
-              <span class="en-text">Bio</span>
-            </label>
-            <!-- dir="auto": a bio is in whatever language the contractor typed -->
-            <textarea class="form-input form-textarea he-field" id="bio" name="bio"
-                      dir="auto" rows="4" maxlength="600"
-                      placeholder="במה אתם עוסקים, כמה שנים, ובאילו סוגי פרויקטים">בטון ותבניות. \u200E14 שנה, בעיקר מגדלי מגורים.</textarea>
-            <textarea class="form-input form-textarea en-field" name="bio"
-                      dir="auto" rows="4" maxlength="600" aria-label="Bio"
-                      placeholder="What you do, how long you have done it, and the projects you take on">Concrete and formwork. 14 years, mostly residential towers.</textarea>
-            <p class="field-hint">
-              <span class="he-text">עד <bdi>600</bdi> תווים.</span>
-              <span class="en-text">Up to <bdi>600</bdi> characters.</span>
-            </p>
-          </div>
-
-          <!-- Specialties: an array on the account, so more than one may be chosen -->
-          <fieldset class="form-group choice-set">
-            <legend class="form-label form-label--plain">
-              <span class="he-text">תחומי התמחות</span>
-              <span class="en-text">Specialties</span>
-            </legend>
-            <p class="field-hint">
-              <span class="he-text">אפשר לבחור יותר מתחום אחד. זה מה שמסנן אתכם בחיפוש.</span>
-              <span class="en-text">You can choose more than one. This is what filters you into search results.</span>
-            </p>
-
-            <ul class="choice-grid">
-              <li><label class="choice">
-                <input class="choice__input" type="checkbox" name="specialties" value="general" />
-                <span class="choice__box" aria-hidden="true">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                       stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+              <!-- Avatar: upload is a visual stub — file storage is still an open decision -->
+              <div class="avatar-row">
+                <span class="avatar avatar--lg" aria-hidden="true">
+                  <span class="he-text">בכ</span><span class="en-text">BK</span>
                 </span>
-                <span class="choice__label">
-                  <span class="he-text">קבלנות כללית</span>
-                  <span class="en-text">General contracting</span>
-                </span>
-              </label></li>
-
-              <li><label class="choice">
-                <input class="choice__input" type="checkbox" name="specialties" value="electrical" />
-                <span class="choice__box" aria-hidden="true">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                       stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
-                </span>
-                <span class="choice__label">
-                  <span class="he-text">חשמל</span>
-                  <span class="en-text">Electrical</span>
-                </span>
-              </label></li>
-
-              <li><label class="choice">
-                <input class="choice__input" type="checkbox" name="specialties" value="plumbing" />
-                <span class="choice__box" aria-hidden="true">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                       stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
-                </span>
-                <span class="choice__label">
-                  <span class="he-text">אינסטלציה</span>
-                  <span class="en-text">Plumbing</span>
-                </span>
-              </label></li>
-
-              <li><label class="choice">
-                <input class="choice__input" type="checkbox" name="specialties" value="drilling" />
-                <span class="choice__box" aria-hidden="true">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                       stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
-                </span>
-                <span class="choice__label">
-                  <span class="he-text">קידוחים וביסוס</span>
-                  <span class="en-text">Drilling &amp; foundations</span>
-                </span>
-              </label></li>
-
-              <li><label class="choice">
-                <input class="choice__input" type="checkbox" name="specialties" value="shell" checked />
-                <span class="choice__box" aria-hidden="true">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                       stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
-                </span>
-                <span class="choice__label">
-                  <span class="he-text">קבלן שלד</span>
-                  <span class="en-text">Shell</span>
-                </span>
-              </label></li>
-
-              <li><label class="choice">
-                <input class="choice__input" type="checkbox" name="specialties" value="concrete" checked />
-                <span class="choice__box" aria-hidden="true">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                       stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
-                </span>
-                <span class="choice__label">
-                  <span class="he-text">בטון</span>
-                  <span class="en-text">Concrete</span>
-                </span>
-              </label></li>
-
-              <li><label class="choice">
-                <input class="choice__input" type="checkbox" name="specialties" value="saferoom" checked />
-                <span class="choice__box" aria-hidden="true">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                       stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
-                </span>
-                <span class="choice__label">
-                  <span class="he-text">בניית ממ"דים</span>
-                  <span class="en-text">Safe rooms (mamad)</span>
-                </span>
-              </label></li>
-
-              <li><label class="choice">
-                <input class="choice__input" type="checkbox" name="specialties" value="carpentry" />
-                <span class="choice__box" aria-hidden="true">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                       stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
-                </span>
-                <span class="choice__label">
-                  <span class="he-text">נגרות</span>
-                  <span class="en-text">Carpentry</span>
-                </span>
-              </label></li>
-
-              <li><label class="choice">
-                <input class="choice__input" type="checkbox" name="specialties" value="aluminum" />
-                <span class="choice__box" aria-hidden="true">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                       stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
-                </span>
-                <span class="choice__label">
-                  <span class="he-text">אלומיניום וזיגוג</span>
-                  <span class="en-text">Aluminum &amp; glazing</span>
-                </span>
-              </label></li>
-
-              <li><label class="choice">
-                <input class="choice__input" type="checkbox" name="specialties" value="hvac" />
-                <span class="choice__box" aria-hidden="true">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                       stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
-                </span>
-                <span class="choice__label">
-                  <span class="he-text">מיזוג אוויר</span>
-                  <span class="en-text">HVAC / air conditioning</span>
-                </span>
-              </label></li>
-
-              <li><label class="choice">
-                <input class="choice__input" type="checkbox" name="specialties" value="painting" />
-                <span class="choice__box" aria-hidden="true">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                       stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
-                </span>
-                <span class="choice__label">
-                  <span class="he-text">צביעה</span>
-                  <span class="en-text">Painting</span>
-                </span>
-              </label></li>
-
-              <li><label class="choice">
-                <input class="choice__input" type="checkbox" name="specialties" value="tiling" />
-                <span class="choice__box" aria-hidden="true">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                       stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
-                </span>
-                <span class="choice__label">
-                  <span class="he-text">ריצוף וחיפוי</span>
-                  <span class="en-text">Tiling &amp; flooring</span>
-                </span>
-              </label></li>
-
-              <li><label class="choice">
-                <input class="choice__input" type="checkbox" name="specialties" value="plastering" />
-                <span class="choice__box" aria-hidden="true">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                       stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
-                </span>
-                <span class="choice__label">
-                  <span class="he-text">טיח</span>
-                  <span class="en-text">Plastering</span>
-                </span>
-              </label></li>
-
-              <li><label class="choice">
-                <input class="choice__input" type="checkbox" name="specialties" value="earthworks" />
-                <span class="choice__box" aria-hidden="true">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                       stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
-                </span>
-                <span class="choice__label">
-                  <span class="he-text">עבודות עפר</span>
-                  <span class="en-text">Earthworks</span>
-                </span>
-              </label></li>
-
-              <li><label class="choice">
-                <input class="choice__input" type="checkbox" name="specialties" value="waterproofing" />
-                <span class="choice__box" aria-hidden="true">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                       stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
-                </span>
-                <span class="choice__label">
-                  <span class="he-text">איטום</span>
-                  <span class="en-text">Waterproofing</span>
-                </span>
-              </label></li>
-
-              <li><label class="choice">
-                <input class="choice__input" type="checkbox" name="specialties" value="supply" />
-                <span class="choice__box" aria-hidden="true">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                       stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
-                </span>
-                <span class="choice__label">
-                  <span class="he-text">אספקה וחומרים</span>
-                  <span class="en-text">Supply / materials</span>
-                </span>
-              </label></li>
-
-              <li><label class="choice">
-                <input class="choice__input" type="checkbox" name="specialties" value="other" />
-                <span class="choice__box" aria-hidden="true">
-                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                       stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
-                </span>
-                <span class="choice__label">
-                  <span class="he-text">אחר</span>
-                  <span class="en-text">Other</span>
-                </span>
-              </label></li>
-            </ul>
-          </fieldset>
-
-          <!-- City is free text; region is a fixed code, because search filters on it -->
-          <div class="form-row">
-            <div class="form-group">
-              <label class="form-label" for="city">
-                <span class="he-text">עיר</span>
-                <span class="en-text">City</span>
-              </label>
-              <input class="form-input he-field" type="text" id="city" name="city"
-                     dir="auto" value="חיפה" placeholder="חיפה"
-                     autocomplete="address-level2" required />
-              <input class="form-input en-field" type="text" name="city"
-                     dir="auto" value="Haifa" placeholder="Haifa" aria-label="City"
-                     autocomplete="address-level2" required />
-            </div>
-
-            <div class="form-group">
-              <label class="form-label" for="region-he">
-                <span class="he-text">אזור</span>
-                <span class="en-text">Region</span>
-              </label>
-              <div class="select-wrap">
-                <select class="form-select he-select" id="region-he" name="region" required>
-                  <option value="" disabled>בחירת אזור…</option>
-                  <option value="north">צפון</option>
-                  <option value="haifa" selected>חיפה והקריות</option>
-                  <option value="sharon">השרון</option>
-                  <option value="center">מרכז</option>
-                  <option value="telaviv">תל אביב</option>
-                  <option value="jerusalem">ירושלים והסביבה</option>
-                  <option value="lowlands">שפלה</option>
-                  <option value="south">דרום</option>
-                </select>
-                <select class="form-select en-select" id="region-en" name="region" aria-label="Region" required>
-                  <option value="" disabled>Select a region…</option>
-                  <option value="north">North</option>
-                  <option value="haifa" selected>Haifa &amp; Krayot</option>
-                  <option value="sharon">Sharon</option>
-                  <option value="center">Center</option>
-                  <option value="telaviv">Tel Aviv</option>
-                  <option value="jerusalem">Jerusalem area</option>
-                  <option value="lowlands">Lowlands (Shfela)</option>
-                  <option value="south">South</option>
-                </select>
-                <span class="select-chevron" aria-hidden="true">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                       stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
-                </span>
+                <div class="avatar-row__actions">
+                  <button type="button" class="btn btn--ghost btn--sm">
+                    <span class="he-text">העלאת תמונה</span>
+                    <span class="en-text">Upload photo</span>
+                  </button>
+                  <button type="button" class="btn btn--quiet btn--sm">
+                    <span class="he-text">הסרה</span>
+                    <span class="en-text">Remove</span>
+                  </button>
+                  <p class="field-hint">
+                    <span class="he-text">\u200EJPG או PNG, עד <bdi>5</bdi> מ״ב.</span>
+                    <span class="en-text">JPG or PNG, up to <bdi>5</bdi> MB.</span>
+                  </p>
+                </div>
               </div>
-              <p class="field-hint">
-                <span class="he-text">האזור הוא מה שמסנן אתכם בחיפוש, ולכן הוא נבחר מרשימה.</span>
-                <span class="en-text">The region is what filters you into search results, so it is chosen from a list.</span>
-              </p>
-            </div>
-          </div>
 
-          <div class="form-group form-group--narrow">
-            <label class="form-label" for="travel-radius">
-              <span class="he-text">מרחק נסיעה</span>
-              <span class="en-text">Travel distance</span>
-            </label>
-            <div class="unit-field">
-              <input class="form-input form-input--num" type="number" id="travel-radius"
-                     name="travelRadiusKm" dir="ltr" value="70" min="0" max="500" step="5" />
-              <span class="unit-field__unit">
-                <span class="he-text">ק״מ</span>
-                <span class="en-text">km</span>
-              </span>
-            </div>
-            <p class="field-hint">
-              <span class="he-text">עד כמה רחוק אתם מוכנים להגיע מהעיר שלכם.</span>
-              <span class="en-text">How far you are willing to travel from your city.</span>
-            </p>
-          </div>
-        </section>
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="field-label" for="first-name">
+                    <span class="he-text">שם פרטי</span>
+                    <span class="en-text">First name</span>
+                  </label>
+                  <div class="input-wrapper">
+                    <input class="form-input" type="text" id="first-name" name="firstName"
+                           dir="auto" value="בר" required />
+                    <span class="input-warn" aria-hidden="true">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                           stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M2.5 18h19"/>
+                        <path d="M5 18v-2.5a7 7 0 0 1 14 0V18"/>
+                        <line x1="12" y1="9" x2="12" y2="12.7"/>
+                        <circle cx="12" cy="15.4" r="0.5" fill="currentColor"/>
+                      </svg>
+                    </span>
+                  </div>
+                </div>
 
-        <!-- ── Scheduling preferences ── -->
-        <section class="panel" aria-labelledby="sched-title">
-          <h2 id="sched-title" class="panel__title">
-            <span class="he-text">העדפות תיאום</span>
-            <span class="en-text">Scheduling preferences</span>
-          </h2>
-          <p class="panel__lede">
-            <span class="he-text">אלה לא כללים נוקשים — הם אומרים לצד השני מה מתאים לכם לפני שהוא מציע תאריך.</span>
-            <span class="en-text">These are not hard rules — they tell the other side what works for you before they propose a date.</span>
-          </p>
-
-          <div class="form-row">
-            <div class="form-group">
-              <label class="form-label" for="delay-tolerance">
-                <span class="he-text">עיכוב שאפשר לספוג</span>
-                <span class="en-text">Delay you can absorb</span>
-              </label>
-              <div class="unit-field">
-                <input class="form-input form-input--num" type="number" id="delay-tolerance"
-                       name="delayToleranceDays" dir="ltr" value="3" min="0" max="30" step="1" />
-                <span class="unit-field__unit">
-                  <span class="he-text">ימים</span>
-                  <span class="en-text">days</span>
-                </span>
+                <div class="form-group">
+                  <label class="field-label" for="last-name">
+                    <span class="he-text">שם משפחה</span>
+                    <span class="en-text">Last name</span>
+                  </label>
+                  <div class="input-wrapper">
+                    <input class="form-input" type="text" id="last-name" name="lastName"
+                           dir="auto" value="כאכון" required />
+                    <span class="input-warn" aria-hidden="true">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                           stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M2.5 18h19"/>
+                        <path d="M5 18v-2.5a7 7 0 0 1 14 0V18"/>
+                        <line x1="12" y1="9" x2="12" y2="12.7"/>
+                        <circle cx="12" cy="15.4" r="0.5" fill="currentColor"/>
+                      </svg>
+                    </span>
+                  </div>
+                </div>
               </div>
-              <p class="field-hint">
-                <span class="he-text">כמה ימי עיכוב במשימה שלכם עדיין לא מפילים לכם את הלוח.</span>
-                <span class="en-text">How many days a task can slip before it breaks your schedule.</span>
-              </p>
-            </div>
 
-            <div class="form-group">
-              <label class="form-label" for="notice-required">
-                <span class="he-text">התראה מראש שאתם צריכים</span>
-                <span class="en-text">Notice you need</span>
-              </label>
-              <div class="unit-field">
-                <input class="form-input form-input--num" type="number" id="notice-required"
-                       name="noticeRequiredDays" dir="ltr" value="2" min="0" max="14" step="1" />
-                <span class="unit-field__unit">
-                  <span class="he-text">ימים</span>
-                  <span class="en-text">days</span>
-                </span>
+              <div class="form-group">
+                <label class="field-label" for="phone">
+                  <span class="he-text">טלפון</span>
+                  <span class="en-text">Phone</span>
+                </label>
+                <!-- dir="ltr" kept: phone numbers are never mirrored -->
+                <input class="form-input" type="tel" id="phone" name="phone"
+                       dir="ltr" value="052-555-0123" autocomplete="tel" />
+                <p class="field-hint">
+                  <span class="he-text">מוצג רק למי שאתם מחוברים אליו.</span>
+                  <span class="en-text">Only shown to people you are connected with.</span>
+                </p>
               </div>
-              <p class="field-hint">
-                <span class="he-text">כמה זמן מראש צריך להודיע לכם כדי שתספיקו לארגן צוות וציוד.</span>
-                <span class="en-text">How much warning you need to arrange a crew and equipment.</span>
-              </p>
-            </div>
+
+              <div class="form-group">
+                <label class="field-label" for="bio">
+                  <span class="he-text">תיאור קצר</span>
+                  <span class="en-text">Bio</span>
+                </label>
+                <!-- dir="auto": a bio is in whatever language the contractor typed -->
+                <textarea class="form-input form-textarea he-field" id="bio" name="bio"
+                          dir="auto" rows="4" maxlength="600"
+                          placeholder="במה אתם עוסקים, כמה שנים, ובאילו סוגי פרויקטים">בטון ותבניות. \u200E14 שנה, בעיקר מגדלי מגורים.</textarea>
+                <textarea class="form-input form-textarea en-field" name="bio"
+                          dir="auto" rows="4" maxlength="600" aria-label="Bio"
+                          placeholder="What you do, how long you have done it, and the projects you take on">Concrete and formwork. 14 years, mostly residential towers.</textarea>
+                <p class="field-hint">
+                  <span class="he-text">עד <bdi>600</bdi> תווים.</span>
+                  <span class="en-text">Up to <bdi>600</bdi> characters.</span>
+                </p>
+              </div>
+
+              <!-- Specialties: an array on the account, so more than one may be chosen -->
+              <fieldset class="form-group choice-set">
+                <legend class="field-label">
+                  <span class="he-text">תחומי התמחות</span>
+                  <span class="en-text">Specialties</span>
+                </legend>
+                <p class="field-hint">
+                  <span class="he-text">אפשר לבחור יותר מתחום אחד. זה מה שמסנן אתכם בחיפוש.</span>
+                  <span class="en-text">You can choose more than one. This is what filters you into search results.</span>
+                </p>
+
+                <ul class="choice-grid">
+                  <li><label class="choice">
+                    <input class="choice__input" type="checkbox" name="specialties" value="general" />
+                    <span class="choice__box" aria-hidden="true">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                           stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+                    </span>
+                    <span class="choice__label">
+                      <span class="he-text">קבלנות כללית</span>
+                      <span class="en-text">General contracting</span>
+                    </span>
+                  </label></li>
+
+                  <li><label class="choice">
+                    <input class="choice__input" type="checkbox" name="specialties" value="electrical" />
+                    <span class="choice__box" aria-hidden="true">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                           stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+                    </span>
+                    <span class="choice__label">
+                      <span class="he-text">חשמל</span>
+                      <span class="en-text">Electrical</span>
+                    </span>
+                  </label></li>
+
+                  <li><label class="choice">
+                    <input class="choice__input" type="checkbox" name="specialties" value="plumbing" />
+                    <span class="choice__box" aria-hidden="true">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                           stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+                    </span>
+                    <span class="choice__label">
+                      <span class="he-text">אינסטלציה</span>
+                      <span class="en-text">Plumbing</span>
+                    </span>
+                  </label></li>
+
+                  <li><label class="choice">
+                    <input class="choice__input" type="checkbox" name="specialties" value="drilling" />
+                    <span class="choice__box" aria-hidden="true">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                           stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+                    </span>
+                    <span class="choice__label">
+                      <span class="he-text">קידוחים וביסוס</span>
+                      <span class="en-text">Drilling &amp; foundations</span>
+                    </span>
+                  </label></li>
+
+                  <li><label class="choice">
+                    <input class="choice__input" type="checkbox" name="specialties" value="shell" checked />
+                    <span class="choice__box" aria-hidden="true">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                           stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+                    </span>
+                    <span class="choice__label">
+                      <span class="he-text">קבלן שלד</span>
+                      <span class="en-text">Shell</span>
+                    </span>
+                  </label></li>
+
+                  <li><label class="choice">
+                    <input class="choice__input" type="checkbox" name="specialties" value="concrete" checked />
+                    <span class="choice__box" aria-hidden="true">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                           stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+                    </span>
+                    <span class="choice__label">
+                      <span class="he-text">בטון</span>
+                      <span class="en-text">Concrete</span>
+                    </span>
+                  </label></li>
+
+                  <li><label class="choice">
+                    <input class="choice__input" type="checkbox" name="specialties" value="saferoom" checked />
+                    <span class="choice__box" aria-hidden="true">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                           stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+                    </span>
+                    <span class="choice__label">
+                      <span class="he-text">בניית ממ"דים</span>
+                      <span class="en-text">Safe rooms (mamad)</span>
+                    </span>
+                  </label></li>
+
+                  <li><label class="choice">
+                    <input class="choice__input" type="checkbox" name="specialties" value="carpentry" />
+                    <span class="choice__box" aria-hidden="true">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                           stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+                    </span>
+                    <span class="choice__label">
+                      <span class="he-text">נגרות</span>
+                      <span class="en-text">Carpentry</span>
+                    </span>
+                  </label></li>
+
+                  <li><label class="choice">
+                    <input class="choice__input" type="checkbox" name="specialties" value="aluminum" />
+                    <span class="choice__box" aria-hidden="true">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                           stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+                    </span>
+                    <span class="choice__label">
+                      <span class="he-text">אלומיניום וזיגוג</span>
+                      <span class="en-text">Aluminum &amp; glazing</span>
+                    </span>
+                  </label></li>
+
+                  <li><label class="choice">
+                    <input class="choice__input" type="checkbox" name="specialties" value="hvac" />
+                    <span class="choice__box" aria-hidden="true">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                           stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+                    </span>
+                    <span class="choice__label">
+                      <span class="he-text">מיזוג אוויר</span>
+                      <span class="en-text">HVAC / air conditioning</span>
+                    </span>
+                  </label></li>
+
+                  <li><label class="choice">
+                    <input class="choice__input" type="checkbox" name="specialties" value="painting" />
+                    <span class="choice__box" aria-hidden="true">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                           stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+                    </span>
+                    <span class="choice__label">
+                      <span class="he-text">צביעה</span>
+                      <span class="en-text">Painting</span>
+                    </span>
+                  </label></li>
+
+                  <li><label class="choice">
+                    <input class="choice__input" type="checkbox" name="specialties" value="tiling" />
+                    <span class="choice__box" aria-hidden="true">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                           stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+                    </span>
+                    <span class="choice__label">
+                      <span class="he-text">ריצוף וחיפוי</span>
+                      <span class="en-text">Tiling &amp; flooring</span>
+                    </span>
+                  </label></li>
+
+                  <li><label class="choice">
+                    <input class="choice__input" type="checkbox" name="specialties" value="plastering" />
+                    <span class="choice__box" aria-hidden="true">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                           stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+                    </span>
+                    <span class="choice__label">
+                      <span class="he-text">טיח</span>
+                      <span class="en-text">Plastering</span>
+                    </span>
+                  </label></li>
+
+                  <li><label class="choice">
+                    <input class="choice__input" type="checkbox" name="specialties" value="earthworks" />
+                    <span class="choice__box" aria-hidden="true">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                           stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+                    </span>
+                    <span class="choice__label">
+                      <span class="he-text">עבודות עפר</span>
+                      <span class="en-text">Earthworks</span>
+                    </span>
+                  </label></li>
+
+                  <li><label class="choice">
+                    <input class="choice__input" type="checkbox" name="specialties" value="waterproofing" />
+                    <span class="choice__box" aria-hidden="true">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                           stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+                    </span>
+                    <span class="choice__label">
+                      <span class="he-text">איטום</span>
+                      <span class="en-text">Waterproofing</span>
+                    </span>
+                  </label></li>
+
+                  <li><label class="choice">
+                    <input class="choice__input" type="checkbox" name="specialties" value="supply" />
+                    <span class="choice__box" aria-hidden="true">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                           stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+                    </span>
+                    <span class="choice__label">
+                      <span class="he-text">אספקה וחומרים</span>
+                      <span class="en-text">Supply / materials</span>
+                    </span>
+                  </label></li>
+
+                  <li><label class="choice">
+                    <input class="choice__input" type="checkbox" name="specialties" value="other" />
+                    <span class="choice__box" aria-hidden="true">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                           stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+                    </span>
+                    <span class="choice__label">
+                      <span class="he-text">אחר</span>
+                      <span class="en-text">Other</span>
+                    </span>
+                  </label></li>
+                </ul>
+              </fieldset>
+            </section>
           </div>
 
-          <p class="notice">
-            <svg class="notice__icon" width="17" height="17" viewBox="0 0 24 24" fill="none"
-                 stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-              <circle cx="12" cy="12" r="3"/>
-            </svg>
-            <span>
-              <span class="he-text">שני המספרים האלה מופיעים בפרופיל הציבורי שלכם, כדי שקבלן יציע לכם תאריך שעובד כבר בפעם הראשונה.</span>
-              <span class="en-text">Both of these numbers appear on your public profile, so a contractor proposes a date that works the first time.</span>
-            </span>
-          </p>
-        </section>
+          <!-- ── Column B: location and scheduling ── -->
+          <div class="profile-grid__col">
+
+            <section class="panel" aria-labelledby="location-title">
+              <h2 id="location-title" class="panel__title">
+                <span class="he-text">אזור עבודה</span>
+                <span class="en-text">Where you work</span>
+              </h2>
+              <p class="panel__lede">
+                <span class="he-text">האזור נבחר מרשימה, כי הוא מה שמסנן אתכם בחיפוש.</span>
+                <span class="en-text">The region is chosen from a list, because it is what filters you into search results.</span>
+              </p>
+
+              <div class="form-group">
+                <label class="field-label" for="city">
+                  <span class="he-text">עיר</span>
+                  <span class="en-text">City</span>
+                </label>
+                <div class="input-wrapper he-field">
+                  <input class="form-input" type="text" id="city" name="city"
+                         dir="auto" value="חיפה" placeholder="חיפה"
+                         autocomplete="address-level2" required />
+                  <span class="input-warn" aria-hidden="true">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                         stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M2.5 18h19"/>
+                      <path d="M5 18v-2.5a7 7 0 0 1 14 0V18"/>
+                      <line x1="12" y1="9" x2="12" y2="12.7"/>
+                      <circle cx="12" cy="15.4" r="0.5" fill="currentColor"/>
+                    </svg>
+                  </span>
+                </div>
+                <div class="input-wrapper en-field">
+                  <input class="form-input" type="text" name="city"
+                         dir="auto" value="Haifa" placeholder="Haifa" aria-label="City"
+                         autocomplete="address-level2" required />
+                  <span class="input-warn" aria-hidden="true">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                         stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M2.5 18h19"/>
+                      <path d="M5 18v-2.5a7 7 0 0 1 14 0V18"/>
+                      <line x1="12" y1="9" x2="12" y2="12.7"/>
+                      <circle cx="12" cy="15.4" r="0.5" fill="currentColor"/>
+                    </svg>
+                  </span>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="field-label" for="region-he">
+                  <span class="he-text">אזור</span>
+                  <span class="en-text">Region</span>
+                </label>
+                <div class="select-wrap">
+                  <select class="form-select he-select" id="region-he" name="region" required>
+                    <option value="" disabled>בחירת אזור…</option>
+                    <option value="north">צפון</option>
+                    <option value="haifa" selected>חיפה והקריות</option>
+                    <option value="sharon">השרון</option>
+                    <option value="center">מרכז</option>
+                    <option value="telaviv">תל אביב</option>
+                    <option value="jerusalem">ירושלים והסביבה</option>
+                    <option value="lowlands">שפלה</option>
+                    <option value="south">דרום</option>
+                  </select>
+                  <select class="form-select en-select" id="region-en" name="region" aria-label="Region" required>
+                    <option value="" disabled>Select a region…</option>
+                    <option value="north">North</option>
+                    <option value="haifa" selected>Haifa &amp; Krayot</option>
+                    <option value="sharon">Sharon</option>
+                    <option value="center">Center</option>
+                    <option value="telaviv">Tel Aviv</option>
+                    <option value="jerusalem">Jerusalem area</option>
+                    <option value="lowlands">Lowlands (Shfela)</option>
+                    <option value="south">South</option>
+                  </select>
+                  <span class="select-chevron" aria-hidden="true">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                         stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+                  </span>
+                </div>
+              </div>
+
+              <div class="form-group form-group--narrow">
+                <label class="field-label" for="travel-radius">
+                  <span class="he-text">מרחק נסיעה</span>
+                  <span class="en-text">Travel distance</span>
+                </label>
+                <div class="unit-field">
+                  <div class="input-wrapper">
+                    <input class="form-input form-input--num" type="number" id="travel-radius"
+                           name="travelRadiusKm" dir="ltr" value="70" min="0" max="500" step="5" />
+                    <span class="input-warn" aria-hidden="true">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                           stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M2.5 18h19"/>
+                        <path d="M5 18v-2.5a7 7 0 0 1 14 0V18"/>
+                        <line x1="12" y1="9" x2="12" y2="12.7"/>
+                        <circle cx="12" cy="15.4" r="0.5" fill="currentColor"/>
+                      </svg>
+                    </span>
+                  </div>
+                  <span class="unit-field__unit">
+                    <span class="he-text">ק״מ</span>
+                    <span class="en-text">km</span>
+                  </span>
+                </div>
+                <p class="field-hint">
+                  <span class="he-text">עד כמה רחוק אתם מוכנים להגיע מהעיר שלכם.</span>
+                  <span class="en-text">How far you are willing to travel from your city.</span>
+                </p>
+              </div>
+            </section>
+
+            <section class="panel" aria-labelledby="sched-title">
+              <h2 id="sched-title" class="panel__title">
+                <span class="he-text">העדפות תיאום</span>
+                <span class="en-text">Scheduling preferences</span>
+              </h2>
+              <p class="panel__lede">
+                <span class="he-text">אלה לא כללים נוקשים — הם אומרים לצד השני מה מתאים לכם לפני שהוא מציע תאריך.</span>
+                <span class="en-text">These are not hard rules — they tell the other side what works for you before they propose a date.</span>
+              </p>
+
+              <div class="form-group">
+                <label class="field-label" for="delay-tolerance">
+                  <span class="he-text">עיכוב שאפשר לספוג</span>
+                  <span class="en-text">Delay you can absorb</span>
+                </label>
+                <div class="unit-field">
+                  <div class="input-wrapper">
+                    <input class="form-input form-input--num" type="number" id="delay-tolerance"
+                           name="delayToleranceDays" dir="ltr" value="3" min="0" max="30" step="1" />
+                    <span class="input-warn" aria-hidden="true">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                           stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M2.5 18h19"/>
+                        <path d="M5 18v-2.5a7 7 0 0 1 14 0V18"/>
+                        <line x1="12" y1="9" x2="12" y2="12.7"/>
+                        <circle cx="12" cy="15.4" r="0.5" fill="currentColor"/>
+                      </svg>
+                    </span>
+                  </div>
+                  <span class="unit-field__unit">
+                    <span class="he-text">ימים</span>
+                    <span class="en-text">days</span>
+                  </span>
+                </div>
+                <p class="field-hint">
+                  <span class="he-text">כמה ימי עיכוב במשימה שלכם עדיין לא מפילים לכם את הלוח.</span>
+                  <span class="en-text">How many days a task can slip before it breaks your schedule.</span>
+                </p>
+              </div>
+
+              <div class="form-group">
+                <label class="field-label" for="notice-required">
+                  <span class="he-text">התראה מראש שאתם צריכים</span>
+                  <span class="en-text">Notice you need</span>
+                </label>
+                <div class="unit-field">
+                  <div class="input-wrapper">
+                    <input class="form-input form-input--num" type="number" id="notice-required"
+                           name="noticeRequiredDays" dir="ltr" value="2" min="0" max="14" step="1" />
+                    <span class="input-warn" aria-hidden="true">
+                      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                           stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M2.5 18h19"/>
+                        <path d="M5 18v-2.5a7 7 0 0 1 14 0V18"/>
+                        <line x1="12" y1="9" x2="12" y2="12.7"/>
+                        <circle cx="12" cy="15.4" r="0.5" fill="currentColor"/>
+                      </svg>
+                    </span>
+                  </div>
+                  <span class="unit-field__unit">
+                    <span class="he-text">ימים</span>
+                    <span class="en-text">days</span>
+                  </span>
+                </div>
+                <p class="field-hint">
+                  <span class="he-text">כמה זמן מראש צריך להודיע לכם כדי שתספיקו לארגן צוות וציוד.</span>
+                  <span class="en-text">How much warning you need to arrange a crew and equipment.</span>
+                </p>
+              </div>
+
+              <p class="notice">
+                <svg class="notice__icon" width="17" height="17" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                  <circle cx="12" cy="12" r="3"/>
+                </svg>
+                <span>
+                  <span class="he-text">שני המספרים האלה מופיעים בפרופיל הציבורי שלכם, כדי שקבלן יציע לכם תאריך שעובד כבר בפעם הראשונה.</span>
+                  <span class="en-text">Both of these numbers appear on your public profile, so a contractor proposes a date that works the first time.</span>
+                </span>
+              </p>
+            </section>
+
+          </div>
+        </div>
 
         <div class="form-actions">
           <button type="submit" class="btn btn--primary">
             <span class="he-text">שמירת שינויים</span>
             <span class="en-text">Save changes</span>
           </button>
-          <button type="button" class="btn btn--ghost">
+          <a href="my-profile.html" class="btn btn--ghost">
             <span class="he-text">ביטול</span>
             <span class="en-text">Cancel</span>
-          </button>
+          </a>
           <p class="form-actions__aside">
             <span class="he-text">כתובת מייל וסיסמה משתנות ב<a href="#">הגדרות</a>.</span>
             <span class="en-text">Email and password are changed in <a href="#">Settings</a>.</span>
@@ -684,15 +777,15 @@
         </div>
       </form>
 
-      <!-- ── Ratings received: anonymous to the person being rated ── -->
+      <!-- ── Ratings received: read-only, and anonymous to the person rated ── -->
       <section class="panel panel--ratings" aria-labelledby="ratings-title">
         <h2 id="ratings-title" class="panel__title">
           <span class="he-text">הדירוגים שקיבלתם</span>
           <span class="en-text">Ratings you received</span>
         </h2>
         <p class="panel__lede">
-          <span class="he-text">\u200E<bdi>23</bdi> דירוגים מקבלנים שעבדתם איתם על משימות שהושלמו.</span>
-          <span class="en-text"><bdi>23</bdi> ratings from contractors you worked with on completed tasks.</span>
+          <span class="he-text">\u200E<bdi>23</bdi> דירוגים מקבלנים שעבדתם איתם על משימות שהושלמו. אי אפשר לערוך אותם.</span>
+          <span class="en-text"><bdi>23</bdi> ratings from contractors you worked with on completed tasks. They cannot be edited.</span>
         </p>
 
         <p class="notice notice--quiet">
@@ -759,11 +852,6 @@
             </p>
           </li>
         </ul>
-
-        <button type="button" class="btn btn--ghost btn--sm review-list__more">
-          <span class="he-text">הצגת דירוגים נוספים</span>
-          <span class="en-text">Show more ratings</span>
-        </button>
       </section>
 
     </main>
