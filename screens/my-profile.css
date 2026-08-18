@@ -35,8 +35,6 @@
   color: var(--text-55);
   margin-inline-start: 6px;
 }
-.fact__note { font-size: 14px; line-height: 1.5; color: var(--text-55); }
-.facts + .notice { margin-top: 22px; }
 
 /* ═══ Bio ═══ */
 .bio-text {

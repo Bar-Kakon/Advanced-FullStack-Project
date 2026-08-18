@@ -133,6 +133,24 @@ label.field-label { cursor: pointer; }
 }
 .unit-field .input-wrapper { flex-shrink: 0; }
 
+/* ═══ Sidenotes ═══ */
+/* One placement everywhere: title, lede, sidenote, then the section content */
+.notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 14px 16px;
+  margin-block-end: 22px;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--text-55);
+  background: var(--background);
+  border: 1px solid var(--secondary-30);
+  border-inline-start: 4px solid var(--secondary-45);
+  border-radius: var(--r-sm);
+}
+.notice__icon { color: var(--primary); flex-shrink: 0; margin-top: 3px; }
+
 /* ═══ Avatar uploader ═══ */
 .avatar-row {
   display: flex;

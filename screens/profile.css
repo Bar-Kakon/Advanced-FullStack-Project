@@ -619,29 +619,6 @@ fieldset { border: 0; }
   flex-shrink: 0;
 }
 
-/* ═══ Inline notice — explains where a value is visible ═══ */
-.notice {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  padding: 14px 16px;
-  font-size: 15px;
-  line-height: 1.6;
-  color: var(--text-75);
-  background: var(--secondary-15);
-  border: 1px solid var(--secondary-45);
-  border-inline-start: 4px solid var(--secondary);
-  border-radius: var(--r-sm);
-}
-.notice__icon { color: var(--primary); flex-shrink: 0; margin-top: 3px; }
-.notice--quiet {
-  background: var(--background);
-  border-color: var(--secondary-30);
-  border-inline-start-color: var(--secondary-45);
-  color: var(--text-55);
-  margin-block-end: 22px;
-}
-
 /* ═══ Ratings received — read-only on both screens ═══ */
 .review-list {
   display: grid;
