@@ -87,6 +87,27 @@ label.field-label { cursor: pointer; }
 
 .field-hint { font-size: 14px; line-height: 1.5; color: var(--text-55); }
 
+/* ═══ Nationwide: travel distance stops being a meaningful preference ═══ */
+/* The active language's select is the one that counts, so each is gated on its lang radio */
+.field-hint--na { display: none; }
+
+#lang-he:checked ~ .app .panel:has(.he-select option[value="nationwide"]:checked) .form-group--travel,
+#lang-en:checked ~ .app .panel:has(.en-select option[value="nationwide"]:checked) .form-group--travel {
+  opacity: 0.55;
+}
+#lang-he:checked ~ .app .panel:has(.he-select option[value="nationwide"]:checked) .form-group--travel .unit-field,
+#lang-en:checked ~ .app .panel:has(.en-select option[value="nationwide"]:checked) .form-group--travel .unit-field {
+  pointer-events: none;
+}
+#lang-he:checked ~ .app .panel:has(.he-select option[value="nationwide"]:checked) .form-group--travel .field-hint--default,
+#lang-en:checked ~ .app .panel:has(.en-select option[value="nationwide"]:checked) .form-group--travel .field-hint--default {
+  display: none;
+}
+#lang-he:checked ~ .app .panel:has(.he-select option[value="nationwide"]:checked) .form-group--travel .field-hint--na,
+#lang-en:checked ~ .app .panel:has(.en-select option[value="nationwide"]:checked) .form-group--travel .field-hint--na {
+  display: block;
+}
+
 /* ═══ Validation — same touched model as login / register ═══ */
 /* validation.js adds .touched on blur, so red shows only after an invalid field is left */
 .form-input.touched:not(:focus):invalid {

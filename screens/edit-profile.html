@@ -617,6 +617,7 @@
                 <div class="select-wrap">
                   <select class="form-select he-select" id="region-he" name="region" required>
                     <option value="" disabled>בחירת אזור…</option>
+                    <option value="nationwide">כל הארץ</option>
                     <option value="north">צפון</option>
                     <option value="haifa" selected>חיפה והקריות</option>
                     <option value="sharon">השרון</option>
@@ -628,6 +629,7 @@
                   </select>
                   <select class="form-select en-select" id="region-en" name="region" aria-label="Region" required>
                     <option value="" disabled>Select a region…</option>
+                    <option value="nationwide">Nationwide (all Israel)</option>
                     <option value="north">North</option>
                     <option value="haifa" selected>Haifa &amp; Krayot</option>
                     <option value="sharon">Sharon</option>
@@ -644,7 +646,7 @@
                 </div>
               </div>
 
-              <div class="form-group form-group--narrow">
+              <div class="form-group form-group--narrow form-group--travel">
                 <label class="field-label" for="travel-radius">
                   <span class="he-text">מרחק נסיעה</span>
                   <span class="en-text">Travel distance</span>
@@ -668,9 +670,13 @@
                     <span class="en-text">km</span>
                   </span>
                 </div>
-                <p class="field-hint">
+                <p class="field-hint field-hint--default">
                   <span class="he-text">עד כמה רחוק אתם מוכנים להגיע מהעיר שלכם.</span>
                   <span class="en-text">How far you are willing to travel from your city.</span>
+                </p>
+                <p class="field-hint field-hint--na">
+                  <span class="he-text">לא רלוונטי כשבחרתם כל הארץ.</span>
+                  <span class="en-text">Not relevant when you work nationwide.</span>
                 </p>
               </div>
             </section>
