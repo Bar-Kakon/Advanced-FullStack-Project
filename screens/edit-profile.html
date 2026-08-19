@@ -950,8 +950,8 @@
 
       <section class="panel panel--ratings" aria-labelledby="ratings-title">
         <h2 id="ratings-title" class="panel__title">
-          <span class="he-text">הדירוגים שקיבלתם</span>
-          <span class="en-text">Ratings you received</span>
+          <span class="he-text">דירוגים וציון גמישות</span>
+          <span class="en-text">Ratings and flexibility</span>
         </h2>
         <p class="panel__lede">
           <span class="he-text"><bdi>23</bdi> דירוגים מקבלנים שעבדתם איתם על עבודה משותפת שהושלמה. אי אפשר לערוך אותם.</span>
@@ -971,24 +971,49 @@
         </p>
 
 
-        <div class="metric metric--score">
-          <p class="metric__label">
-            <span class="he-text">הדירוג שלכם</span>
-            <span class="en-text">Your rating</span>
-          </p>
-          <div class="rating">
-            <span class="rating__stars" style="--rating: 4.6" aria-hidden="true">
-              <span class="rating__fill"></span>
-            </span>
-            <span class="rating__value"><bdi>4.6</bdi></span>
-          </div>
-          <p class="state-empty"><span aria-hidden="true">—</span><span class="sr-only"><span class="he-text">אין עדיין דירוגים</span><span class="en-text">No ratings yet</span></span></p>
-          <p class="metric__foot">
-            <span class="he-text">מבוסס על <bdi>23</bdi> דירוגים מעבודות שהושלמו</span>
-            <span class="en-text">Based on <bdi>23</bdi> ratings from completed work</span>
-          </p>
-        </div>
+        <div class="trust__metrics">
+          <div class="metric metric--score">
+                    <p class="metric__label">
+                      <span class="he-text">הדירוג שלכם</span>
+                      <span class="en-text">Your rating</span>
+                    </p>
+                    <div class="rating">
+                      <span class="rating__stars" style="--rating: 4.6" aria-hidden="true">
+                        <span class="rating__fill"></span>
+                      </span>
+                      <span class="rating__value"><bdi>4.6</bdi></span>
+                    </div>
+                    <p class="state-empty"><span aria-hidden="true">—</span><span class="sr-only"><span class="he-text">אין עדיין דירוגים</span><span class="en-text">No ratings yet</span></span></p>
+                    <p class="metric__foot">
+                      <span class="he-text">מבוסס על <bdi>23</bdi> דירוגים מעבודות שהושלמו</span>
+                      <span class="en-text">Based on <bdi>23</bdi> ratings from completed work</span>
+                    </p>
+                  </div>
 
+          <div class="metric metric--score">
+                    <p class="metric__label">
+                      <span class="he-text">ציון הגמישות שלכם</span>
+                      <span class="en-text">Your flexibility score</span>
+                    </p>
+
+                    <div class="flex-meter">
+                      <div class="flex-meter__head">
+                        <span class="flex-meter__value"><bdi>78</bdi></span>
+                        <span class="flex-meter__scale"><bdi>100</bdi></span>
+                      </div>
+                      <span class="flex-meter__track" aria-hidden="true">
+                        <span class="flex-meter__fill" style="--score: 78"></span>
+                      </span>
+                    </div>
+
+                    <p class="metric__foot metric__foot--score">
+                      <span class="he-text">מבוסס על <bdi>31</bdi> תגובות שלכם לשינויי תאריך · עודכן ביולי <bdi>2026</bdi></span>
+                      <span class="en-text">Based on <bdi>31</bdi> responses to date changes · updated July <bdi>2026</bdi></span>
+                    </p>
+
+                    <p class="state-empty"><span aria-hidden="true">—</span><span class="sr-only"><span class="he-text">אין עדיין ציון גמישות</span><span class="en-text">No flexibility score yet</span></span></p>
+                  </div>
+        </div>
         <p class="state-empty"><span aria-hidden="true">—</span><span class="sr-only"><span class="he-text">אין עדיין דירוגים</span><span class="en-text">No ratings yet</span></span></p>
         <ul class="review-list">
           <li class="review">
@@ -1044,35 +1069,6 @@
         </ul>
       </section>
 
-      <section class="panel" aria-labelledby="flex-title">
-        <h2 id="flex-title" class="panel__title">
-          <span class="he-text">ציון הגמישות שלכם</span>
-          <span class="en-text">Your flexibility score</span>
-        </h2>
-<div class="metric metric--score">
-          <p class="metric__label">
-            <span class="he-text">ציון הגמישות שלכם</span>
-            <span class="en-text">Your flexibility score</span>
-          </p>
-
-          <div class="flex-meter">
-            <div class="flex-meter__head">
-              <span class="flex-meter__value"><bdi>78</bdi></span>
-              <span class="flex-meter__scale"><bdi>100</bdi></span>
-            </div>
-            <span class="flex-meter__track" aria-hidden="true">
-              <span class="flex-meter__fill" style="--score: 78"></span>
-            </span>
-          </div>
-
-          <p class="metric__foot metric__foot--score">
-            <span class="he-text">מבוסס על <bdi>31</bdi> תגובות שלכם לשינויי תאריך · עודכן ביולי <bdi>2026</bdi></span>
-            <span class="en-text">Based on <bdi>31</bdi> responses to date changes · updated July <bdi>2026</bdi></span>
-          </p>
-
-          <p class="state-empty"><span aria-hidden="true">—</span><span class="sr-only"><span class="he-text">אין עדיין ציון גמישות</span><span class="en-text">No flexibility score yet</span></span></p>
-        </div>
-      </section>
 
       <div class="form-actions">
         <button type="submit" class="btn btn--primary">

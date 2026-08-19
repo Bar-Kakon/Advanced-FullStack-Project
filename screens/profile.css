@@ -470,6 +470,13 @@ fieldset { border: 0; }
 .avail--limited .avail__dot { background: var(--avail-limited); }
 .avail--closed  .avail__dot { background: var(--avail-closed); }
 
+.trust__metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 18px;
+  padding-block-start: 22px;
+  border-block-start: 1px dashed var(--secondary-45);
+}
 
 .metric {
   display: flex;
@@ -490,8 +497,6 @@ fieldset { border: 0; }
   color: var(--text-55);
 }
 .metric__foot { font-size: 14px; line-height: 1.55; color: var(--text-55); }
-/* Standing on its own in a section rather than in a metrics row */
-.panel > .metric { max-width: 380px; }
 
 /* ═══ Empty states — one neutral mark, identical for ratings and flexibility ═══ */
 .state-empty {
@@ -507,7 +512,6 @@ fieldset { border: 0; }
 .metric--pending .metric__foot--score { display: none; }
 .panel:not(.panel--empty) > .state-empty { display: none; }
 .panel--empty .review-list { display: none; }
-
 
 /* Star rating — forced LTR so the fill never mirrors */
 .rating { display: flex; align-items: center; gap: 9px; }
