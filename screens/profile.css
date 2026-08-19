@@ -17,6 +17,12 @@
   --error-bg:        rgba(166, 50, 50, 0.06);
   --error-border:    rgba(166, 50, 50, 0.30);
 
+  /* Approved exception: availability uses the traffic-light convention (2026-08-19). */
+  /* Applied to the indicator dot only — the status text always stays in --text. */
+  --avail-open:      #3F7A4C;
+  --avail-limited:   #C08A1E;
+  --avail-closed:    #A63232;
+
   /* Derived opacity variants — no new hues */
   --primary-08:      rgba(35, 56, 77, 0.08);
   --primary-12:      rgba(35, 56, 77, 0.12);
@@ -440,6 +446,26 @@ fieldset { border: 0; }
   color: var(--text-55);
 }
 .meta-row__pin { color: var(--secondary); flex-shrink: 0; }
+
+/* ═══ Availability — the written status always accompanies the dot ═══ */
+.avail {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 15.5px;
+  font-weight: 500;
+  color: var(--text);
+}
+.avail__dot {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  box-shadow: 0 0 0 3px rgba(31, 36, 40, 0.06);
+}
+.avail--open    .avail__dot { background: var(--avail-open); }
+.avail--limited .avail__dot { background: var(--avail-limited); }
+.avail--closed  .avail__dot { background: var(--avail-closed); }
 
 .trust__metrics {
   display: grid;

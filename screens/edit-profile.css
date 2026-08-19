@@ -170,6 +170,7 @@ label.field-label { cursor: pointer; }
   gap: 8px;
   margin-top: 10px;
 }
+.choice-grid--avail { grid-template-columns: minmax(0, 1fr); }
 .choice {
   display: flex;
   align-items: center;
