@@ -475,6 +475,16 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 .form-input--search { padding-inline-start: 38px; }
 .form-input--search::-webkit-search-cancel-button { -webkit-appearance: none; }
 
+/* Number filter beside its unit */
+.form-input--num { width: 104px; font-family: var(--font-mono); }
+.unit-field { display: flex; align-items: center; gap: 10px; }
+.unit-field__unit {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0.06em;
+  color: var(--text-55);
+}
+
 /* Hint line */
 .field-hint { font-size: 12px; color: var(--text-55); line-height: 1.4; }
 
@@ -928,6 +938,10 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 .he-select { display: block; }
 .en-select { display: none; }
 
+/* Same for inputs whose placeholder / datalist is language-specific */
+.he-field { display: block; }
+.en-field { display: none; }
+
 /* ── Toggle button active states ── */
 #lang-he:checked ~ .app .lang-switch label[for="lang-he"] { color: var(--surface); background: var(--primary); }
 #lang-he:checked ~ .app .lang-switch label[for="lang-en"] { color: var(--text-55); background: none; }
@@ -939,6 +953,8 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 #lang-en:checked ~ .app .en-text   { display: inline; }
 #lang-en:checked ~ .app .he-select { display: none;   }
 #lang-en:checked ~ .app .en-select { display: block;  }
+#lang-en:checked ~ .app .he-field  { display: none;   }
+#lang-en:checked ~ .app .en-field  { display: block;  }
 
 #lang-en:checked ~ .app {
   direction: ltr;

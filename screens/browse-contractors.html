@@ -299,6 +299,106 @@
                 </div>
               </div>
 
+              <!-- City or town: narrows the region to where the contractor actually works -->
+              <div class="form-group">
+                <label class="form-label" for="city-he">
+                  <span class="he-text">עיר או יישוב</span>
+                  <span class="en-text">City or town</span>
+                </label>
+                <input class="form-input he-field" type="text" id="city-he" name="city"
+                       dir="auto" list="cities-he" placeholder="למשל: חיפה" />
+                <datalist id="cities-he">
+                  <option value="תל אביב"></option>
+                  <option value="ירושלים"></option>
+                  <option value="חיפה"></option>
+                  <option value="ראשון לציון"></option>
+                  <option value="פתח תקווה"></option>
+                  <option value="אשדוד"></option>
+                  <option value="נתניה"></option>
+                  <option value="באר שבע"></option>
+                  <option value="בני ברק"></option>
+                  <option value="חולון"></option>
+                  <option value="רמת גן"></option>
+                  <option value="אשקלון"></option>
+                  <option value="רחובות"></option>
+                  <option value="בת ים"></option>
+                  <option value="בית שמש"></option>
+                  <option value="כפר סבא"></option>
+                  <option value="הרצליה"></option>
+                  <option value="חדרה"></option>
+                  <option value="מודיעין"></option>
+                  <option value="רעננה"></option>
+                  <option value="נצרת"></option>
+                  <option value="לוד"></option>
+                  <option value="רמלה"></option>
+                  <option value="קריית גת"></option>
+                  <option value="טבריה"></option>
+                  <option value="נהריה"></option>
+                  <option value="כרמיאל"></option>
+                  <option value="עפולה"></option>
+                  <option value="אילת"></option>
+                  <option value="צפת"></option>
+                </datalist>
+                <input class="form-input en-field" type="text" id="city-en" name="city"
+                       dir="auto" list="cities-en" aria-label="City or town" placeholder="For example: Haifa" />
+                <datalist id="cities-en">
+                  <option value="Tel Aviv"></option>
+                  <option value="Jerusalem"></option>
+                  <option value="Haifa"></option>
+                  <option value="Rishon LeZion"></option>
+                  <option value="Petah Tikva"></option>
+                  <option value="Ashdod"></option>
+                  <option value="Netanya"></option>
+                  <option value="Beer Sheva"></option>
+                  <option value="Bnei Brak"></option>
+                  <option value="Holon"></option>
+                  <option value="Ramat Gan"></option>
+                  <option value="Ashkelon"></option>
+                  <option value="Rehovot"></option>
+                  <option value="Bat Yam"></option>
+                  <option value="Beit Shemesh"></option>
+                  <option value="Kfar Saba"></option>
+                  <option value="Herzliya"></option>
+                  <option value="Hadera"></option>
+                  <option value="Modiin"></option>
+                  <option value="Raanana"></option>
+                  <option value="Nazareth"></option>
+                  <option value="Lod"></option>
+                  <option value="Ramla"></option>
+                  <option value="Kiryat Gat"></option>
+                  <option value="Tiberias"></option>
+                  <option value="Nahariya"></option>
+                  <option value="Karmiel"></option>
+                  <option value="Afula"></option>
+                  <option value="Eilat"></option>
+                  <option value="Safed"></option>
+                </datalist>
+                <p class="field-hint">
+                  <span class="he-text">חיפוש מדויק יותר מאזור. קבלנים שעובדים בכל הארץ יופיעו גם כאן.</span>
+                  <span class="en-text">More precise than a region. Contractors who work nationwide also appear here.</span>
+                </p>
+              </div>
+
+              <!-- Travel distance the contractor is willing to cover -->
+              <div class="form-group">
+                <label class="form-label" for="travel-min">
+                  <span class="he-text">מרחק נסיעה — לפחות</span>
+                  <span class="en-text">Travel distance — at least</span>
+                </label>
+                <div class="unit-field">
+                  <input class="form-input form-input--num" type="number" id="travel-min"
+                         name="travelMinKm" dir="ltr" min="0" max="500" step="5" placeholder="0" />
+                  <span class="unit-field__unit">
+                    <span class="he-text">ק״מ</span>
+                    <span class="en-text">km</span>
+                  </span>
+                </div>
+                <p class="field-hint">
+                  <span class="he-text">מציג קבלנים שמוכנים להגיע לפחות למרחק הזה.</span>
+                  <span class="en-text">Shows contractors willing to travel at least this far.</span>
+                </p>
+              </div>
+
               <!-- Minimum rating — pure-CSS star selector (radio).
                    Forced LTR so the row-reverse fill trick is direction-proof. -->
               <div class="form-group">
