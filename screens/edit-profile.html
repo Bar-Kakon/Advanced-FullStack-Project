@@ -20,6 +20,9 @@
   <input type="radio" name="lang" id="lang-he" class="lang-radio" checked>
   <input type="radio" name="lang" id="lang-en" class="lang-radio">
 
+  <!-- Drives the heavy-equipment picker; both the trigger and Done toggle it -->
+  <input type="checkbox" id="equip-modal" class="lang-radio">
+
   <div class="app">
 
     <!-- ═══ REUSABLE APP NAVBAR (.app-nav) ═══ -->
@@ -604,6 +607,29 @@
                     </span>
                   </label></li>
                 </ul>
+
+                <!-- Revealed by CSS when "Other" is ticked; no modal, no navigation -->
+                <div class="other-inline">
+                  <label class="field-label" for="specialty-other">
+                    <span class="he-text">פירוט תחום ההתמחות</span>
+                    <span class="en-text">Specify the specialty</span>
+                  </label>
+                  <input class="form-input he-field" type="text" id="specialty-other"
+                         name="specialtyOther" dir="auto" maxlength="60" placeholder="למשל: מסגרות בניין" />
+                  <input class="form-input en-field" type="text" name="specialtyOther"
+                         dir="auto" maxlength="60" aria-label="Specify the specialty"
+                         placeholder="For example: structural steelwork" />
+                </div>
+
+                <!-- Revealed by CSS when heavy equipment is ticked -->
+                <label class="equip-trigger" for="equip-modal">
+                  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                       stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M12 5v14M5 12h14"/>
+                  </svg>
+                  <span class="he-text">בחירת הכלים שברשותכם</span>
+                  <span class="en-text">Select the equipment you operate</span>
+                </label>
               </fieldset>
             </section>
           </div>
@@ -1018,6 +1044,137 @@
       </form>
 
     </main>
+
+    <!-- Heavy-equipment picker: a contractor may operate only part of the category -->
+    <div class="equip-modal" role="dialog" aria-modal="true" aria-labelledby="equip-title">
+      <label class="equip-modal__backdrop" for="equip-modal" aria-label="Close"></label>
+      <div class="equip-modal__panel">
+        <h2 id="equip-title" class="equip-modal__title">
+          <span class="he-text">כלי צמ״ה</span>
+          <span class="en-text">Heavy equipment</span>
+        </h2>
+        <p class="equip-modal__lede">
+          <span class="he-text">סמנו רק את הכלים שברשותכם או שאתם מפעילים.</span>
+          <span class="en-text">Select only the equipment you own or operate.</span>
+        </p>
+        <ul class="choice-grid">
+            <li><label class="choice">
+              <input class="choice__input" type="checkbox" name="equipment" value="excavator" />
+              <span class="choice__box" aria-hidden="true">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                     stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+              </span>
+              <span class="choice__label">
+                <span class="he-text">באגר</span>
+                <span class="en-text">Excavator</span>
+              </span>
+            </label></li>
+            <li><label class="choice">
+              <input class="choice__input" type="checkbox" name="equipment" value="backhoe" />
+              <span class="choice__box" aria-hidden="true">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                     stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+              </span>
+              <span class="choice__label">
+                <span class="he-text">מחפרון</span>
+                <span class="en-text">Backhoe loader</span>
+              </span>
+            </label></li>
+            <li><label class="choice">
+              <input class="choice__input" type="checkbox" name="equipment" value="drill_rig" />
+              <span class="choice__box" aria-hidden="true">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                     stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+              </span>
+              <span class="choice__label">
+                <span class="he-text">מכונות קידוח</span>
+                <span class="en-text">Drilling rigs</span>
+              </span>
+            </label></li>
+            <li><label class="choice">
+              <input class="choice__input" type="checkbox" name="equipment" value="mini_excavator" />
+              <span class="choice__box" aria-hidden="true">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                     stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+              </span>
+              <span class="choice__label">
+                <span class="he-text">מיני באגר</span>
+                <span class="en-text">Mini excavator</span>
+              </span>
+            </label></li>
+            <li><label class="choice">
+              <input class="choice__input" type="checkbox" name="equipment" value="crawler" />
+              <span class="choice__box" aria-hidden="true">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                     stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+              </span>
+              <span class="choice__label">
+                <span class="he-text">זחל</span>
+                <span class="en-text">Crawler</span>
+              </span>
+            </label></li>
+            <li><label class="choice">
+              <input class="choice__input" type="checkbox" name="equipment" value="jcb" />
+              <span class="choice__box" aria-hidden="true">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                     stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+              </span>
+              <span class="choice__label">
+                <span class="he-text">JCB מחפרון</span>
+                <span class="en-text">JCB backhoe</span>
+              </span>
+            </label></li>
+            <li><label class="choice">
+              <input class="choice__input" type="checkbox" name="equipment" value="wheel_loader" />
+              <span class="choice__box" aria-hidden="true">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                     stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+              </span>
+              <span class="choice__label">
+                <span class="he-text">שופל</span>
+                <span class="en-text">Wheel loader</span>
+              </span>
+            </label></li>
+            <li><label class="choice">
+              <input class="choice__input" type="checkbox" name="equipment" value="bobcat" />
+              <span class="choice__box" aria-hidden="true">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                     stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+              </span>
+              <span class="choice__label">
+                <span class="he-text">בובקט + מיני</span>
+                <span class="en-text">Bobcat + mini</span>
+              </span>
+            </label></li>
+            <li><label class="choice">
+              <input class="choice__input" type="checkbox" name="equipment" value="bulldozer" />
+              <span class="choice__box" aria-hidden="true">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                     stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+              </span>
+              <span class="choice__label">
+                <span class="he-text">דחפור</span>
+                <span class="en-text">Bulldozer</span>
+              </span>
+            </label></li>
+            <li><label class="choice">
+              <input class="choice__input" type="checkbox" name="equipment" value="hooklift_truck" />
+              <span class="choice__box" aria-hidden="true">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                     stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+              </span>
+              <span class="choice__label">
+                <span class="he-text">משאית פרקית</span>
+                <span class="en-text">Truck with articulated crane</span>
+              </span>
+            </label></li>
+        </ul>
+        <label class="btn btn--primary btn--sm equip-modal__done" for="equip-modal">
+          <span class="he-text">סיום</span>
+          <span class="en-text">Done</span>
+        </label>
+      </div>
+    </div>
   </div>
 
   <!-- Shared scripts, unchanged: language persistence + touched-field marking -->
