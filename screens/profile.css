@@ -644,9 +644,12 @@ fieldset { border: 0; }
 /* ═══ Completed work — the tiles read the same on both screens ═══ */
 .work-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(215px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(190px, 215px));
+  justify-content: start;
   gap: 14px;
 }
+.panel--work .panel__lede { margin-bottom: 16px; }
+
 .work-item {
   position: relative;
   display: flex;
@@ -816,6 +819,7 @@ fieldset { border: 0; }
   .app-nav__link { font-size: 13.5px; }
   .trust__name { font-size: 24px; }
   .review-list { grid-template-columns: minmax(0, 1fr); }
+  .work-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); }
 }
 
 /* Stage 3: brand mark only, and the link row scrolls rather than squashing */
