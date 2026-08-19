@@ -359,7 +359,7 @@ footer.foot { margin-top: 56px; padding-top: 22px; border-top: 1px solid var(--p
       <span class="meta-chip">Collections <b id="stat-collections">—</b></span>
       <span class="meta-chip">Relations <b id="stat-relations">—</b></span>
       <span class="meta-chip">Source of truth <b>Contractor Coordination Platform — Pro.md</b></span>
-      <span class="meta-chip">Updated <b>2026-08-02</b></span>
+      <span class="meta-chip">Updated <b id="stat-updated">2026-08-18</b></span>
     </div>
   </div>
 </header>
@@ -3158,6 +3158,14 @@ function renderRules() {
 }
 
 /* ── Boot ─────────────────────────────────────────── */
+// Updated chip reads the file's own mtime, so it can never drift from the content
+(function () {
+  const el = $('#stat-updated'), d = new Date(document.lastModified);
+  if (!el || isNaN(d)) return;                       // keep the static fallback
+  const p = n => String(n).padStart(2, '0');
+  el.textContent = d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate());
+})();
+
 $('#col-search').addEventListener('input', e => renderColList(e.target.value));
 
 renderOverview();
