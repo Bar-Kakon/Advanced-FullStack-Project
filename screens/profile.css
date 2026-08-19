@@ -469,10 +469,20 @@ fieldset { border: 0; }
 }
 .metric__foot { font-size: 14px; line-height: 1.55; color: var(--text-55); }
 
-/* Cold start: no score until there is enough history to mean anything */
-.metric--score .metric__foot--pending { display: none; }
+/* ═══ Empty states — one neutral mark, identical for ratings and flexibility ═══ */
+.state-empty {
+  font-family: var(--font-mono);
+  font-size: 28px;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--text-40);
+}
+.metric--score .state-empty { display: none; }
+.metric--pending .rating,
 .metric--pending .flex-meter,
 .metric--pending .metric__foot--score { display: none; }
+.panel:not(.panel--empty) > .state-empty { display: none; }
+.panel--empty .review-list { display: none; }
 
 /* On wide screens the identity and the metrics sit side by side */
 @media (min-width: 1000px) {

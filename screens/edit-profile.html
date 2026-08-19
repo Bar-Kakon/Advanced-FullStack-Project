@@ -161,7 +161,7 @@
         <div class="trust__metrics">
 
           <!-- Rating: average + count, denormalised on users.ratingSummary -->
-          <div class="metric">
+          <div class="metric metric--score">
             <p class="metric__label">
               <span class="he-text">הדירוג שלכם</span>
               <span class="en-text">Your rating</span>
@@ -172,6 +172,7 @@
               </span>
               <span class="rating__value"><bdi>4.6</bdi></span>
             </div>
+            <p class="state-empty"><span aria-hidden="true">—</span><span class="sr-only"><span class="he-text">אין עדיין דירוגים</span><span class="en-text">No ratings yet</span></span></p>
             <p class="metric__foot">
               <span class="he-text">מבוסס על <bdi>23</bdi> דירוגים מעבודות שהושלמו</span>
               <span class="en-text">Based on <bdi>23</bdi> ratings from completed work</span>
@@ -200,11 +201,7 @@
               <span class="en-text">Based on <bdi>31</bdi> responses to date changes · updated July <bdi>2026</bdi></span>
             </p>
 
-            <!-- Cold start: shown instead of the meter until there is history -->
-            <p class="metric__foot metric__foot--pending">
-              <span class="he-text">עדיין אין מספיק תגובות לשינויי תאריך כדי לחשב ציון. הוא יופיע אחרי שתענו לכמה בקשות.</span>
-              <span class="en-text">There are not enough responses to date changes yet to calculate a score. It appears once you have answered a few requests.</span>
-            </p>
+            <p class="state-empty"><span aria-hidden="true">—</span><span class="sr-only"><span class="he-text">אין עדיין ציון גמישות</span><span class="en-text">No flexibility score yet</span></span></p>
           </div>
 
         </div>
@@ -882,6 +879,7 @@
           </span>
         </p>
 
+        <p class="state-empty"><span aria-hidden="true">—</span><span class="sr-only"><span class="he-text">אין עדיין דירוגים</span><span class="en-text">No ratings yet</span></span></p>
         <ul class="review-list">
           <li class="review">
             <div class="review__head">
