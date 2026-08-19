@@ -311,6 +311,50 @@
                 </div>
               </div>
 
+              <!-- Availability: the three approved states, label always beside the dot -->
+              <fieldset class="form-group avail-filter">
+                <legend class="form-label form-label--plain">
+                  <span class="he-text">זמינות לעבודות חדשות</span>
+                  <span class="en-text">Availability for new work</span>
+                </legend>
+                <label class="avail-option">
+                  <input class="avail-option__input" type="checkbox" name="availability" value="open" />
+                  <span class="avail-option__box" aria-hidden="true">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                         stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+                  </span>
+                  <span class="avail avail--open">
+                    <span class="avail__dot" aria-hidden="true"></span>
+                    <span class="he-text">מקבל עבודות חדשות</span>
+                    <span class="en-text">Available for new work</span>
+                  </span>
+                </label>
+                <label class="avail-option">
+                  <input class="avail-option__input" type="checkbox" name="availability" value="limited" />
+                  <span class="avail-option__box" aria-hidden="true">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                         stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+                  </span>
+                  <span class="avail avail--limited">
+                    <span class="avail__dot" aria-hidden="true"></span>
+                    <span class="he-text">זמינות מוגבלת לעבודות חדשות</span>
+                    <span class="en-text">Limited availability for new work</span>
+                  </span>
+                </label>
+                <label class="avail-option">
+                  <input class="avail-option__input" type="checkbox" name="availability" value="closed" />
+                  <span class="avail-option__box" aria-hidden="true">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                         stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+                  </span>
+                  <span class="avail avail--closed">
+                    <span class="avail__dot" aria-hidden="true"></span>
+                    <span class="he-text">לא מקבל עבודות חדשות כעת</span>
+                    <span class="en-text">Not accepting new work currently</span>
+                  </span>
+                </label>
+              </fieldset>
+
               <!-- City or town: narrows the region to where the contractor actually works -->
               <div class="form-group">
                 <label class="form-label" for="city-he">
@@ -503,6 +547,11 @@
                 <svg class="meta-row__pin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M21 10c0 7-9 12-9 12s-9-5-9-12a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
                 <span class="he-text">תל אביב</span><span class="en-text">Tel Aviv</span>
               </p>
+              <p class="avail avail--open card-avail">
+                <span class="avail__dot" aria-hidden="true"></span>
+                <span class="he-text">מקבל עבודות חדשות</span>
+                <span class="en-text">Available for new work</span>
+              </p>
               <div class="card-metrics">
                 <div class="rating" title="4.6">
                   <span class="rating__stars" style="--rating: 4.6" aria-hidden="true"><span class="rating__fill"></span></span>
@@ -554,6 +603,11 @@
                 <svg class="meta-row__pin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M21 10c0 7-9 12-9 12s-9-5-9-12a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
                 <span class="he-text">מרכז</span><span class="en-text">Center</span>
               </p>
+              <p class="avail avail--limited card-avail">
+                <span class="avail__dot" aria-hidden="true"></span>
+                <span class="he-text">זמינות מוגבלת לעבודות חדשות</span>
+                <span class="en-text">Limited availability for new work</span>
+              </p>
               <div class="card-metrics">
                 <div class="rating" title="4.9">
                   <span class="rating__stars" style="--rating: 4.9" aria-hidden="true"><span class="rating__fill"></span></span>
@@ -604,6 +658,11 @@
                 <svg class="meta-row__pin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M21 10c0 7-9 12-9 12s-9-5-9-12a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
                 <span class="he-text">צפון</span><span class="en-text">North</span>
               </p>
+              <p class="avail avail--closed card-avail">
+                <span class="avail__dot" aria-hidden="true"></span>
+                <span class="he-text">לא מקבל עבודות חדשות כעת</span>
+                <span class="en-text">Not accepting new work currently</span>
+              </p>
               <div class="card-metrics">
                 <div class="rating" title="4.2">
                   <span class="rating__stars" style="--rating: 4.2" aria-hidden="true"><span class="rating__fill"></span></span>
@@ -649,6 +708,11 @@
               <p class="meta-row">
                 <svg class="meta-row__pin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M21 10c0 7-9 12-9 12s-9-5-9-12a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
                 <span class="he-text">דרום</span><span class="en-text">South</span>
+              </p>
+              <p class="avail avail--open card-avail">
+                <span class="avail__dot" aria-hidden="true"></span>
+                <span class="he-text">מקבל עבודות חדשות</span>
+                <span class="en-text">Available for new work</span>
               </p>
               <div class="card-metrics">
                 <div class="rating" title="3.8">
@@ -696,6 +760,11 @@
                 <svg class="meta-row__pin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M21 10c0 7-9 12-9 12s-9-5-9-12a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
                 <span class="he-text">חיפה והקריות</span><span class="en-text">Haifa &amp; Krayot</span>
               </p>
+              <p class="avail avail--limited card-avail">
+                <span class="avail__dot" aria-hidden="true"></span>
+                <span class="he-text">זמינות מוגבלת לעבודות חדשות</span>
+                <span class="en-text">Limited availability for new work</span>
+              </p>
               <div class="card-metrics">
                 <div class="rating" title="4.7">
                   <span class="rating__stars" style="--rating: 4.7" aria-hidden="true"><span class="rating__fill"></span></span>
@@ -741,6 +810,11 @@
               <p class="meta-row">
                 <svg class="meta-row__pin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M21 10c0 7-9 12-9 12s-9-5-9-12a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
                 <span class="he-text">ירושלים והסביבה</span><span class="en-text">Jerusalem area</span>
+              </p>
+              <p class="avail avail--closed card-avail">
+                <span class="avail__dot" aria-hidden="true"></span>
+                <span class="he-text">לא מקבל עבודות חדשות כעת</span>
+                <span class="en-text">Not accepting new work currently</span>
               </p>
               <div class="card-metrics">
                 <div class="rating" title="4.4">
@@ -788,6 +862,11 @@
                 <svg class="meta-row__pin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M21 10c0 7-9 12-9 12s-9-5-9-12a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
                 <span class="he-text">השרון</span><span class="en-text">Sharon</span>
               </p>
+              <p class="avail avail--open card-avail">
+                <span class="avail__dot" aria-hidden="true"></span>
+                <span class="he-text">מקבל עבודות חדשות</span>
+                <span class="en-text">Available for new work</span>
+              </p>
               <div class="card-metrics">
                 <div class="rating" title="4.1">
                   <span class="rating__stars" style="--rating: 4.1" aria-hidden="true"><span class="rating__fill"></span></span>
@@ -834,6 +913,11 @@
                 <svg class="meta-row__pin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M21 10c0 7-9 12-9 12s-9-5-9-12a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
                 <span class="he-text">תל אביב</span><span class="en-text">Tel Aviv</span>
               </p>
+              <p class="avail avail--limited card-avail">
+                <span class="avail__dot" aria-hidden="true"></span>
+                <span class="he-text">זמינות מוגבלת לעבודות חדשות</span>
+                <span class="en-text">Limited availability for new work</span>
+              </p>
               <div class="card-metrics">
                 <div class="rating" title="4.8">
                   <span class="rating__stars" style="--rating: 4.8" aria-hidden="true"><span class="rating__fill"></span></span>
@@ -879,6 +963,11 @@
               <p class="meta-row">
                 <svg class="meta-row__pin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M21 10c0 7-9 12-9 12s-9-5-9-12a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
                 <span class="he-text">צפון</span><span class="en-text">North</span>
+              </p>
+              <p class="avail avail--closed card-avail">
+                <span class="avail__dot" aria-hidden="true"></span>
+                <span class="he-text">לא מקבל עבודות חדשות כעת</span>
+                <span class="en-text">Not accepting new work currently</span>
               </p>
               <div class="card-metrics">
                 <div class="rating" title="4.0">

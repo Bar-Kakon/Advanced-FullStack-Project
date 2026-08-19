@@ -45,6 +45,12 @@
   --surface-90:      rgba(255, 253, 248, 0.90);
   --surface-96:      rgba(255, 253, 248, 0.96);
 
+  /* Approved exception: availability uses the traffic-light convention (2026-08-19). */
+  /* Applied to the indicator dot only — the status text always stays readable ink. */
+  --avail-open:      #3F7A4C;
+  --avail-limited:   #C08A1E;
+  --avail-closed:    #A63232;
+
   /* Grid lines derived from palette */
   --grid-dark:       rgba(35, 56, 77, 0.05);
   --grid-light:      rgba(255, 253, 248, 0.06);
@@ -482,6 +488,57 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   letter-spacing: 0.06em;
   color: var(--text-55);
 }
+
+/* ═══ Availability filter — the dot never carries the meaning alone ═══ */
+.avail-filter { display: flex; flex-direction: column; gap: 8px; border: 0; padding: 0; }
+.avail-option {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 9px 11px;
+  font-size: 14.5px;
+  line-height: 1.35;
+  cursor: pointer;
+  background: var(--surface);
+  border: 1.5px solid var(--secondary-30);
+  border-radius: var(--r-sm);
+  transition: border-color 0.15s, background 0.15s;
+}
+.avail-option:hover { border-color: var(--secondary-55); background: var(--background); }
+.avail-option__input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.avail-option__box {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--surface);
+  background: var(--surface);
+  border: 1.5px solid var(--secondary-55);
+  border-radius: 4px;
+  transition: background 0.15s, border-color 0.15s;
+}
+.avail-option__box svg { opacity: 0; transition: opacity 0.15s; }
+.avail-option__input:checked + .avail-option__box { background: var(--primary); border-color: var(--primary); }
+.avail-option__input:checked + .avail-option__box svg { opacity: 1; }
+.avail-option:has(.avail-option__input:checked) { border-color: var(--primary-30); background: var(--secondary-15); }
+.avail-option__input:focus-visible + .avail-option__box { box-shadow: 0 0 0 4px var(--primary-08); }
+
+.avail { display: inline-flex; align-items: center; gap: 8px; color: var(--text); }
+.avail__dot {
+  width: 11px;
+  height: 11px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  box-shadow: 0 0 0 3px rgba(31, 36, 40, 0.06);
+}
+.avail--open    .avail__dot { background: var(--avail-open); }
+.avail--limited .avail__dot { background: var(--avail-limited); }
+.avail--closed  .avail__dot { background: var(--avail-closed); }
+
+/* On a result card the status is a compact line, sized with the other card meta */
+.card-avail { font-size: 13.5px; }
 
 /* Hint line */
 .field-hint { font-size: 14px; color: var(--text-55); line-height: 1.4; }
