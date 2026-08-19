@@ -423,7 +423,7 @@ fieldset { border: 0; }
 .tags { display: flex; flex-wrap: wrap; gap: 6px; }
 .tag {
   font-family: var(--font-mono);
-  font-size: 11.5px;
+  font-size: 13px;
   font-weight: 500;
   letter-spacing: 0.04em;
   color: var(--primary);
@@ -462,7 +462,7 @@ fieldset { border: 0; }
 }
 .metric__label {
   font-family: var(--font-mono);
-  font-size: 11.5px;
+  font-size: 13.5px;
   font-weight: 500;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -528,7 +528,7 @@ fieldset { border: 0; }
 }
 .flex-meter__scale {
   font-family: var(--font-mono);
-  font-size: 13px;
+  font-size: 14px;
   color: var(--text-40);
 }
 .flex-meter__scale::before { content: '/'; margin-inline-end: 2px; }
@@ -603,7 +603,7 @@ fieldset { border: 0; }
   align-items: center;
   gap: 8px;
   font-family: var(--font-mono);
-  font-size: 11.5px;
+  font-size: 14px;
   font-weight: 500;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -648,7 +648,7 @@ fieldset { border: 0; }
 }
 .work-item__body { display: flex; flex-direction: column; gap: 6px; padding: 12px 14px; }
 .work-item__title { font-size: 15.5px; font-weight: 600; line-height: 1.35; color: var(--primary); }
-.work-item__scope { font-size: 13.5px; line-height: 1.4; color: var(--text-55); }
+.work-item__scope { font-size: 14.5px; line-height: 1.4; color: var(--text-55); }
 
 /* Records that the completion is on the platform — never a claim about quality */
 .work-badge {
@@ -659,7 +659,7 @@ fieldset { border: 0; }
   margin-top: 2px;
   padding: 3px 9px;
   font-family: var(--font-mono);
-  font-size: 10.5px;
+  font-size: 12px;
   font-weight: 500;
   letter-spacing: 0.04em;
   color: var(--primary);
@@ -685,13 +685,13 @@ fieldset { border: 0; }
 .review__head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; }
 .review__score {
   font-family: var(--font-mono);
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 600;
   color: var(--primary);
 }
 .review__date {
   font-family: var(--font-mono);
-  font-size: 12.5px;
+  font-size: 13.5px;
   color: var(--text-40);
   margin-inline-start: auto;
 }
