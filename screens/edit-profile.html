@@ -161,55 +161,6 @@
           </div>
         </div>
 
-        <div class="trust__metrics">
-
-          <!-- Rating: average + count, denormalised on users.ratingSummary -->
-          <div class="metric metric--score">
-            <p class="metric__label">
-              <span class="he-text">הדירוג שלכם</span>
-              <span class="en-text">Your rating</span>
-            </p>
-            <div class="rating">
-              <span class="rating__stars" style="--rating: 4.6" aria-hidden="true">
-                <span class="rating__fill"></span>
-              </span>
-              <span class="rating__value"><bdi>4.6</bdi></span>
-            </div>
-            <p class="state-empty"><span aria-hidden="true">—</span><span class="sr-only"><span class="he-text">אין עדיין דירוגים</span><span class="en-text">No ratings yet</span></span></p>
-            <p class="metric__foot">
-              <span class="he-text">מבוסס על <bdi>23</bdi> דירוגים מעבודות שהושלמו</span>
-              <span class="en-text">Based on <bdi>23</bdi> ratings from completed work</span>
-            </p>
-          </div>
-
-          <!-- Flexibility: swap for .metric--pending to see the cold-start state -->
-          <div class="metric metric--score">
-            <p class="metric__label">
-              <span class="he-text">ציון הגמישות שלכם</span>
-              <span class="en-text">Your flexibility score</span>
-            </p>
-
-            <div class="flex-meter">
-              <div class="flex-meter__head">
-                <span class="flex-meter__value"><bdi>78</bdi></span>
-                <span class="flex-meter__scale"><bdi>100</bdi></span>
-              </div>
-              <span class="flex-meter__track" aria-hidden="true">
-                <span class="flex-meter__fill" style="--score: 78"></span>
-              </span>
-            </div>
-
-            <p class="metric__foot metric__foot--score">
-              <span class="he-text">מבוסס על <bdi>31</bdi> תגובות שלכם לשינויי תאריך · עודכן ביולי <bdi>2026</bdi></span>
-              <span class="en-text">Based on <bdi>31</bdi> responses to date changes · updated July <bdi>2026</bdi></span>
-            </p>
-
-            <p class="state-empty"><span aria-hidden="true">—</span><span class="sr-only"><span class="he-text">אין עדיין ציון גמישות</span><span class="en-text">No flexibility score yet</span></span></p>
-          </div>
-
-        </div>
-
-
       </section>
 
       <!-- novalidate: the instructor rule is no native validation popups.
@@ -888,82 +839,7 @@
 
       <!-- ── Ratings received: read-only, and anonymous to the person rated ── -->
 
-      <section class="panel panel--ratings" aria-labelledby="ratings-title">
-        <h2 id="ratings-title" class="panel__title">
-          <span class="he-text">הדירוגים שקיבלתם</span>
-          <span class="en-text">Ratings you received</span>
-        </h2>
-        <p class="panel__lede">
-          <span class="he-text"><bdi>23</bdi> דירוגים מקבלנים שעבדתם איתם על עבודה משותפת שהושלמה. אי אפשר לערוך אותם.</span>
-          <span class="en-text"><bdi>23</bdi> ratings from contractors you worked with on shared completed work. They cannot be edited.</span>
-        </p>
 
-        <p class="notice">
-          <svg class="notice__icon" width="17" height="17" viewBox="0 0 24 24" fill="none"
-               stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <rect x="4" y="10" width="16" height="10" rx="2"/>
-            <path d="M8 10V7a4 4 0 0 1 8 0v3"/>
-          </svg>
-          <span>
-            <span class="he-text">הדירוגים מוצגים ללא פרטים מזהים של הכותב.</span>
-            <span class="en-text">Ratings are shown without identifying details of the writer.</span>
-          </span>
-        </p>
-
-        <p class="state-empty"><span aria-hidden="true">—</span><span class="sr-only"><span class="he-text">אין עדיין דירוגים</span><span class="en-text">No ratings yet</span></span></p>
-        <ul class="review-list">
-          <li class="review">
-            <div class="review__head">
-              <span class="rating__stars rating__stars--sm" style="--rating: 5" aria-hidden="true">
-                <span class="rating__fill"></span>
-              </span>
-              <span class="review__score"><bdi>5</bdi></span>
-              <span class="review__date">
-                <span class="he-text">יולי <bdi>2026</bdi></span>
-                <span class="en-text">July <bdi>2026</bdi></span>
-              </span>
-            </div>
-            <p class="review__body">
-              <span class="he-text" dir="auto">יצק ביום שנקבע, והתריע על עיכוב בברזל מוקדם.</span>
-              <span class="en-text" dir="auto">Poured on the agreed day, and flagged the rebar delay early.</span>
-            </p>
-          </li>
-
-          <li class="review">
-            <div class="review__head">
-              <span class="rating__stars rating__stars--sm" style="--rating: 4" aria-hidden="true">
-                <span class="rating__fill"></span>
-              </span>
-              <span class="review__score"><bdi>4</bdi></span>
-              <span class="review__date">
-                <span class="he-text">יוני <bdi>2026</bdi></span>
-                <span class="en-text">June <bdi>2026</bdi></span>
-              </span>
-            </div>
-            <p class="review__body">
-              <span class="he-text" dir="auto">עבודה טובה ונקייה. הגיע יום אחרי מה שסוכם, אבל הודיע מראש.</span>
-              <span class="en-text" dir="auto">Good, clean work. Arrived a day after what we agreed, but told me in advance.</span>
-            </p>
-          </li>
-
-          <li class="review">
-            <div class="review__head">
-              <span class="rating__stars rating__stars--sm" style="--rating: 5" aria-hidden="true">
-                <span class="rating__fill"></span>
-              </span>
-              <span class="review__score"><bdi>5</bdi></span>
-              <span class="review__date">
-                <span class="he-text">מאי <bdi>2026</bdi></span>
-                <span class="en-text">May <bdi>2026</bdi></span>
-              </span>
-            </div>
-            <p class="review__body">
-              <span class="he-text" dir="auto">לקח על עצמו ממ״ד בלוח זמנים לחוץ וסגר אותו בזמן.</span>
-              <span class="en-text" dir="auto">Took on a safe room on a tight schedule and closed it on time.</span>
-            </p>
-          </li>
-        </ul>
-      </section>
 
       <section class="panel" aria-labelledby="work-title">
         <h2 id="work-title" class="panel__title">
@@ -1070,6 +946,132 @@
             </button>
           </li>
         </ul>
+      </section>
+
+      <section class="panel panel--ratings" aria-labelledby="ratings-title">
+        <h2 id="ratings-title" class="panel__title">
+          <span class="he-text">הדירוגים שקיבלתם</span>
+          <span class="en-text">Ratings you received</span>
+        </h2>
+        <p class="panel__lede">
+          <span class="he-text"><bdi>23</bdi> דירוגים מקבלנים שעבדתם איתם על עבודה משותפת שהושלמה. אי אפשר לערוך אותם.</span>
+          <span class="en-text"><bdi>23</bdi> ratings from contractors you worked with on shared completed work. They cannot be edited.</span>
+        </p>
+
+        <p class="notice">
+          <svg class="notice__icon" width="17" height="17" viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="4" y="10" width="16" height="10" rx="2"/>
+            <path d="M8 10V7a4 4 0 0 1 8 0v3"/>
+          </svg>
+          <span>
+            <span class="he-text">הדירוגים מוצגים ללא פרטים מזהים של הכותב.</span>
+            <span class="en-text">Ratings are shown without identifying details of the writer.</span>
+          </span>
+        </p>
+
+
+        <div class="metric metric--score">
+          <p class="metric__label">
+            <span class="he-text">הדירוג שלכם</span>
+            <span class="en-text">Your rating</span>
+          </p>
+          <div class="rating">
+            <span class="rating__stars" style="--rating: 4.6" aria-hidden="true">
+              <span class="rating__fill"></span>
+            </span>
+            <span class="rating__value"><bdi>4.6</bdi></span>
+          </div>
+          <p class="state-empty"><span aria-hidden="true">—</span><span class="sr-only"><span class="he-text">אין עדיין דירוגים</span><span class="en-text">No ratings yet</span></span></p>
+          <p class="metric__foot">
+            <span class="he-text">מבוסס על <bdi>23</bdi> דירוגים מעבודות שהושלמו</span>
+            <span class="en-text">Based on <bdi>23</bdi> ratings from completed work</span>
+          </p>
+        </div>
+
+        <p class="state-empty"><span aria-hidden="true">—</span><span class="sr-only"><span class="he-text">אין עדיין דירוגים</span><span class="en-text">No ratings yet</span></span></p>
+        <ul class="review-list">
+          <li class="review">
+            <div class="review__head">
+              <span class="rating__stars rating__stars--sm" style="--rating: 5" aria-hidden="true">
+                <span class="rating__fill"></span>
+              </span>
+              <span class="review__score"><bdi>5</bdi></span>
+              <span class="review__date">
+                <span class="he-text">יולי <bdi>2026</bdi></span>
+                <span class="en-text">July <bdi>2026</bdi></span>
+              </span>
+            </div>
+            <p class="review__body">
+              <span class="he-text" dir="auto">יצק ביום שנקבע, והתריע על עיכוב בברזל מוקדם.</span>
+              <span class="en-text" dir="auto">Poured on the agreed day, and flagged the rebar delay early.</span>
+            </p>
+          </li>
+
+          <li class="review">
+            <div class="review__head">
+              <span class="rating__stars rating__stars--sm" style="--rating: 4" aria-hidden="true">
+                <span class="rating__fill"></span>
+              </span>
+              <span class="review__score"><bdi>4</bdi></span>
+              <span class="review__date">
+                <span class="he-text">יוני <bdi>2026</bdi></span>
+                <span class="en-text">June <bdi>2026</bdi></span>
+              </span>
+            </div>
+            <p class="review__body">
+              <span class="he-text" dir="auto">עבודה טובה ונקייה. הגיע יום אחרי מה שסוכם, אבל הודיע מראש.</span>
+              <span class="en-text" dir="auto">Good, clean work. Arrived a day after what we agreed, but told me in advance.</span>
+            </p>
+          </li>
+
+          <li class="review">
+            <div class="review__head">
+              <span class="rating__stars rating__stars--sm" style="--rating: 5" aria-hidden="true">
+                <span class="rating__fill"></span>
+              </span>
+              <span class="review__score"><bdi>5</bdi></span>
+              <span class="review__date">
+                <span class="he-text">מאי <bdi>2026</bdi></span>
+                <span class="en-text">May <bdi>2026</bdi></span>
+              </span>
+            </div>
+            <p class="review__body">
+              <span class="he-text" dir="auto">לקח על עצמו ממ״ד בלוח זמנים לחוץ וסגר אותו בזמן.</span>
+              <span class="en-text" dir="auto">Took on a safe room on a tight schedule and closed it on time.</span>
+            </p>
+          </li>
+        </ul>
+      </section>
+
+      <section class="panel" aria-labelledby="flex-title">
+        <h2 id="flex-title" class="panel__title">
+          <span class="he-text">ציון הגמישות שלכם</span>
+          <span class="en-text">Your flexibility score</span>
+        </h2>
+<div class="metric metric--score">
+          <p class="metric__label">
+            <span class="he-text">ציון הגמישות שלכם</span>
+            <span class="en-text">Your flexibility score</span>
+          </p>
+
+          <div class="flex-meter">
+            <div class="flex-meter__head">
+              <span class="flex-meter__value"><bdi>78</bdi></span>
+              <span class="flex-meter__scale"><bdi>100</bdi></span>
+            </div>
+            <span class="flex-meter__track" aria-hidden="true">
+              <span class="flex-meter__fill" style="--score: 78"></span>
+            </span>
+          </div>
+
+          <p class="metric__foot metric__foot--score">
+            <span class="he-text">מבוסס על <bdi>31</bdi> תגובות שלכם לשינויי תאריך · עודכן ביולי <bdi>2026</bdi></span>
+            <span class="en-text">Based on <bdi>31</bdi> responses to date changes · updated July <bdi>2026</bdi></span>
+          </p>
+
+          <p class="state-empty"><span aria-hidden="true">—</span><span class="sr-only"><span class="he-text">אין עדיין ציון גמישות</span><span class="en-text">No flexibility score yet</span></span></p>
+        </div>
       </section>
 
       <div class="form-actions">
