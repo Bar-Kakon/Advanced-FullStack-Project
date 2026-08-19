@@ -373,7 +373,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 }
 .filters__title {
   font-family: var(--font-mono);
-  font-size: 12px;
+  font-size: 13.5px;
   font-weight: 500;
   letter-spacing: 0.16em;
   text-transform: uppercase;
@@ -394,7 +394,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   align-items: center;
   gap: 8px;
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 14px;
   font-weight: 500;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -484,7 +484,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 }
 
 /* Hint line */
-.field-hint { font-size: 12px; color: var(--text-55); line-height: 1.4; }
+.field-hint { font-size: 14px; color: var(--text-55); line-height: 1.4; }
 
 /* ── Minimum-rating star selector (pure CSS, radio-driven) ──
    Forced LTR + row-reverse so hovering/selecting fills the
@@ -563,7 +563,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
    ───────────────────────────────────────────── */
 .results__count {
   font-family: var(--font-mono);
-  font-size: 12.5px;
+  font-size: 14px;
   letter-spacing: 0.04em;
   color: var(--surface-90);
   margin-bottom: 16px;
@@ -617,7 +617,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   gap: 5px;
   padding: 4px 9px;
   font-family: var(--font-mono);
-  font-size: 9.5px;
+  font-size: 11px;
   font-weight: 500;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -658,7 +658,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   line-height: 1.2;
 }
 .contractor-card__org {
-  font-size: 12.5px;
+  font-size: 14px;
   color: var(--text-55);
   margin-top: 2px;
   overflow: hidden;
@@ -670,7 +670,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 .tags { display: flex; flex-wrap: wrap; gap: 6px; }
 .tag {
   font-family: var(--font-mono);
-  font-size: 10.5px;
+  font-size: 13px;
   font-weight: 500;
   letter-spacing: 0.04em;
   color: var(--primary);
@@ -722,7 +722,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 .rating__fill::before { content: '★★★★★'; }
 .rating__value {
   font-family: var(--font-mono);
-  font-size: 12.5px;
+  font-size: 14px;
   font-weight: 500;
   color: var(--text);
 }
@@ -731,7 +731,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 .flex-meter__head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
 .flex-meter__label {
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 12.5px;
   font-weight: 500;
   letter-spacing: 0.1em;
   text-transform: uppercase;
@@ -739,7 +739,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 }
 .flex-meter__value {
   font-family: var(--font-mono);
-  font-size: 12.5px;
+  font-size: 14px;
   font-weight: 600;
   color: var(--primary);
 }
