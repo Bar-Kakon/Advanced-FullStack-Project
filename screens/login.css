@@ -356,7 +356,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 
 .form-label {
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 14px;
   font-weight: 500;
   letter-spacing: 0.12em;
   text-transform: uppercase;
@@ -396,7 +396,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
    invalid field (empty required included), never on load or while editing. */
 .field-error {
   display: none;
-  font-size: 12px;
+  font-size: 13.5px;
   color: var(--error);
   margin-top: 5px;
   line-height: 1.4;
