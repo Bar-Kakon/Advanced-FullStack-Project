@@ -320,6 +320,55 @@
 
           </div>
 
+
+          <!-- Initial availability: the simple three-state contractor status, nothing calendar-based -->
+          <fieldset class="form-group avail-filter">
+            <legend class="form-label form-label--plain">
+              <span class="he-text">זמינות לעבודות חדשות</span>
+              <span class="en-text">Availability for new work</span>
+            </legend>
+              <label class="avail-option">
+                <input class="avail-option__input" type="radio" name="availability" value="open" checked />
+                <span class="avail-option__box" aria-hidden="true">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                       stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+                </span>
+                <span class="avail avail--open">
+                  <span class="avail__dot" aria-hidden="true"></span>
+                  <span class="he-text">מקבל עבודות חדשות</span>
+                  <span class="en-text">Available for new work</span>
+                </span>
+              </label>
+              <label class="avail-option">
+                <input class="avail-option__input" type="radio" name="availability" value="limited" />
+                <span class="avail-option__box" aria-hidden="true">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                       stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+                </span>
+                <span class="avail avail--limited">
+                  <span class="avail__dot" aria-hidden="true"></span>
+                  <span class="he-text">זמינות מוגבלת לעבודות חדשות</span>
+                  <span class="en-text">Limited availability for new work</span>
+                </span>
+              </label>
+              <label class="avail-option">
+                <input class="avail-option__input" type="radio" name="availability" value="closed" />
+                <span class="avail-option__box" aria-hidden="true">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                       stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+                </span>
+                <span class="avail avail--closed">
+                  <span class="avail__dot" aria-hidden="true"></span>
+                  <span class="he-text">לא מקבל עבודות חדשות כעת</span>
+                  <span class="en-text">Not accepting new work currently</span>
+                </span>
+              </label>
+            <p class="field-hint">
+              <span class="he-text">אפשר לשנות בכל שלב בפרופיל.</span>
+              <span class="en-text">You can change this at any time from your profile.</span>
+            </p>
+          </fieldset>
+
           <!-- Password + Confirm (two columns) -->
           <div class="form-row">
 

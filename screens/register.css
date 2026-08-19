@@ -24,6 +24,11 @@
 
   /* Approved functional exception: red for error states. */
   --error:           #A63232;
+  /* Approved exception: availability uses the traffic-light convention (2026-08-19). */
+  /* Applied to the indicator dot only — the status text always stays readable ink. */
+  --avail-open:      #3F7A4C;
+  --avail-limited:   #C08A1E;
+  --avail-closed:    #A63232;
   --error-bg:        rgba(166, 50, 50, 0.06);
   --error-border:    rgba(166, 50, 50, 0.30);
 
@@ -1113,3 +1118,52 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   --font-sans:  'Inter', system-ui, -apple-system, sans-serif;
   --font-serif: 'Fraunces', 'Georgia', serif;
 }
+
+/* ═══ Availability — the three approved states, label always beside the dot ═══ */
+.avail-filter { display: flex; flex-direction: column; gap: 8px; border: 0; padding: 0; }
+.avail-filter .field-hint { margin-top: 2px; }
+.avail-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 13px;
+  font-size: 15px;
+  line-height: 1.35;
+  cursor: pointer;
+  background: var(--background);
+  border: 1.5px solid var(--secondary-30);
+  border-radius: var(--r-sm);
+  transition: border-color 0.15s, background 0.15s;
+}
+.avail-option:hover { border-color: var(--secondary-55); }
+.avail-option__input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.avail-option__box {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--surface);
+  background: var(--surface);
+  border: 1.5px solid var(--secondary-55);
+  border-radius: 50%;
+  transition: background 0.15s, border-color 0.15s;
+}
+.avail-option__box svg { opacity: 0; transition: opacity 0.15s; }
+.avail-option__input:checked + .avail-option__box { background: var(--primary); border-color: var(--primary); }
+.avail-option__input:checked + .avail-option__box svg { opacity: 1; }
+.avail-option:has(.avail-option__input:checked) { border-color: var(--primary-30); background: var(--secondary-15); }
+.avail-option__input:focus-visible + .avail-option__box { box-shadow: 0 0 0 4px var(--primary-08); }
+
+.avail { display: inline-flex; align-items: center; gap: 8px; color: var(--text); }
+.avail__dot {
+  width: 11px;
+  height: 11px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  box-shadow: 0 0 0 3px rgba(31, 36, 40, 0.06);
+}
+.avail--open    .avail__dot { background: var(--avail-open); }
+.avail--limited .avail__dot { background: var(--avail-limited); }
+.avail--closed  .avail__dot { background: var(--avail-closed); }
