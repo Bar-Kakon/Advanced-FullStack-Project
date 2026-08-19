@@ -513,6 +513,21 @@ fieldset { border: 0; }
 .panel:not(.panel--empty) > .state-empty { display: none; }
 .panel--empty .review-list { display: none; }
 
+/* ═══ Header layout: identity beside the metrics pair ═══ */
+@media (min-width: 1000px) {
+  .trust:has(.trust__metrics) {
+    grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+    align-items: center;
+  }
+  .trust > .trust__metrics {
+    padding-block-start: 0;
+    border-block-start: none;
+    padding-inline-start: 26px;
+    border-inline-start: 1px dashed var(--secondary-45);
+  }
+  .trust > .trust__explain { grid-column: 1 / -1; }
+}
+
 /* Star rating — forced LTR so the fill never mirrors */
 .rating { display: flex; align-items: center; gap: 9px; }
 .rating__stars {
