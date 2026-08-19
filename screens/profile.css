@@ -57,8 +57,8 @@
 
   /* Shared by both profile screens so neither shrinks or grows against the other */
   --content-max: 1340px;
-  /* Comfortable reading measure for long prose, independent of the container */
-  --prose-max: 68ch;
+  /* Reading measure for long prose only; short copy wraps to the available width */
+  --prose-max: 80ch;
 }
 
 /* Reset */
@@ -308,7 +308,7 @@ fieldset { border: 0; }
   flex-wrap: wrap;
   margin-bottom: 24px;
 }
-.profile__head-text { max-width: var(--prose-max); }
+.profile__head-text { max-width: 92ch; }
 .profile__title {
   font-family: var(--font-serif);
   font-size: clamp(30px, 3.6vw, 42px);
@@ -368,7 +368,6 @@ fieldset { border: 0; }
 .panel__lede {
   margin-top: 8px;
   margin-bottom: 24px;
-  max-width: var(--prose-max);
   font-size: 16px;
   line-height: 1.6;
   color: var(--text-55);
