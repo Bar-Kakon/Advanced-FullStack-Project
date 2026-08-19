@@ -2,21 +2,27 @@
 /* Loaded AFTER profile.css, which carries everything shared with edit-profile.html. */
 /* This file contains only styles specific to the read-only presentation. */
 
-/* ═══ The single global Edit control ═══ */
+/* ═══ The single global Edit control — icon only ═══ */
 .btn--edit {
+  width: 54px;
+  padding: 0;
   color: var(--primary);
   background: var(--secondary);
   border-color: var(--secondary);
-  box-shadow: 5px 5px 0 rgba(35, 56, 77, 0.30), 0 14px 28px -18px rgba(31, 36, 40, 0.90);
+  box-shadow: 4px 4px 0 rgba(35, 56, 77, 0.28), 0 14px 28px -18px rgba(31, 36, 40, 0.90);
 }
 .btn--edit:hover {
   background: var(--surface);
   border-color: var(--surface);
-  box-shadow: 2px 2px 0 rgba(35, 56, 77, 0.35), 0 18px 32px -20px rgba(31, 36, 40, 0.95);
+  box-shadow: 2px 2px 0 rgba(35, 56, 77, 0.32), 0 18px 32px -20px rgba(31, 36, 40, 0.95);
   transform: translate(2px, 2px);
 }
 .btn--edit:active { transform: translateY(1px); }
 .btn__icon { flex-shrink: 0; }
+
+/* The pencil is filled with the button colour so it occludes the wrench behind it */
+.icon-pencil { fill: var(--secondary); }
+.btn--edit:hover .icon-pencil { fill: var(--surface); }
 
 /* ═══ Read-only field lists ═══ */
 .facts { display: flex; flex-direction: column; gap: 18px; }
@@ -47,7 +53,6 @@
 /* ═══ Responsive ═══ */
 @media (max-width: 620px) {
   .profile__head { align-items: flex-start; }
-  .btn--edit { width: 100%; }
 }
 
 @media (prefers-reduced-motion: reduce) {
