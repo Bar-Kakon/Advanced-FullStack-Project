@@ -1,0 +1,18 @@
+#!/bin/sh
+# Stamps the database-design "Updated" chip with today's date whenever that file is committed.
+# The date is committed content, so it stays correct in a fresh clone.
+set -e
+
+f="docs/database-design.html"
+
+# Nothing to do unless this commit actually touches the file
+git diff --cached --name-only --diff-filter=ACM | grep -qx "$f" || exit 0
+
+# Never re-add a file that has unstaged edits -- that would pull them into the commit
+if ! git diff --quiet -- "$f"; then
+  echo "pre-commit: $f has unstaged changes; Updated date left as is." >&2
+  exit 0
+fi
+
+perl -i -pe 'BEGIN { $d = shift } s{(<b id="stat-updated">)[^<]*(</b>)}{$1$d$2}' "$(date +%Y-%m-%d)" "$f"
+git add -- "$f"
