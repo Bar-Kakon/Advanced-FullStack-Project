@@ -474,8 +474,8 @@ fieldset { border: 0; }
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
   gap: 18px;
-  padding-block-start: 22px;
-  border-block-start: 1px dashed var(--secondary-45);
+  padding-block-start: 12px;
+  border-block-start: 1px dashed var(--primary-20);
 }
 
 .metric {
@@ -522,8 +522,8 @@ fieldset { border: 0; }
   .trust > .trust__metrics {
     padding-block-start: 0;
     border-block-start: none;
-    padding-inline-start: 26px;
-    border-inline-start: 1px dashed var(--secondary-45);
+    padding-inline-start: 22px;
+    border-inline-start: 1px dashed var(--primary-20);
   }
   .trust > .trust__explain { grid-column: 1 / -1; }
 }
