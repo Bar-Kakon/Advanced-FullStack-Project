@@ -60,7 +60,7 @@
             <span class="he-text">עיון בקבלנים</span>
             <span class="en-text">Browse</span>
           </a>
-          <a href="#" class="app-nav__link">
+          <a href="my-network.html" class="app-nav__link">
             <span class="he-text">הרשת שלי</span>
             <span class="en-text">Network</span>
           </a>
@@ -313,9 +313,10 @@
 
               <!-- Availability: the three approved states, label always beside the dot -->
               <fieldset class="form-group avail-filter">
+                <!-- The legend is just "Availability" because the open state now carries the full wording. -->
                 <legend class="form-label form-label--plain">
-                  <span class="he-text">זמינות לעבודות חדשות</span>
-                  <span class="en-text">Availability for new work</span>
+                  <span class="he-text">זמינות</span>
+                  <span class="en-text">Availability</span>
                 </legend>
                 <label class="avail-option">
                   <input class="avail-option__input" type="checkbox" name="availability" value="open" />
@@ -325,7 +326,7 @@
                   </span>
                   <span class="avail avail--open">
                     <span class="avail__dot" aria-hidden="true"></span>
-                    <span class="he-text">מקבל עבודות חדשות</span>
+                    <span class="he-text">זמינות לעבודות חדשות</span>
                     <span class="en-text">Available for new work</span>
                   </span>
                 </label>
@@ -349,155 +350,178 @@
                   </span>
                   <span class="avail avail--closed">
                     <span class="avail__dot" aria-hidden="true"></span>
-                    <span class="he-text">לא מקבל עבודות חדשות כעת</span>
-                    <span class="en-text">Not accepting new work currently</span>
+                    <span class="he-text">אין זמינות לקבלת עבודות חדשות כעת</span>
+                    <span class="en-text">No availability for new work at the moment</span>
                   </span>
                 </label>
               </fieldset>
 
-              <!-- City or town: narrows the region to where the contractor actually works -->
-              <div class="form-group">
-                <label class="form-label" for="city-he">
-                  <span class="he-text">עיר או יישוב</span>
-                  <span class="en-text">City or town</span>
-                </label>
-                <input class="form-input he-field" type="text" id="city-he" name="city"
-                       dir="auto" list="cities-he" placeholder="למשל: חיפה" />
-                <datalist id="cities-he">
-                  <option value="תל אביב"></option>
-                  <option value="ירושלים"></option>
-                  <option value="חיפה"></option>
-                  <option value="ראשון לציון"></option>
-                  <option value="פתח תקווה"></option>
-                  <option value="אשדוד"></option>
-                  <option value="נתניה"></option>
-                  <option value="באר שבע"></option>
-                  <option value="בני ברק"></option>
-                  <option value="חולון"></option>
-                  <option value="רמת גן"></option>
-                  <option value="אשקלון"></option>
-                  <option value="רחובות"></option>
-                  <option value="בת ים"></option>
-                  <option value="בית שמש"></option>
-                  <option value="כפר סבא"></option>
-                  <option value="הרצליה"></option>
-                  <option value="חדרה"></option>
-                  <option value="מודיעין"></option>
-                  <option value="רעננה"></option>
-                  <option value="נצרת"></option>
-                  <option value="לוד"></option>
-                  <option value="רמלה"></option>
-                  <option value="קריית גת"></option>
-                  <option value="טבריה"></option>
-                  <option value="נהריה"></option>
-                  <option value="כרמיאל"></option>
-                  <option value="עפולה"></option>
-                  <option value="אילת"></option>
-                  <option value="צפת"></option>
-                </datalist>
-                <input class="form-input en-field" type="text" id="city-en" name="city"
-                       dir="auto" list="cities-en" aria-label="City or town" placeholder="For example: Haifa" />
-                <datalist id="cities-en">
-                  <option value="Tel Aviv"></option>
-                  <option value="Jerusalem"></option>
-                  <option value="Haifa"></option>
-                  <option value="Rishon LeZion"></option>
-                  <option value="Petah Tikva"></option>
-                  <option value="Ashdod"></option>
-                  <option value="Netanya"></option>
-                  <option value="Beer Sheva"></option>
-                  <option value="Bnei Brak"></option>
-                  <option value="Holon"></option>
-                  <option value="Ramat Gan"></option>
-                  <option value="Ashkelon"></option>
-                  <option value="Rehovot"></option>
-                  <option value="Bat Yam"></option>
-                  <option value="Beit Shemesh"></option>
-                  <option value="Kfar Saba"></option>
-                  <option value="Herzliya"></option>
-                  <option value="Hadera"></option>
-                  <option value="Modiin"></option>
-                  <option value="Raanana"></option>
-                  <option value="Nazareth"></option>
-                  <option value="Lod"></option>
-                  <option value="Ramla"></option>
-                  <option value="Kiryat Gat"></option>
-                  <option value="Tiberias"></option>
-                  <option value="Nahariya"></option>
-                  <option value="Karmiel"></option>
-                  <option value="Afula"></option>
-                  <option value="Eilat"></option>
-                  <option value="Safed"></option>
-                </datalist>
-                <p class="field-hint">
-                  <span class="he-text">חיפוש מדויק יותר מאזור. קבלנים שעובדים בכל הארץ יופיעו גם כאן.</span>
-                  <span class="en-text">More precise than a region. Contractors who work nationwide also appear here.</span>
-                </p>
-              </div>
-
-              <!-- Travel distance the contractor is willing to cover -->
-              <div class="form-group">
-                <label class="form-label" for="travel-min">
-                  <span class="he-text">מרחק נסיעה — לפחות</span>
-                  <span class="en-text">Travel distance — at least</span>
-                </label>
-                <div class="unit-field">
-                  <input class="form-input form-input--num" type="number" id="travel-min"
-                         name="travelMinKm" dir="ltr" min="0" max="500" step="5" placeholder="0" />
-                  <span class="unit-field__unit">
-                    <span class="he-text">ק״מ</span>
-                    <span class="en-text">km</span>
+              <!-- ── Advanced filters ─────────────────────────
+                   Collapsed by default so the rail stays short even on a wide
+                   desktop. A native <details> keeps the group keyboard-operable
+                   without JavaScript and cannot collide with the :target the
+                   profile panel already claims.
+                   ─────────────────────────────────────────────── -->
+              <details class="filters__adv">
+                <summary class="filters__adv-head">
+                  <span class="filters__adv-title">
+                    <span class="he-text">סינון מתקדם</span>
+                    <span class="en-text">Advanced filters</span>
                   </span>
-                </div>
-                <p class="field-hint">
-                  <span class="he-text">מציג קבלנים שמוכנים להגיע לפחות למרחק הזה.</span>
-                  <span class="en-text">Shows contractors willing to travel at least this far.</span>
-                </p>
-              </div>
+                  <svg class="filters__adv-chevron" width="15" height="15" viewBox="0 0 24 24" fill="none"
+                       stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M6 9l6 6 6-6"/>
+                  </svg>
+                </summary>
 
-              <!-- Minimum rating — pure-CSS star selector (radio).
-                   Forced LTR so the row-reverse fill trick is direction-proof. -->
-              <div class="form-group">
-                <span class="form-label form-label--plain">
-                  <span class="he-text">דירוג מינימלי</span>
-                  <span class="en-text">Minimum rating</span>
-                </span>
-                <fieldset class="star-select" aria-label="Minimum rating">
-                  <input type="radio" name="minrating" id="mr5" value="5"><label for="mr5" title="5">★</label>
-                  <input type="radio" name="minrating" id="mr4" value="4"><label for="mr4" title="4">★</label>
-                  <input type="radio" name="minrating" id="mr3" value="3"><label for="mr3" title="3">★</label>
-                  <input type="radio" name="minrating" id="mr2" value="2"><label for="mr2" title="2">★</label>
-                  <input type="radio" name="minrating" id="mr1" value="1"><label for="mr1" title="1">★</label>
-                </fieldset>
-                <p class="field-hint">
-                  <span class="he-text">לחצו על מספר הכוכבים המינימלי</span>
-                  <span class="en-text">Tap the minimum number of stars</span>
-                </p>
-              </div>
+                <div class="filters__adv-body">
 
-              <!-- Minimum flexibility — progress-bar slider + number box.
-                   accent-color fills the bar as you drag (direction-aware, so it
-                   fills correctly in both RTL and LTR). The slider and the number
-                   box are kept in sync by a small vanilla-JS snippet at the end of
-                   <body> so the user can drag OR type and always see the value. -->
-              <div class="form-group">
-                <label class="form-label form-label--plain" for="flexRange">
-                  <span class="he-text">גמישות מינימלית</span>
-                  <span class="en-text">Minimum flexibility</span>
-                </label>
-                <!-- Value indicator sits directly above the bar (not by the title) -->
-                <div class="flex-value">
-                  <input class="flex-num" type="number" id="flexNum" min="0" max="100" value="0"
-                         step="1" inputmode="numeric" aria-label="גמישות מינימלית / Minimum flexibility value" />
+                  <!-- City or town: narrows the region to where the contractor actually works -->
+                  <div class="form-group">
+                    <label class="form-label" for="city-he">
+                      <span class="he-text">עיר או יישוב</span>
+                      <span class="en-text">City or town</span>
+                    </label>
+                    <input class="form-input he-field" type="text" id="city-he" name="city"
+                           dir="auto" list="cities-he" placeholder="למשל: חיפה" />
+                    <datalist id="cities-he">
+                      <option value="תל אביב"></option>
+                      <option value="ירושלים"></option>
+                      <option value="חיפה"></option>
+                      <option value="ראשון לציון"></option>
+                      <option value="פתח תקווה"></option>
+                      <option value="אשדוד"></option>
+                      <option value="נתניה"></option>
+                      <option value="באר שבע"></option>
+                      <option value="בני ברק"></option>
+                      <option value="חולון"></option>
+                      <option value="רמת גן"></option>
+                      <option value="אשקלון"></option>
+                      <option value="רחובות"></option>
+                      <option value="בת ים"></option>
+                      <option value="בית שמש"></option>
+                      <option value="כפר סבא"></option>
+                      <option value="הרצליה"></option>
+                      <option value="חדרה"></option>
+                      <option value="מודיעין"></option>
+                      <option value="רעננה"></option>
+                      <option value="נצרת"></option>
+                      <option value="לוד"></option>
+                      <option value="רמלה"></option>
+                      <option value="קריית גת"></option>
+                      <option value="טבריה"></option>
+                      <option value="נהריה"></option>
+                      <option value="כרמיאל"></option>
+                      <option value="עפולה"></option>
+                      <option value="אילת"></option>
+                      <option value="צפת"></option>
+                    </datalist>
+                    <input class="form-input en-field" type="text" id="city-en" name="city"
+                           dir="auto" list="cities-en" aria-label="City or town" placeholder="For example: Haifa" />
+                    <datalist id="cities-en">
+                      <option value="Tel Aviv"></option>
+                      <option value="Jerusalem"></option>
+                      <option value="Haifa"></option>
+                      <option value="Rishon LeZion"></option>
+                      <option value="Petah Tikva"></option>
+                      <option value="Ashdod"></option>
+                      <option value="Netanya"></option>
+                      <option value="Beer Sheva"></option>
+                      <option value="Bnei Brak"></option>
+                      <option value="Holon"></option>
+                      <option value="Ramat Gan"></option>
+                      <option value="Ashkelon"></option>
+                      <option value="Rehovot"></option>
+                      <option value="Bat Yam"></option>
+                      <option value="Beit Shemesh"></option>
+                      <option value="Kfar Saba"></option>
+                      <option value="Herzliya"></option>
+                      <option value="Hadera"></option>
+                      <option value="Modiin"></option>
+                      <option value="Raanana"></option>
+                      <option value="Nazareth"></option>
+                      <option value="Lod"></option>
+                      <option value="Ramla"></option>
+                      <option value="Kiryat Gat"></option>
+                      <option value="Tiberias"></option>
+                      <option value="Nahariya"></option>
+                      <option value="Karmiel"></option>
+                      <option value="Afula"></option>
+                      <option value="Eilat"></option>
+                      <option value="Safed"></option>
+                    </datalist>
+                    <p class="field-hint">
+                      <span class="he-text">חיפוש מדויק יותר מאזור. קבלנים שעובדים בכל הארץ יופיעו גם כאן.</span>
+                      <span class="en-text">More precise than a region. Contractors who work nationwide also appear here.</span>
+                    </p>
+                  </div>
+    
+                  <!-- Travel distance the contractor is willing to cover -->
+                  <div class="form-group">
+                    <label class="form-label" for="travel-min">
+                      <span class="he-text">מרחק נסיעה — לפחות</span>
+                      <span class="en-text">Travel distance — at least</span>
+                    </label>
+                    <div class="unit-field">
+                      <input class="form-input form-input--num" type="number" id="travel-min"
+                             name="travelMinKm" dir="ltr" min="0" max="500" step="5" placeholder="0" />
+                      <span class="unit-field__unit">
+                        <span class="he-text">ק״מ</span>
+                        <span class="en-text">km</span>
+                      </span>
+                    </div>
+                    <p class="field-hint">
+                      <span class="he-text">מציג קבלנים שמוכנים להגיע לפחות למרחק הזה.</span>
+                      <span class="en-text">Shows contractors willing to travel at least this far.</span>
+                    </p>
+                  </div>
+    
+                  <!-- Minimum rating — pure-CSS star selector (radio).
+                       Forced LTR so the row-reverse fill trick is direction-proof. -->
+                  <div class="form-group">
+                    <span class="form-label form-label--plain">
+                      <span class="he-text">דירוג מינימלי</span>
+                      <span class="en-text">Minimum rating</span>
+                    </span>
+                    <fieldset class="star-select" aria-label="Minimum rating">
+                      <input type="radio" name="minrating" id="mr5" value="5"><label for="mr5" title="5">★</label>
+                      <input type="radio" name="minrating" id="mr4" value="4"><label for="mr4" title="4">★</label>
+                      <input type="radio" name="minrating" id="mr3" value="3"><label for="mr3" title="3">★</label>
+                      <input type="radio" name="minrating" id="mr2" value="2"><label for="mr2" title="2">★</label>
+                      <input type="radio" name="minrating" id="mr1" value="1"><label for="mr1" title="1">★</label>
+                    </fieldset>
+                    <p class="field-hint">
+                      <span class="he-text">לחצו על מספר הכוכבים המינימלי</span>
+                      <span class="en-text">Tap the minimum number of stars</span>
+                    </p>
+                  </div>
+    
+                  <!-- Minimum flexibility — progress-bar slider + number box.
+                       accent-color fills the bar as you drag (direction-aware, so it
+                       fills correctly in both RTL and LTR). The slider and the number
+                       box are kept in sync by a small vanilla-JS snippet at the end of
+                       <body> so the user can drag OR type and always see the value. -->
+                  <div class="form-group">
+                    <label class="form-label form-label--plain" for="flexRange">
+                      <span class="he-text">גמישות מינימלית</span>
+                      <span class="en-text">Minimum flexibility</span>
+                    </label>
+                    <!-- Value indicator sits directly above the bar (not by the title) -->
+                    <div class="flex-value">
+                      <input class="flex-num" type="number" id="flexNum" min="0" max="100" value="0"
+                             step="1" inputmode="numeric" aria-label="גמישות מינימלית / Minimum flexibility value" />
+                    </div>
+                    <input class="flex-range" type="range" id="flexRange" min="0" max="100" value="0" step="1"
+                           aria-label="גמישות מינימלית / Minimum flexibility" />
+                    <div class="flex-range__scale" aria-hidden="true">
+                      <span>0</span>
+                      <span>50</span>
+                      <span>100</span>
+                    </div>
+                  </div>
+
                 </div>
-                <input class="flex-range" type="range" id="flexRange" min="0" max="100" value="0" step="1"
-                       aria-label="גמישות מינימלית / Minimum flexibility" />
-                <div class="flex-range__scale" aria-hidden="true">
-                  <span>0</span>
-                  <span>50</span>
-                  <span>100</span>
-                </div>
-              </div>
+              </details>
 
               <button type="submit" class="btn btn--primary btn--full">
                 <span class="he-text">החלת סינון</span>
@@ -549,7 +573,7 @@
               </p>
               <p class="avail avail--open card-avail">
                 <span class="avail__dot" aria-hidden="true"></span>
-                <span class="he-text">מקבל עבודות חדשות</span>
+                <span class="he-text">זמינות לעבודות חדשות</span>
                 <span class="en-text">Available for new work</span>
               </p>
               <div class="card-metrics">
@@ -660,8 +684,8 @@
               </p>
               <p class="avail avail--closed card-avail">
                 <span class="avail__dot" aria-hidden="true"></span>
-                <span class="he-text">לא מקבל עבודות חדשות כעת</span>
-                <span class="en-text">Not accepting new work currently</span>
+                <span class="he-text">אין זמינות לקבלת עבודות חדשות כעת</span>
+                <span class="en-text">No availability for new work at the moment</span>
               </p>
               <div class="card-metrics">
                 <div class="rating" title="4.2">
@@ -711,7 +735,7 @@
               </p>
               <p class="avail avail--open card-avail">
                 <span class="avail__dot" aria-hidden="true"></span>
-                <span class="he-text">מקבל עבודות חדשות</span>
+                <span class="he-text">זמינות לעבודות חדשות</span>
                 <span class="en-text">Available for new work</span>
               </p>
               <div class="card-metrics">
@@ -738,27 +762,31 @@
               </div>
             </li>
 
-            <!-- 5 · Connect -->
-            <li class="contractor-card">
+            <!-- 5 · Incoming request — this contractor asked to connect, so the card reports the status and sends the actual decision to My network. -->
+            <li class="contractor-card contractor-card--incoming">
+              <span class="conn-badge" aria-hidden="true">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11"/><path d="M17 10l-5 5-5-5"/><path d="M5 20h14"/></svg>
+                <span class="he-text">ממתין לאישור</span><span class="en-text">Awaiting your response</span>
+              </span>
               <div class="contractor-card__top">
-                <span class="avatar" aria-hidden="true">רש</span>
+                <span class="avatar" aria-hidden="true">תש</span>
                 <div class="contractor-card__id">
                   <h3 class="contractor-card__name">
-                    <span class="he-text">רונית שגב</span>
-                    <span class="en-text">Ronit Segev</span>
+                    <span class="he-text">תמר שפירא</span>
+                    <span class="en-text">Tamar Shapira</span>
                   </h3>
                   <p class="contractor-card__org">
-                    <span class="he-text">שגב מיזוג אוויר</span>
-                    <span class="en-text">Segev HVAC</span>
+                    <span class="he-text">שפירא חשמל ובקרה</span>
+                    <span class="en-text">Shapira Electrical &amp; Controls</span>
                   </p>
                 </div>
               </div>
               <div class="tags">
-                <span class="tag"><span class="he-text">מיזוג אוויר</span><span class="en-text">HVAC</span></span>
+                <span class="tag"><span class="he-text">חשמל</span><span class="en-text">Electrical</span></span>
               </div>
               <p class="meta-row">
                 <svg class="meta-row__pin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M21 10c0 7-9 12-9 12s-9-5-9-12a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-                <span class="he-text">חיפה והקריות</span><span class="en-text">Haifa &amp; Krayot</span>
+                <span class="he-text">ירושלים</span><span class="en-text">Jerusalem</span>
               </p>
               <p class="avail avail--limited card-avail">
                 <span class="avail__dot" aria-hidden="true"></span>
@@ -782,10 +810,9 @@
                 <a href="#profile" class="btn btn--ghost btn--sm">
                   <span class="he-text">פרופיל</span><span class="en-text">View profile</span>
                 </a>
-                <button type="button" class="btn btn--primary btn--sm js-connect">
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                  <span class="he-text">התחברות</span><span class="en-text">Connect</span>
-                </button>
+                <a href="my-network.html" class="btn btn--ghost btn--sm">
+                  <span class="he-text">הרשת שלי</span><span class="en-text">My network</span>
+                </a>
               </div>
             </li>
 
@@ -813,8 +840,8 @@
               </p>
               <p class="avail avail--closed card-avail">
                 <span class="avail__dot" aria-hidden="true"></span>
-                <span class="he-text">לא מקבל עבודות חדשות כעת</span>
-                <span class="en-text">Not accepting new work currently</span>
+                <span class="he-text">אין זמינות לקבלת עבודות חדשות כעת</span>
+                <span class="en-text">No availability for new work at the moment</span>
               </p>
               <div class="card-metrics">
                 <div class="rating" title="4.4">
@@ -864,7 +891,7 @@
               </p>
               <p class="avail avail--open card-avail">
                 <span class="avail__dot" aria-hidden="true"></span>
-                <span class="he-text">מקבל עבודות חדשות</span>
+                <span class="he-text">זמינות לעבודות חדשות</span>
                 <span class="en-text">Available for new work</span>
               </p>
               <div class="card-metrics">
@@ -966,8 +993,8 @@
               </p>
               <p class="avail avail--closed card-avail">
                 <span class="avail__dot" aria-hidden="true"></span>
-                <span class="he-text">לא מקבל עבודות חדשות כעת</span>
-                <span class="en-text">Not accepting new work currently</span>
+                <span class="he-text">אין זמינות לקבלת עבודות חדשות כעת</span>
+                <span class="en-text">No availability for new work at the moment</span>
               </p>
               <div class="card-metrics">
                 <div class="rating" title="4.0">

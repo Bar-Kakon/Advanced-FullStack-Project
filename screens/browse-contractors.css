@@ -538,7 +538,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 .avail--closed  .avail__dot { background: var(--avail-closed); }
 
 /* On a result card the status is a compact line, sized with the other card meta */
-.card-avail { font-size: 13.5px; }
+.card-avail { font-size: 14px; }
 
 /* Hint line */
 .field-hint { font-size: 14px; color: var(--text-soft); line-height: 1.4; }
@@ -616,6 +616,49 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 }
 
 /* ─────────────────────────────────────────────
+   Advanced filters — the refining controls, collapsed by default
+   so the rail stays short even on a wide desktop
+   ───────────────────────────────────────────── */
+/* The rule above the summary is what separates the basic group from this one. */
+.filters__adv {
+  border-block-start: 1px solid var(--secondary-30);
+  padding-block-start: 18px;
+}
+.filters__adv-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 11px 12px;
+  font-family: var(--font-mono);
+  font-size: 13.5px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--primary);
+  background: var(--secondary-15);
+  border: 1px solid var(--secondary-45);
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  /* The native disclosure triangle is dropped because the chevron marks the state instead. */
+  list-style: none;
+}
+.filters__adv-head::-webkit-details-marker { display: none; }
+.filters__adv-head:hover { background: var(--secondary-30); border-color: var(--secondary); }
+.filters__adv-head:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+
+.filters__adv-chevron { color: var(--text-soft); flex-shrink: 0; transition: transform 0.18s; }
+.filters__adv[open] .filters__adv-chevron { transform: rotate(180deg); }
+
+.filters__adv-body {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding-block-start: 18px;
+}
+
+/* ─────────────────────────────────────────────
    Results
    ───────────────────────────────────────────── */
 .results__count {
@@ -663,6 +706,8 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 }
 .contractor-card--connected { border-block-start-color: var(--primary); }
 .contractor-card--pending   { border-block-start-color: var(--secondary-30); }
+/* An incoming request is the one state waiting on the viewer, so it keeps a full-strength edge. */
+.contractor-card--incoming  { border-block-start-color: var(--secondary); }
 
 /* Connection badge (top trailing corner) */
 .conn-badge {
@@ -674,7 +719,8 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   gap: 5px;
   padding: 4px 9px;
   font-family: var(--font-mono);
-  font-size: 11px;
+  /* A status label is metadata the viewer has to read, so §3.5 rule 3 keeps it out of micro-text. */
+  font-size: 12.5px;
   font-weight: 500;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -689,6 +735,12 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   color: var(--text-soft);
   background: var(--secondary-15);
   border: 1px solid var(--secondary-45);
+}
+/* The incoming badge is darker than the sent one because it is asking for something. */
+.contractor-card--incoming .conn-badge {
+  color: var(--primary);
+  background: var(--secondary-45);
+  border: 1px solid var(--secondary);
 }
 
 /* Identity row */
@@ -708,19 +760,18 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   box-shadow: inset 0 0 0 3px var(--surface-08);
 }
 .contractor-card__id { min-width: 0; }
+/* The identity and metadata sizes below match my-network.css so one contractor reads the same on both screens. */
 .contractor-card__name {
-  font-size: 16px;
+  font-size: 17px;
   font-weight: 600;
   color: var(--primary);
   line-height: 1.2;
 }
+/* The company name wraps rather than truncating, because a clipped name is unreadable and §3.5 rule 5 forbids it. */
 .contractor-card__org {
   font-size: 14px;
   color: var(--text-soft);
   margin-top: 2px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 /* Trade tags */
@@ -742,7 +793,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 13px;
+  font-size: 14px;
   color: var(--text-soft);
 }
 .meta-row__pin { color: var(--secondary); flex-shrink: 0; }
@@ -788,9 +839,9 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 .flex-meter__head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
 .flex-meter__label {
   font-family: var(--font-mono);
-  font-size: 12.5px;
+  font-size: 14px;
   font-weight: 500;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--text-soft);
 }
@@ -962,6 +1013,8 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   .pager__page:hover,
   .pager__arrow:hover,
   .star-select label:hover { transform: none; }
+  /* The chevron still turns to mark the open state, but it does so without animating. */
+  .filters__adv-chevron { transition: none; }
 }
 
 /* ─────────────────────────────────────────────
