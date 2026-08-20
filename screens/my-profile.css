@@ -33,12 +33,12 @@
   color: var(--text);
   overflow-wrap: anywhere;
 }
-.fact__value--empty { color: var(--text-40); font-style: italic; }
+.fact__value--empty { color: var(--text-mute); font-style: italic; }
 .fact__unit {
   font-family: var(--font-mono);
   font-size: 14px;
   letter-spacing: 0.06em;
-  color: var(--text-55);
+  color: var(--text-soft);
   margin-inline-start: 6px;
 }
 
@@ -46,7 +46,7 @@
 .bio-text {
   font-size: 17px;
   line-height: 1.7;
-  color: var(--text-75);
+  color: var(--text-soft);
   max-width: var(--prose-max);
 }
 

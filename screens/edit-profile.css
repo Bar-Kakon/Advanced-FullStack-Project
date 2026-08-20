@@ -39,7 +39,7 @@ label.field-label { cursor: pointer; }
   -webkit-appearance: none;
   appearance: none;
 }
-.form-input::placeholder { color: var(--text-40); }
+.form-input::placeholder { color: var(--text-mute); }
 .form-input:hover,
 .form-select:hover {
   border-color: var(--secondary-55);
@@ -67,7 +67,7 @@ label.field-label { cursor: pointer; }
   font-family: var(--font-mono);
   font-size: 14px;
   letter-spacing: 0.06em;
-  color: var(--text-55);
+  color: var(--text-soft);
 }
 
 /* Native select dressed as a field */
@@ -79,11 +79,11 @@ label.field-label { cursor: pointer; }
   top: 50%;
   transform: translateY(-50%);
   display: inline-flex;
-  color: var(--text-40);
+  color: var(--text-mute);
   pointer-events: none;
 }
 
-.field-hint { font-size: 14px; line-height: 1.5; color: var(--text-55); }
+.field-hint { font-size: 14px; line-height: 1.5; color: var(--text-soft); }
 
 /* ═══ Nationwide: travel distance stops being a meaningful preference ═══ */
 /* The active language's select is the one that counts, so each is gated on its lang radio */
@@ -141,7 +141,7 @@ label.field-label { cursor: pointer; }
   margin-block-end: 22px;
   font-size: 15px;
   line-height: 1.6;
-  color: var(--text-55);
+  color: var(--text-soft);
   background: var(--background);
   border: 1px solid var(--secondary-30);
   border-inline-start: 4px solid var(--secondary-45);
@@ -178,7 +178,7 @@ label.field-label { cursor: pointer; }
   padding: 11px 13px;
   font-size: 15.5px;
   line-height: 1.35;
-  color: var(--text-75);
+  color: var(--text-soft);
   cursor: pointer;
   background: var(--surface);
   border: 1.5px solid var(--secondary-30);
@@ -279,7 +279,7 @@ label.field-label { cursor: pointer; }
   line-height: 1.15;
   color: var(--primary);
 }
-.equip-modal__lede { margin-top: 8px; margin-bottom: 20px; font-size: 16px; color: var(--text-55); }
+.equip-modal__lede { margin-top: 8px; margin-bottom: 20px; font-size: 16px; color: var(--text-soft); }
 .equip-modal__done { margin-top: 22px; }
 
 /* ═══ Completed work — add and remove ═══ */
@@ -313,7 +313,7 @@ label.field-label { cursor: pointer; }
   font-family: var(--font-sans);
   font-size: 15px;
   font-weight: 500;
-  color: var(--text-55);
+  color: var(--text-soft);
   background: transparent;
   border: 2px dashed var(--secondary-45);
   border-radius: var(--r-sm);
