@@ -35,8 +35,8 @@
   --secondary-45:    rgba(199, 184, 157, 0.45);
   --secondary-55:    rgba(199, 184, 157, 0.55);
   --secondary-70:    rgba(199, 184, 157, 0.70);
-  --text-40:         rgba(31, 36, 40, 0.40);
-  --text-55:         rgba(31, 36, 40, 0.55);
+  --text-mute:       rgba(31, 36, 40, 0.64);
+  --text-soft:       rgba(31, 36, 40, 0.75);
   --surface-08:      rgba(255, 253, 248, 0.08);
   --surface-15:      rgba(255, 253, 248, 0.15);
   --surface-50:      rgba(255, 253, 248, 0.50);
@@ -272,13 +272,13 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   outline: 1px solid var(--surface-50);
   outline-offset: -4px;
 }
-.lang-switch__globe { color: var(--text-40); flex-shrink: 0; }
+.lang-switch__globe { color: var(--text-mute); flex-shrink: 0; }
 .lang-switch__btn {
   font-family: var(--font-sans);
   font-size: 12.5px;
   font-weight: 600;
   letter-spacing: 0.02em;
-  color: var(--text-55);
+  color: var(--text-soft);
   padding: 3px 9px;
   border-radius: 999px;
   cursor: pointer;
@@ -385,7 +385,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   text-transform: uppercase;
   color: var(--primary);
 }
-.filters__clear { font-size: 12.5px; color: var(--text-55); transition: color 0.15s; }
+.filters__clear { font-size: 12.5px; color: var(--text-soft); transition: color 0.15s; }
 .filters__clear:hover { color: var(--primary); text-decoration: underline; }
 
 .filters__form { display: flex; flex-direction: column; gap: 18px; }
@@ -404,7 +404,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   font-weight: 500;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--text-55);
+  color: var(--text-soft);
   cursor: pointer;
 }
 .form-label::before {
@@ -442,7 +442,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   -webkit-appearance: none;
   appearance: none;
 }
-.form-input::placeholder { color: var(--text-40); }
+.form-input::placeholder { color: var(--text-mute); }
 .form-input:hover,
 .form-select:hover {
   border-color: var(--secondary-55);
@@ -464,7 +464,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   top: 50%;
   transform: translateY(-50%);
   display: inline-flex;
-  color: var(--text-40);
+  color: var(--text-mute);
   pointer-events: none;
 }
 
@@ -473,7 +473,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 .search-field__icon {
   position: absolute;
   inset-inline-start: 13px;
-  color: var(--text-40);
+  color: var(--text-mute);
   pointer-events: none;
 }
 .form-input--search { padding-inline-start: 38px; }
@@ -486,7 +486,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   font-family: var(--font-mono);
   font-size: 14px;
   letter-spacing: 0.06em;
-  color: var(--text-55);
+  color: var(--text-soft);
 }
 
 /* ═══ Availability filter — the dot never carries the meaning alone ═══ */
@@ -541,7 +541,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 .card-avail { font-size: 13.5px; }
 
 /* Hint line */
-.field-hint { font-size: 14px; color: var(--text-55); line-height: 1.4; }
+.field-hint { font-size: 14px; color: var(--text-soft); line-height: 1.4; }
 
 /* ── Minimum-rating star selector (pure CSS, radio-driven) ──
    Forced LTR + row-reverse so hovering/selecting fills the
@@ -611,7 +611,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   justify-content: space-between;
   font-family: var(--font-mono);
   font-size: 10.5px;
-  color: var(--text-40);
+  color: var(--text-mute);
   margin-top: -2px;
 }
 
@@ -686,7 +686,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   border: 1px solid var(--primary);
 }
 .contractor-card--pending .conn-badge {
-  color: var(--text-55);
+  color: var(--text-soft);
   background: var(--secondary-15);
   border: 1px solid var(--secondary-45);
 }
@@ -716,7 +716,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 }
 .contractor-card__org {
   font-size: 14px;
-  color: var(--text-55);
+  color: var(--text-soft);
   margin-top: 2px;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -743,7 +743,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   align-items: center;
   gap: 6px;
   font-size: 13px;
-  color: var(--text-55);
+  color: var(--text-soft);
 }
 .meta-row__pin { color: var(--secondary); flex-shrink: 0; }
 
@@ -792,7 +792,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   font-weight: 500;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--text-55);
+  color: var(--text-soft);
 }
 .flex-meter__value {
   font-family: var(--font-mono);
@@ -877,7 +877,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 
 /* Muted: disabled "request sent" state */
 .btn--muted {
-  color: var(--text-40);
+  color: var(--text-mute);
   background: var(--secondary-15);
   border-color: var(--secondary-30);
   font-weight: 500;
@@ -995,9 +995,9 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 
 /* ── Toggle button active states ── */
 #lang-he:checked ~ .app .lang-switch label[for="lang-he"] { color: var(--surface); background: var(--primary); }
-#lang-he:checked ~ .app .lang-switch label[for="lang-en"] { color: var(--text-55); background: none; }
+#lang-he:checked ~ .app .lang-switch label[for="lang-en"] { color: var(--text-soft); background: none; }
 #lang-en:checked ~ .app .lang-switch label[for="lang-en"] { color: var(--surface); background: var(--primary); }
-#lang-en:checked ~ .app .lang-switch label[for="lang-he"] { color: var(--text-55); background: none; }
+#lang-en:checked ~ .app .lang-switch label[for="lang-he"] { color: var(--text-soft); background: none; }
 
 /* ── English selected: swap text + direction + fonts ── */
 #lang-en:checked ~ .app .he-text   { display: none;   }
