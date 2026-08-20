@@ -340,7 +340,15 @@ dropped entirely. Exactly how is [D10](#7-open-decisions).
    **`register.css` at 14px is the reference size.** Corrected to match: `profile.css` (11.5px),
    `browse-contractors.css` (11px), `login.css` (11px). Labels need not equal body size; they must
    stay comfortably legible — many contractors using this are older users.
-4. **Let text wrap to the space it has.** No manual line breaks, and no width limit tighter than the
+4. **Secondary text must still clear contrast.** Secondary information stays visually secondary, but it
+   has to be readable. Two tiers only, both measured against the cream card surfaces: **`--text-mute`
+   (0.64 alpha, ≈4.6:1)** for metadata — dates, scales, counters, empty states — and **`--text-soft`
+   (0.75, ≈6.8:1)** for hints, ledes, labels and secondary body copy. The tokens are named by role, not by
+   opacity, because the numbers moved once. *Why only two tiers:* the old scale had four (0.40 / 0.55 /
+   0.75 / 1.0), and the first two measured **2.4:1 and 3.6:1** — both below AA. Lifting them above the
+   4.5:1 floor leaves no visual room for a third secondary step, so 0.55 and 0.75 merged. Losing that
+   distinction is the honest cost of making the text legible.
+5. **Let text wrap to the space it has.** No manual line breaks, and no width limit tighter than the
    content needs. A reading measure (`--prose-max`) is kept only for genuinely long prose — a bio, a
    long answer — never for a label, a hint or a one-line section lede. Applies in both directions.
 
@@ -640,6 +648,11 @@ into a proper section or the logs below._
 > Every change (code, structure, scope) gets a dated line **with the reason**. Newest at top.
 >
 > **Format:** `[YYYY-MM-DD] What changed — why.`
+
+- `[2026-08-19]` **Faint secondary text darkened project-wide, and the "before joining" label dropped from work cards** (2 commits on `feature/my-profile-screen`, 1 each on `feature/browse-contractors-screen`, `feature/register-screen`, `feature/login-screen`) — readability only; no hierarchy, layout, spacing or content changed beyond it, and the hexagon completion badge is untouched.
+  **Measured rather than eyeballed.** The two faint text tokens were **`rgba(31,36,40,0.40)` at 2.40:1** and **`0.55` at 3.62:1** against the cream surfaces — both under the 4.5:1 AA floor for normal text, which is why dates like *July 2026* were uncomfortable to read. Raised to **0.64 (≈4.6:1)** and **0.75 (≈6.8:1)**, verified against both `--surface` and the slightly darker `--background`. Renamed to **`--text-mute`** and **`--text-soft`** because the old names stated opacities that no longer applied. Applied to **every** stylesheet carrying them — profile (×3), browse-contractors, register, login — since the tokens are duplicated per screen and a fix in one would have left the others faint.
+  **One tier was lost, deliberately.** The old scale had four steps; the bottom two both failed contrast. Lifting them over the floor left no room for a third secondary step, so the former 0.55 and 0.75 tiers merged into `--text-soft`. Metadata stays visibly lighter than secondary body copy, which is the distinction that carries meaning; the finer 0.55-vs-0.75 split did not survive and could not. Recorded as **[§3.5](#35-shared-ui-rules-apply-to-every-screen) rule 4** so the next screen inherits the two-tier scale instead of reinventing a faint one.
+  **Label removed.** *Completed before joining / עבודה מלפני ההצטרפות* is gone from the work cards — it labelled an absence rather than telling the reader anything about the work. Location and date stay as their own `.work-item__meta` line, so the context survives without the label. **Left in place:** the same phrase inside the Edit Profile section lede, where it is prose telling a contractor that pre-platform work may be uploaded, not a card label. Flagged rather than removed silently.
 
 - `[2026-08-19]` **Badge finalised as a hexagon mark, the metrics pair moved into the Edit Profile header, and the divider tightened** (3 commits on `feature/my-profile-screen`) — presentation only; no eligibility, privacy or badge **rule** changed, and the badge still asserts recorded completion rather than quality.
   **Badge final design.** The tick became a **hexagon enclosing a check**, drawn in `--secondary` — the same accent as the rating stars — on a `--secondary-15` field with a full-strength tan border. The solid tan fill and its inset shadow are gone, so the mark reads as the accent and the label stays on `--primary`. **Location and date are now separate metadata**, not folded into the title: the title carries the work (`מגדלי הצפון` / Northern Towers), and a new mono `.work-item__meta` line carries `city · month year`. Previously the location was buried inside the title string, which left the tile with no date at all.
