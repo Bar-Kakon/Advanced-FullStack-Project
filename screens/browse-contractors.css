@@ -1012,3 +1012,442 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   --font-sans:  'Inter', system-ui, -apple-system, sans-serif;
   --font-serif: 'Fraunces', 'Georgia', serif;
 }
+
+/* ─────────────────────────────────────────────
+   PUBLIC PROFILE — side panel (screen #7)
+
+   Others' view of a contractor. Not a page: it is the third
+   column of .browse__body, so opening it makes the card grid
+   narrower (3-up → 2-up) instead of covering it.
+
+   Selection is CSS-only. "View profile" is an anchor to a panel
+   id and :target reveals that one panel — no radios, no JS.
+
+   Placed last in the file on purpose: the panel-open layout has
+   to override the generic .browse__body rules in the Responsive
+   section above, so its own media queries must come after them.
+
+   Presentation is copied from the profile screen (profile.css)
+   rather than reinvented, so a contractor sees the same tiles,
+   work cards and reviews whether the profile is theirs or not.
+   No new colors.
+   ───────────────────────────────────────────── */
+
+/* Available to the whole screen, not just the panel */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ── The open/closed layout switch ── */
+.profile-panel { display: none; }
+
+.browse__body:has(.profile-panel:target) {
+  grid-template-columns: 268px minmax(0, 1fr) 380px;
+}
+/* minmax(0, 1fr) above is load-bearing: a plain 1fr refuses to shrink
+   below its content and the grid would overflow instead of reflowing. */
+
+.browse__body:has(.profile-panel:target) .card-grid {
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+}
+
+.profile-panel:target {
+  display: flex;
+  flex-direction: column;
+  position: sticky;
+  top: calc(var(--nav-h) + 22px);
+  max-height: calc(100vh - var(--nav-h) - 44px);
+  background:
+    linear-gradient(135deg, transparent 0 20px, var(--surface-96) 20px),
+    linear-gradient(90deg, rgba(35, 56, 77, 0.035) 1px, transparent 1px),
+    linear-gradient(0deg, rgba(35, 56, 77, 0.035) 1px, transparent 1px),
+    linear-gradient(180deg, rgba(255, 253, 248, 0.98), rgba(243, 240, 234, 0.95));
+  background-size: auto, 20px 20px, 20px 20px, auto;
+  border: 1px solid var(--surface-75);
+  border-block-start: 4px solid var(--secondary);
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow-card);
+  outline: 1px solid var(--primary-08);
+  outline-offset: -7px;
+  overflow: hidden;
+}
+
+/* ── Header — pinned above the scrolling body ── */
+.pp__head {
+  position: relative;
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 22px 20px 18px;
+  border-block-end: 1px dashed var(--primary-20);
+}
+
+.pp__close {
+  position: absolute;
+  top: 12px;
+  inset-inline-end: 12px;
+  display: inline-grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--r-sm);
+  color: var(--text-soft);
+  background: var(--surface);
+  border: 1px solid var(--secondary-45);
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+.pp__close:hover { color: var(--primary); border-color: var(--secondary); background: var(--background); }
+
+.pp__identity { display: flex; align-items: center; gap: 14px; min-width: 0; padding-inline-end: 40px; }
+.pp__id-text { min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.avatar--lg { width: 62px; height: 62px; font-size: 22px; border-radius: 16px; }
+
+.pp__name {
+  font-family: var(--font-serif);
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.15;
+  color: var(--primary);
+}
+.pp__org { font-size: 14px; line-height: 1.4; color: var(--text-soft); }
+
+.profile-panel .tags { list-style: none; }
+.profile-panel .meta-row { font-size: 14px; }
+.profile-panel .avail { font-size: 14px; font-weight: 500; }
+
+/* ── Scrolling body ── */
+.pp__body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 20px;
+}
+
+/* ── Trust metrics — same tiles as the profile screen ── */
+.pp__metrics { display: grid; gap: 14px; }
+
+.metric {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  padding: 15px 16px;
+  background: var(--surface);
+  border: 1px solid var(--secondary-30);
+  border-inline-start: 5px solid var(--secondary);
+  border-radius: var(--r-sm);
+}
+.metric__label {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-soft);
+}
+.metric__foot { font-size: 13px; line-height: 1.5; color: var(--text-soft); }
+
+/* One neutral mark, identical for ratings and flexibility. No explanation:
+   a score built on two answers is worth less than no score at all, and
+   saying so on the screen would only invite the reader to discount it. */
+.state-empty {
+  font-family: var(--font-mono);
+  font-size: 26px;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--text-mute);
+}
+.metric--score .state-empty { display: none; }
+.metric--pending .rating,
+.metric--pending .flex-meter,
+.metric--pending .metric__foot--score { display: none; }
+
+/* Panel-sized metric type — the cards keep their own smaller scale */
+.profile-panel .metric .rating__stars { font-size: 20px; letter-spacing: 2px; }
+.profile-panel .metric .rating__value { font-size: 19px; font-weight: 600; color: var(--primary); }
+.profile-panel .metric .flex-meter { gap: 7px; }
+.profile-panel .metric .flex-meter__head { justify-content: flex-start; gap: 4px; }
+.profile-panel .metric .flex-meter__value { font-size: 24px; }
+.profile-panel .metric .flex-meter__track { height: 9px; }
+
+.flex-meter__scale {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--text-mute);
+}
+.flex-meter__scale::before { content: '/'; margin-inline-end: 2px; }
+
+/* ── "How is this calculated" — native <details>, no JavaScript ── */
+.explain {
+  background: var(--background);
+  border: 1px solid var(--secondary-30);
+  border-inline-start: 4px solid var(--secondary-45);
+  border-radius: var(--r-sm);
+  overflow: hidden;
+}
+.explain[open] { border-inline-start-color: var(--secondary); }
+.explain__q {
+  position: relative;
+  list-style: none;
+  cursor: pointer;
+  padding-block: 12px;
+  padding-inline: 14px 42px;
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--primary);
+  transition: background 0.15s;
+}
+.explain__q::-webkit-details-marker { display: none; }
+.explain__q:hover { background: var(--secondary-15); }
+.explain__q::before,
+.explain__q::after {
+  content: '';
+  position: absolute;
+  inset-inline-end: 14px;
+  top: 50%;
+  width: 12px;
+  height: 2px;
+  background: var(--primary);
+  transition: transform 0.18s, opacity 0.18s;
+}
+.explain__q::after { transform: rotate(90deg); }
+.explain[open] .explain__q::after { transform: rotate(0deg); opacity: 0; }
+.explain__a {
+  padding-block-end: 14px;
+  padding-inline: 14px;
+  font-size: 14.5px;
+  line-height: 1.65;
+  color: var(--text-soft);
+}
+
+/* ── Sections inside the panel ── */
+.pp__section { display: flex; flex-direction: column; gap: 10px; }
+.pp__title {
+  font-family: var(--font-serif);
+  font-size: 19px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--primary);
+}
+.pp__lede { font-size: 13.5px; line-height: 1.55; color: var(--text-soft); }
+.bio-text { font-size: 15px; line-height: 1.65; color: var(--text-soft); }
+
+/* ── Completed work ──
+   Trade, place, month and role only. No project name, no client,
+   no other members, and nothing that separates delegated work from
+   the rest — see the visibility rule in the project MD. */
+.work-grid {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(148px, 1fr));
+  gap: 12px;
+}
+.work-item {
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border: 1px solid var(--secondary-30);
+  border-radius: var(--r-sm);
+  overflow: hidden;
+}
+.work-item__thumb {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 4 / 3;
+  color: var(--secondary);
+  background:
+    linear-gradient(90deg, rgba(35, 56, 77, 0.05) 1px, transparent 1px),
+    linear-gradient(0deg, rgba(35, 56, 77, 0.05) 1px, transparent 1px),
+    var(--background);
+  background-size: 18px 18px, 18px 18px, auto;
+  border-block-end: 1px solid var(--secondary-30);
+}
+.work-item__body { display: flex; flex-direction: column; gap: 5px; padding: 10px 12px; }
+.work-item__title { font-size: 14px; font-weight: 600; line-height: 1.3; color: var(--primary); }
+.work-item__scope { font-size: 13px; line-height: 1.35; color: var(--text-soft); }
+.work-item__meta {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.03em;
+  color: var(--text-mute);
+}
+
+/* Records that the completion is on the platform — never a claim about quality */
+.work-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  align-self: flex-start;
+  margin-top: 3px;
+  padding: 4px 9px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  color: var(--primary);
+  background: var(--secondary-15);
+  border: 1px solid var(--secondary);
+  border-radius: var(--r-sm);
+}
+.work-badge__icon { flex-shrink: 0; color: var(--secondary); }
+
+/* ── Fact lists (details, scheduling preferences) ── */
+.facts { display: flex; flex-direction: column; gap: 12px; }
+.fact { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.field-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-soft);
+}
+.field-label::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border: 1px solid var(--secondary);
+  background: var(--primary-08);
+  transform: rotate(45deg);
+  flex-shrink: 0;
+}
+.fact__value {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--primary);
+  text-align: end;
+}
+.fact__unit { font-size: 13px; font-weight: 500; color: var(--text-soft); margin-inline-start: 4px; }
+
+/* Contact stays behind the connection gate — messaging is the channel */
+.fact__value--gated {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-mute);
+  font-style: italic;
+}
+
+/* ── Ratings received ── */
+.review-list { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+.review {
+  padding: 13px 15px;
+  background: var(--surface);
+  border: 1px solid var(--secondary-30);
+  border-inline-start: 4px solid var(--secondary-45);
+  border-radius: var(--r-sm);
+}
+.review__head { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; margin-bottom: 7px; }
+.rating__stars--sm { font-size: 15px; letter-spacing: 1px; }
+.review__score {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--primary);
+}
+.review__date {
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  color: var(--text-mute);
+  margin-inline-start: auto;
+}
+.review__body { font-size: 14.5px; line-height: 1.55; color: var(--text-soft); }
+
+/* ── Action bar — pinned below the scrolling body ── */
+.pp__actions {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 20px;
+  background: var(--surface-90);
+  border-block-start: 1px solid var(--secondary-45);
+}
+.pp__actions-main { display: flex; flex-wrap: wrap; gap: 10px; }
+.pp__actions-main .btn { flex: 1; min-width: 130px; }
+.pp__actions-main .btn--muted { cursor: not-allowed; }
+
+/* Rate is present only when shared completed work makes the viewer
+   eligible; this line is the evidence, not an explanation of the rule. */
+.pp__gate {
+  flex-basis: 100%;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.03em;
+  color: var(--text-mute);
+}
+
+.pp__quiet {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 14px;
+  padding-block-start: 10px;
+  border-block-start: 1px dashed var(--primary-20);
+}
+.pp__quiet-btn {
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-soft);
+  padding: 4px 2px;
+  border-radius: 4px;
+  transition: color 0.15s;
+}
+.pp__quiet-btn:hover { color: var(--primary); text-decoration: underline; }
+.pp__quiet-btn:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+
+/* ─── Panel responsive ladder ───
+   Below 1180px there is no room for rail + cards + panel, so the
+   filter rail moves to a full-width row and cards keep their place
+   beside the panel — the browse context stays visible either way. */
+@media (max-width: 1180px) {
+  .browse__body:has(.profile-panel:target) {
+    grid-template-columns: minmax(0, 1fr) 340px;
+  }
+  .browse__body:has(.profile-panel:target) .filters {
+    grid-column: 1 / -1;
+    position: static;
+  }
+  .browse__body:has(.profile-panel:target) .card-grid {
+    grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  }
+}
+
+/* Single column: the panel stacks above the results it belongs to */
+@media (max-width: 860px) {
+  .browse__body:has(.profile-panel:target) { grid-template-columns: 1fr; }
+  .browse__body:has(.profile-panel:target) .card-grid {
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  }
+  /* Reading order stays filters → profile → results, so the page keeps
+     its identity instead of opening on a profile with no context above it */
+  .browse__body:has(.profile-panel:target) .filters { order: -2; }
+  .profile-panel:target {
+    order: -1;
+    position: static;
+    max-height: none;
+  }
+  .pp__body { overflow-y: visible; }
+}
+
+@media (max-width: 620px) {
+  .browse__body:has(.profile-panel:target) .card-grid { grid-template-columns: 1fr; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pp__close, .explain__q::before, .explain__q::after { transition: none; }
+}

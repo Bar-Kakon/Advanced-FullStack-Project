@@ -508,7 +508,7 @@
         </aside>
 
         <!-- ── Results ──────────────────────────────────── -->
-        <section class="results" aria-label="Contractors">
+        <section class="results" id="results" aria-label="Contractors">
 
           <!-- Result count (text only; static placeholder data) -->
           <p class="results__count">
@@ -566,7 +566,7 @@
                 </div>
               </div>
               <div class="contractor-card__actions">
-                <a href="public-profile.html" class="btn btn--ghost btn--sm">
+                <a href="#pp-avi-cohen" class="btn btn--ghost btn--sm">
                   <span class="he-text">פרופיל</span><span class="en-text">View profile</span>
                 </a>
                 <button type="button" class="btn btn--primary btn--sm js-connect">
@@ -622,7 +622,7 @@
                 </div>
               </div>
               <div class="contractor-card__actions">
-                <a href="public-profile.html" class="btn btn--ghost btn--sm">
+                <a href="#pp-dana-levi" class="btn btn--ghost btn--sm">
                   <span class="he-text">פרופיל</span><span class="en-text">View profile</span>
                 </a>
                 <button type="button" class="btn btn--primary btn--sm">
@@ -677,7 +677,7 @@
                 </div>
               </div>
               <div class="contractor-card__actions">
-                <a href="public-profile.html" class="btn btn--ghost btn--sm">
+                <a href="#pp-musa-khoury" class="btn btn--ghost btn--sm">
                   <span class="he-text">פרופיל</span><span class="en-text">View profile</span>
                 </a>
                 <button type="button" class="btn btn--muted btn--sm" disabled>
@@ -719,16 +719,16 @@
                   <span class="rating__stars" style="--rating: 3.8" aria-hidden="true"><span class="rating__fill"></span></span>
                   <span class="rating__value">3.8</span>
                 </div>
+                <!-- No score yet: one neutral mark, never an explanation -->
                 <div class="flex-meter">
                   <div class="flex-meter__head">
                     <span class="flex-meter__label"><span class="he-text">גמישות</span><span class="en-text">Flexibility</span></span>
-                    <span class="flex-meter__value">55</span>
+                    <span class="flex-meter__value"><span aria-hidden="true">—</span><span class="sr-only"><span class="he-text">אין עדיין ציון גמישות</span><span class="en-text">No flexibility score yet</span></span></span>
                   </div>
-                  <span class="flex-meter__track"><span class="flex-meter__fill" style="--score: 55"></span></span>
                 </div>
               </div>
               <div class="contractor-card__actions">
-                <a href="public-profile.html" class="btn btn--ghost btn--sm">
+                <a href="#pp-yossi-mizrahi" class="btn btn--ghost btn--sm">
                   <span class="he-text">פרופיל</span><span class="en-text">View profile</span>
                 </a>
                 <button type="button" class="btn btn--primary btn--sm js-connect">
@@ -779,7 +779,7 @@
                 </div>
               </div>
               <div class="contractor-card__actions">
-                <a href="public-profile.html" class="btn btn--ghost btn--sm">
+                <a href="#pp-ronit-segev" class="btn btn--ghost btn--sm">
                   <span class="he-text">פרופיל</span><span class="en-text">View profile</span>
                 </a>
                 <button type="button" class="btn btn--primary btn--sm js-connect">
@@ -830,7 +830,7 @@
                 </div>
               </div>
               <div class="contractor-card__actions">
-                <a href="public-profile.html" class="btn btn--ghost btn--sm">
+                <a href="#pp-samir-abdallah" class="btn btn--ghost btn--sm">
                   <span class="he-text">פרופיל</span><span class="en-text">View profile</span>
                 </a>
                 <button type="button" class="btn btn--primary btn--sm js-connect">
@@ -881,7 +881,7 @@
                 </div>
               </div>
               <div class="contractor-card__actions">
-                <a href="public-profile.html" class="btn btn--ghost btn--sm">
+                <a href="#pp-noa-friedman" class="btn btn--ghost btn--sm">
                   <span class="he-text">פרופיל</span><span class="en-text">View profile</span>
                 </a>
                 <button type="button" class="btn btn--primary btn--sm js-connect">
@@ -932,7 +932,7 @@
                 </div>
               </div>
               <div class="contractor-card__actions">
-                <a href="public-profile.html" class="btn btn--ghost btn--sm">
+                <a href="#pp-itai-barak" class="btn btn--ghost btn--sm">
                   <span class="he-text">פרופיל</span><span class="en-text">View profile</span>
                 </a>
                 <button type="button" class="btn btn--primary btn--sm js-connect">
@@ -983,7 +983,7 @@
                 </div>
               </div>
               <div class="contractor-card__actions">
-                <a href="public-profile.html" class="btn btn--ghost btn--sm">
+                <a href="#pp-khaled-mansour" class="btn btn--ghost btn--sm">
                   <span class="he-text">פרופיל</span><span class="en-text">View profile</span>
                 </a>
                 <button type="button" class="btn btn--primary btn--sm js-connect">
@@ -1012,6 +1012,1343 @@
           </nav>
 
         </section>
+
+        <!-- ═══════════════════════════════════════════════
+             PUBLIC PROFILE — side panel (screen #7)
+             Opens *inside* Browse: it is the third column of
+             .browse__body, so the card grid narrows beside it
+             instead of being covered. Selection is CSS-only —
+             "View profile" is an anchor to a panel id, and
+             :target reveals exactly that one panel.
+             ═══════════════════════════════════════════════ -->
+        <!-- 1 · Avi Cohen -->
+        <aside class="profile-panel" id="pp-avi-cohen" aria-labelledby="pp-avi-cohen-name">
+          <div class="pp__head">
+            <a class="pp__close" href="#results" aria-label="Close profile">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                   stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
+            </a>
+            <div class="pp__identity">
+              <span class="avatar avatar--lg" aria-hidden="true">אכ</span>
+              <div class="pp__id-text">
+                <h2 class="pp__name" id="pp-avi-cohen-name"><span class="he-text" dir="auto">אבי כהן</span><span class="en-text" dir="auto">Avi Cohen</span></h2>
+                <p class="pp__org"><span class="he-text" dir="auto">כהן חשמל ותשתיות</span><span class="en-text" dir="auto">Cohen Electric &amp; Infrastructure</span></p>
+              </div>
+            </div>
+            <ul class="tags"><li class="tag"><span class="he-text">חשמל</span><span class="en-text">Electrical</span></li></ul>
+            <p class="meta-row"><svg class="meta-row__pin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 10c0 7-9 12-9 12s-9-5-9-12a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg><span class="he-text">תל אביב</span><span class="en-text">Tel Aviv</span></p>
+            <p class="avail avail--open"><span class="avail__dot" aria-hidden="true"></span><span class="he-text">מקבל עבודות חדשות</span><span class="en-text">Available for new work</span></p>
+          </div>
+          <div class="pp__body">
+            <div class="pp__metrics">
+              <div class="metric metric--score">
+                <p class="metric__label"><span class="he-text">דירוג</span><span class="en-text">Rating</span></p>
+                <div class="rating">
+                  <span class="rating__stars" style="--rating: 4.6" aria-hidden="true"><span class="rating__fill"></span></span>
+                  <span class="rating__value"><bdi>4.6</bdi></span>
+                </div>
+                <p class="state-empty"><span aria-hidden="true">—</span><span class="sr-only"><span class="he-text">אין עדיין דירוגים</span><span class="en-text">No ratings yet</span></span></p>
+                <p class="metric__foot"><span class="he-text">מבוסס על <bdi>23</bdi> דירוגים מעבודות שהושלמו</span><span class="en-text">Based on <bdi>23</bdi> ratings from completed work</span></p>
+              </div>
+              <div class="metric metric--score">
+                <p class="metric__label"><span class="he-text">ציון גמישות</span><span class="en-text">Flexibility score</span></p>
+                <div class="flex-meter">
+                  <div class="flex-meter__head">
+                    <span class="flex-meter__value"><bdi>82</bdi></span>
+                    <span class="flex-meter__scale"><bdi>100</bdi></span>
+                  </div>
+                  <span class="flex-meter__track" aria-hidden="true"><span class="flex-meter__fill" style="--score: 82"></span></span>
+                </div>
+                <p class="metric__foot metric__foot--score"><span class="he-text">מבוסס על <bdi>31</bdi> תגובות לשינויי תאריך</span><span class="en-text">Based on <bdi>31</bdi> responses to date changes</span></p>
+                <p class="state-empty"><span aria-hidden="true">—</span><span class="sr-only"><span class="he-text">אין עדיין ציון גמישות</span><span class="en-text">No flexibility score yet</span></span></p>
+              </div>
+            </div>
+            <details class="explain">
+              <summary class="explain__q"><span class="he-text">איך מחושב ציון הגמישות?</span><span class="en-text">How is the flexibility score calculated?</span></summary>
+              <div class="explain__a"><p><span class="he-text">הציון נבנה מהאופן שבו נענות בפועל בקשות לשינוי תאריך — אישור, דחייה או הצעה נגדית. הוא אינו מדווח עצמי ואי אפשר לערוך אותו.</span><span class="en-text">The score is built from how requests to change a date are actually answered — approving, rejecting or proposing an alternative. It is not self-reported and cannot be edited.</span></p></div>
+            </details>
+            <section class="pp__section">
+              <h3 class="pp__title"><span class="he-text">רקע מקצועי</span><span class="en-text">About</span></h3>
+              <p class="bio-text"><span class="he-text" dir="auto">חשמל לבנייני מגורים ומסחר. <bdi>18</bdi> שנה בשטח, בעיקר לוחות ותשתית.</span><span class="en-text" dir="auto">Electrical for residential and commercial buildings. <bdi>18</bdi> years on site, mostly boards and infrastructure.</span></p>
+            </section>
+            <section class="pp__section">
+              <h3 class="pp__title"><span class="he-text">עבודות שהושלמו</span><span class="en-text">Completed work</span></h3>
+              <p class="pp__lede"><span class="he-text">הסימון &quot;הושלם ב־FieldSync&quot; מציין שההשלמה רשומה במערכת, ואינו חוות דעת על איכות העבודה.</span><span class="en-text">The &quot;Completed on FieldSync&quot; mark means the completion is recorded on the platform; it is not a judgement of quality.</span></p>
+              <ul class="work-grid">
+                <li class="work-item">
+                  <span class="work-item__thumb" aria-hidden="true"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="M21 15l-5-5L5 20"/></svg></span>
+                  <div class="work-item__body">
+                    <p class="work-item__title"><span class="he-text" dir="auto">לוח חשמל ראשי</span><span class="en-text" dir="auto">Main distribution board</span></p>
+                    <p class="work-item__scope"><span class="he-text">קבלן משנה</span><span class="en-text">Subcontractor</span></p>
+                    <p class="work-item__meta"><span class="he-text">תל אביב · יוני <bdi>2026</bdi></span><span class="en-text">Tel Aviv · June <bdi>2026</bdi></span></p>
+                    <span class="work-badge"><svg class="work-badge__icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2 20.7 7 20.7 17 12 22 3.3 17 3.3 7Z" stroke-width="1.7"/><path d="M8.4 12.2 10.9 14.7 15.6 9.6" stroke-width="2.1"/></svg><span class="he-text">הושלם ב־FieldSync</span><span class="en-text">Completed on FieldSync</span></span>
+                  </div>
+                </li>
+                <li class="work-item">
+                  <span class="work-item__thumb" aria-hidden="true"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="M21 15l-5-5L5 20"/></svg></span>
+                  <div class="work-item__body">
+                    <p class="work-item__title"><span class="he-text" dir="auto">תשתית חשמל לקומה</span><span class="en-text" dir="auto">Floor electrical infrastructure</span></p>
+                    <p class="work-item__scope"><span class="he-text">קבלן משנה</span><span class="en-text">Subcontractor</span></p>
+                    <p class="work-item__meta"><span class="he-text">תל אביב · מרץ <bdi>2026</bdi></span><span class="en-text">Tel Aviv · March <bdi>2026</bdi></span></p>
+                    <span class="work-badge"><svg class="work-badge__icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2 20.7 7 20.7 17 12 22 3.3 17 3.3 7Z" stroke-width="1.7"/><path d="M8.4 12.2 10.9 14.7 15.6 9.6" stroke-width="2.1"/></svg><span class="he-text">הושלם ב־FieldSync</span><span class="en-text">Completed on FieldSync</span></span>
+                  </div>
+                </li>
+              </ul>
+            </section>
+            <section class="pp__section">
+              <h3 class="pp__title"><span class="he-text">פרטים ואזור עבודה</span><span class="en-text">Details and work area</span></h3>
+              <dl class="facts">
+                <div class="fact">
+                  <dt class="field-label"><span class="he-text">טלפון</span><span class="en-text">Phone</span></dt>
+                  <dd class="fact__value fact__value--gated"><span class="he-text">זמין לאחר התחברות</span><span class="en-text">Visible once connected</span></dd>
+                </div>
+                <div class="fact">
+                  <dt class="field-label"><span class="he-text">עיר</span><span class="en-text">City</span></dt>
+                  <dd class="fact__value"><span class="he-text" dir="auto">תל אביב</span><span class="en-text" dir="auto">Tel Aviv</span></dd>
+                </div>
+                <div class="fact">
+                  <dt class="field-label"><span class="he-text">אזור</span><span class="en-text">Region</span></dt>
+                  <dd class="fact__value"><span class="he-text" dir="auto">תל אביב</span><span class="en-text" dir="auto">Tel Aviv</span></dd>
+                </div>
+                <div class="fact">
+                  <dt class="field-label"><span class="he-text">מרחק נסיעה</span><span class="en-text">Travel distance</span></dt>
+                  <dd class="fact__value"><bdi>45</bdi><span class="fact__unit"><span class="he-text">ק״מ</span><span class="en-text">km</span></span></dd>
+                </div>
+              </dl>
+            </section>
+            <section class="pp__section">
+              <h3 class="pp__title"><span class="he-text">העדפות תיאום</span><span class="en-text">Scheduling preferences</span></h3>
+              <p class="pp__lede"><span class="he-text">אלה לא כללים נוקשים — הם אומרים לכם מה מתאים לצד השני לפני שאתם מציעים תאריך.</span><span class="en-text">These are not hard rules — they tell you what works for the other side before you propose a date.</span></p>
+              <dl class="facts">
+                <div class="fact">
+                  <dt class="field-label"><span class="he-text">עיכוב שאפשר לספוג</span><span class="en-text">Delay they can absorb</span></dt>
+                  <dd class="fact__value"><bdi>2</bdi><span class="fact__unit"><span class="he-text">ימים</span><span class="en-text">days</span></span></dd>
+                </div>
+                <div class="fact">
+                  <dt class="field-label"><span class="he-text">התראה מראש שנדרשת</span><span class="en-text">Notice they need</span></dt>
+                  <dd class="fact__value"><bdi>3</bdi><span class="fact__unit"><span class="he-text">ימים</span><span class="en-text">days</span></span></dd>
+                </div>
+              </dl>
+            </section>
+            <section class="pp__section">
+              <h3 class="pp__title"><span class="he-text">דירוגים</span><span class="en-text">Ratings</span></h3>
+              <p class="pp__lede"><span class="he-text"><bdi>23</bdi> דירוגים מעבודות משותפות שהושלמו. שמות המדרגים אינם מוצגים לאיש מלבד ההנהלה.</span><span class="en-text"><bdi>23</bdi> ratings from shared completed work. Rater names are shown to nobody outside administration.</span></p>
+              <ul class="review-list">
+                <li class="review">
+                  <div class="review__head">
+                    <span class="rating__stars rating__stars--sm" style="--rating: 5" aria-hidden="true"><span class="rating__fill"></span></span>
+                    <span class="review__score"><bdi>5</bdi></span>
+                    <span class="review__date"><span class="he-text">מאי <bdi>2026</bdi></span><span class="en-text">May <bdi>2026</bdi></span></span>
+                  </div>
+                  <p class="review__body"><span class="he-text" dir="auto">הגיע עם צוות מלא ביום שנקבע וסיים בלי לעכב אף אחד.</span><span class="en-text" dir="auto">Arrived with a full crew on the agreed day and finished without holding anyone up.</span></p>
+                </li>
+                <li class="review">
+                  <div class="review__head">
+                    <span class="rating__stars rating__stars--sm" style="--rating: 4" aria-hidden="true"><span class="rating__fill"></span></span>
+                    <span class="review__score"><bdi>4</bdi></span>
+                    <span class="review__date"><span class="he-text">פברואר <bdi>2026</bdi></span><span class="en-text">February <bdi>2026</bdi></span></span>
+                  </div>
+                  <p class="review__body"><span class="he-text" dir="auto">עבודה מדויקת. ביקש יום נוסף, אבל הודיע שבוע מראש.</span><span class="en-text" dir="auto">Precise work. Asked for one extra day, but gave a week's notice.</span></p>
+                </li>
+              </ul>
+            </section>
+          </div>
+          <div class="pp__actions">
+            <div class="pp__actions-main">
+              <button type="button" class="btn btn--primary btn--sm">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                <span class="he-text">התחברות</span><span class="en-text">Connect</span>
+              </button>
+            </div>
+            <div class="pp__quiet">
+              <button type="button" class="pp__quiet-btn"><span class="he-text">דיווח</span><span class="en-text">Report</span></button>
+              <button type="button" class="pp__quiet-btn"><span class="he-text">השתקה</span><span class="en-text">Mute</span></button>
+              <button type="button" class="pp__quiet-btn"><span class="he-text">חסימה</span><span class="en-text">Block</span></button>
+            </div>
+          </div>
+        </aside>
+
+        <!-- 2 · Dana Levi -->
+        <aside class="profile-panel" id="pp-dana-levi" aria-labelledby="pp-dana-levi-name">
+          <div class="pp__head">
+            <a class="pp__close" href="#results" aria-label="Close profile">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                   stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
+            </a>
+            <div class="pp__identity">
+              <span class="avatar avatar--lg" aria-hidden="true">דל</span>
+              <div class="pp__id-text">
+                <h2 class="pp__name" id="pp-dana-levi-name"><span class="he-text" dir="auto">דנה לוי</span><span class="en-text" dir="auto">Dana Levi</span></h2>
+                <p class="pp__org"><span class="he-text" dir="auto">לוי אינסטלציה</span><span class="en-text" dir="auto">Levi Plumbing</span></p>
+              </div>
+            </div>
+            <ul class="tags"><li class="tag"><span class="he-text">אינסטלציה</span><span class="en-text">Plumbing</span></li><li class="tag"><span class="he-text">איטום</span><span class="en-text">Waterproofing</span></li></ul>
+            <p class="meta-row"><svg class="meta-row__pin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 10c0 7-9 12-9 12s-9-5-9-12a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg><span class="he-text">ראשון לציון · מרכז</span><span class="en-text">Rishon LeZion · Center</span></p>
+            <p class="avail avail--limited"><span class="avail__dot" aria-hidden="true"></span><span class="he-text">זמינות מוגבלת לעבודות חדשות</span><span class="en-text">Limited availability for new work</span></p>
+          </div>
+          <div class="pp__body">
+            <div class="pp__metrics">
+              <div class="metric metric--score">
+                <p class="metric__label"><span class="he-text">דירוג</span><span class="en-text">Rating</span></p>
+                <div class="rating">
+                  <span class="rating__stars" style="--rating: 4.9" aria-hidden="true"><span class="rating__fill"></span></span>
+                  <span class="rating__value"><bdi>4.9</bdi></span>
+                </div>
+                <p class="state-empty"><span aria-hidden="true">—</span><span class="sr-only"><span class="he-text">אין עדיין דירוגים</span><span class="en-text">No ratings yet</span></span></p>
+                <p class="metric__foot"><span class="he-text">מבוסס על <bdi>41</bdi> דירוגים מעבודות שהושלמו</span><span class="en-text">Based on <bdi>41</bdi> ratings from completed work</span></p>
+              </div>
+              <div class="metric metric--score">
+                <p class="metric__label"><span class="he-text">ציון גמישות</span><span class="en-text">Flexibility score</span></p>
+                <div class="flex-meter">
+                  <div class="flex-meter__head">
+                    <span class="flex-meter__value"><bdi>91</bdi></span>
+                    <span class="flex-meter__scale"><bdi>100</bdi></span>
+                  </div>
+                  <span class="flex-meter__track" aria-hidden="true"><span class="flex-meter__fill" style="--score: 91"></span></span>
+                </div>
+                <p class="metric__foot metric__foot--score"><span class="he-text">מבוסס על <bdi>58</bdi> תגובות לשינויי תאריך</span><span class="en-text">Based on <bdi>58</bdi> responses to date changes</span></p>
+                <p class="state-empty"><span aria-hidden="true">—</span><span class="sr-only"><span class="he-text">אין עדיין ציון גמישות</span><span class="en-text">No flexibility score yet</span></span></p>
+              </div>
+            </div>
+            <details class="explain">
+              <summary class="explain__q"><span class="he-text">איך מחושב ציון הגמישות?</span><span class="en-text">How is the flexibility score calculated?</span></summary>
+              <div class="explain__a"><p><span class="he-text">הציון נבנה מהאופן שבו נענות בפועל בקשות לשינוי תאריך — אישור, דחייה או הצעה נגדית. הוא אינו מדווח עצמי ואי אפשר לערוך אותו.</span><span class="en-text">The score is built from how requests to change a date are actually answered — approving, rejecting or proposing an alternative. It is not self-reported and cannot be edited.</span></p></div>
+            </details>
+            <section class="pp__section">
+              <h3 class="pp__title"><span class="he-text">רקע מקצועי</span><span class="en-text">About</span></h3>
+              <p class="bio-text"><span class="he-text" dir="auto">אינסטלציה ואיטום. עובדת בעיקר מול קבלני שלד במגדלי מגורים.</span><span class="en-text" dir="auto">Plumbing and waterproofing. Works mostly with shell contractors on residential towers.</span></p>
+            </section>
+            <section class="pp__section">
+              <h3 class="pp__title"><span class="he-text">עבודות שהושלמו</span><span class="en-text">Completed work</span></h3>
+              <p class="pp__lede"><span class="he-text">הסימון &quot;הושלם ב־FieldSync&quot; מציין שההשלמה רשומה במערכת, ואינו חוות דעת על איכות העבודה.</span><span class="en-text">The &quot;Completed on FieldSync&quot; mark means the completion is recorded on the platform; it is not a judgement of quality.</span></p>
+              <ul class="work-grid">
+                <li class="work-item">
+                  <span class="work-item__thumb" aria-hidden="true"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="M21 15l-5-5L5 20"/></svg></span>
+                  <div class="work-item__body">
+                    <p class="work-item__title"><span class="he-text" dir="auto">איטום גג</span><span class="en-text" dir="auto">Roof waterproofing</span></p>
+                    <p class="work-item__scope"><span class="he-text">ניהול העבודה</span><span class="en-text">Work lead</span></p>
+                    <p class="work-item__meta"><span class="he-text">ראשון לציון · יולי <bdi>2026</bdi></span><span class="en-text">Rishon LeZion · July <bdi>2026</bdi></span></p>
+                    <span class="work-badge"><svg class="work-badge__icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2 20.7 7 20.7 17 12 22 3.3 17 3.3 7Z" stroke-width="1.7"/><path d="M8.4 12.2 10.9 14.7 15.6 9.6" stroke-width="2.1"/></svg><span class="he-text">הושלם ב־FieldSync</span><span class="en-text">Completed on FieldSync</span></span>
+                  </div>
+                </li>
+                <li class="work-item">
+                  <span class="work-item__thumb" aria-hidden="true"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="M21 15l-5-5L5 20"/></svg></span>
+                  <div class="work-item__body">
+                    <p class="work-item__title"><span class="he-text" dir="auto">מערכת אינסטלציה לקומה</span><span class="en-text" dir="auto">Floor plumbing system</span></p>
+                    <p class="work-item__scope"><span class="he-text">קבלן משנה</span><span class="en-text">Subcontractor</span></p>
+                    <p class="work-item__meta"><span class="he-text">ראשון לציון · אפריל <bdi>2026</bdi></span><span class="en-text">Rishon LeZion · April <bdi>2026</bdi></span></p>
+                    <span class="work-badge"><svg class="work-badge__icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2 20.7 7 20.7 17 12 22 3.3 17 3.3 7Z" stroke-width="1.7"/><path d="M8.4 12.2 10.9 14.7 15.6 9.6" stroke-width="2.1"/></svg><span class="he-text">הושלם ב־FieldSync</span><span class="en-text">Completed on FieldSync</span></span>
+                  </div>
+                </li>
+              </ul>
+            </section>
+            <section class="pp__section">
+              <h3 class="pp__title"><span class="he-text">פרטים ואזור עבודה</span><span class="en-text">Details and work area</span></h3>
+              <dl class="facts">
+                <div class="fact">
+                  <dt class="field-label"><span class="he-text">טלפון</span><span class="en-text">Phone</span></dt>
+                  <dd class="fact__value" dir="ltr">052-555-0148</dd>
+                </div>
+                <div class="fact">
+                  <dt class="field-label"><span class="he-text">עיר</span><span class="en-text">City</span></dt>
+                  <dd class="fact__value"><span class="he-text" dir="auto">ראשון לציון</span><span class="en-text" dir="auto">Rishon LeZion</span></dd>
+                </div>
+                <div class="fact">
+                  <dt class="field-label"><span class="he-text">אזור</span><span class="en-text">Region</span></dt>
+                  <dd class="fact__value"><span class="he-text" dir="auto">מרכז</span><span class="en-text" dir="auto">Center</span></dd>
+                </div>
+                <div class="fact">
+                  <dt class="field-label"><span class="he-text">מרחק נסיעה</span><span class="en-text">Travel distance</span></dt>
+                  <dd class="fact__value"><bdi>60</bdi><span class="fact__unit"><span class="he-text">ק״מ</span><span class="en-text">km</span></span></dd>
+                </div>
+              </dl>
+            </section>
+            <section class="pp__section">
+              <h3 class="pp__title"><span class="he-text">העדפות תיאום</span><span class="en-text">Scheduling preferences</span></h3>
+              <p class="pp__lede"><span class="he-text">אלה לא כללים נוקשים — הם אומרים לכם מה מתאים לצד השני לפני שאתם מציעים תאריך.</span><span class="en-text">These are not hard rules — they tell you what works for the other side before you propose a date.</span></p>
+              <dl class="facts">
+                <div class="fact">
+                  <dt class="field-label"><span class="he-text">עיכוב שאפשר לספוג</span><span class="en-text">Delay they can absorb</span></dt>
+                  <dd class="fact__value"><bdi>3</bdi><span class="fact__unit"><span class="he-text">ימים</span><span class="en-text">days</span></span></dd>
+                </div>
+                <div class="fact">
+                  <dt class="field-label"><span class="he-text">התראה מראש שנדרשת</span><span class="en-text">Notice they need</span></dt>
+                  <dd class="fact__value"><bdi>2</bdi><span class="fact__unit"><span class="he-text">ימים</span><span class="en-text">days</span></span></dd>
+                </div>
+              </dl>
+            </section>
+            <section class="pp__section">
+              <h3 class="pp__title"><span class="he-text">דירוגים</span><span class="en-text">Ratings</span></h3>
+              <p class="pp__lede"><span class="he-text"><bdi>41</bdi> דירוגים מעבודות משותפות שהושלמו. שמות המדרגים אינם מוצגים לאיש מלבד ההנהלה.</span><span class="en-text"><bdi>41</bdi> ratings from shared completed work. Rater names are shown to nobody outside administration.</span></p>
+              <ul class="review-list">
+                <li class="review">
+                  <div class="review__head">
+                    <span class="rating__stars rating__stars--sm" style="--rating: 5" aria-hidden="true"><span class="rating__fill"></span></span>
+                    <span class="review__score"><bdi>5</bdi></span>
+                    <span class="review__date"><span class="he-text">יולי <bdi>2026</bdi></span><span class="en-text">July <bdi>2026</bdi></span></span>
+                  </div>
+                  <p class="review__body"><span class="he-text" dir="auto">סגרה נזילה שאף אחד לא מצא, ובאותו יום.</span><span class="en-text" dir="auto">Closed a leak nobody else could find, and on the same day.</span></p>
+                </li>
+                <li class="review">
+                  <div class="review__head">
+                    <span class="rating__stars rating__stars--sm" style="--rating: 5" aria-hidden="true"><span class="rating__fill"></span></span>
+                    <span class="review__score"><bdi>5</bdi></span>
+                    <span class="review__date"><span class="he-text">מרץ <bdi>2026</bdi></span><span class="en-text">March <bdi>2026</bdi></span></span>
+                  </div>
+                  <p class="review__body"><span class="he-text" dir="auto">לוח זמנים צפוף, בלי הפתעות ובלי בקשות לדחייה.</span><span class="en-text" dir="auto">A tight schedule, no surprises and no requests to postpone.</span></p>
+                </li>
+              </ul>
+            </section>
+          </div>
+          <div class="pp__actions">
+            <div class="pp__actions-main">
+              <button type="button" class="btn btn--primary btn--sm">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                <span class="he-text">הודעה</span><span class="en-text">Message</span>
+              </button>
+              <button type="button" class="btn btn--ghost btn--sm">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3 2.9 5.9 6.5.9-4.7 4.6 1.1 6.5-5.8-3-5.8 3 1.1-6.5L2.6 9.8l6.5-.9z"/></svg>
+                <span class="he-text">דירוג</span><span class="en-text">Rate</span>
+              </button>
+              <p class="pp__gate"><span class="he-text"><bdi>2</bdi> עבודות משותפות שהושלמו</span><span class="en-text"><bdi>2</bdi> shared completed jobs</span></p>
+            </div>
+            <div class="pp__quiet">
+              <button type="button" class="pp__quiet-btn"><span class="he-text">דיווח</span><span class="en-text">Report</span></button>
+              <button type="button" class="pp__quiet-btn"><span class="he-text">השתקה</span><span class="en-text">Mute</span></button>
+              <button type="button" class="pp__quiet-btn"><span class="he-text">חסימה</span><span class="en-text">Block</span></button>
+            </div>
+          </div>
+        </aside>
+
+        <!-- 3 · Musa Khoury -->
+        <aside class="profile-panel" id="pp-musa-khoury" aria-labelledby="pp-musa-khoury-name">
+          <div class="pp__head">
+            <a class="pp__close" href="#results" aria-label="Close profile">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                   stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
+            </a>
+            <div class="pp__identity">
+              <span class="avatar avatar--lg" aria-hidden="true">מח</span>
+              <div class="pp__id-text">
+                <h2 class="pp__name" id="pp-musa-khoury-name"><span class="he-text" dir="auto">מוסא חורי</span><span class="en-text" dir="auto">Musa Khoury</span></h2>
+                <p class="pp__org"><span class="he-text" dir="auto">חורי קידוחים וביסוס</span><span class="en-text" dir="auto">Khoury Drilling &amp; Foundations</span></p>
+              </div>
+            </div>
+            <ul class="tags"><li class="tag"><span class="he-text">קידוחים וביסוס</span><span class="en-text">Drilling &amp; foundations</span></li></ul>
+            <p class="meta-row"><svg class="meta-row__pin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 10c0 7-9 12-9 12s-9-5-9-12a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg><span class="he-text">נצרת · צפון</span><span class="en-text">Nazareth · North</span></p>
+            <p class="avail avail--closed"><span class="avail__dot" aria-hidden="true"></span><span class="he-text">לא מקבל עבודות חדשות כעת</span><span class="en-text">Not accepting new work currently</span></p>
+          </div>
+          <div class="pp__body">
+            <div class="pp__metrics">
+              <div class="metric metric--score">
+                <p class="metric__label"><span class="he-text">דירוג</span><span class="en-text">Rating</span></p>
+                <div class="rating">
+                  <span class="rating__stars" style="--rating: 4.2" aria-hidden="true"><span class="rating__fill"></span></span>
+                  <span class="rating__value"><bdi>4.2</bdi></span>
+                </div>
+                <p class="state-empty"><span aria-hidden="true">—</span><span class="sr-only"><span class="he-text">אין עדיין דירוגים</span><span class="en-text">No ratings yet</span></span></p>
+                <p class="metric__foot"><span class="he-text">מבוסס על <bdi>17</bdi> דירוגים מעבודות שהושלמו</span><span class="en-text">Based on <bdi>17</bdi> ratings from completed work</span></p>
+              </div>
+              <div class="metric metric--score">
+                <p class="metric__label"><span class="he-text">ציון גמישות</span><span class="en-text">Flexibility score</span></p>
+                <div class="flex-meter">
+                  <div class="flex-meter__head">
+                    <span class="flex-meter__value"><bdi>67</bdi></span>
+                    <span class="flex-meter__scale"><bdi>100</bdi></span>
+                  </div>
+                  <span class="flex-meter__track" aria-hidden="true"><span class="flex-meter__fill" style="--score: 67"></span></span>
+                </div>
+                <p class="metric__foot metric__foot--score"><span class="he-text">מבוסס על <bdi>22</bdi> תגובות לשינויי תאריך</span><span class="en-text">Based on <bdi>22</bdi> responses to date changes</span></p>
+                <p class="state-empty"><span aria-hidden="true">—</span><span class="sr-only"><span class="he-text">אין עדיין ציון גמישות</span><span class="en-text">No flexibility score yet</span></span></p>
+              </div>
+            </div>
+            <details class="explain">
+              <summary class="explain__q"><span class="he-text">איך מחושב ציון הגמישות?</span><span class="en-text">How is the flexibility score calculated?</span></summary>
+              <div class="explain__a"><p><span class="he-text">הציון נבנה מהאופן שבו נענות בפועל בקשות לשינוי תאריך — אישור, דחייה או הצעה נגדית. הוא אינו מדווח עצמי ואי אפשר לערוך אותו.</span><span class="en-text">The score is built from how requests to change a date are actually answered — approving, rejecting or proposing an alternative. It is not self-reported and cannot be edited.</span></p></div>
+            </details>
+            <section class="pp__section">
+              <h3 class="pp__title"><span class="he-text">רקע מקצועי</span><span class="en-text">About</span></h3>
+              <p class="bio-text"><span class="he-text" dir="auto">קידוחים וביסוס בצפון. צוות קבוע ומכונת קידוח בבעלות.</span><span class="en-text" dir="auto">Drilling and foundations in the north. A permanent crew and an owned drilling rig.</span></p>
+            </section>
+            <section class="pp__section">
+              <h3 class="pp__title"><span class="he-text">עבודות שהושלמו</span><span class="en-text">Completed work</span></h3>
+              <p class="pp__lede"><span class="he-text">הסימון &quot;הושלם ב־FieldSync&quot; מציין שההשלמה רשומה במערכת, ואינו חוות דעת על איכות העבודה.</span><span class="en-text">The &quot;Completed on FieldSync&quot; mark means the completion is recorded on the platform; it is not a judgement of quality.</span></p>
+              <ul class="work-grid">
+                <li class="work-item">
+                  <span class="work-item__thumb" aria-hidden="true"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="M21 15l-5-5L5 20"/></svg></span>
+                  <div class="work-item__body">
+                    <p class="work-item__title"><span class="he-text" dir="auto">קידוחי ביסוס</span><span class="en-text" dir="auto">Foundation drilling</span></p>
+                    <p class="work-item__scope"><span class="he-text">קבלן משנה</span><span class="en-text">Subcontractor</span></p>
+                    <p class="work-item__meta"><span class="he-text">נצרת · מאי <bdi>2026</bdi></span><span class="en-text">Nazareth · May <bdi>2026</bdi></span></p>
+                    <span class="work-badge"><svg class="work-badge__icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2 20.7 7 20.7 17 12 22 3.3 17 3.3 7Z" stroke-width="1.7"/><path d="M8.4 12.2 10.9 14.7 15.6 9.6" stroke-width="2.1"/></svg><span class="he-text">הושלם ב־FieldSync</span><span class="en-text">Completed on FieldSync</span></span>
+                  </div>
+                </li>
+                <li class="work-item">
+                  <span class="work-item__thumb" aria-hidden="true"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="M21 15l-5-5L5 20"/></svg></span>
+                  <div class="work-item__body">
+                    <p class="work-item__title"><span class="he-text" dir="auto">כלונסאות</span><span class="en-text" dir="auto">Bored piles</span></p>
+                    <p class="work-item__scope"><span class="he-text">קבלן משנה</span><span class="en-text">Subcontractor</span></p>
+                    <p class="work-item__meta"><span class="he-text">נצרת · <bdi>2025</bdi></span><span class="en-text">Nazareth · <bdi>2025</bdi></span></p>
+                  </div>
+                </li>
+              </ul>
+            </section>
+            <section class="pp__section">
+              <h3 class="pp__title"><span class="he-text">פרטים ואזור עבודה</span><span class="en-text">Details and work area</span></h3>
+              <dl class="facts">
+                <div class="fact">
+                  <dt class="field-label"><span class="he-text">טלפון</span><span class="en-text">Phone</span></dt>
+                  <dd class="fact__value fact__value--gated"><span class="he-text">זמין לאחר התחברות</span><span class="en-text">Visible once connected</span></dd>
+                </div>
+                <div class="fact">
+                  <dt class="field-label"><span class="he-text">עיר</span><span class="en-text">City</span></dt>
+                  <dd class="fact__value"><span class="he-text" dir="auto">נצרת</span><span class="en-text" dir="auto">Nazareth</span></dd>
+                </div>
+                <div class="fact">
+                  <dt class="field-label"><span class="he-text">אזור</span><span class="en-text">Region</span></dt>
+                  <dd class="fact__value"><span class="he-text" dir="auto">צפון</span><span class="en-text" dir="auto">North</span></dd>
+                </div>
+                <div class="fact">
+                  <dt class="field-label"><span class="he-text">מרחק נסיעה</span><span class="en-text">Travel distance</span></dt>
+                  <dd class="fact__value"><bdi>90</bdi><span class="fact__unit"><span class="he-text">ק״מ</span><span class="en-text">km</span></span></dd>
+                </div>
+              </dl>
+            </section>
+            <section class="pp__section">
+              <h3 class="pp__title"><span class="he-text">העדפות תיאום</span><span class="en-text">Scheduling preferences</span></h3>
+              <p class="pp__lede"><span class="he-text">אלה לא כללים נוקשים — הם אומרים לכם מה מתאים לצד השני לפני שאתם מציעים תאריך.</span><span class="en-text">These are not hard rules — they tell you what works for the other side before you propose a date.</span></p>
+              <dl class="facts">
+                <div class="fact">
+                  <dt class="field-label"><span class="he-text">עיכוב שאפשר לספוג</span><span class="en-text">Delay they can absorb</span></dt>
+                  <dd class="fact__value"><bdi>4</bdi><span class="fact__unit"><span class="he-text">ימים</span><span class="en-text">days</span></span></dd>
+                </div>
+                <div class="fact">
+                  <dt class="field-label"><span class="he-text">התראה מראש שנדרשת</span><span class="en-text">Notice they need</span></dt>
+                  <dd class="fact__value"><bdi>5</bdi><span class="fact__unit"><span class="he-text">ימים</span><span class="en-text">days</span></span></dd>
+                </div>
+              </dl>
+            </section>
+            <section class="pp__section">
+              <h3 class="pp__title"><span class="he-text">דירוגים</span><span class="en-text">Ratings</span></h3>
+              <p class="pp__lede"><span class="he-text"><bdi>17</bdi> דירוגים מעבודות משותפות שהושלמו. שמות המדרגים אינם מוצגים לאיש מלבד ההנהלה.</span><span class="en-text"><bdi>17</bdi> ratings from shared completed work. Rater names are shown to nobody outside administration.</span></p>
+              <ul class="review-list">
+                <li class="review">
+                  <div class="review__head">
+                    <span class="rating__stars rating__stars--sm" style="--rating: 4" aria-hidden="true"><span class="rating__fill"></span></span>
+                    <span class="review__score"><bdi>4</bdi></span>
+                    <span class="review__date"><span class="he-text">אפריל <bdi>2026</bdi></span><span class="en-text">April <bdi>2026</bdi></span></span>
+                  </div>
+                  <p class="review__body"><span class="he-text" dir="auto">קידוחים מדויקים. איחר יומיים בגלל תקלה בציוד, והודיע.</span><span class="en-text" dir="auto">Accurate drilling. Two days late on an equipment fault, and let me know.</span></p>
+                </li>
+                <li class="review">
+                  <div class="review__head">
+                    <span class="rating__stars rating__stars--sm" style="--rating: 4" aria-hidden="true"><span class="rating__fill"></span></span>
+                    <span class="review__score"><bdi>4</bdi></span>
+                    <span class="review__date"><span class="he-text">נובמבר <bdi>2025</bdi></span><span class="en-text">November <bdi>2025</bdi></span></span>
+                  </div>
+                  <p class="review__body"><span class="he-text" dir="auto">עבודה טובה, אבל קשה לתפוס אותו בטלפון.</span><span class="en-text" dir="auto">Good work, but hard to reach by phone.</span></p>
+                </li>
+              </ul>
+            </section>
+          </div>
+          <div class="pp__actions">
+            <div class="pp__actions-main">
+              <button type="button" class="btn btn--muted btn--sm" disabled>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+                <span class="he-text">בקשה נשלחה</span><span class="en-text">Request sent</span>
+              </button>
+            </div>
+            <div class="pp__quiet">
+              <button type="button" class="pp__quiet-btn"><span class="he-text">דיווח</span><span class="en-text">Report</span></button>
+              <button type="button" class="pp__quiet-btn"><span class="he-text">השתקה</span><span class="en-text">Mute</span></button>
+              <button type="button" class="pp__quiet-btn"><span class="he-text">חסימה</span><span class="en-text">Block</span></button>
+            </div>
+          </div>
+        </aside>
+
+        <!-- 4 · Yossi Mizrahi -->
+        <aside class="profile-panel" id="pp-yossi-mizrahi" aria-labelledby="pp-yossi-mizrahi-name">
+          <div class="pp__head">
+            <a class="pp__close" href="#results" aria-label="Close profile">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                   stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
+            </a>
+            <div class="pp__identity">
+              <span class="avatar avatar--lg" aria-hidden="true">ימ</span>
+              <div class="pp__id-text">
+                <h2 class="pp__name" id="pp-yossi-mizrahi-name"><span class="he-text" dir="auto">יוסי מזרחי</span><span class="en-text" dir="auto">Yossi Mizrahi</span></h2>
+                <p class="pp__org"><span class="he-text" dir="auto">מזרחי שלד ובטון</span><span class="en-text" dir="auto">Mizrahi Shell &amp; Concrete</span></p>
+              </div>
+            </div>
+            <ul class="tags"><li class="tag"><span class="he-text">קבלן שלד</span><span class="en-text">Shell</span></li><li class="tag"><span class="he-text">בטון</span><span class="en-text">Concrete</span></li></ul>
+            <p class="meta-row"><svg class="meta-row__pin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 10c0 7-9 12-9 12s-9-5-9-12a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg><span class="he-text">באר שבע · דרום</span><span class="en-text">Beer Sheva · South</span></p>
+            <p class="avail avail--open"><span class="avail__dot" aria-hidden="true"></span><span class="he-text">מקבל עבודות חדשות</span><span class="en-text">Available for new work</span></p>
+          </div>
+          <div class="pp__body">
+            <div class="pp__metrics">
+              <div class="metric metric--score">
+                <p class="metric__label"><span class="he-text">דירוג</span><span class="en-text">Rating</span></p>
+                <div class="rating">
+                  <span class="rating__stars" style="--rating: 3.8" aria-hidden="true"><span class="rating__fill"></span></span>
+                  <span class="rating__value"><bdi>3.8</bdi></span>
+                </div>
+                <p class="state-empty"><span aria-hidden="true">—</span><span class="sr-only"><span class="he-text">אין עדיין דירוגים</span><span class="en-text">No ratings yet</span></span></p>
+                <p class="metric__foot"><span class="he-text">מבוסס על <bdi>9</bdi> דירוגים מעבודות שהושלמו</span><span class="en-text">Based on <bdi>9</bdi> ratings from completed work</span></p>
+              </div>
+              <div class="metric metric--pending">
+                <p class="metric__label"><span class="he-text">ציון גמישות</span><span class="en-text">Flexibility score</span></p>
+                <div class="flex-meter">
+                  <div class="flex-meter__head">
+                    <span class="flex-meter__value"><bdi>0</bdi></span>
+                    <span class="flex-meter__scale"><bdi>100</bdi></span>
+                  </div>
+                  <span class="flex-meter__track" aria-hidden="true"><span class="flex-meter__fill" style="--score: 0"></span></span>
+                </div>
+                <p class="metric__foot metric__foot--score"><span class="he-text">מבוסס על <bdi>2</bdi> תגובות לשינויי תאריך</span><span class="en-text">Based on <bdi>2</bdi> responses to date changes</span></p>
+                <p class="state-empty"><span aria-hidden="true">—</span><span class="sr-only"><span class="he-text">אין עדיין ציון גמישות</span><span class="en-text">No flexibility score yet</span></span></p>
+              </div>
+            </div>
+            <details class="explain">
+              <summary class="explain__q"><span class="he-text">איך מחושב ציון הגמישות?</span><span class="en-text">How is the flexibility score calculated?</span></summary>
+              <div class="explain__a"><p><span class="he-text">הציון נבנה מהאופן שבו נענות בפועל בקשות לשינוי תאריך — אישור, דחייה או הצעה נגדית. הוא אינו מדווח עצמי ואי אפשר לערוך אותו.</span><span class="en-text">The score is built from how requests to change a date are actually answered — approving, rejecting or proposing an alternative. It is not self-reported and cannot be edited.</span></p></div>
+            </details>
+            <section class="pp__section">
+              <h3 class="pp__title"><span class="he-text">רקע מקצועי</span><span class="en-text">About</span></h3>
+              <p class="bio-text"><span class="he-text" dir="auto">שלד ובטון. חדש בפלטפורמה, <bdi>9</bdi> שנות ניסיון בשטח.</span><span class="en-text" dir="auto">Shell and concrete. New on the platform, <bdi>9</bdi> years of experience on site.</span></p>
+            </section>
+            <section class="pp__section">
+              <h3 class="pp__title"><span class="he-text">עבודות שהושלמו</span><span class="en-text">Completed work</span></h3>
+              <p class="pp__lede"><span class="he-text">הסימון &quot;הושלם ב־FieldSync&quot; מציין שההשלמה רשומה במערכת, ואינו חוות דעת על איכות העבודה.</span><span class="en-text">The &quot;Completed on FieldSync&quot; mark means the completion is recorded on the platform; it is not a judgement of quality.</span></p>
+              <ul class="work-grid">
+                <li class="work-item">
+                  <span class="work-item__thumb" aria-hidden="true"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="M21 15l-5-5L5 20"/></svg></span>
+                  <div class="work-item__body">
+                    <p class="work-item__title"><span class="he-text" dir="auto">יציקת שלד</span><span class="en-text" dir="auto">Shell pour</span></p>
+                    <p class="work-item__scope"><span class="he-text">קבלן משנה</span><span class="en-text">Subcontractor</span></p>
+                    <p class="work-item__meta"><span class="he-text">באר שבע · יוני <bdi>2026</bdi></span><span class="en-text">Beer Sheva · June <bdi>2026</bdi></span></p>
+                    <span class="work-badge"><svg class="work-badge__icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2 20.7 7 20.7 17 12 22 3.3 17 3.3 7Z" stroke-width="1.7"/><path d="M8.4 12.2 10.9 14.7 15.6 9.6" stroke-width="2.1"/></svg><span class="he-text">הושלם ב־FieldSync</span><span class="en-text">Completed on FieldSync</span></span>
+                  </div>
+                </li>
+                <li class="work-item">
+                  <span class="work-item__thumb" aria-hidden="true"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="M21 15l-5-5L5 20"/></svg></span>
+                  <div class="work-item__body">
+                    <p class="work-item__title"><span class="he-text" dir="auto">תבניות לקומה</span><span class="en-text" dir="auto">Floor formwork</span></p>
+                    <p class="work-item__scope"><span class="he-text">קבלן משנה</span><span class="en-text">Subcontractor</span></p>
+                    <p class="work-item__meta"><span class="he-text">באר שבע · <bdi>2025</bdi></span><span class="en-text">Beer Sheva · <bdi>2025</bdi></span></p>
+                  </div>
+                </li>
+              </ul>
+            </section>
+            <section class="pp__section">
+              <h3 class="pp__title"><span class="he-text">פרטים ואזור עבודה</span><span class="en-text">Details and work area</span></h3>
+              <dl class="facts">
+                <div class="fact">
+                  <dt class="field-label"><span class="he-text">טלפון</span><span class="en-text">Phone</span></dt>
+                  <dd class="fact__value fact__value--gated"><span class="he-text">זמין לאחר התחברות</span><span class="en-text">Visible once connected</span></dd>
+                </div>
+                <div class="fact">
+                  <dt class="field-label"><span class="he-text">עיר</span><span class="en-text">City</span></dt>
+                  <dd class="fact__value"><span class="he-text" dir="auto">באר שבע</span><span class="en-text" dir="auto">Beer Sheva</span></dd>
+                </div>
+                <div class="fact">
+                  <dt class="field-label"><span class="he-text">אזור</span><span class="en-text">Region</span></dt>
+                  <dd class="fact__value"><span class="he-text" dir="auto">דרום</span><span class="en-text" dir="auto">South</span></dd>
+                </div>
+                <div class="fact">
+                  <dt class="field-label"><span class="he-text">מרחק נסיעה</span><span class="en-text">Travel distance</span></dt>
+                  <dd class="fact__value"><bdi>120</bdi><span class="fact__unit"><span class="he-text">ק״מ</span><span class="en-text">km</span></span></dd>
+                </div>
+              </dl>
+            </section>
+            <section class="pp__section">
+              <h3 class="pp__title"><span class="he-text">העדפות תיאום</span><span class="en-text">Scheduling preferences</span></h3>
+              <p class="pp__lede"><span class="he-text">אלה לא כללים נוקשים — הם אומרים לכם מה מתאים לצד השני לפני שאתם מציעים תאריך.</span><span class="en-text">These are not hard rules — they tell you what works for the other side before you propose a date.</span></p>
+              <dl class="facts">
+                <div class="fact">
+                  <dt class="field-label"><span class="he-text">עיכוב שאפשר לספוג</span><span class="en-text">Delay they can absorb</span></dt>
+                  <dd class="fact__value"><bdi>2</bdi><span class="fact__unit"><span class="he-text">ימים</span><span class="en-text">days</span></span></dd>
+                </div>
+                <div class="fact">
+                  <dt class="field-label"><span class="he-text">התראה מראש שנדרשת</span><span class="en-text">Notice they need</span></dt>
+                  <dd class="fact__value"><bdi>4</bdi><span class="fact__unit"><span class="he-text">ימים</span><span class="en-text">days</span></span></dd>
+                </div>
+              </dl>
+            </section>
+            <section class="pp__section">
+              <h3 class="pp__title"><span class="he-text">דירוגים</span><span class="en-text">Ratings</span></h3>
+              <p class="pp__lede"><span class="he-text"><bdi>9</bdi> דירוגים מעבודות משותפות שהושלמו. שמות המדרגים אינם מוצגים לאיש מלבד ההנהלה.</span><span class="en-text"><bdi>9</bdi> ratings from shared completed work. Rater names are shown to nobody outside administration.</span></p>
+              <ul class="review-list">
+                <li class="review">
+                  <div class="review__head">
+                    <span class="rating__stars rating__stars--sm" style="--rating: 4" aria-hidden="true"><span class="rating__fill"></span></span>
+                    <span class="review__score"><bdi>4</bdi></span>
+                    <span class="review__date"><span class="he-text">יוני <bdi>2026</bdi></span><span class="en-text">June <bdi>2026</bdi></span></span>
+                  </div>
+                  <p class="review__body"><span class="he-text" dir="auto">יצק בזמן. השטח נשאר נקי אחרי היציקה.</span><span class="en-text" dir="auto">Poured on time. Left the site clean afterwards.</span></p>
+                </li>
+                <li class="review">
+                  <div class="review__head">
+                    <span class="rating__stars rating__stars--sm" style="--rating: 3" aria-hidden="true"><span class="rating__fill"></span></span>
+                    <span class="review__score"><bdi>3</bdi></span>
+                    <span class="review__date"><span class="he-text">פברואר <bdi>2026</bdi></span><span class="en-text">February <bdi>2026</bdi></span></span>
+                  </div>
+                  <p class="review__body"><span class="he-text" dir="auto">העבודה בסדר, אבל התקשורת יכלה להיות ברורה יותר.</span><span class="en-text" dir="auto">The work was fine, but the communication could have been clearer.</span></p>
+                </li>
+              </ul>
+            </section>
+          </div>
+          <div class="pp__actions">
+            <div class="pp__actions-main">
+              <button type="button" class="btn btn--primary btn--sm">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                <span class="he-text">התחברות</span><span class="en-text">Connect</span>
+              </button>
+            </div>
+            <div class="pp__quiet">
+              <button type="button" class="pp__quiet-btn"><span class="he-text">דיווח</span><span class="en-text">Report</span></button>
+              <button type="button" class="pp__quiet-btn"><span class="he-text">השתקה</span><span class="en-text">Mute</span></button>
+              <button type="button" class="pp__quiet-btn"><span class="he-text">חסימה</span><span class="en-text">Block</span></button>
+            </div>
+          </div>
+        </aside>
+
+        <!-- 5 · Ronit Segev -->
+        <aside class="profile-panel" id="pp-ronit-segev" aria-labelledby="pp-ronit-segev-name">
+          <div class="pp__head">
+            <a class="pp__close" href="#results" aria-label="Close profile">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                   stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
+            </a>
+            <div class="pp__identity">
+              <span class="avatar avatar--lg" aria-hidden="true">רש</span>
+              <div class="pp__id-text">
+                <h2 class="pp__name" id="pp-ronit-segev-name"><span class="he-text" dir="auto">רונית שגב</span><span class="en-text" dir="auto">Ronit Segev</span></h2>
+                <p class="pp__org"><span class="he-text" dir="auto">שגב מיזוג אוויר</span><span class="en-text" dir="auto">Segev HVAC</span></p>
+              </div>
+            </div>
+            <ul class="tags"><li class="tag"><span class="he-text">מיזוג אוויר</span><span class="en-text">HVAC</span></li></ul>
+            <p class="meta-row"><svg class="meta-row__pin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 10c0 7-9 12-9 12s-9-5-9-12a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg><span class="he-text">חיפה · חיפה והקריות</span><span class="en-text">Haifa · Haifa &amp; Krayot</span></p>
+            <p class="avail avail--limited"><span class="avail__dot" aria-hidden="true"></span><span class="he-text">זמינות מוגבלת לעבודות חדשות</span><span class="en-text">Limited availability for new work</span></p>
+          </div>
+          <div class="pp__body">
+            <div class="pp__metrics">
+              <div class="metric metric--score">
+                <p class="metric__label"><span class="he-text">דירוג</span><span class="en-text">Rating</span></p>
+                <div class="rating">
+                  <span class="rating__stars" style="--rating: 4.7" aria-hidden="true"><span class="rating__fill"></span></span>
+                  <span class="rating__value"><bdi>4.7</bdi></span>
+                </div>
+                <p class="state-empty"><span aria-hidden="true">—</span><span class="sr-only"><span class="he-text">אין עדיין דירוגים</span><span class="en-text">No ratings yet</span></span></p>
+                <p class="metric__foot"><span class="he-text">מבוסס על <bdi>28</bdi> דירוגים מעבודות שהושלמו</span><span class="en-text">Based on <bdi>28</bdi> ratings from completed work</span></p>
+              </div>
+              <div class="metric metric--score">
+                <p class="metric__label"><span class="he-text">ציון גמישות</span><span class="en-text">Flexibility score</span></p>
+                <div class="flex-meter">
+                  <div class="flex-meter__head">
+                    <span class="flex-meter__value"><bdi>88</bdi></span>
+                    <span class="flex-meter__scale"><bdi>100</bdi></span>
+                  </div>
+                  <span class="flex-meter__track" aria-hidden="true"><span class="flex-meter__fill" style="--score: 88"></span></span>
+                </div>
+                <p class="metric__foot metric__foot--score"><span class="he-text">מבוסס על <bdi>44</bdi> תגובות לשינויי תאריך</span><span class="en-text">Based on <bdi>44</bdi> responses to date changes</span></p>
+                <p class="state-empty"><span aria-hidden="true">—</span><span class="sr-only"><span class="he-text">אין עדיין ציון גמישות</span><span class="en-text">No flexibility score yet</span></span></p>
+              </div>
+            </div>
+            <details class="explain">
+              <summary class="explain__q"><span class="he-text">איך מחושב ציון הגמישות?</span><span class="en-text">How is the flexibility score calculated?</span></summary>
+              <div class="explain__a"><p><span class="he-text">הציון נבנה מהאופן שבו נענות בפועל בקשות לשינוי תאריך — אישור, דחייה או הצעה נגדית. הוא אינו מדווח עצמי ואי אפשר לערוך אותו.</span><span class="en-text">The score is built from how requests to change a date are actually answered — approving, rejecting or proposing an alternative. It is not self-reported and cannot be edited.</span></p></div>
+            </details>
+            <section class="pp__section">
+              <h3 class="pp__title"><span class="he-text">רקע מקצועי</span><span class="en-text">About</span></h3>
+              <p class="bio-text"><span class="he-text" dir="auto">מיזוג אוויר למבני מגורים ומשרדים, מתכנון ועד מסירה.</span><span class="en-text" dir="auto">HVAC for residential and office buildings, from design through handover.</span></p>
+            </section>
+            <section class="pp__section">
+              <h3 class="pp__title"><span class="he-text">עבודות שהושלמו</span><span class="en-text">Completed work</span></h3>
+              <p class="pp__lede"><span class="he-text">הסימון &quot;הושלם ב־FieldSync&quot; מציין שההשלמה רשומה במערכת, ואינו חוות דעת על איכות העבודה.</span><span class="en-text">The &quot;Completed on FieldSync&quot; mark means the completion is recorded on the platform; it is not a judgement of quality.</span></p>
+              <ul class="work-grid">
+                <li class="work-item">
+                  <span class="work-item__thumb" aria-hidden="true"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="M21 15l-5-5L5 20"/></svg></span>
+                  <div class="work-item__body">
+                    <p class="work-item__title"><span class="he-text" dir="auto">מערכת מיזוג מרכזית</span><span class="en-text" dir="auto">Central HVAC system</span></p>
+                    <p class="work-item__scope"><span class="he-text">ניהול העבודה</span><span class="en-text">Work lead</span></p>
+                    <p class="work-item__meta"><span class="he-text">חיפה · יולי <bdi>2026</bdi></span><span class="en-text">Haifa · July <bdi>2026</bdi></span></p>
+                    <span class="work-badge"><svg class="work-badge__icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2 20.7 7 20.7 17 12 22 3.3 17 3.3 7Z" stroke-width="1.7"/><path d="M8.4 12.2 10.9 14.7 15.6 9.6" stroke-width="2.1"/></svg><span class="he-text">הושלם ב־FieldSync</span><span class="en-text">Completed on FieldSync</span></span>
+                  </div>
+                </li>
+                <li class="work-item">
+                  <span class="work-item__thumb" aria-hidden="true"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="M21 15l-5-5L5 20"/></svg></span>
+                  <div class="work-item__body">
+                    <p class="work-item__title"><span class="he-text" dir="auto">תעלות מיזוג לקומה</span><span class="en-text" dir="auto">Floor ductwork</span></p>
+                    <p class="work-item__scope"><span class="he-text">קבלן משנה</span><span class="en-text">Subcontractor</span></p>
+                    <p class="work-item__meta"><span class="he-text">חיפה · פברואר <bdi>2026</bdi></span><span class="en-text">Haifa · February <bdi>2026</bdi></span></p>
+                    <span class="work-badge"><svg class="work-badge__icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2 20.7 7 20.7 17 12 22 3.3 17 3.3 7Z" stroke-width="1.7"/><path d="M8.4 12.2 10.9 14.7 15.6 9.6" stroke-width="2.1"/></svg><span class="he-text">הושלם ב־FieldSync</span><span class="en-text">Completed on FieldSync</span></span>
+                  </div>
+                </li>
+              </ul>
+            </section>
+            <section class="pp__section">
+              <h3 class="pp__title"><span class="he-text">פרטים ואזור עבודה</span><span class="en-text">Details and work area</span></h3>
+              <dl class="facts">
+                <div class="fact">
+                  <dt class="field-label"><span class="he-text">טלפון</span><span class="en-text">Phone</span></dt>
+                  <dd class="fact__value fact__value--gated"><span class="he-text">זמין לאחר התחברות</span><span class="en-text">Visible once connected</span></dd>
+                </div>
+                <div class="fact">
+                  <dt class="field-label"><span class="he-text">עיר</span><span class="en-text">City</span></dt>
+                  <dd class="fact__value"><span class="he-text" dir="auto">חיפה</span><span class="en-text" dir="auto">Haifa</span></dd>
+                </div>
+                <div class="fact">
+                  <dt class="field-label"><span class="he-text">אזור</span><span class="en-text">Region</span></dt>
+                  <dd class="fact__value"><span class="he-text" dir="auto">חיפה והקריות</span><span class="en-text" dir="auto">Haifa &amp; Krayot</span></dd>
+                </div>
+                <div class="fact">
+                  <dt class="field-label"><span class="he-text">מרחק נסיעה</span><span class="en-text">Travel distance</span></dt>
+                  <dd class="fact__value"><bdi>55</bdi><span class="fact__unit"><span class="he-text">ק״מ</span><span class="en-text">km</span></span></dd>
+                </div>
+              </dl>
+            </section>
+            <section class="pp__section">
+              <h3 class="pp__title"><span class="he-text">העדפות תיאום</span><span class="en-text">Scheduling preferences</span></h3>
+              <p class="pp__lede"><span class="he-text">אלה לא כללים נוקשים — הם אומרים לכם מה מתאים לצד השני לפני שאתם מציעים תאריך.</span><span class="en-text">These are not hard rules — they tell you what works for the other side before you propose a date.</span></p>
+              <dl class="facts">
+                <div class="fact">
+                  <dt class="field-label"><span class="he-text">עיכוב שאפשר לספוג</span><span class="en-text">Delay they can absorb</span></dt>
+                  <dd class="fact__value"><bdi>3</bdi><span class="fact__unit"><span class="he-text">ימים</span><span class="en-text">days</span></span></dd>
+                </div>
+                <div class="fact">
+                  <dt class="field-label"><span class="he-text">התראה מראש שנדרשת</span><span class="en-text">Notice they need</span></dt>
+                  <dd class="fact__value"><bdi>3</bdi><span class="fact__unit"><span class="he-text">ימים</span><span class="en-text">days</span></span></dd>
+                </div>
+              </dl>
+            </section>
+            <section class="pp__section">
+              <h3 class="pp__title"><span class="he-text">דירוגים</span><span class="en-text">Ratings</span></h3>
+              <p class="pp__lede"><span class="he-text"><bdi>28</bdi> דירוגים מעבודות משותפות שהושלמו. שמות המדרגים אינם מוצגים לאיש מלבד ההנהלה.</span><span class="en-text"><bdi>28</bdi> ratings from shared completed work. Rater names are shown to nobody outside administration.</span></p>
+              <ul class="review-list">
+                <li class="review">
+                  <div class="review__head">
+                    <span class="rating__stars rating__stars--sm" style="--rating: 5" aria-hidden="true"><span class="rating__fill"></span></span>
+                    <span class="review__score"><bdi>5</bdi></span>
+                    <span class="review__date"><span class="he-text">יולי <bdi>2026</bdi></span><span class="en-text">July <bdi>2026</bdi></span></span>
+                  </div>
+                  <p class="review__body"><span class="he-text" dir="auto">תכנון נכון מראש חסך לנו שינוי בלוח הזמנים.</span><span class="en-text" dir="auto">Planning it right up front saved us a schedule change.</span></p>
+                </li>
+                <li class="review">
+                  <div class="review__head">
+                    <span class="rating__stars rating__stars--sm" style="--rating: 4" aria-hidden="true"><span class="rating__fill"></span></span>
+                    <span class="review__score"><bdi>4</bdi></span>
+                    <span class="review__date"><span class="he-text">דצמבר <bdi>2025</bdi></span><span class="en-text">December <bdi>2025</bdi></span></span>
+                  </div>
+                  <p class="review__body"><span class="he-text" dir="auto">מקצועית מאוד. נדרש תיאום ארוך מראש.</span><span class="en-text" dir="auto">Very professional. Needs long advance coordination.</span></p>
+                </li>
+              </ul>
+            </section>
+          </div>
+          <div class="pp__actions">
+            <div class="pp__actions-main">
+              <button type="button" class="btn btn--primary btn--sm">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                <span class="he-text">התחברות</span><span class="en-text">Connect</span>
+              </button>
+            </div>
+            <div class="pp__quiet">
+              <button type="button" class="pp__quiet-btn"><span class="he-text">דיווח</span><span class="en-text">Report</span></button>
+              <button type="button" class="pp__quiet-btn"><span class="he-text">השתקה</span><span class="en-text">Mute</span></button>
+              <button type="button" class="pp__quiet-btn"><span class="he-text">חסימה</span><span class="en-text">Block</span></button>
+            </div>
+          </div>
+        </aside>
+
+        <!-- 6 · Samir Abdallah -->
+        <aside class="profile-panel" id="pp-samir-abdallah" aria-labelledby="pp-samir-abdallah-name">
+          <div class="pp__head">
+            <a class="pp__close" href="#results" aria-label="Close profile">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                   stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
+            </a>
+            <div class="pp__identity">
+              <span class="avatar avatar--lg" aria-hidden="true">סע</span>
+              <div class="pp__id-text">
+                <h2 class="pp__name" id="pp-samir-abdallah-name"><span class="he-text" dir="auto">סמיר עבדאללה</span><span class="en-text" dir="auto">Samir Abdallah</span></h2>
+                <p class="pp__org"><span class="he-text" dir="auto">עבדאללה ריצוף וחיפוי</span><span class="en-text" dir="auto">Abdallah Tiling &amp; Cladding</span></p>
+              </div>
+            </div>
+            <ul class="tags"><li class="tag"><span class="he-text">ריצוף וחיפוי</span><span class="en-text">Tiling &amp; flooring</span></li></ul>
+            <p class="meta-row"><svg class="meta-row__pin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 10c0 7-9 12-9 12s-9-5-9-12a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg><span class="he-text">ירושלים · ירושלים והסביבה</span><span class="en-text">Jerusalem · Jerusalem area</span></p>
+            <p class="avail avail--closed"><span class="avail__dot" aria-hidden="true"></span><span class="he-text">לא מקבל עבודות חדשות כעת</span><span class="en-text">Not accepting new work currently</span></p>
+          </div>
+          <div class="pp__body">
+            <div class="pp__metrics">
+              <div class="metric metric--score">
+                <p class="metric__label"><span class="he-text">דירוג</span><span class="en-text">Rating</span></p>
+                <div class="rating">
+                  <span class="rating__stars" style="--rating: 4.4" aria-hidden="true"><span class="rating__fill"></span></span>
+                  <span class="rating__value"><bdi>4.4</bdi></span>
+                </div>
+                <p class="state-empty"><span aria-hidden="true">—</span><span class="sr-only"><span class="he-text">אין עדיין דירוגים</span><span class="en-text">No ratings yet</span></span></p>
+                <p class="metric__foot"><span class="he-text">מבוסס על <bdi>33</bdi> דירוגים מעבודות שהושלמו</span><span class="en-text">Based on <bdi>33</bdi> ratings from completed work</span></p>
+              </div>
+              <div class="metric metric--score">
+                <p class="metric__label"><span class="he-text">ציון גמישות</span><span class="en-text">Flexibility score</span></p>
+                <div class="flex-meter">
+                  <div class="flex-meter__head">
+                    <span class="flex-meter__value"><bdi>73</bdi></span>
+                    <span class="flex-meter__scale"><bdi>100</bdi></span>
+                  </div>
+                  <span class="flex-meter__track" aria-hidden="true"><span class="flex-meter__fill" style="--score: 73"></span></span>
+                </div>
+                <p class="metric__foot metric__foot--score"><span class="he-text">מבוסס על <bdi>39</bdi> תגובות לשינויי תאריך</span><span class="en-text">Based on <bdi>39</bdi> responses to date changes</span></p>
+                <p class="state-empty"><span aria-hidden="true">—</span><span class="sr-only"><span class="he-text">אין עדיין ציון גמישות</span><span class="en-text">No flexibility score yet</span></span></p>
+              </div>
+            </div>
+            <details class="explain">
+              <summary class="explain__q"><span class="he-text">איך מחושב ציון הגמישות?</span><span class="en-text">How is the flexibility score calculated?</span></summary>
+              <div class="explain__a"><p><span class="he-text">הציון נבנה מהאופן שבו נענות בפועל בקשות לשינוי תאריך — אישור, דחייה או הצעה נגדית. הוא אינו מדווח עצמי ואי אפשר לערוך אותו.</span><span class="en-text">The score is built from how requests to change a date are actually answered — approving, rejecting or proposing an alternative. It is not self-reported and cannot be edited.</span></p></div>
+            </details>
+            <section class="pp__section">
+              <h3 class="pp__title"><span class="he-text">רקע מקצועי</span><span class="en-text">About</span></h3>
+              <p class="bio-text"><span class="he-text" dir="auto">ריצוף וחיפוי אבן. עבודות גמר בירושלים והסביבה.</span><span class="en-text" dir="auto">Tiling and stone cladding. Finishing work in Jerusalem and the surrounding area.</span></p>
+            </section>
+            <section class="pp__section">
+              <h3 class="pp__title"><span class="he-text">עבודות שהושלמו</span><span class="en-text">Completed work</span></h3>
+              <p class="pp__lede"><span class="he-text">הסימון &quot;הושלם ב־FieldSync&quot; מציין שההשלמה רשומה במערכת, ואינו חוות דעת על איכות העבודה.</span><span class="en-text">The &quot;Completed on FieldSync&quot; mark means the completion is recorded on the platform; it is not a judgement of quality.</span></p>
+              <ul class="work-grid">
+                <li class="work-item">
+                  <span class="work-item__thumb" aria-hidden="true"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="M21 15l-5-5L5 20"/></svg></span>
+                  <div class="work-item__body">
+                    <p class="work-item__title"><span class="he-text" dir="auto">חיפוי אבן לחזית</span><span class="en-text" dir="auto">Stone facade cladding</span></p>
+                    <p class="work-item__scope"><span class="he-text">קבלן משנה</span><span class="en-text">Subcontractor</span></p>
+                    <p class="work-item__meta"><span class="he-text">ירושלים · יוני <bdi>2026</bdi></span><span class="en-text">Jerusalem · June <bdi>2026</bdi></span></p>
+                    <span class="work-badge"><svg class="work-badge__icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2 20.7 7 20.7 17 12 22 3.3 17 3.3 7Z" stroke-width="1.7"/><path d="M8.4 12.2 10.9 14.7 15.6 9.6" stroke-width="2.1"/></svg><span class="he-text">הושלם ב־FieldSync</span><span class="en-text">Completed on FieldSync</span></span>
+                  </div>
+                </li>
+                <li class="work-item">
+                  <span class="work-item__thumb" aria-hidden="true"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="M21 15l-5-5L5 20"/></svg></span>
+                  <div class="work-item__body">
+                    <p class="work-item__title"><span class="he-text" dir="auto">ריצוף שטחים ציבוריים</span><span class="en-text" dir="auto">Common-area flooring</span></p>
+                    <p class="work-item__scope"><span class="he-text">קבלן משנה</span><span class="en-text">Subcontractor</span></p>
+                    <p class="work-item__meta"><span class="he-text">ירושלים · ינואר <bdi>2026</bdi></span><span class="en-text">Jerusalem · January <bdi>2026</bdi></span></p>
+                    <span class="work-badge"><svg class="work-badge__icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2 20.7 7 20.7 17 12 22 3.3 17 3.3 7Z" stroke-width="1.7"/><path d="M8.4 12.2 10.9 14.7 15.6 9.6" stroke-width="2.1"/></svg><span class="he-text">הושלם ב־FieldSync</span><span class="en-text">Completed on FieldSync</span></span>
+                  </div>
+                </li>
+              </ul>
+            </section>
+            <section class="pp__section">
+              <h3 class="pp__title"><span class="he-text">פרטים ואזור עבודה</span><span class="en-text">Details and work area</span></h3>
+              <dl class="facts">
+                <div class="fact">
+                  <dt class="field-label"><span class="he-text">טלפון</span><span class="en-text">Phone</span></dt>
+                  <dd class="fact__value fact__value--gated"><span class="he-text">זמין לאחר התחברות</span><span class="en-text">Visible once connected</span></dd>
+                </div>
+                <div class="fact">
+                  <dt class="field-label"><span class="he-text">עיר</span><span class="en-text">City</span></dt>
+                  <dd class="fact__value"><span class="he-text" dir="auto">ירושלים</span><span class="en-text" dir="auto">Jerusalem</span></dd>
+                </div>
+                <div class="fact">
+                  <dt class="field-label"><span class="he-text">אזור</span><span class="en-text">Region</span></dt>
+                  <dd class="fact__value"><span class="he-text" dir="auto">ירושלים והסביבה</span><span class="en-text" dir="auto">Jerusalem area</span></dd>
+                </div>
+                <div class="fact">
+                  <dt class="field-label"><span class="he-text">מרחק נסיעה</span><span class="en-text">Travel distance</span></dt>
+                  <dd class="fact__value"><bdi>40</bdi><span class="fact__unit"><span class="he-text">ק״מ</span><span class="en-text">km</span></span></dd>
+                </div>
+              </dl>
+            </section>
+            <section class="pp__section">
+              <h3 class="pp__title"><span class="he-text">העדפות תיאום</span><span class="en-text">Scheduling preferences</span></h3>
+              <p class="pp__lede"><span class="he-text">אלה לא כללים נוקשים — הם אומרים לכם מה מתאים לצד השני לפני שאתם מציעים תאריך.</span><span class="en-text">These are not hard rules — they tell you what works for the other side before you propose a date.</span></p>
+              <dl class="facts">
+                <div class="fact">
+                  <dt class="field-label"><span class="he-text">עיכוב שאפשר לספוג</span><span class="en-text">Delay they can absorb</span></dt>
+                  <dd class="fact__value"><bdi>2</bdi><span class="fact__unit"><span class="he-text">ימים</span><span class="en-text">days</span></span></dd>
+                </div>
+                <div class="fact">
+                  <dt class="field-label"><span class="he-text">התראה מראש שנדרשת</span><span class="en-text">Notice they need</span></dt>
+                  <dd class="fact__value"><bdi>3</bdi><span class="fact__unit"><span class="he-text">ימים</span><span class="en-text">days</span></span></dd>
+                </div>
+              </dl>
+            </section>
+            <section class="pp__section">
+              <h3 class="pp__title"><span class="he-text">דירוגים</span><span class="en-text">Ratings</span></h3>
+              <p class="pp__lede"><span class="he-text"><bdi>33</bdi> דירוגים מעבודות משותפות שהושלמו. שמות המדרגים אינם מוצגים לאיש מלבד ההנהלה.</span><span class="en-text"><bdi>33</bdi> ratings from shared completed work. Rater names are shown to nobody outside administration.</span></p>
+              <ul class="review-list">
+                <li class="review">
+                  <div class="review__head">
+                    <span class="rating__stars rating__stars--sm" style="--rating: 5" aria-hidden="true"><span class="rating__fill"></span></span>
+                    <span class="review__score"><bdi>5</bdi></span>
+                    <span class="review__date"><span class="he-text">יוני <bdi>2026</bdi></span><span class="en-text">June <bdi>2026</bdi></span></span>
+                  </div>
+                  <p class="review__body"><span class="he-text" dir="auto">חיפוי נקי מאוד. עמד בכל תאריך שסוכם.</span><span class="en-text" dir="auto">Very clean cladding. Met every agreed date.</span></p>
+                </li>
+                <li class="review">
+                  <div class="review__head">
+                    <span class="rating__stars rating__stars--sm" style="--rating: 4" aria-hidden="true"><span class="rating__fill"></span></span>
+                    <span class="review__score"><bdi>4</bdi></span>
+                    <span class="review__date"><span class="he-text">ספטמבר <bdi>2025</bdi></span><span class="en-text">September <bdi>2025</bdi></span></span>
+                  </div>
+                  <p class="review__body"><span class="he-text" dir="auto">איכות טובה. סיים יום אחרי המתוכנן.</span><span class="en-text" dir="auto">Good quality. Finished a day after planned.</span></p>
+                </li>
+              </ul>
+            </section>
+          </div>
+          <div class="pp__actions">
+            <div class="pp__actions-main">
+              <button type="button" class="btn btn--primary btn--sm">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                <span class="he-text">התחברות</span><span class="en-text">Connect</span>
+              </button>
+              <button type="button" class="btn btn--ghost btn--sm">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3 2.9 5.9 6.5.9-4.7 4.6 1.1 6.5-5.8-3-5.8 3 1.1-6.5L2.6 9.8l6.5-.9z"/></svg>
+                <span class="he-text">דירוג</span><span class="en-text">Rate</span>
+              </button>
+              <p class="pp__gate"><span class="he-text"><bdi>1</bdi> עבודה משותפת שהושלמה</span><span class="en-text"><bdi>1</bdi> shared completed job</span></p>
+            </div>
+            <div class="pp__quiet">
+              <button type="button" class="pp__quiet-btn"><span class="he-text">דיווח</span><span class="en-text">Report</span></button>
+              <button type="button" class="pp__quiet-btn"><span class="he-text">השתקה</span><span class="en-text">Mute</span></button>
+              <button type="button" class="pp__quiet-btn"><span class="he-text">חסימה</span><span class="en-text">Block</span></button>
+            </div>
+          </div>
+        </aside>
+
+        <!-- 7 · Noa Friedman -->
+        <aside class="profile-panel" id="pp-noa-friedman" aria-labelledby="pp-noa-friedman-name">
+          <div class="pp__head">
+            <a class="pp__close" href="#results" aria-label="Close profile">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                   stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
+            </a>
+            <div class="pp__identity">
+              <span class="avatar avatar--lg" aria-hidden="true">נפ</span>
+              <div class="pp__id-text">
+                <h2 class="pp__name" id="pp-noa-friedman-name"><span class="he-text" dir="auto">נועה פרידמן</span><span class="en-text" dir="auto">Noa Friedman</span></h2>
+                <p class="pp__org"><span class="he-text" dir="auto">פרידמן אלומיניום וזיגוג</span><span class="en-text" dir="auto">Friedman Aluminum &amp; Glazing</span></p>
+              </div>
+            </div>
+            <ul class="tags"><li class="tag"><span class="he-text">אלומיניום וזיגוג</span><span class="en-text">Aluminum &amp; glazing</span></li></ul>
+            <p class="meta-row"><svg class="meta-row__pin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 10c0 7-9 12-9 12s-9-5-9-12a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg><span class="he-text">כפר סבא · השרון</span><span class="en-text">Kfar Saba · Sharon</span></p>
+            <p class="avail avail--open"><span class="avail__dot" aria-hidden="true"></span><span class="he-text">מקבל עבודות חדשות</span><span class="en-text">Available for new work</span></p>
+          </div>
+          <div class="pp__body">
+            <div class="pp__metrics">
+              <div class="metric metric--score">
+                <p class="metric__label"><span class="he-text">דירוג</span><span class="en-text">Rating</span></p>
+                <div class="rating">
+                  <span class="rating__stars" style="--rating: 4.1" aria-hidden="true"><span class="rating__fill"></span></span>
+                  <span class="rating__value"><bdi>4.1</bdi></span>
+                </div>
+                <p class="state-empty"><span aria-hidden="true">—</span><span class="sr-only"><span class="he-text">אין עדיין דירוגים</span><span class="en-text">No ratings yet</span></span></p>
+                <p class="metric__foot"><span class="he-text">מבוסס על <bdi>14</bdi> דירוגים מעבודות שהושלמו</span><span class="en-text">Based on <bdi>14</bdi> ratings from completed work</span></p>
+              </div>
+              <div class="metric metric--score">
+                <p class="metric__label"><span class="he-text">ציון גמישות</span><span class="en-text">Flexibility score</span></p>
+                <div class="flex-meter">
+                  <div class="flex-meter__head">
+                    <span class="flex-meter__value"><bdi>60</bdi></span>
+                    <span class="flex-meter__scale"><bdi>100</bdi></span>
+                  </div>
+                  <span class="flex-meter__track" aria-hidden="true"><span class="flex-meter__fill" style="--score: 60"></span></span>
+                </div>
+                <p class="metric__foot metric__foot--score"><span class="he-text">מבוסס על <bdi>19</bdi> תגובות לשינויי תאריך</span><span class="en-text">Based on <bdi>19</bdi> responses to date changes</span></p>
+                <p class="state-empty"><span aria-hidden="true">—</span><span class="sr-only"><span class="he-text">אין עדיין ציון גמישות</span><span class="en-text">No flexibility score yet</span></span></p>
+              </div>
+            </div>
+            <details class="explain">
+              <summary class="explain__q"><span class="he-text">איך מחושב ציון הגמישות?</span><span class="en-text">How is the flexibility score calculated?</span></summary>
+              <div class="explain__a"><p><span class="he-text">הציון נבנה מהאופן שבו נענות בפועל בקשות לשינוי תאריך — אישור, דחייה או הצעה נגדית. הוא אינו מדווח עצמי ואי אפשר לערוך אותו.</span><span class="en-text">The score is built from how requests to change a date are actually answered — approving, rejecting or proposing an alternative. It is not self-reported and cannot be edited.</span></p></div>
+            </details>
+            <section class="pp__section">
+              <h3 class="pp__title"><span class="he-text">רקע מקצועי</span><span class="en-text">About</span></h3>
+              <p class="bio-text"><span class="he-text" dir="auto">אלומיניום וזיגוג. חלונות, ויטרינות ומעקות זכוכית.</span><span class="en-text" dir="auto">Aluminum and glazing. Windows, storefronts and glass balustrades.</span></p>
+            </section>
+            <section class="pp__section">
+              <h3 class="pp__title"><span class="he-text">עבודות שהושלמו</span><span class="en-text">Completed work</span></h3>
+              <p class="pp__lede"><span class="he-text">הסימון &quot;הושלם ב־FieldSync&quot; מציין שההשלמה רשומה במערכת, ואינו חוות דעת על איכות העבודה.</span><span class="en-text">The &quot;Completed on FieldSync&quot; mark means the completion is recorded on the platform; it is not a judgement of quality.</span></p>
+              <ul class="work-grid">
+                <li class="work-item">
+                  <span class="work-item__thumb" aria-hidden="true"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="M21 15l-5-5L5 20"/></svg></span>
+                  <div class="work-item__body">
+                    <p class="work-item__title"><span class="he-text" dir="auto">חלונות אלומיניום לבניין</span><span class="en-text" dir="auto">Building aluminum windows</span></p>
+                    <p class="work-item__scope"><span class="he-text">ניהול העבודה</span><span class="en-text">Work lead</span></p>
+                    <p class="work-item__meta"><span class="he-text">כפר סבא · מאי <bdi>2026</bdi></span><span class="en-text">Kfar Saba · May <bdi>2026</bdi></span></p>
+                    <span class="work-badge"><svg class="work-badge__icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2 20.7 7 20.7 17 12 22 3.3 17 3.3 7Z" stroke-width="1.7"/><path d="M8.4 12.2 10.9 14.7 15.6 9.6" stroke-width="2.1"/></svg><span class="he-text">הושלם ב־FieldSync</span><span class="en-text">Completed on FieldSync</span></span>
+                  </div>
+                </li>
+                <li class="work-item">
+                  <span class="work-item__thumb" aria-hidden="true"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="M21 15l-5-5L5 20"/></svg></span>
+                  <div class="work-item__body">
+                    <p class="work-item__title"><span class="he-text" dir="auto">מעקות זכוכית</span><span class="en-text" dir="auto">Glass balustrades</span></p>
+                    <p class="work-item__scope"><span class="he-text">קבלן משנה</span><span class="en-text">Subcontractor</span></p>
+                    <p class="work-item__meta"><span class="he-text">כפר סבא · <bdi>2025</bdi></span><span class="en-text">Kfar Saba · <bdi>2025</bdi></span></p>
+                  </div>
+                </li>
+              </ul>
+            </section>
+            <section class="pp__section">
+              <h3 class="pp__title"><span class="he-text">פרטים ואזור עבודה</span><span class="en-text">Details and work area</span></h3>
+              <dl class="facts">
+                <div class="fact">
+                  <dt class="field-label"><span class="he-text">טלפון</span><span class="en-text">Phone</span></dt>
+                  <dd class="fact__value fact__value--gated"><span class="he-text">זמין לאחר התחברות</span><span class="en-text">Visible once connected</span></dd>
+                </div>
+                <div class="fact">
+                  <dt class="field-label"><span class="he-text">עיר</span><span class="en-text">City</span></dt>
+                  <dd class="fact__value"><span class="he-text" dir="auto">כפר סבא</span><span class="en-text" dir="auto">Kfar Saba</span></dd>
+                </div>
+                <div class="fact">
+                  <dt class="field-label"><span class="he-text">אזור</span><span class="en-text">Region</span></dt>
+                  <dd class="fact__value"><span class="he-text" dir="auto">השרון</span><span class="en-text" dir="auto">Sharon</span></dd>
+                </div>
+                <div class="fact">
+                  <dt class="field-label"><span class="he-text">מרחק נסיעה</span><span class="en-text">Travel distance</span></dt>
+                  <dd class="fact__value"><bdi>70</bdi><span class="fact__unit"><span class="he-text">ק״מ</span><span class="en-text">km</span></span></dd>
+                </div>
+              </dl>
+            </section>
+            <section class="pp__section">
+              <h3 class="pp__title"><span class="he-text">העדפות תיאום</span><span class="en-text">Scheduling preferences</span></h3>
+              <p class="pp__lede"><span class="he-text">אלה לא כללים נוקשים — הם אומרים לכם מה מתאים לצד השני לפני שאתם מציעים תאריך.</span><span class="en-text">These are not hard rules — they tell you what works for the other side before you propose a date.</span></p>
+              <dl class="facts">
+                <div class="fact">
+                  <dt class="field-label"><span class="he-text">עיכוב שאפשר לספוג</span><span class="en-text">Delay they can absorb</span></dt>
+                  <dd class="fact__value"><bdi>3</bdi><span class="fact__unit"><span class="he-text">ימים</span><span class="en-text">days</span></span></dd>
+                </div>
+                <div class="fact">
+                  <dt class="field-label"><span class="he-text">התראה מראש שנדרשת</span><span class="en-text">Notice they need</span></dt>
+                  <dd class="fact__value"><bdi>4</bdi><span class="fact__unit"><span class="he-text">ימים</span><span class="en-text">days</span></span></dd>
+                </div>
+              </dl>
+            </section>
+            <section class="pp__section">
+              <h3 class="pp__title"><span class="he-text">דירוגים</span><span class="en-text">Ratings</span></h3>
+              <p class="pp__lede"><span class="he-text"><bdi>14</bdi> דירוגים מעבודות משותפות שהושלמו. שמות המדרגים אינם מוצגים לאיש מלבד ההנהלה.</span><span class="en-text"><bdi>14</bdi> ratings from shared completed work. Rater names are shown to nobody outside administration.</span></p>
+              <ul class="review-list">
+                <li class="review">
+                  <div class="review__head">
+                    <span class="rating__stars rating__stars--sm" style="--rating: 4" aria-hidden="true"><span class="rating__fill"></span></span>
+                    <span class="review__score"><bdi>4</bdi></span>
+                    <span class="review__date"><span class="he-text">מאי <bdi>2026</bdi></span><span class="en-text">May <bdi>2026</bdi></span></span>
+                  </div>
+                  <p class="review__body"><span class="he-text" dir="auto">התקנה מדויקת. האספקה מהיצרן איחרה, לא באשמתה.</span><span class="en-text" dir="auto">Precise installation. The manufacturer delivery ran late, not her doing.</span></p>
+                </li>
+                <li class="review">
+                  <div class="review__head">
+                    <span class="rating__stars rating__stars--sm" style="--rating: 4" aria-hidden="true"><span class="rating__fill"></span></span>
+                    <span class="review__score"><bdi>4</bdi></span>
+                    <span class="review__date"><span class="he-text">ינואר <bdi>2026</bdi></span><span class="en-text">January <bdi>2026</bdi></span></span>
+                  </div>
+                  <p class="review__body"><span class="he-text" dir="auto">עבודה יפה. כדאי לסגור תאריכים מוקדם.</span><span class="en-text" dir="auto">Nice work. Worth locking dates in early.</span></p>
+                </li>
+              </ul>
+            </section>
+          </div>
+          <div class="pp__actions">
+            <div class="pp__actions-main">
+              <button type="button" class="btn btn--primary btn--sm">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                <span class="he-text">התחברות</span><span class="en-text">Connect</span>
+              </button>
+            </div>
+            <div class="pp__quiet">
+              <button type="button" class="pp__quiet-btn"><span class="he-text">דיווח</span><span class="en-text">Report</span></button>
+              <button type="button" class="pp__quiet-btn"><span class="he-text">השתקה</span><span class="en-text">Mute</span></button>
+              <button type="button" class="pp__quiet-btn"><span class="he-text">חסימה</span><span class="en-text">Block</span></button>
+            </div>
+          </div>
+        </aside>
+
+        <!-- 8 · Itai Barak -->
+        <aside class="profile-panel" id="pp-itai-barak" aria-labelledby="pp-itai-barak-name">
+          <div class="pp__head">
+            <a class="pp__close" href="#results" aria-label="Close profile">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                   stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
+            </a>
+            <div class="pp__identity">
+              <span class="avatar avatar--lg" aria-hidden="true">אב</span>
+              <div class="pp__id-text">
+                <h2 class="pp__name" id="pp-itai-barak-name"><span class="he-text" dir="auto">איתי ברק</span><span class="en-text" dir="auto">Itai Barak</span></h2>
+                <p class="pp__org"><span class="he-text" dir="auto">ברק אספקה וחומרי בניין</span><span class="en-text" dir="auto">Barak Supply &amp; Materials</span></p>
+              </div>
+            </div>
+            <ul class="tags"><li class="tag"><span class="he-text">אספקה וחומרים</span><span class="en-text">Supply / materials</span></li></ul>
+            <p class="meta-row"><svg class="meta-row__pin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 10c0 7-9 12-9 12s-9-5-9-12a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg><span class="he-text">תל אביב</span><span class="en-text">Tel Aviv</span></p>
+            <p class="avail avail--limited"><span class="avail__dot" aria-hidden="true"></span><span class="he-text">זמינות מוגבלת לעבודות חדשות</span><span class="en-text">Limited availability for new work</span></p>
+          </div>
+          <div class="pp__body">
+            <div class="pp__metrics">
+              <div class="metric metric--score">
+                <p class="metric__label"><span class="he-text">דירוג</span><span class="en-text">Rating</span></p>
+                <div class="rating">
+                  <span class="rating__stars" style="--rating: 4.8" aria-hidden="true"><span class="rating__fill"></span></span>
+                  <span class="rating__value"><bdi>4.8</bdi></span>
+                </div>
+                <p class="state-empty"><span aria-hidden="true">—</span><span class="sr-only"><span class="he-text">אין עדיין דירוגים</span><span class="en-text">No ratings yet</span></span></p>
+                <p class="metric__foot"><span class="he-text">מבוסס על <bdi>52</bdi> דירוגים מעבודות שהושלמו</span><span class="en-text">Based on <bdi>52</bdi> ratings from completed work</span></p>
+              </div>
+              <div class="metric metric--score">
+                <p class="metric__label"><span class="he-text">ציון גמישות</span><span class="en-text">Flexibility score</span></p>
+                <div class="flex-meter">
+                  <div class="flex-meter__head">
+                    <span class="flex-meter__value"><bdi>94</bdi></span>
+                    <span class="flex-meter__scale"><bdi>100</bdi></span>
+                  </div>
+                  <span class="flex-meter__track" aria-hidden="true"><span class="flex-meter__fill" style="--score: 94"></span></span>
+                </div>
+                <p class="metric__foot metric__foot--score"><span class="he-text">מבוסס על <bdi>67</bdi> תגובות לשינויי תאריך</span><span class="en-text">Based on <bdi>67</bdi> responses to date changes</span></p>
+                <p class="state-empty"><span aria-hidden="true">—</span><span class="sr-only"><span class="he-text">אין עדיין ציון גמישות</span><span class="en-text">No flexibility score yet</span></span></p>
+              </div>
+            </div>
+            <details class="explain">
+              <summary class="explain__q"><span class="he-text">איך מחושב ציון הגמישות?</span><span class="en-text">How is the flexibility score calculated?</span></summary>
+              <div class="explain__a"><p><span class="he-text">הציון נבנה מהאופן שבו נענות בפועל בקשות לשינוי תאריך — אישור, דחייה או הצעה נגדית. הוא אינו מדווח עצמי ואי אפשר לערוך אותו.</span><span class="en-text">The score is built from how requests to change a date are actually answered — approving, rejecting or proposing an alternative. It is not self-reported and cannot be edited.</span></p></div>
+            </details>
+            <section class="pp__section">
+              <h3 class="pp__title"><span class="he-text">רקע מקצועי</span><span class="en-text">About</span></h3>
+              <p class="bio-text"><span class="he-text" dir="auto">אספקת חומרי בניין לאתרים פעילים. בטון, ברזל וחומרי גמר.</span><span class="en-text" dir="auto">Building material supply to active sites. Concrete, rebar and finishing materials.</span></p>
+            </section>
+            <section class="pp__section">
+              <h3 class="pp__title"><span class="he-text">עבודות שהושלמו</span><span class="en-text">Completed work</span></h3>
+              <p class="pp__lede"><span class="he-text">הסימון &quot;הושלם ב־FieldSync&quot; מציין שההשלמה רשומה במערכת, ואינו חוות דעת על איכות העבודה.</span><span class="en-text">The &quot;Completed on FieldSync&quot; mark means the completion is recorded on the platform; it is not a judgement of quality.</span></p>
+              <ul class="work-grid">
+                <li class="work-item">
+                  <span class="work-item__thumb" aria-hidden="true"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="M21 15l-5-5L5 20"/></svg></span>
+                  <div class="work-item__body">
+                    <p class="work-item__title"><span class="he-text" dir="auto">אספקת בטון לפרויקט</span><span class="en-text" dir="auto">Concrete supply</span></p>
+                    <p class="work-item__scope"><span class="he-text">ספק</span><span class="en-text">Supplier</span></p>
+                    <p class="work-item__meta"><span class="he-text">תל אביב · יולי <bdi>2026</bdi></span><span class="en-text">Tel Aviv · July <bdi>2026</bdi></span></p>
+                    <span class="work-badge"><svg class="work-badge__icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2 20.7 7 20.7 17 12 22 3.3 17 3.3 7Z" stroke-width="1.7"/><path d="M8.4 12.2 10.9 14.7 15.6 9.6" stroke-width="2.1"/></svg><span class="he-text">הושלם ב־FieldSync</span><span class="en-text">Completed on FieldSync</span></span>
+                  </div>
+                </li>
+                <li class="work-item">
+                  <span class="work-item__thumb" aria-hidden="true"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="M21 15l-5-5L5 20"/></svg></span>
+                  <div class="work-item__body">
+                    <p class="work-item__title"><span class="he-text" dir="auto">אספקת ברזל וזיון</span><span class="en-text" dir="auto">Rebar supply</span></p>
+                    <p class="work-item__scope"><span class="he-text">ספק</span><span class="en-text">Supplier</span></p>
+                    <p class="work-item__meta"><span class="he-text">תל אביב · אפריל <bdi>2026</bdi></span><span class="en-text">Tel Aviv · April <bdi>2026</bdi></span></p>
+                    <span class="work-badge"><svg class="work-badge__icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2 20.7 7 20.7 17 12 22 3.3 17 3.3 7Z" stroke-width="1.7"/><path d="M8.4 12.2 10.9 14.7 15.6 9.6" stroke-width="2.1"/></svg><span class="he-text">הושלם ב־FieldSync</span><span class="en-text">Completed on FieldSync</span></span>
+                  </div>
+                </li>
+              </ul>
+            </section>
+            <section class="pp__section">
+              <h3 class="pp__title"><span class="he-text">פרטים ואזור עבודה</span><span class="en-text">Details and work area</span></h3>
+              <dl class="facts">
+                <div class="fact">
+                  <dt class="field-label"><span class="he-text">טלפון</span><span class="en-text">Phone</span></dt>
+                  <dd class="fact__value fact__value--gated"><span class="he-text">זמין לאחר התחברות</span><span class="en-text">Visible once connected</span></dd>
+                </div>
+                <div class="fact">
+                  <dt class="field-label"><span class="he-text">עיר</span><span class="en-text">City</span></dt>
+                  <dd class="fact__value"><span class="he-text" dir="auto">תל אביב</span><span class="en-text" dir="auto">Tel Aviv</span></dd>
+                </div>
+                <div class="fact">
+                  <dt class="field-label"><span class="he-text">אזור</span><span class="en-text">Region</span></dt>
+                  <dd class="fact__value"><span class="he-text" dir="auto">תל אביב</span><span class="en-text" dir="auto">Tel Aviv</span></dd>
+                </div>
+                <div class="fact">
+                  <dt class="field-label"><span class="he-text">מרחק נסיעה</span><span class="en-text">Travel distance</span></dt>
+                  <dd class="fact__value"><bdi>150</bdi><span class="fact__unit"><span class="he-text">ק״מ</span><span class="en-text">km</span></span></dd>
+                </div>
+              </dl>
+            </section>
+            <section class="pp__section">
+              <h3 class="pp__title"><span class="he-text">העדפות תיאום</span><span class="en-text">Scheduling preferences</span></h3>
+              <p class="pp__lede"><span class="he-text">אלה לא כללים נוקשים — הם אומרים לכם מה מתאים לצד השני לפני שאתם מציעים תאריך.</span><span class="en-text">These are not hard rules — they tell you what works for the other side before you propose a date.</span></p>
+              <dl class="facts">
+                <div class="fact">
+                  <dt class="field-label"><span class="he-text">עיכוב שאפשר לספוג</span><span class="en-text">Delay they can absorb</span></dt>
+                  <dd class="fact__value"><bdi>1</bdi><span class="fact__unit"><span class="he-text">ימים</span><span class="en-text">days</span></span></dd>
+                </div>
+                <div class="fact">
+                  <dt class="field-label"><span class="he-text">התראה מראש שנדרשת</span><span class="en-text">Notice they need</span></dt>
+                  <dd class="fact__value"><bdi>2</bdi><span class="fact__unit"><span class="he-text">ימים</span><span class="en-text">days</span></span></dd>
+                </div>
+              </dl>
+            </section>
+            <section class="pp__section">
+              <h3 class="pp__title"><span class="he-text">דירוגים</span><span class="en-text">Ratings</span></h3>
+              <p class="pp__lede"><span class="he-text"><bdi>52</bdi> דירוגים מעבודות משותפות שהושלמו. שמות המדרגים אינם מוצגים לאיש מלבד ההנהלה.</span><span class="en-text"><bdi>52</bdi> ratings from shared completed work. Rater names are shown to nobody outside administration.</span></p>
+              <ul class="review-list">
+                <li class="review">
+                  <div class="review__head">
+                    <span class="rating__stars rating__stars--sm" style="--rating: 5" aria-hidden="true"><span class="rating__fill"></span></span>
+                    <span class="review__score"><bdi>5</bdi></span>
+                    <span class="review__date"><span class="he-text">יולי <bdi>2026</bdi></span><span class="en-text">July <bdi>2026</bdi></span></span>
+                  </div>
+                  <p class="review__body"><span class="he-text" dir="auto">אספקה בזמן גם כשהזזנו את היציקה ביומיים.</span><span class="en-text" dir="auto">Delivered on time even when we moved the pour by two days.</span></p>
+                </li>
+                <li class="review">
+                  <div class="review__head">
+                    <span class="rating__stars rating__stars--sm" style="--rating: 5" aria-hidden="true"><span class="rating__fill"></span></span>
+                    <span class="review__score"><bdi>5</bdi></span>
+                    <span class="review__date"><span class="he-text">מאי <bdi>2026</bdi></span><span class="en-text">May <bdi>2026</bdi></span></span>
+                  </div>
+                  <p class="review__body"><span class="he-text" dir="auto">גמיש מאוד בשינויי כמויות ברגע האחרון.</span><span class="en-text" dir="auto">Very flexible on last-minute quantity changes.</span></p>
+                </li>
+              </ul>
+            </section>
+          </div>
+          <div class="pp__actions">
+            <div class="pp__actions-main">
+              <button type="button" class="btn btn--primary btn--sm">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                <span class="he-text">התחברות</span><span class="en-text">Connect</span>
+              </button>
+            </div>
+            <div class="pp__quiet">
+              <button type="button" class="pp__quiet-btn"><span class="he-text">דיווח</span><span class="en-text">Report</span></button>
+              <button type="button" class="pp__quiet-btn"><span class="he-text">השתקה</span><span class="en-text">Mute</span></button>
+              <button type="button" class="pp__quiet-btn"><span class="he-text">חסימה</span><span class="en-text">Block</span></button>
+            </div>
+          </div>
+        </aside>
+
+        <!-- 9 · Khaled Mansour -->
+        <aside class="profile-panel" id="pp-khaled-mansour" aria-labelledby="pp-khaled-mansour-name">
+          <div class="pp__head">
+            <a class="pp__close" href="#results" aria-label="Close profile">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                   stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
+            </a>
+            <div class="pp__identity">
+              <span class="avatar avatar--lg" aria-hidden="true">חמ</span>
+              <div class="pp__id-text">
+                <h2 class="pp__name" id="pp-khaled-mansour-name"><span class="he-text" dir="auto">ח'אלד מנסור</span><span class="en-text" dir="auto">Khaled Mansour</span></h2>
+                <p class="pp__org"><span class="he-text" dir="auto">מנסור עבודות עפר</span><span class="en-text" dir="auto">Mansour Earthworks</span></p>
+              </div>
+            </div>
+            <ul class="tags"><li class="tag"><span class="he-text">עבודות עפר</span><span class="en-text">Earthworks</span></li></ul>
+            <p class="meta-row"><svg class="meta-row__pin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 10c0 7-9 12-9 12s-9-5-9-12a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg><span class="he-text">כרמיאל · צפון</span><span class="en-text">Karmiel · North</span></p>
+            <p class="avail avail--closed"><span class="avail__dot" aria-hidden="true"></span><span class="he-text">לא מקבל עבודות חדשות כעת</span><span class="en-text">Not accepting new work currently</span></p>
+          </div>
+          <div class="pp__body">
+            <div class="pp__metrics">
+              <div class="metric metric--score">
+                <p class="metric__label"><span class="he-text">דירוג</span><span class="en-text">Rating</span></p>
+                <div class="rating">
+                  <span class="rating__stars" style="--rating: 4.0" aria-hidden="true"><span class="rating__fill"></span></span>
+                  <span class="rating__value"><bdi>4.0</bdi></span>
+                </div>
+                <p class="state-empty"><span aria-hidden="true">—</span><span class="sr-only"><span class="he-text">אין עדיין דירוגים</span><span class="en-text">No ratings yet</span></span></p>
+                <p class="metric__foot"><span class="he-text">מבוסס על <bdi>11</bdi> דירוגים מעבודות שהושלמו</span><span class="en-text">Based on <bdi>11</bdi> ratings from completed work</span></p>
+              </div>
+              <div class="metric metric--score">
+                <p class="metric__label"><span class="he-text">ציון גמישות</span><span class="en-text">Flexibility score</span></p>
+                <div class="flex-meter">
+                  <div class="flex-meter__head">
+                    <span class="flex-meter__value"><bdi>64</bdi></span>
+                    <span class="flex-meter__scale"><bdi>100</bdi></span>
+                  </div>
+                  <span class="flex-meter__track" aria-hidden="true"><span class="flex-meter__fill" style="--score: 64"></span></span>
+                </div>
+                <p class="metric__foot metric__foot--score"><span class="he-text">מבוסס על <bdi>16</bdi> תגובות לשינויי תאריך</span><span class="en-text">Based on <bdi>16</bdi> responses to date changes</span></p>
+                <p class="state-empty"><span aria-hidden="true">—</span><span class="sr-only"><span class="he-text">אין עדיין ציון גמישות</span><span class="en-text">No flexibility score yet</span></span></p>
+              </div>
+            </div>
+            <details class="explain">
+              <summary class="explain__q"><span class="he-text">איך מחושב ציון הגמישות?</span><span class="en-text">How is the flexibility score calculated?</span></summary>
+              <div class="explain__a"><p><span class="he-text">הציון נבנה מהאופן שבו נענות בפועל בקשות לשינוי תאריך — אישור, דחייה או הצעה נגדית. הוא אינו מדווח עצמי ואי אפשר לערוך אותו.</span><span class="en-text">The score is built from how requests to change a date are actually answered — approving, rejecting or proposing an alternative. It is not self-reported and cannot be edited.</span></p></div>
+            </details>
+            <section class="pp__section">
+              <h3 class="pp__title"><span class="he-text">רקע מקצועי</span><span class="en-text">About</span></h3>
+              <p class="bio-text"><span class="he-text" dir="auto">עבודות עפר, חפירה ודיפון. עובד עם קבלני ביצוע בצפון.</span><span class="en-text" dir="auto">Earthworks, excavation and shoring. Works with execution contractors in the north.</span></p>
+            </section>
+            <section class="pp__section">
+              <h3 class="pp__title"><span class="he-text">עבודות שהושלמו</span><span class="en-text">Completed work</span></h3>
+              <p class="pp__lede"><span class="he-text">הסימון &quot;הושלם ב־FieldSync&quot; מציין שההשלמה רשומה במערכת, ואינו חוות דעת על איכות העבודה.</span><span class="en-text">The &quot;Completed on FieldSync&quot; mark means the completion is recorded on the platform; it is not a judgement of quality.</span></p>
+              <ul class="work-grid">
+                <li class="work-item">
+                  <span class="work-item__thumb" aria-hidden="true"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="M21 15l-5-5L5 20"/></svg></span>
+                  <div class="work-item__body">
+                    <p class="work-item__title"><span class="he-text" dir="auto">חפירה ודיפון</span><span class="en-text" dir="auto">Excavation and shoring</span></p>
+                    <p class="work-item__scope"><span class="he-text">קבלן משנה</span><span class="en-text">Subcontractor</span></p>
+                    <p class="work-item__meta"><span class="he-text">כרמיאל · מרץ <bdi>2026</bdi></span><span class="en-text">Karmiel · March <bdi>2026</bdi></span></p>
+                    <span class="work-badge"><svg class="work-badge__icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2 20.7 7 20.7 17 12 22 3.3 17 3.3 7Z" stroke-width="1.7"/><path d="M8.4 12.2 10.9 14.7 15.6 9.6" stroke-width="2.1"/></svg><span class="he-text">הושלם ב־FieldSync</span><span class="en-text">Completed on FieldSync</span></span>
+                  </div>
+                </li>
+                <li class="work-item">
+                  <span class="work-item__thumb" aria-hidden="true"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="9.5" r="1.5"/><path d="M21 15l-5-5L5 20"/></svg></span>
+                  <div class="work-item__body">
+                    <p class="work-item__title"><span class="he-text" dir="auto">עבודות עפר לתשתית</span><span class="en-text" dir="auto">Infrastructure earthworks</span></p>
+                    <p class="work-item__scope"><span class="he-text">קבלן משנה</span><span class="en-text">Subcontractor</span></p>
+                    <p class="work-item__meta"><span class="he-text">כרמיאל · <bdi>2025</bdi></span><span class="en-text">Karmiel · <bdi>2025</bdi></span></p>
+                  </div>
+                </li>
+              </ul>
+            </section>
+            <section class="pp__section">
+              <h3 class="pp__title"><span class="he-text">פרטים ואזור עבודה</span><span class="en-text">Details and work area</span></h3>
+              <dl class="facts">
+                <div class="fact">
+                  <dt class="field-label"><span class="he-text">טלפון</span><span class="en-text">Phone</span></dt>
+                  <dd class="fact__value fact__value--gated"><span class="he-text">זמין לאחר התחברות</span><span class="en-text">Visible once connected</span></dd>
+                </div>
+                <div class="fact">
+                  <dt class="field-label"><span class="he-text">עיר</span><span class="en-text">City</span></dt>
+                  <dd class="fact__value"><span class="he-text" dir="auto">כרמיאל</span><span class="en-text" dir="auto">Karmiel</span></dd>
+                </div>
+                <div class="fact">
+                  <dt class="field-label"><span class="he-text">אזור</span><span class="en-text">Region</span></dt>
+                  <dd class="fact__value"><span class="he-text" dir="auto">צפון</span><span class="en-text" dir="auto">North</span></dd>
+                </div>
+                <div class="fact">
+                  <dt class="field-label"><span class="he-text">מרחק נסיעה</span><span class="en-text">Travel distance</span></dt>
+                  <dd class="fact__value"><bdi>80</bdi><span class="fact__unit"><span class="he-text">ק״מ</span><span class="en-text">km</span></span></dd>
+                </div>
+              </dl>
+            </section>
+            <section class="pp__section">
+              <h3 class="pp__title"><span class="he-text">העדפות תיאום</span><span class="en-text">Scheduling preferences</span></h3>
+              <p class="pp__lede"><span class="he-text">אלה לא כללים נוקשים — הם אומרים לכם מה מתאים לצד השני לפני שאתם מציעים תאריך.</span><span class="en-text">These are not hard rules — they tell you what works for the other side before you propose a date.</span></p>
+              <dl class="facts">
+                <div class="fact">
+                  <dt class="field-label"><span class="he-text">עיכוב שאפשר לספוג</span><span class="en-text">Delay they can absorb</span></dt>
+                  <dd class="fact__value"><bdi>5</bdi><span class="fact__unit"><span class="he-text">ימים</span><span class="en-text">days</span></span></dd>
+                </div>
+                <div class="fact">
+                  <dt class="field-label"><span class="he-text">התראה מראש שנדרשת</span><span class="en-text">Notice they need</span></dt>
+                  <dd class="fact__value"><bdi>5</bdi><span class="fact__unit"><span class="he-text">ימים</span><span class="en-text">days</span></span></dd>
+                </div>
+              </dl>
+            </section>
+            <section class="pp__section">
+              <h3 class="pp__title"><span class="he-text">דירוגים</span><span class="en-text">Ratings</span></h3>
+              <p class="pp__lede"><span class="he-text"><bdi>11</bdi> דירוגים מעבודות משותפות שהושלמו. שמות המדרגים אינם מוצגים לאיש מלבד ההנהלה.</span><span class="en-text"><bdi>11</bdi> ratings from shared completed work. Rater names are shown to nobody outside administration.</span></p>
+              <ul class="review-list">
+                <li class="review">
+                  <div class="review__head">
+                    <span class="rating__stars rating__stars--sm" style="--rating: 4" aria-hidden="true"><span class="rating__fill"></span></span>
+                    <span class="review__score"><bdi>4</bdi></span>
+                    <span class="review__date"><span class="he-text">מרץ <bdi>2026</bdi></span><span class="en-text">March <bdi>2026</bdi></span></span>
+                  </div>
+                  <p class="review__body"><span class="he-text" dir="auto">חפירה מהירה ומסודרת. דיווח על סלע בשטח מיד.</span><span class="en-text" dir="auto">Fast, orderly excavation. Reported rock on site immediately.</span></p>
+                </li>
+                <li class="review">
+                  <div class="review__head">
+                    <span class="rating__stars rating__stars--sm" style="--rating: 4" aria-hidden="true"><span class="rating__fill"></span></span>
+                    <span class="review__score"><bdi>4</bdi></span>
+                    <span class="review__date"><span class="he-text">אוגוסט <bdi>2025</bdi></span><span class="en-text">August <bdi>2025</bdi></span></span>
+                  </div>
+                  <p class="review__body"><span class="he-text" dir="auto">עבודה טובה. לוח הזמנים היה תלוי במזג האוויר.</span><span class="en-text" dir="auto">Good work. The schedule depended on the weather.</span></p>
+                </li>
+              </ul>
+            </section>
+          </div>
+          <div class="pp__actions">
+            <div class="pp__actions-main">
+              <button type="button" class="btn btn--primary btn--sm">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                <span class="he-text">התחברות</span><span class="en-text">Connect</span>
+              </button>
+            </div>
+            <div class="pp__quiet">
+              <button type="button" class="pp__quiet-btn"><span class="he-text">דיווח</span><span class="en-text">Report</span></button>
+              <button type="button" class="pp__quiet-btn"><span class="he-text">השתקה</span><span class="en-text">Mute</span></button>
+              <button type="button" class="pp__quiet-btn"><span class="he-text">חסימה</span><span class="en-text">Block</span></button>
+            </div>
+          </div>
+        </aside>
       </div>
     </main>
   </div>
