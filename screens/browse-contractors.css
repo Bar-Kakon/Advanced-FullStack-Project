@@ -1014,26 +1014,14 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 }
 
 /* ─────────────────────────────────────────────
-   PUBLIC PROFILE — side panel (screen #7)
-
-   Others' view of a contractor. Not a page: it is the third
-   column of .browse__body, so opening it makes the card grid
-   narrower (3-up → 2-up) instead of covering it.
-
-   Selection is CSS-only. "View profile" is an anchor to a panel
-   id and :target reveals that one panel — no radios, no JS.
-
-   Placed last in the file on purpose: the panel-open layout has
-   to override the generic .browse__body rules in the Responsive
-   section above, so its own media queries must come after them.
-
-   Presentation is copied from the profile screen (profile.css)
-   rather than reinvented, so a contractor sees the same tiles,
-   work cards and reviews whether the profile is theirs or not.
-   No new colors.
+   PUBLIC PROFILE — side panel
+   Third column of .browse__body, revealed by :target. No JS.
+   Styling copied from profile.css so the profile reads the same
+   whether it is yours or someone else's. No new colors.
+   Placed last: :has() must outrank the Responsive rules above.
    ───────────────────────────────────────────── */
 
-/* Available to the whole screen, not just the panel */
+/* Used by the panel and the cards alike */
 .sr-only {
   position: absolute;
   width: 1px;
@@ -1052,11 +1040,11 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 .browse__body:has(.profile-panel:target) {
   grid-template-columns: 268px minmax(0, 1fr) 380px;
 }
-/* minmax(0, 1fr) above is load-bearing: a plain 1fr refuses to shrink
-   below its content and the grid would overflow instead of reflowing. */
+/* minmax(0, 1fr): a plain 1fr will not shrink, so the grid would overflow */
 
+/* One card under another beside the profile — never a 2-up grid */
 .browse__body:has(.profile-panel:target) .card-grid {
-  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .profile-panel:target {
@@ -1158,9 +1146,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 }
 .metric__foot { font-size: 13px; line-height: 1.5; color: var(--text-soft); }
 
-/* One neutral mark, identical for ratings and flexibility. No explanation:
-   a score built on two answers is worth less than no score at all, and
-   saying so on the screen would only invite the reader to discount it. */
+/* One neutral mark for ratings and flexibility alike, never an explanation */
 .state-empty {
   font-family: var(--font-mono);
   font-size: 26px;
@@ -1173,7 +1159,11 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 .metric--pending .flex-meter,
 .metric--pending .metric__foot--score { display: none; }
 
-/* Panel-sized metric type — the cards keep their own smaller scale */
+/* Same mark on a card: add .flex-meter--empty, only the size differs */
+.flex-meter--empty .flex-meter__track { display: none; }
+.card-metrics .state-empty { font-size: 15px; }
+
+/* Panel-sized type; cards keep their smaller scale */
 .profile-panel .metric .rating__stars { font-size: 20px; letter-spacing: 2px; }
 .profile-panel .metric .rating__value { font-size: 19px; font-weight: 600; color: var(--primary); }
 .profile-panel .metric .flex-meter { gap: 7px; }
@@ -1244,9 +1234,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 .bio-text { font-size: 15px; line-height: 1.65; color: var(--text-soft); }
 
 /* ── Completed work ──
-   Trade, place, month and role only. No project name, no client,
-   no other members, and nothing that separates delegated work from
-   the rest — see the visibility rule in the project MD. */
+   Trade, place, month and role only — never a project or client name */
 .work-grid {
   list-style: none;
   display: grid;
@@ -1333,7 +1321,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 }
 .fact__unit { font-size: 13px; font-weight: 500; color: var(--text-soft); margin-inline-start: 4px; }
 
-/* Contact stays behind the connection gate — messaging is the channel */
+/* Phone visibility is undecided (D13) — this is provisional, not a rule */
 .fact__value--gated {
   font-size: 13px;
   font-weight: 500;
@@ -1380,8 +1368,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 .pp__actions-main .btn { flex: 1; min-width: 130px; }
 .pp__actions-main .btn--muted { cursor: not-allowed; }
 
-/* Rate is present only when shared completed work makes the viewer
-   eligible; this line is the evidence, not an explanation of the rule. */
+/* Shown only when shared completed work makes the viewer eligible */
 .pp__gate {
   flex-basis: 100%;
   font-family: var(--font-mono);
@@ -1411,41 +1398,26 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 .pp__quiet-btn:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
 
 /* ─── Panel responsive ladder ───
-   Below 1180px there is no room for rail + cards + panel, so the
-   filter rail moves to a full-width row and cards keep their place
-   beside the panel — the browse context stays visible either way. */
-@media (max-width: 1180px) {
+   The rail stays on the side at every width; the profile is what gives
+   way, dropping below the results. 1080px is measured: 268 rail + 22 + 280
+   card + 22 + 380 panel + 44 page padding needs ~996px of viewport. */
+@media (max-width: 1080px) {
   .browse__body:has(.profile-panel:target) {
-    grid-template-columns: minmax(0, 1fr) 340px;
+    grid-template-columns: 268px minmax(0, 1fr);
   }
-  .browse__body:has(.profile-panel:target) .filters {
-    grid-column: 1 / -1;
-    position: static;
-  }
-  .browse__body:has(.profile-panel:target) .card-grid {
-    grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
-  }
-}
-
-/* Single column: the panel stacks above the results it belongs to */
-@media (max-width: 860px) {
-  .browse__body:has(.profile-panel:target) { grid-template-columns: 1fr; }
-  .browse__body:has(.profile-panel:target) .card-grid {
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  }
-  /* Reading order stays filters → profile → results, so the page keeps
-     its identity instead of opening on a profile with no context above it */
-  .browse__body:has(.profile-panel:target) .filters { order: -2; }
+  /* Explicit column 2: auto-placement would put it under the rail */
   .profile-panel:target {
-    order: -1;
+    grid-column: 2;
     position: static;
     max-height: none;
   }
   .pp__body { overflow-y: visible; }
 }
 
-@media (max-width: 620px) {
-  .browse__body:has(.profile-panel:target) .card-grid { grid-template-columns: 1fr; }
+/* Already single-column here before this feature; panel becomes the last block */
+@media (max-width: 860px) {
+  .browse__body:has(.profile-panel:target) { grid-template-columns: 1fr; }
+  .profile-panel:target { grid-column: auto; }
 }
 
 @media (prefers-reduced-motion: reduce) {
