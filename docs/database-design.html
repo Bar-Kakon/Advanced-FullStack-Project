@@ -359,7 +359,7 @@ footer.foot { margin-top: 56px; padding-top: 22px; border-top: 1px solid var(--p
       <span class="meta-chip">Collections <b id="stat-collections">—</b></span>
       <span class="meta-chip">Relations <b id="stat-relations">—</b></span>
       <span class="meta-chip">Source of truth <b>Contractor Coordination Platform — Pro.md</b></span>
-      <span class="meta-chip">Updated <b id="stat-updated">2026-08-19</b></span>
+      <span class="meta-chip">Updated <b id="stat-updated">2026-08-20</b></span>
     </div>
   </div>
 </header>
@@ -648,7 +648,7 @@ const COLLECTIONS = [
     { group: 'Identity & discovery', groupNote: 'the fields `browse contractors` searches and filters on' },
     { name: 'firstName', type: 'String', req: true, note: '' },
     { name: 'lastName', type: 'String', req: true, note: '' },
-    { name: 'phone', type: 'String', note: 'Collected in onboarding step 3.' },
+    { name: 'phone', type: 'String', note: 'Collected in onboarding step 3. **Withheld from the public profile until a connection is accepted (2026-08-20).** The [[connections]] gate exists so the platform does not become a sales-spam channel; a number printed on every profile would make that gate decorative. The public profile renders the field either way, showing that a connection unlocks it — messaging stays the channel of record.' },
     { name: 'bio', type: 'String', note: 'Max 600 characters.' },
     { name: 'avatar', type: '{ fileId: ObjectId, url: String }', ref: 'fileassets', note: 'Embedded 1:1 pointer. Kept as a sub-object rather than a bare id so the URL can be denormalised and rendered without a second lookup.' },
     { name: 'specialties', type: '[String]', idx: true, note: 'Enum of trades, reused from the register screen list. An embedded array of primitives — small, bounded, and directly filterable through a multikey index.' },
@@ -681,6 +681,7 @@ const COLLECTIONS = [
     '**`specialties` is an embedded array, not a `specialties` collection.** The list of trades is small, bounded, and read-only from the app perspective. A multikey index makes `find({ specialties: "concrete" })` as fast as a join would have been, without the join.',
     '**`ratingSummary` and `flexibility` are deliberate denormalisation** — the one place this schema stores a value that could be derived. Browse contractors filters on *minimum* rating and *minimum* flexibility and then paginates. Computing an average across [[ratings]] per candidate on every page load is an aggregation that cannot use an index, so the sort would have to happen in memory over every user in the system. Storing the number and recomputing it on write moves that cost to the rare event instead of the common one.',
     '**Secrets are opt-in, not opt-out.** `passwordHash` and `security` carry `select: false`. The biggest risk in this project is an endpoint that returns more than it should; making the dangerous fields absent by default means a mistake has to be made twice before it leaks.',
+    '**The public-profile projection is a third visibility rule, alongside the task serializer and the write-side authorization check** (2026-08-20). What another contractor sees is not simply "this document minus the secrets": `phone` is held back until a [[connections]] edge is accepted, ratings arrive with no `rater` and no `context` (see [[ratings]]), and **completed work is rendered as trade, city, month/year, role, completed status and permitted images only — never a project name, never a client name, never the other members, and never any mark that separates delegated work from the rest.** The last one is not cosmetic. The delegation guarantee in §3.3 of the project document says a general contractor must not learn who actually did the work; a public profile listing "Northern Towers, July 2026" hands anyone in the trade enough to reconstruct exactly that, from the outside, with no access to the project at all. The constraint is therefore built into what is *rendered*: nothing identifying can leak because nothing identifying is sent. Public work draws on [[tasks]] and [[projects]] but must never serialize their names.',
     '**JWT is stateless, so there is no sessions collection.** Nothing is stored server-side per login. `security.passwordChangedAt` is the escape hatch: the auth middleware rejects any token whose `iat` predates it, which is how a password change logs out other devices.',
     '**Removal is a status change, not a delete** (D8). A user appears in other people audit entries, ratings and messages; deleting the document would leave dangling references in histories that must stay truthful.',
     '**`specialties` stores language-neutral codes, never Hebrew or English labels.** The app is bilingual (Hebrew RTL by default, English LTR), so `"concrete"` is a key the UI translates at render time. Storing the displayed label would make the second language impossible, and would invalidate this multikey index the first time a translation was corrected. The same rule applies to every enum in the schema — roles, statuses, notification types, audit actions.',
@@ -782,7 +783,7 @@ module.exports = mongoose.model('User', userSchema);`
     { name: 'requester', type: 'ObjectId', ref: 'users', req: true, idx: true, note: 'Who sent the request. Direction matters for the UI — only the recipient sees an accept/decline choice.' },
     { name: 'recipient', type: 'ObjectId', ref: 'users', req: true, idx: true, note: 'Who must respond.' },
     { name: 'pair', type: '[ObjectId]', req: true, uniq: true, note: 'The same two ids, **sorted**. This is the trick that makes the edge undirected: see the reasoning below.' },
-    { name: 'status', type: "'pending' | 'accepted' | 'declined' | 'blocked'", req: true, idx: true, note: '`declined` is kept rather than deleted so the same person cannot re-request in a loop. `blocked` is a separate state because it must survive an unblock request.' },
+    { name: 'status', type: "'pending' | 'accepted' | 'declined' | 'blocked'", req: true, idx: true, note: '`declined` is kept rather than deleted so the same person cannot re-request in a loop. `blocked` is a separate state because it must survive an unblock request. **Triggered from the public profile (2026-08-20)**, whose action row carries Block beside Report and Mute — the state already existed here, so the control was missing from the requirements rather than from the model.' },
     { name: 'requestedAt', type: 'Date', note: '' },
     { name: 'respondedAt', type: 'Date', note: 'Null while pending.' }
   ],
@@ -840,9 +841,9 @@ module.exports = mongoose.model('Connection', connectionSchema);`
   purpose: 'One score a user gave another user for one piece of shared, completed work. Kept as its own collection so the raw reviews survive independently of the average shown on a profile.',
   fields: [
     { name: '_id', type: 'ObjectId', note: '' },
-    { name: 'rater', type: 'ObjectId', ref: 'users', req: true, idx: true, note: 'Who wrote it. **Never serialized toward the ratee (decided 2026-08-18)** — a contractor sees the scores and comments on their own profile, never the names. Stored, so moderation and the gate stay auditable; withheld by the serializer, not by omitting the field.' },
+    { name: 'rater', type: 'ObjectId', ref: 'users', req: true, idx: true, note: 'Who wrote it. **Never serialized toward the ratee (decided 2026-08-18), and — widened 2026-08-20 — never toward any non-admin viewer.** Nobody browsing a public profile sees who wrote a rating either. Withholding it from the ratee alone was self-defeating: that contractor could open their own public profile from the browse list and read the names there. Stored, so moderation and the gate stay auditable; withheld by the serializer, not by omitting the field.' },
     { name: 'ratee', type: 'ObjectId', ref: 'users', req: true, idx: true, note: 'Who it is about. Recomputing this person `ratingSummary` is a side effect of every write here.' },
-    { name: 'context', type: '{ project: ObjectId | null, task: ObjectId }', ref: 'tasks', req: true, note: 'The shared completed work that unlocks the rating. Storing it is what makes the gate auditable rather than a claim. **Also withheld from the ratee**, for a non-obvious reason: a task with a single rater identifies the writer exactly, so serializing the context would undo the anonymity of `rater` above.' },
+    { name: 'context', type: '{ project: ObjectId | null, task: ObjectId }', ref: 'tasks', req: true, note: 'The shared completed work that unlocks the rating. Storing it is what makes the gate auditable rather than a claim. **Also withheld from the ratee — and from every other non-admin viewer (2026-08-20)**, for a non-obvious reason: a task with a single rater identifies the writer exactly, so serializing the context would undo the anonymity of `rater` above.' },
     { name: 'score', type: 'Number (1–5)', req: true, note: '' },
     { name: 'comment', type: 'String', note: 'Optional.' },
     { name: 'createdAt', type: 'Date', note: '' }
@@ -855,7 +856,7 @@ module.exports = mongoose.model('Connection', connectionSchema);`
     '**A junction collection with a payload.** Same shape as [[connections]] — a many-to-many between users — but this one is directed and repeatable, so no `pair` trick: A rating B is genuinely a different fact from B rating A.',
     '**The average lives on [[users]], the reviews live here.** This split is the standard denormalisation pattern: keep the source of truth in its own collection, and keep a cheap summary where it is read. `users.ratingSummary` is rebuilt from this collection whenever a document is inserted.',
     '**`context` freezes the justification.** Without it, "were these two ever on the same job?" would have to be recomputed from tasks that may since have been edited. Storing the task id makes the gate provable after the fact.',
-    '**Anonymity toward the ratee is a serializer rule, not a storage decision** (2026-08-18). Everything is stored; the viewer decides what comes out. A contractor reading their own profile gets the score, the comment and the month — never `rater`, never `context`, never the exact date. The reason is behavioural rather than technical: in a trade network this size a named low rating is a confrontation, so naming the writer quietly converts an honest signal into a polite one, and §1 depends on the trust signals being real. The same rule has a trap attached — **withholding the name alone is not enough**, because a task with one rater identifies them completely, which is why the context and the precise date go too. The rating still renders in full for admins and still proves its own gate.'
+    '**Anonymity is a serializer rule, not a storage decision** (2026-08-18; widened to every non-admin viewer 2026-08-20). Everything is stored; the viewer decides what comes out. Anyone reading a profile — its owner or a stranger browsing the directory — gets the score, the comment and the month, and never `rater`, never `context`, never the exact date. **The widening is what makes the rule hold at all:** restricting the names from the ratee while showing them to third parties would have been defeated by that contractor simply opening their own public profile from the browse list. The reason is behavioural rather than technical: in a trade network this size a named low rating is a confrontation, so naming the writer quietly converts an honest signal into a polite one, and §1 depends on the trust signals being real. The same rule has a trap attached — **withholding the name alone is not enough**, because a task with one rater identifies them completely, which is why the context and the precise date go too. The rating still renders in full for admins and still proves its own gate.'
   ],
   relations: [
     { to: 'users', via: 'rater / ratee', store: 'junction', card: 'N:M', why: 'Directed and repeatable — the same rater can rate the same ratee again for a different task, which is why the unique index includes `context.task`.' },
@@ -1611,7 +1612,7 @@ module.exports = mongoose.model('Notification', notificationSchema);`
     { name: '_id', type: 'ObjectId', note: '' },
     { name: 'user', type: 'ObjectId', ref: 'users', req: true, idx: true, note: 'Who muted.' },
     { name: 'scope', type: "'contractor' | 'project' | 'conversation'", req: true, note: '' },
-    { name: 'target', type: 'ObjectId', req: true, note: 'Polymorphic — a user, project or thread id depending on `scope`.' },
+    { name: 'target', type: 'ObjectId', req: true, note: 'Polymorphic — a user, project or thread id depending on `scope`. The `contractor` scope is written from the public profile Mute control (2026-08-20); what muting a contractor silences beyond notifications is deliberately still open (D9).' },
     { name: 'createdAt', type: 'Date', note: '' }
   ],
   indexes: [
@@ -1652,7 +1653,7 @@ module.exports = mongoose.model('Mute', muteSchema);`
   fields: [
     { name: '_id', type: 'ObjectId', note: '' },
     { name: 'reporter', type: 'ObjectId', ref: 'users', req: true, idx: true, note: '' },
-    { name: 'target', type: "{ type: 'user'|'message'|'task'|'project', id: ObjectId }", req: true, idx: true, note: 'Polymorphic, same leaf-only pattern as [[mutes]].' },
+    { name: 'target', type: "{ type: 'user'|'message'|'task'|'project', id: ObjectId }", req: true, idx: true, note: 'Polymorphic, same leaf-only pattern as [[mutes]]. The `user` type is filed from the public profile Report control (2026-08-20) — the control ships on a Stage-2 screen even though this collection is Stage 7, under the standing rule that a `Planned` feature may appear on a screen while a `Stretch` one may not.' },
     { name: 'targetSnapshot', type: 'Object', denorm: true, note: 'A copy of the reported content. Essential: the reported message may be edited or deleted before an admin looks at it.' },
     { name: 'reason', type: 'enum', req: true, note: 'Spam, harassment, impersonation, other.' },
     { name: 'note', type: 'String', note: 'Optional free text from the reporter.' },
