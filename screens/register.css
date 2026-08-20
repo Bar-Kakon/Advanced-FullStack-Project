@@ -42,8 +42,8 @@
   --secondary-30:    rgba(199, 184, 157, 0.30);
   --secondary-55:    rgba(199, 184, 157, 0.55);
   --secondary-70:    rgba(199, 184, 157, 0.70);
-  --text-40:         rgba(31, 36, 40, 0.40);
-  --text-55:         rgba(31, 36, 40, 0.55);
+  --text-mute:       rgba(31, 36, 40, 0.64);
+  --text-soft:       rgba(31, 36, 40, 0.75);
   --surface-08:      rgba(255, 253, 248, 0.08);
   --surface-15:      rgba(255, 253, 248, 0.15);
   --surface-50:      rgba(255, 253, 248, 0.50);
@@ -149,14 +149,14 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   outline-offset: -4px;
 }
 
-.lang-switch__globe { color: var(--text-40); flex-shrink: 0; }
+.lang-switch__globe { color: var(--text-mute); flex-shrink: 0; }
 
 .lang-switch__btn {
   font-family: var(--font-sans);
   font-size: 12.5px;
   font-weight: 600;
   letter-spacing: 0.02em;
-  color: var(--text-55);
+  color: var(--text-soft);
   padding: 4px 10px;
   border-radius: 999px;
   cursor: pointer;
@@ -580,7 +580,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   text-shadow: 1px 1px 0 var(--secondary-15);
 }
 
-.form-subtitle { font-size: 17.5px; color: var(--text-55); }
+.form-subtitle { font-size: 17.5px; color: var(--text-soft); }
 
 /* ─────────────────────────────────────────────
    Alert
@@ -623,7 +623,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   font-weight: 500;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--text-55);
+  color: var(--text-soft);
   cursor: pointer;
 }
 
@@ -664,7 +664,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   appearance: none;
 }
 
-.form-input::placeholder { color: var(--text-40); }
+.form-input::placeholder { color: var(--text-mute); }
 .form-input:hover,
 .form-select:hover {
   border-color: var(--secondary-55);
@@ -692,7 +692,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   cursor: pointer;
 }
 /* Placeholder option (value="") reads as muted until a real trade is picked */
-.form-select:required:invalid { color: var(--text-40); }
+.form-select:required:invalid { color: var(--text-mute); }
 
 .select-chevron {
   position: absolute;
@@ -700,7 +700,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   top: 50%;
   transform: translateY(-50%);
   display: inline-flex;
-  color: var(--text-40);
+  color: var(--text-mute);
   pointer-events: none;
 }
 
@@ -726,7 +726,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 /* Hint line under a field (neutral helper, not an error) */
 .field-hint {
   font-size: 14.5px;
-  color: var(--text-55);
+  color: var(--text-soft);
   margin-top: 5px;
   line-height: 1.4;
 }
@@ -826,7 +826,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--text-40);
+  color: var(--text-mute);
   transition: color 0.15s;
 }
 .input-action:hover { color: var(--primary); }
@@ -846,7 +846,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   cursor: pointer;
   font-size: 16px;
   line-height: 1.5;
-  color: var(--text-55);
+  color: var(--text-soft);
   padding: 12px;
   background:
     linear-gradient(90deg, rgba(35, 56, 77, 0.035) 1px, transparent 1px),
@@ -973,14 +973,14 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   font-size: 13px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--text-40);
+  color: var(--text-mute);
   flex-shrink: 0;
 }
 
 /* ─────────────────────────────────────────────
    Links & footer text
    ───────────────────────────────────────────── */
-.form-link           { font-size: 15.5px; color: var(--text-55); transition: color 0.15s; }
+.form-link           { font-size: 15.5px; color: var(--text-soft); transition: color 0.15s; }
 .form-link:hover     { color: var(--primary); }
 .form-link--small    { font-size: 14px; }
 .form-link--strong   { font-size: inherit; font-weight: 600; color: var(--primary); }
@@ -989,7 +989,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 .form-footer {
   text-align: center;
   font-size: 16px;
-  color: var(--text-55);
+  color: var(--text-soft);
   padding-top: 2px;
 }
 
@@ -1001,7 +1001,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   font-family: var(--font-mono);
   font-size: 13px;
   letter-spacing: 0.04em;
-  color: var(--text-40);
+  color: var(--text-mute);
 }
 .secure-note svg { flex-shrink: 0; }
 
@@ -1095,9 +1095,9 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 /* ── Toggle button active states ──
    CSS resolves which is active from which radio is :checked */
 #lang-he:checked ~ .lang-switch label[for="lang-he"] { color: var(--surface); background: var(--primary); }
-#lang-he:checked ~ .lang-switch label[for="lang-en"] { color: var(--text-55); background: none; }
+#lang-he:checked ~ .lang-switch label[for="lang-en"] { color: var(--text-soft); background: none; }
 #lang-en:checked ~ .lang-switch label[for="lang-en"] { color: var(--surface); background: var(--primary); }
-#lang-en:checked ~ .lang-switch label[for="lang-he"] { color: var(--text-55); background: none; }
+#lang-en:checked ~ .lang-switch label[for="lang-he"] { color: var(--text-soft); background: none; }
 
 /* ── English selected: swap text + direction + fonts ── */
 #lang-en:checked ~ .lang-switch .he-text  { display: none;   }
