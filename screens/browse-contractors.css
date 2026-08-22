@@ -336,12 +336,25 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 }
 
 /* ── Filter rail ── */
-.filters { position: sticky; top: calc(var(--nav-h) + 22px); }
+/* The rail is capped at the viewport so it can always stay pinned; a rail taller than the screen would scroll away with the page. */
+.filters {
+  position: sticky;
+  top: calc(var(--nav-h) + 22px);
+  /* Sticky positioning makes the rail its own stacking context, so the rail needs to outrank the results for the panel inside it to paint on top. */
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100vh - var(--nav-h) - 44px);
+}
+
+/* The heading and the Apply button are fixed ends, and only the field list between them scrolls. */
 .filters__card {
   position: relative;
-  /* extra top/bottom padding so the title and Apply button clear the corner
-     registration ticks (was 22px 20px) */
-  padding: 30px 20px;
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
   background:
     linear-gradient(135deg, transparent 0 20px, var(--surface-96) 20px),
     linear-gradient(90deg, rgba(35, 56, 77, 0.035) 1px, transparent 1px),
@@ -355,26 +368,29 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   outline-offset: -7px;
 }
 /* Blueprint corner ticks */
-.filters__card::before,
-.filters__card::after {
+/* The ticks hang on the rail rather than on the card, so they stay at the corners while the card scrolls inside. */
+.filters::before,
+.filters::after {
   content: '';
   position: absolute;
+  z-index: 2;
   width: 16px;
   height: 16px;
   border-color: var(--secondary);
   border-style: solid;
   pointer-events: none;
 }
-.filters__card::before { top: 10px; inset-inline-start: 10px; border-width: 2px 0 0 2px; }
-.filters__card::after  { bottom: 10px; inset-inline-end: 10px; border-width: 0 2px 2px 0; }
+.filters::before { top: 10px; inset-inline-start: 10px; border-width: 2px 0 0 2px; }
+.filters::after  { bottom: 10px; inset-inline-end: 10px; border-width: 0 2px 2px 0; }
 
+/* The top and bottom padding keeps the title and the Apply button clear of the corner registration ticks. */
 .filters__head {
+  flex: none;
   display: flex;
   align-items: baseline;
   justify-content: space-between;
   gap: 12px;
-  padding-bottom: 14px;
-  margin-bottom: 16px;
+  padding: 30px 20px 14px;
   border-bottom: 1px solid var(--secondary-30);
 }
 .filters__title {
@@ -388,7 +404,22 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 .filters__clear { font-size: 12.5px; color: var(--text-soft); transition: color 0.15s; }
 .filters__clear:hover { color: var(--primary); text-decoration: underline; }
 
-.filters__form { display: flex; flex-direction: column; gap: 18px; }
+.filters__form {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 16px 20px 18px;
+}
+
+.filters__foot {
+  flex: none;
+  padding: 14px 20px 30px;
+  border-block-start: 1px solid var(--secondary-30);
+}
 
 /* ─────────────────────────────────────────────
    Form controls — reused look from register.css
@@ -616,19 +647,25 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 }
 
 /* ─────────────────────────────────────────────
-   Advanced filters — the refining controls, collapsed by default
-   so the rail stays short even on a wide desktop
+   Advanced filters — a panel beside the rail, not more rail
    ───────────────────────────────────────────── */
-/* The rule above the summary is what separates the basic group from this one. */
-.filters__adv {
-  border-block-start: 1px solid var(--secondary-30);
-  padding-block-start: 18px;
+/* The checkbox is the real control, so it stays focusable and is only hidden from sight. */
+.adv-toggle {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
 }
-.filters__adv-head {
+
+/* The extra space above the trigger is what separates the basic group from the refining one. */
+.adv-trigger {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 10px;
+  margin-block-start: 14px;
   padding: 11px 12px;
   font-family: var(--font-mono);
   font-size: 13.5px;
@@ -640,23 +677,105 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   border: 1px solid var(--secondary-45);
   border-radius: var(--r-sm);
   cursor: pointer;
-  transition: background 0.15s, border-color 0.15s;
-  /* The native disclosure triangle is dropped because the chevron marks the state instead. */
-  list-style: none;
+  transition: background 0.15s, border-color 0.15s, box-shadow 0.15s;
 }
-.filters__adv-head::-webkit-details-marker { display: none; }
-.filters__adv-head:hover { background: var(--secondary-30); border-color: var(--secondary); }
-.filters__adv-head:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.adv-trigger:hover { background: var(--secondary-30); border-color: var(--secondary); }
+.adv-trigger__icon { display: inline-flex; color: var(--text-soft); flex-shrink: 0; }
+.adv-trigger__text { line-height: 1.3; }
 
-.filters__adv-chevron { color: var(--text-soft); flex-shrink: 0; transition: transform 0.18s; }
-.filters__adv[open] .filters__adv-chevron { transform: rotate(180deg); }
+/* The open panel and its trigger read as one surface, so the trigger takes the panel's tone while it is open. */
+.adv-toggle:checked ~ .filters__card .adv-trigger {
+  color: var(--surface);
+  background: var(--primary);
+  border-color: var(--primary);
+}
+.adv-toggle:checked ~ .filters__card .adv-trigger__icon { color: var(--secondary); }
+.adv-toggle:focus-visible ~ .filters__card .adv-trigger { outline: 2px solid var(--primary); outline-offset: 2px; }
+.adv-toggle:checked:focus-visible ~ .filters__card .adv-trigger { outline-color: var(--secondary); }
 
-.filters__adv-body {
+/* ── The panel itself ── */
+/* It is absolutely positioned against the rail, so opening it adds nothing to the rail's height. */
+.adv-panel { display: none; }
+
+.adv-toggle:checked ~ .adv-panel {
+  display: flex;
+  flex-direction: column;
+  position: absolute;
+  z-index: 6;
+  top: 0;
+  inset-inline-start: calc(100% + 18px);
+  width: 320px;
+  /* The panel is measured against the rail, so it can never reach further down the screen than the rail beside it. */
+  height: fit-content;
+  max-height: 100%;
+  background:
+    linear-gradient(135deg, transparent 0 20px, var(--surface-96) 20px),
+    linear-gradient(90deg, rgba(35, 56, 77, 0.035) 1px, transparent 1px),
+    linear-gradient(0deg, rgba(35, 56, 77, 0.035) 1px, transparent 1px),
+    linear-gradient(180deg, rgba(255, 253, 248, 0.98), rgba(243, 240, 234, 0.95));
+  background-size: auto, 20px 20px, 20px 20px, auto;
+  border: 1px solid var(--surface-75);
+  border-block-start: 4px solid var(--primary);
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow-card);
+  outline: 1px solid var(--primary-08);
+  outline-offset: -7px;
+}
+
+.adv-panel__head {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 20px 14px;
+  border-block-end: 1px solid var(--secondary-30);
+}
+.adv-panel__title {
+  font-family: var(--font-mono);
+  font-size: 13.5px;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--primary);
+}
+.adv-panel__close {
+  display: inline-grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--r-sm);
+  color: var(--text-soft);
+  background: var(--surface);
+  border: 1px solid var(--secondary-45);
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+.adv-panel__close:hover { color: var(--primary); border-color: var(--secondary); background: var(--background); }
+
+/* Only the panel's own body scrolls, so the page behind it never has to move. */
+.adv-panel__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   display: flex;
   flex-direction: column;
   gap: 18px;
-  padding-block-start: 18px;
+  padding: 18px 20px;
 }
+
+/* The rail's own Apply button stays reachable beside the panel on a wide screen, so this copy is hidden until the narrow-width sheet needs it. */
+.adv-panel__foot {
+  display: none;
+  flex: none;
+  padding: 14px 20px 18px;
+  border-block-start: 1px solid var(--secondary-30);
+}
+
+/* The scrim only exists for the narrow-width sheet below. */
+.adv-scrim { display: none; }
 
 /* ─────────────────────────────────────────────
    Results
@@ -708,24 +827,28 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 .contractor-card--pending   { border-block-start-color: var(--secondary-30); }
 /* An incoming request is the one state waiting on the viewer, so it keeps a full-strength edge. */
 .contractor-card--incoming  { border-block-start-color: var(--secondary); }
+.contractor-card--blocked   { border-block-start-color: var(--primary-30); }
 
-/* Connection badge (top trailing corner) */
+/* Connection badge */
+/* The badge sits on its own row above the identity block, because floating it in the corner made it collide with the name on a narrow card. */
 .conn-badge {
-  position: absolute;
-  top: 14px;
-  inset-inline-end: 14px;
+  align-self: flex-start;
+  max-width: 100%;
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 4px 9px;
+  gap: 6px;
+  padding: 5px 10px;
   font-family: var(--font-mono);
   /* A status label is metadata the viewer has to read, so §3.5 rule 3 keeps it out of micro-text. */
   font-size: 12.5px;
   font-weight: 500;
+  line-height: 1.35;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   border-radius: 999px;
 }
+.conn-badge svg { flex-shrink: 0; }
+
 .contractor-card--connected .conn-badge {
   color: var(--surface);
   background: var(--primary);
@@ -736,11 +859,16 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   background: var(--secondary-15);
   border: 1px solid var(--secondary-45);
 }
-/* The incoming badge is darker than the sent one because it is asking for something. */
+/* The incoming badge is darker than the sent one because it is asking the viewer for something. */
 .contractor-card--incoming .conn-badge {
   color: var(--primary);
   background: var(--secondary-45);
   border: 1px solid var(--secondary);
+}
+.contractor-card--blocked .conn-badge {
+  color: var(--text-soft);
+  background: var(--primary-08);
+  border: 1px solid var(--primary-30);
 }
 
 /* Identity row */
@@ -759,6 +887,9 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   border: 1px solid var(--secondary-55);
   box-shadow: inset 0 0 0 3px var(--surface-08);
 }
+/* A blocked contact is deliberately quieter than an active one, matching my-network.css. */
+.avatar--muted { background: var(--primary-45); border-color: var(--secondary-30); }
+
 .contractor-card__id { min-width: 0; }
 /* The identity and metadata sizes below match my-network.css so one contractor reads the same on both screens. */
 .contractor-card__name {
@@ -926,16 +1057,6 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 }
 .btn--ghost:active { transform: translateY(1px); }
 
-/* Muted: disabled "request sent" state */
-.btn--muted {
-  color: var(--text-mute);
-  background: var(--secondary-15);
-  border-color: var(--secondary-30);
-  font-weight: 500;
-  cursor: not-allowed;
-  box-shadow: none;
-}
-
 /* ─────────────────────────────────────────────
    Pagination
    ───────────────────────────────────────────── */
@@ -977,11 +1098,36 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
    ───────────────────────────────────────────── */
 @media (max-width: 860px) {
   .browse__body { grid-template-columns: 1fr; }
-  .filters { position: static; }
+  /* Relative rather than static, because the corner ticks still need the rail as their containing block. */
+  .filters { position: relative; top: auto; max-height: none; }
+  /* The rail is a normal block above the results here, so nothing inside it needs its own scrollbar. */
+  .filters__form { overflow-y: visible; }
   .browse__head { align-items: flex-start; }
   .app-nav__links { gap: 0; }
   .app-nav__link { padding: 8px 10px; font-size: 12.5px; }
   .nav-profile__name { display: none; }
+
+  /* There is no column beside the rail at this width, so the panel becomes a centred sheet that scrolls inside itself. */
+  .adv-toggle:checked ~ .adv-panel {
+    position: fixed;
+    z-index: 60;
+    inset: 16px;
+    margin: auto;
+    width: min(420px, calc(100vw - 32px));
+    height: fit-content;
+    max-height: calc(100vh - 32px);
+  }
+  /* Apply moves into the sheet here, because the rail's own button is behind the scrim. */
+  .adv-panel__foot { display: block; }
+
+  .adv-toggle:checked ~ .adv-scrim {
+    display: block;
+    position: fixed;
+    z-index: 55;
+    inset: 0;
+    background: rgba(31, 36, 40, 0.55);
+    cursor: pointer;
+  }
 }
 
 @media (max-width: 620px) {
@@ -1013,8 +1159,8 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   .pager__page:hover,
   .pager__arrow:hover,
   .star-select label:hover { transform: none; }
-  /* The chevron still turns to mark the open state, but it does so without animating. */
-  .filters__adv-chevron { transition: none; }
+  /* The trigger still changes tone to mark the open state, but it does so without animating. */
+  .adv-trigger { transition: none; }
 }
 
 /* ─────────────────────────────────────────────
@@ -1419,7 +1565,6 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 }
 .pp__actions-main { display: flex; flex-wrap: wrap; gap: 10px; }
 .pp__actions-main .btn { flex: 1; min-width: 130px; }
-.pp__actions-main .btn--muted { cursor: not-allowed; }
 
 /* Shown only when shared completed work makes the viewer eligible */
 .pp__gate {

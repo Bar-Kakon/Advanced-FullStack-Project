@@ -167,12 +167,15 @@
 
       <div class="browse__body">
 
-        <!-- ── Filter rail ───────────────────────────────
-             Reuses .form-input / .form-select look from register.
-             All controls are presentational — real filtering is
-             wired in React (Stage 2), same as the login/register stubs.
-             ─────────────────────────────────────────────── -->
+        <!-- ── Filter rail ─────────────────────────────── -->
+        <!-- The rail reuses the .form-input and .form-select look from register.html. -->
+        <!-- Every control here is presentational, because real filtering is wired in React at Stage 2. -->
+        <!-- The rail stays pinned beside the results, and only its own inner area scrolls when the viewport is short. -->
         <aside class="filters" aria-label="Filters">
+
+          <!-- This switch sits outside the card so the panel it opens is a sibling of the card and never makes the rail taller. -->
+          <input type="checkbox" id="adv-open" class="adv-toggle" aria-controls="adv-panel" />
+
           <div class="filters__card">
 
             <div class="filters__head">
@@ -186,7 +189,7 @@
               </a>
             </div>
 
-            <form class="filters__form" action="#" method="get">
+            <form class="filters__form" id="filters-form" action="#" method="get">
 
               <!-- Search -->
               <div class="form-group">
@@ -200,8 +203,11 @@
                     <circle cx="11" cy="11" r="7"/>
                     <line x1="21" y1="21" x2="16.65" y2="16.65"/>
                   </svg>
-                  <input class="form-input form-input--search" type="search" id="q" name="q"
+                  <!-- The placeholder is language-specific, so the field follows the same he-field / en-field pair as the city filter. -->
+                  <input class="form-input form-input--search he-field" type="search" id="q" name="q"
                          placeholder="שם או חברה" aria-label="חיפוש לפי שם או חברה" />
+                  <input class="form-input form-input--search en-field" type="search" id="q-en" name="q"
+                         placeholder="Name or company" aria-label="Search by name or company" />
                 </div>
               </div>
 
@@ -356,179 +362,209 @@
                 </label>
               </fieldset>
 
-              <!-- ── Advanced filters ─────────────────────────
-                   Collapsed by default so the rail stays short even on a wide
-                   desktop. A native <details> keeps the group keyboard-operable
-                   without JavaScript and cannot collide with the :target the
-                   profile panel already claims.
-                   ─────────────────────────────────────────────── -->
-              <details class="filters__adv">
-                <summary class="filters__adv-head">
-                  <span class="filters__adv-title">
-                    <span class="he-text">סינון מתקדם</span>
-                    <span class="en-text">Advanced filters</span>
-                  </span>
-                  <svg class="filters__adv-chevron" width="15" height="15" viewBox="0 0 24 24" fill="none"
-                       stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <path d="M6 9l6 6 6-6"/>
+              <!-- A label drives the hidden checkbox above, because the profile panel already claims the page's single :target. -->
+              <label for="adv-open" class="adv-trigger">
+                <span class="adv-trigger__icon" aria-hidden="true">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                       stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3"/>
+                    <path d="M1 14h6M9 8h6M17 16h6"/>
                   </svg>
-                </summary>
+                </span>
+                <span class="adv-trigger__text">
+                  <span class="he-text">סינון מתקדם</span>
+                  <span class="en-text">Advanced filters</span>
+                </span>
+              </label>
 
-                <div class="filters__adv-body">
+            </form>
 
-                  <!-- City or town: narrows the region to where the contractor actually works -->
-                  <div class="form-group">
-                    <label class="form-label" for="city-he">
-                      <span class="he-text">עיר או יישוב</span>
-                      <span class="en-text">City or town</span>
-                    </label>
-                    <input class="form-input he-field" type="text" id="city-he" name="city"
-                           dir="auto" list="cities-he" placeholder="למשל: חיפה" />
-                    <datalist id="cities-he">
-                      <option value="תל אביב"></option>
-                      <option value="ירושלים"></option>
-                      <option value="חיפה"></option>
-                      <option value="ראשון לציון"></option>
-                      <option value="פתח תקווה"></option>
-                      <option value="אשדוד"></option>
-                      <option value="נתניה"></option>
-                      <option value="באר שבע"></option>
-                      <option value="בני ברק"></option>
-                      <option value="חולון"></option>
-                      <option value="רמת גן"></option>
-                      <option value="אשקלון"></option>
-                      <option value="רחובות"></option>
-                      <option value="בת ים"></option>
-                      <option value="בית שמש"></option>
-                      <option value="כפר סבא"></option>
-                      <option value="הרצליה"></option>
-                      <option value="חדרה"></option>
-                      <option value="מודיעין"></option>
-                      <option value="רעננה"></option>
-                      <option value="נצרת"></option>
-                      <option value="לוד"></option>
-                      <option value="רמלה"></option>
-                      <option value="קריית גת"></option>
-                      <option value="טבריה"></option>
-                      <option value="נהריה"></option>
-                      <option value="כרמיאל"></option>
-                      <option value="עפולה"></option>
-                      <option value="אילת"></option>
-                      <option value="צפת"></option>
-                    </datalist>
-                    <input class="form-input en-field" type="text" id="city-en" name="city"
-                           dir="auto" list="cities-en" aria-label="City or town" placeholder="For example: Haifa" />
-                    <datalist id="cities-en">
-                      <option value="Tel Aviv"></option>
-                      <option value="Jerusalem"></option>
-                      <option value="Haifa"></option>
-                      <option value="Rishon LeZion"></option>
-                      <option value="Petah Tikva"></option>
-                      <option value="Ashdod"></option>
-                      <option value="Netanya"></option>
-                      <option value="Beer Sheva"></option>
-                      <option value="Bnei Brak"></option>
-                      <option value="Holon"></option>
-                      <option value="Ramat Gan"></option>
-                      <option value="Ashkelon"></option>
-                      <option value="Rehovot"></option>
-                      <option value="Bat Yam"></option>
-                      <option value="Beit Shemesh"></option>
-                      <option value="Kfar Saba"></option>
-                      <option value="Herzliya"></option>
-                      <option value="Hadera"></option>
-                      <option value="Modiin"></option>
-                      <option value="Raanana"></option>
-                      <option value="Nazareth"></option>
-                      <option value="Lod"></option>
-                      <option value="Ramla"></option>
-                      <option value="Kiryat Gat"></option>
-                      <option value="Tiberias"></option>
-                      <option value="Nahariya"></option>
-                      <option value="Karmiel"></option>
-                      <option value="Afula"></option>
-                      <option value="Eilat"></option>
-                      <option value="Safed"></option>
-                    </datalist>
-                    <p class="field-hint">
-                      <span class="he-text">חיפוש מדויק יותר מאזור. קבלנים שעובדים בכל הארץ יופיעו גם כאן.</span>
-                      <span class="en-text">More precise than a region. Contractors who work nationwide also appear here.</span>
-                    </p>
-                  </div>
-    
-                  <!-- Travel distance the contractor is willing to cover -->
-                  <div class="form-group">
-                    <label class="form-label" for="travel-min">
-                      <span class="he-text">מרחק נסיעה — לפחות</span>
-                      <span class="en-text">Travel distance — at least</span>
-                    </label>
-                    <div class="unit-field">
-                      <input class="form-input form-input--num" type="number" id="travel-min"
-                             name="travelMinKm" dir="ltr" min="0" max="500" step="5" placeholder="0" />
-                      <span class="unit-field__unit">
-                        <span class="he-text">ק״מ</span>
-                        <span class="en-text">km</span>
-                      </span>
-                    </div>
-                    <p class="field-hint">
-                      <span class="he-text">מציג קבלנים שמוכנים להגיע לפחות למרחק הזה.</span>
-                      <span class="en-text">Shows contractors willing to travel at least this far.</span>
-                    </p>
-                  </div>
-    
-                  <!-- Minimum rating — pure-CSS star selector (radio).
-                       Forced LTR so the row-reverse fill trick is direction-proof. -->
-                  <div class="form-group">
-                    <span class="form-label form-label--plain">
-                      <span class="he-text">דירוג מינימלי</span>
-                      <span class="en-text">Minimum rating</span>
-                    </span>
-                    <fieldset class="star-select" aria-label="Minimum rating">
-                      <input type="radio" name="minrating" id="mr5" value="5"><label for="mr5" title="5">★</label>
-                      <input type="radio" name="minrating" id="mr4" value="4"><label for="mr4" title="4">★</label>
-                      <input type="radio" name="minrating" id="mr3" value="3"><label for="mr3" title="3">★</label>
-                      <input type="radio" name="minrating" id="mr2" value="2"><label for="mr2" title="2">★</label>
-                      <input type="radio" name="minrating" id="mr1" value="1"><label for="mr1" title="1">★</label>
-                    </fieldset>
-                    <p class="field-hint">
-                      <span class="he-text">לחצו על מספר הכוכבים המינימלי</span>
-                      <span class="en-text">Tap the minimum number of stars</span>
-                    </p>
-                  </div>
-    
-                  <!-- Minimum flexibility — progress-bar slider + number box.
-                       accent-color fills the bar as you drag (direction-aware, so it
-                       fills correctly in both RTL and LTR). The slider and the number
-                       box are kept in sync by a small vanilla-JS snippet at the end of
-                       <body> so the user can drag OR type and always see the value. -->
-                  <div class="form-group">
-                    <label class="form-label form-label--plain" for="flexRange">
-                      <span class="he-text">גמישות מינימלית</span>
-                      <span class="en-text">Minimum flexibility</span>
-                    </label>
-                    <!-- Value indicator sits directly above the bar (not by the title) -->
-                    <div class="flex-value">
-                      <input class="flex-num" type="number" id="flexNum" min="0" max="100" value="0"
-                             step="1" inputmode="numeric" aria-label="גמישות מינימלית / Minimum flexibility value" />
-                    </div>
-                    <input class="flex-range" type="range" id="flexRange" min="0" max="100" value="0" step="1"
-                           aria-label="גמישות מינימלית / Minimum flexibility" />
-                    <div class="flex-range__scale" aria-hidden="true">
-                      <span>0</span>
-                      <span>50</span>
-                      <span>100</span>
-                    </div>
-                  </div>
-
-                </div>
-              </details>
-
-              <button type="submit" class="btn btn--primary btn--full">
+            <!-- Apply sits outside the scrolling field list so it stays visible however short the window is. -->
+            <div class="filters__foot">
+              <button type="submit" form="filters-form" class="btn btn--primary btn--full">
                 <span class="he-text">החלת סינון</span>
                 <span class="en-text">Apply filters</span>
               </button>
-            </form>
+            </div>
           </div>
+
+          <!-- The refining controls open as a panel beside the rail, so the basic filters stay on screen and the page never scrolls to reach them. -->
+          <!-- Every field below carries form="filters-form" because it now sits outside the form element but still belongs to it. -->
+          <div class="adv-panel" id="adv-panel" role="group" aria-label="סינון מתקדם / Advanced filters">
+
+            <div class="adv-panel__head">
+              <h3 class="adv-panel__title">
+                <span class="he-text">סינון מתקדם</span>
+                <span class="en-text">Advanced filters</span>
+              </h3>
+              <label for="adv-open" class="adv-panel__close">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                     stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
+                <span class="sr-only">
+                  <span class="he-text">סגירת הסינון המתקדם</span>
+                  <span class="en-text">Close advanced filters</span>
+                </span>
+              </label>
+            </div>
+
+            <div class="adv-panel__body">
+
+              <!-- City or town: narrows the region to where the contractor actually works -->
+              <div class="form-group">
+                <label class="form-label" for="city-he">
+                  <span class="he-text">עיר או יישוב</span>
+                  <span class="en-text">City or town</span>
+                </label>
+                <input class="form-input he-field" type="text" id="city-he" name="city" form="filters-form"
+                       dir="auto" list="cities-he" placeholder="למשל: חיפה" />
+                <datalist id="cities-he">
+                  <option value="תל אביב"></option>
+                  <option value="ירושלים"></option>
+                  <option value="חיפה"></option>
+                  <option value="ראשון לציון"></option>
+                  <option value="פתח תקווה"></option>
+                  <option value="אשדוד"></option>
+                  <option value="נתניה"></option>
+                  <option value="באר שבע"></option>
+                  <option value="בני ברק"></option>
+                  <option value="חולון"></option>
+                  <option value="רמת גן"></option>
+                  <option value="אשקלון"></option>
+                  <option value="רחובות"></option>
+                  <option value="בת ים"></option>
+                  <option value="בית שמש"></option>
+                  <option value="כפר סבא"></option>
+                  <option value="הרצליה"></option>
+                  <option value="חדרה"></option>
+                  <option value="מודיעין"></option>
+                  <option value="רעננה"></option>
+                  <option value="נצרת"></option>
+                  <option value="לוד"></option>
+                  <option value="רמלה"></option>
+                  <option value="קריית גת"></option>
+                  <option value="טבריה"></option>
+                  <option value="נהריה"></option>
+                  <option value="כרמיאל"></option>
+                  <option value="עפולה"></option>
+                  <option value="אילת"></option>
+                  <option value="צפת"></option>
+                </datalist>
+                <input class="form-input en-field" type="text" id="city-en" name="city" form="filters-form"
+                       dir="auto" list="cities-en" aria-label="City or town" placeholder="For example: Haifa" />
+                <datalist id="cities-en">
+                  <option value="Tel Aviv"></option>
+                  <option value="Jerusalem"></option>
+                  <option value="Haifa"></option>
+                  <option value="Rishon LeZion"></option>
+                  <option value="Petah Tikva"></option>
+                  <option value="Ashdod"></option>
+                  <option value="Netanya"></option>
+                  <option value="Beer Sheva"></option>
+                  <option value="Bnei Brak"></option>
+                  <option value="Holon"></option>
+                  <option value="Ramat Gan"></option>
+                  <option value="Ashkelon"></option>
+                  <option value="Rehovot"></option>
+                  <option value="Bat Yam"></option>
+                  <option value="Beit Shemesh"></option>
+                  <option value="Kfar Saba"></option>
+                  <option value="Herzliya"></option>
+                  <option value="Hadera"></option>
+                  <option value="Modiin"></option>
+                  <option value="Raanana"></option>
+                  <option value="Nazareth"></option>
+                  <option value="Lod"></option>
+                  <option value="Ramla"></option>
+                  <option value="Kiryat Gat"></option>
+                  <option value="Tiberias"></option>
+                  <option value="Nahariya"></option>
+                  <option value="Karmiel"></option>
+                  <option value="Afula"></option>
+                  <option value="Eilat"></option>
+                  <option value="Safed"></option>
+                </datalist>
+                <p class="field-hint">
+                  <span class="he-text">חיפוש מדויק יותר מאזור. קבלנים שעובדים בכל הארץ יופיעו גם כאן.</span>
+                  <span class="en-text">More precise than a region. Contractors who work nationwide also appear here.</span>
+                </p>
+              </div>
+
+              <!-- Travel distance the contractor is willing to cover -->
+              <div class="form-group">
+                <label class="form-label" for="travel-min">
+                  <span class="he-text">מרחק נסיעה — לפחות</span>
+                  <span class="en-text">Travel distance — at least</span>
+                </label>
+                <div class="unit-field">
+                  <input class="form-input form-input--num" type="number" id="travel-min"
+                         name="travelMinKm" form="filters-form" dir="ltr" min="0" max="500" step="5" placeholder="0" />
+                  <span class="unit-field__unit">
+                    <span class="he-text">ק״מ</span>
+                    <span class="en-text">km</span>
+                  </span>
+                </div>
+                <p class="field-hint">
+                  <span class="he-text">מציג קבלנים שמוכנים להגיע לפחות למרחק הזה.</span>
+                  <span class="en-text">Shows contractors willing to travel at least this far.</span>
+                </p>
+              </div>
+
+              <!-- The minimum-rating stars are a pure-CSS selector built on radios. -->
+              <!-- The row is forced to LTR so the row-reverse fill trick works the same in both directions. -->
+              <div class="form-group">
+                <span class="form-label form-label--plain">
+                  <span class="he-text">דירוג מינימלי</span>
+                  <span class="en-text">Minimum rating</span>
+                </span>
+                <fieldset class="star-select" aria-label="Minimum rating">
+                  <input type="radio" name="minrating" id="mr5" value="5" form="filters-form"><label for="mr5" title="5">★</label>
+                  <input type="radio" name="minrating" id="mr4" value="4" form="filters-form"><label for="mr4" title="4">★</label>
+                  <input type="radio" name="minrating" id="mr3" value="3" form="filters-form"><label for="mr3" title="3">★</label>
+                  <input type="radio" name="minrating" id="mr2" value="2" form="filters-form"><label for="mr2" title="2">★</label>
+                  <input type="radio" name="minrating" id="mr1" value="1" form="filters-form"><label for="mr1" title="1">★</label>
+                </fieldset>
+                <p class="field-hint">
+                  <span class="he-text">לחצו על מספר הכוכבים המינימלי</span>
+                  <span class="en-text">Tap the minimum number of stars</span>
+                </p>
+              </div>
+
+              <!-- Minimum flexibility is a progress-bar slider paired with a number box. -->
+              <!-- The accent-color fill is direction-aware, so the bar fills correctly in both RTL and LTR. -->
+              <!-- A small vanilla-JS snippet at the end of the body keeps the slider and the number box in sync. -->
+              <div class="form-group">
+                <label class="form-label form-label--plain" for="flexRange">
+                  <span class="he-text">גמישות מינימלית</span>
+                  <span class="en-text">Minimum flexibility</span>
+                </label>
+                <!-- Value indicator sits directly above the bar (not by the title) -->
+                <div class="flex-value">
+                  <input class="flex-num" type="number" id="flexNum" min="0" max="100" value="0" form="filters-form"
+                         step="1" inputmode="numeric" aria-label="גמישות מינימלית / Minimum flexibility value" />
+                </div>
+                <input class="flex-range" type="range" id="flexRange" min="0" max="100" value="0" step="1" form="filters-form"
+                       aria-label="גמישות מינימלית / Minimum flexibility" />
+                <div class="flex-range__scale" aria-hidden="true">
+                  <span>0</span>
+                  <span>50</span>
+                  <span>100</span>
+                </div>
+              </div>
+
+            </div>
+
+            <div class="adv-panel__foot">
+              <!-- The rail's own Apply button is behind the sheet at narrow widths, so the panel carries one as well. -->
+              <button type="submit" form="filters-form" class="btn btn--primary btn--full btn--sm">
+                <span class="he-text">החלת סינון</span>
+                <span class="en-text">Apply filters</span>
+              </button>
+            </div>
+
+          </div>
+
+          <!-- Tapping outside the sheet closes it, and this element is only ever visible at narrow widths. -->
+          <label for="adv-open" class="adv-scrim" aria-hidden="true"></label>
         </aside>
 
         <!-- ── Results ──────────────────────────────────── -->
@@ -540,19 +576,15 @@
             <span class="en-text">Showing <strong>9</strong> of <strong>128</strong> contractors</span>
           </p>
 
-          <!--
-            PLACEHOLDER CARDS — throwaway sample data so every feature is
-            visible (stars, flexibility gauge, trade tags, connection states).
-            Replaced by real database data when this becomes React (Stage 2+).
-            Connection states shown statically via modifier classes:
-              (default) = Connect · --pending = request sent · --connected = ✓ + Message
-          -->
+          <!-- These are throwaway placeholder cards, so every feature stays visible until real database data replaces them in React at Stage 2. -->
+          <!-- A relationship is reported by the status badge, never by a disabled button, and Connect appears only when there is no relationship at all. -->
+          <!-- The five states are carried by modifier classes: no modifier is Connect, --pending is a sent request, --incoming is a received request, --connected is an accepted connection, and --blocked is a blocked one. -->
           <ul class="card-grid">
 
             <!-- 1 · Connect (default) -->
             <li class="contractor-card">
               <div class="contractor-card__top">
-                <span class="avatar" aria-hidden="true">אכ</span>
+                <span class="avatar" aria-hidden="true"><span class="he-text">אכ</span><span class="en-text">AC</span></span>
                 <div class="contractor-card__id">
                   <h3 class="contractor-card__name">
                     <span class="he-text">אבי כהן</span>
@@ -602,12 +634,12 @@
 
             <!-- 2 · Connected (gate open → Message) -->
             <li class="contractor-card contractor-card--connected">
-              <span class="conn-badge" aria-hidden="true">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 6"/></svg>
+              <span class="conn-badge">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 6"/></svg>
                 <span class="he-text">מחובר</span><span class="en-text">Connected</span>
               </span>
               <div class="contractor-card__top">
-                <span class="avatar" aria-hidden="true">דל</span>
+                <span class="avatar" aria-hidden="true"><span class="he-text">דל</span><span class="en-text">DL</span></span>
                 <div class="contractor-card__id">
                   <h3 class="contractor-card__name">
                     <span class="he-text">דנה לוי</span>
@@ -656,14 +688,14 @@
               </div>
             </li>
 
-            <!-- 3 · Pending (request sent) -->
+            <!-- 3 · Outgoing request — the viewer already asked, so the card reports the status instead of offering Connect again. -->
             <li class="contractor-card contractor-card--pending">
-              <span class="conn-badge" aria-hidden="true">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
-                <span class="he-text">ממתין</span><span class="en-text">Pending</span>
+              <span class="conn-badge">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+                <span class="he-text">בקשה נשלחה</span><span class="en-text">Request sent</span>
               </span>
               <div class="contractor-card__top">
-                <span class="avatar" aria-hidden="true">מח</span>
+                <span class="avatar" aria-hidden="true"><span class="he-text">מח</span><span class="en-text">MK</span></span>
                 <div class="contractor-card__id">
                   <h3 class="contractor-card__name">
                     <span class="he-text">מוסא חורי</span>
@@ -704,16 +736,13 @@
                 <a href="#profile" class="btn btn--ghost btn--sm">
                   <span class="he-text">פרופיל</span><span class="en-text">View profile</span>
                 </a>
-                <button type="button" class="btn btn--muted btn--sm" disabled>
-                  <span class="he-text">בקשה נשלחה</span><span class="en-text">Request sent</span>
-                </button>
               </div>
             </li>
 
             <!-- 4 · Connect -->
             <li class="contractor-card">
               <div class="contractor-card__top">
-                <span class="avatar" aria-hidden="true">ימ</span>
+                <span class="avatar" aria-hidden="true"><span class="he-text">ימ</span><span class="en-text">YM</span></span>
                 <div class="contractor-card__id">
                   <h3 class="contractor-card__name">
                     <span class="he-text">יוסי מזרחי</span>
@@ -764,12 +793,12 @@
 
             <!-- 5 · Incoming request — this contractor asked to connect, so the card reports the status and sends the actual decision to My network. -->
             <li class="contractor-card contractor-card--incoming">
-              <span class="conn-badge" aria-hidden="true">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v11"/><path d="M17 10l-5 5-5-5"/><path d="M5 20h14"/></svg>
-                <span class="he-text">ממתין לאישור</span><span class="en-text">Awaiting your response</span>
+              <span class="conn-badge">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+                <span class="he-text">ממתין לאישור</span><span class="en-text">Awaiting your approval</span>
               </span>
               <div class="contractor-card__top">
-                <span class="avatar" aria-hidden="true">תש</span>
+                <span class="avatar" aria-hidden="true"><span class="he-text">תש</span><span class="en-text">TS</span></span>
                 <div class="contractor-card__id">
                   <h3 class="contractor-card__name">
                     <span class="he-text">תמר שפירא</span>
@@ -819,7 +848,7 @@
             <!-- 6 · Connect -->
             <li class="contractor-card">
               <div class="contractor-card__top">
-                <span class="avatar" aria-hidden="true">סע</span>
+                <span class="avatar" aria-hidden="true"><span class="he-text">סע</span><span class="en-text">SA</span></span>
                 <div class="contractor-card__id">
                   <h3 class="contractor-card__name">
                     <span class="he-text">סמיר עבדאללה</span>
@@ -870,7 +899,7 @@
             <!-- 7 · Connect -->
             <li class="contractor-card">
               <div class="contractor-card__top">
-                <span class="avatar" aria-hidden="true">נפ</span>
+                <span class="avatar" aria-hidden="true"><span class="he-text">נפ</span><span class="en-text">NF</span></span>
                 <div class="contractor-card__id">
                   <h3 class="contractor-card__name">
                     <span class="he-text">נועה פרידמן</span>
@@ -921,7 +950,7 @@
             <!-- 8 · Connect (top performer) -->
             <li class="contractor-card">
               <div class="contractor-card__top">
-                <span class="avatar" aria-hidden="true">אב</span>
+                <span class="avatar" aria-hidden="true"><span class="he-text">אב</span><span class="en-text">IB</span></span>
                 <div class="contractor-card__id">
                   <h3 class="contractor-card__name">
                     <span class="he-text">איתי ברק</span>
@@ -969,10 +998,14 @@
               </div>
             </li>
 
-            <!-- 9 · Connect -->
-            <li class="contractor-card">
+            <!-- 9 · Blocked — a blocked relationship is still a relationship, so the card reports it and never offers Connect. -->
+            <li class="contractor-card contractor-card--blocked">
+              <span class="conn-badge">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M5.6 5.6l12.8 12.8"/></svg>
+                <span class="he-text">חסום</span><span class="en-text">Blocked</span>
+              </span>
               <div class="contractor-card__top">
-                <span class="avatar" aria-hidden="true">חמ</span>
+                <span class="avatar avatar--muted" aria-hidden="true"><span class="he-text">חמ</span><span class="en-text">KM</span></span>
                 <div class="contractor-card__id">
                   <h3 class="contractor-card__name">
                     <span class="he-text">ח'אלד מנסור</span>
@@ -1013,10 +1046,9 @@
                 <a href="#profile" class="btn btn--ghost btn--sm">
                   <span class="he-text">פרופיל</span><span class="en-text">View profile</span>
                 </a>
-                <button type="button" class="btn btn--primary btn--sm js-connect">
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-                  <span class="he-text">התחברות</span><span class="en-text">Connect</span>
-                </button>
+                <a href="my-network.html" class="btn btn--ghost btn--sm">
+                  <span class="he-text">הרשת שלי</span><span class="en-text">My network</span>
+                </a>
               </div>
             </li>
 
@@ -1040,47 +1072,16 @@
 
         </section>
 
-        <!-- ═══════════════════════════════════════════════
-             PUBLIC PROFILE — side panel (a feature, not a route)
-
-             ONE generic panel for the currently selected contractor.
-             Every "View profile" opens it, because static HTML/CSS
-             cannot inject the clicked contractor's data — that binding
-             is the React stage, where this becomes <PublicProfile />.
-             Deliberately not nine duplicated panels.
-
-             Values below are representative mock data; the structure
-             is the deliverable, not the contents.
-
-             States: swap Connect for Message (connected) or Request
-             sent (pending). Rate is removed, not disabled, when the
-             viewer has no shared completed work.
-             ═══════════════════════════════════════════════ -->
-        <!-- ═══════════════════════════════════════════════
-             PUBLIC PROFILE — side panel (feature, not a route)
-
-             ONE generic panel: the profile of whichever contractor
-             is currently selected. Every "View profile" opens this
-             same panel, because static HTML/CSS cannot inject the
-             clicked contractor's data — that binding belongs to the
-             React stage, where this becomes <PublicProfile /> taking
-             the selected contractor as props. Deliberately NOT nine
-             duplicated panels.
-
-             The data below is representative mock data standing in
-             for the selected contractor. Structure is what matters
-             here, not the values.
-
-             Layout: the third column of .browse__body, so opening it
-             narrows the results column to a single card column rather
-             than covering anything.
-
-             Connection state is carried by the action bar; swap the
-             Connect button for Message (connected) or Request sent
-             (pending) to show the other two. Rate is present only
-             when shared completed work makes the viewer eligible —
-             when it does not, the control is removed, not disabled.
-             ═══════════════════════════════════════════════ -->
+        <!-- ═══════════════════════════════════════════════ -->
+        <!-- PUBLIC PROFILE — side panel (a feature, not a route) -->
+        <!-- This is one generic panel showing whichever contractor is currently selected, and every "View profile" opens it. -->
+        <!-- Static HTML and CSS cannot inject the clicked contractor's data, so that binding belongs to the React stage where this becomes <PublicProfile /> taking the contractor as props. -->
+        <!-- It is deliberately not nine duplicated panels. -->
+        <!-- The data below is representative mock data, so the structure is the deliverable rather than the values. -->
+        <!-- The panel is the third column of .browse__body, so opening it narrows the results to a single card column rather than covering anything. -->
+        <!-- The action bar follows the same rule as the cards: Connect appears only with no relationship, and every other state is reported as a status. -->
+        <!-- Rate is present only when shared completed work makes the viewer eligible, and it is removed rather than disabled when it does not. -->
+        <!-- ═══════════════════════════════════════════════ -->
         <aside class="profile-panel" id="profile" aria-labelledby="profile-name">
           <div class="pp__head">
             <a class="pp__close" href="#results" aria-label="Close profile">
@@ -1088,7 +1089,7 @@
                    stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
             </a>
             <div class="pp__identity">
-              <span class="avatar avatar--lg" aria-hidden="true">דל</span>
+              <span class="avatar avatar--lg" aria-hidden="true"><span class="he-text">דל</span><span class="en-text">DL</span></span>
               <div class="pp__id-text">
                 <h2 class="pp__name" id="profile-name"><span class="he-text" dir="auto">דנה לוי</span><span class="en-text" dir="auto">Dana Levi</span></h2>
                 <p class="pp__org"><span class="he-text" dir="auto">לוי אינסטלציה</span><span class="en-text" dir="auto">Levi Plumbing</span></p>
