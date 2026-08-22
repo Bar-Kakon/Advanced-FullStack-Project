@@ -340,6 +340,13 @@ dropped entirely. Exactly how is [D10](#7-open-decisions).
    **`register.css` at 14px is the reference size.** Corrected to match: `profile.css` (11.5px),
    `browse-contractors.css` (11px), `login.css` (11px). Labels need not equal body size; they must
    stay comfortably legible — many contractors using this are older users.
+   **That 2026-08-19 pass was not exhaustive, which is the part worth remembering.** It fixed the
+   `.form-label` controls it went looking for and left three *card* values behind on the same screen:
+   the location row at 13px, the flexibility label at 12.5px and the connection badge at 11px, all
+   corrected on 2026-08-20 (`ede1c52`). The rule covers identifying metadata **wherever it appears**,
+   not only text sitting above a form field — so a screen is not "corrected" until its cards, badges
+   and rows have been measured too, against the equivalent element on every screen that shows the
+   same information.
 4. **Secondary text must still clear contrast.** Secondary information stays visually secondary, but it
    has to be readable. Two tiers only, both measured against the cream card surfaces: **`--text-mute`
    (0.64 alpha, ≈4.6:1)** for metadata — dates, scales, counters, empty states — and **`--text-soft`
