@@ -173,7 +173,7 @@
         <!-- The rail stays pinned beside the results, and only its own inner area scrolls when the viewport is short. -->
         <aside class="filters" aria-label="Filters">
 
-          <!-- This switch sits outside the card so the panel it opens is a sibling of the card and never makes the rail taller. -->
+          <!-- This switch sits outside the card so the panel it opens never becomes part of the rail's own height. -->
           <input type="checkbox" id="adv-open" class="adv-toggle" aria-controls="adv-panel" />
 
           <div class="filters__card">
@@ -388,197 +388,202 @@
             </div>
           </div>
 
-          <!-- The refining controls open as a panel beside the rail, so the basic filters stay on screen and the page never scrolls to reach them. -->
-          <!-- Every field below carries form="filters-form" because it now sits outside the form element but still belongs to it. -->
-          <div class="adv-panel" id="adv-panel" role="group" aria-label="סינון מתקדם / Advanced filters">
+        </aside>
 
-            <div class="adv-panel__head">
-              <h3 class="adv-panel__title">
-                <span class="he-text">סינון מתקדם</span>
-                <span class="en-text">Advanced filters</span>
-              </h3>
-              <label for="adv-open" class="adv-panel__close">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                     stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
-                <span class="sr-only">
-                  <span class="he-text">סגירת הסינון המתקדם</span>
-                  <span class="en-text">Close advanced filters</span>
-                </span>
+        <!-- ── Advanced filters ─────────────────────────── -->
+        <!-- The refining controls are a column of the body grid, so opening them takes real layout space and the results reflow beside them instead of hiding underneath. -->
+        <!-- Every field below carries form="filters-form" because it sits outside the form element but still belongs to it. -->
+        <div class="adv-panel" id="adv-panel" role="group" aria-label="סינון מתקדם / Advanced filters">
+
+          <div class="adv-panel__head">
+            <h3 class="adv-panel__title">
+              <span class="he-text">סינון מתקדם</span>
+              <span class="en-text">Advanced filters</span>
+            </h3>
+            <label for="adv-open" class="adv-panel__close">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                   stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
+              <span class="sr-only">
+                <span class="he-text">סגירת הסינון המתקדם</span>
+                <span class="en-text">Close advanced filters</span>
+              </span>
+            </label>
+          </div>
+
+          <div class="adv-panel__body">
+
+            <!-- City or town: narrows the region to where the contractor actually works -->
+            <div class="form-group">
+              <label class="form-label" for="city-he">
+                <span class="he-text">עיר או יישוב</span>
+                <span class="en-text">City or town</span>
               </label>
+              <input class="form-input he-field" type="text" id="city-he" name="city" form="filters-form"
+                     dir="auto" list="cities-he" placeholder="למשל: חיפה" />
+              <datalist id="cities-he">
+                <option value="תל אביב"></option>
+                <option value="ירושלים"></option>
+                <option value="חיפה"></option>
+                <option value="ראשון לציון"></option>
+                <option value="פתח תקווה"></option>
+                <option value="אשדוד"></option>
+                <option value="נתניה"></option>
+                <option value="באר שבע"></option>
+                <option value="בני ברק"></option>
+                <option value="חולון"></option>
+                <option value="רמת גן"></option>
+                <option value="אשקלון"></option>
+                <option value="רחובות"></option>
+                <option value="בת ים"></option>
+                <option value="בית שמש"></option>
+                <option value="כפר סבא"></option>
+                <option value="הרצליה"></option>
+                <option value="חדרה"></option>
+                <option value="מודיעין"></option>
+                <option value="רעננה"></option>
+                <option value="נצרת"></option>
+                <option value="לוד"></option>
+                <option value="רמלה"></option>
+                <option value="קריית גת"></option>
+                <option value="טבריה"></option>
+                <option value="נהריה"></option>
+                <option value="כרמיאל"></option>
+                <option value="עפולה"></option>
+                <option value="אילת"></option>
+                <option value="צפת"></option>
+              </datalist>
+              <input class="form-input en-field" type="text" id="city-en" name="city" form="filters-form"
+                     dir="auto" list="cities-en" aria-label="City or town" placeholder="For example: Haifa" />
+              <datalist id="cities-en">
+                <option value="Tel Aviv"></option>
+                <option value="Jerusalem"></option>
+                <option value="Haifa"></option>
+                <option value="Rishon LeZion"></option>
+                <option value="Petah Tikva"></option>
+                <option value="Ashdod"></option>
+                <option value="Netanya"></option>
+                <option value="Beer Sheva"></option>
+                <option value="Bnei Brak"></option>
+                <option value="Holon"></option>
+                <option value="Ramat Gan"></option>
+                <option value="Ashkelon"></option>
+                <option value="Rehovot"></option>
+                <option value="Bat Yam"></option>
+                <option value="Beit Shemesh"></option>
+                <option value="Kfar Saba"></option>
+                <option value="Herzliya"></option>
+                <option value="Hadera"></option>
+                <option value="Modiin"></option>
+                <option value="Raanana"></option>
+                <option value="Nazareth"></option>
+                <option value="Lod"></option>
+                <option value="Ramla"></option>
+                <option value="Kiryat Gat"></option>
+                <option value="Tiberias"></option>
+                <option value="Nahariya"></option>
+                <option value="Karmiel"></option>
+                <option value="Afula"></option>
+                <option value="Eilat"></option>
+                <option value="Safed"></option>
+              </datalist>
+              <p class="field-hint">
+                <span class="he-text">חיפוש מדויק יותר מאזור. קבלנים שעובדים בכל הארץ יופיעו גם כאן.</span>
+                <span class="en-text">More precise than a region. Contractors who work nationwide also appear here.</span>
+              </p>
             </div>
 
-            <div class="adv-panel__body">
-
-              <!-- City or town: narrows the region to where the contractor actually works -->
-              <div class="form-group">
-                <label class="form-label" for="city-he">
-                  <span class="he-text">עיר או יישוב</span>
-                  <span class="en-text">City or town</span>
-                </label>
-                <input class="form-input he-field" type="text" id="city-he" name="city" form="filters-form"
-                       dir="auto" list="cities-he" placeholder="למשל: חיפה" />
-                <datalist id="cities-he">
-                  <option value="תל אביב"></option>
-                  <option value="ירושלים"></option>
-                  <option value="חיפה"></option>
-                  <option value="ראשון לציון"></option>
-                  <option value="פתח תקווה"></option>
-                  <option value="אשדוד"></option>
-                  <option value="נתניה"></option>
-                  <option value="באר שבע"></option>
-                  <option value="בני ברק"></option>
-                  <option value="חולון"></option>
-                  <option value="רמת גן"></option>
-                  <option value="אשקלון"></option>
-                  <option value="רחובות"></option>
-                  <option value="בת ים"></option>
-                  <option value="בית שמש"></option>
-                  <option value="כפר סבא"></option>
-                  <option value="הרצליה"></option>
-                  <option value="חדרה"></option>
-                  <option value="מודיעין"></option>
-                  <option value="רעננה"></option>
-                  <option value="נצרת"></option>
-                  <option value="לוד"></option>
-                  <option value="רמלה"></option>
-                  <option value="קריית גת"></option>
-                  <option value="טבריה"></option>
-                  <option value="נהריה"></option>
-                  <option value="כרמיאל"></option>
-                  <option value="עפולה"></option>
-                  <option value="אילת"></option>
-                  <option value="צפת"></option>
-                </datalist>
-                <input class="form-input en-field" type="text" id="city-en" name="city" form="filters-form"
-                       dir="auto" list="cities-en" aria-label="City or town" placeholder="For example: Haifa" />
-                <datalist id="cities-en">
-                  <option value="Tel Aviv"></option>
-                  <option value="Jerusalem"></option>
-                  <option value="Haifa"></option>
-                  <option value="Rishon LeZion"></option>
-                  <option value="Petah Tikva"></option>
-                  <option value="Ashdod"></option>
-                  <option value="Netanya"></option>
-                  <option value="Beer Sheva"></option>
-                  <option value="Bnei Brak"></option>
-                  <option value="Holon"></option>
-                  <option value="Ramat Gan"></option>
-                  <option value="Ashkelon"></option>
-                  <option value="Rehovot"></option>
-                  <option value="Bat Yam"></option>
-                  <option value="Beit Shemesh"></option>
-                  <option value="Kfar Saba"></option>
-                  <option value="Herzliya"></option>
-                  <option value="Hadera"></option>
-                  <option value="Modiin"></option>
-                  <option value="Raanana"></option>
-                  <option value="Nazareth"></option>
-                  <option value="Lod"></option>
-                  <option value="Ramla"></option>
-                  <option value="Kiryat Gat"></option>
-                  <option value="Tiberias"></option>
-                  <option value="Nahariya"></option>
-                  <option value="Karmiel"></option>
-                  <option value="Afula"></option>
-                  <option value="Eilat"></option>
-                  <option value="Safed"></option>
-                </datalist>
-                <p class="field-hint">
-                  <span class="he-text">חיפוש מדויק יותר מאזור. קבלנים שעובדים בכל הארץ יופיעו גם כאן.</span>
-                  <span class="en-text">More precise than a region. Contractors who work nationwide also appear here.</span>
-                </p>
-              </div>
-
-              <!-- Travel distance the contractor is willing to cover -->
-              <div class="form-group">
-                <label class="form-label" for="travel-min">
-                  <span class="he-text">מרחק נסיעה — לפחות</span>
-                  <span class="en-text">Travel distance — at least</span>
-                </label>
-                <div class="unit-field">
-                  <input class="form-input form-input--num" type="number" id="travel-min"
-                         name="travelMinKm" form="filters-form" dir="ltr" min="0" max="500" step="5" placeholder="0" />
-                  <span class="unit-field__unit">
-                    <span class="he-text">ק״מ</span>
-                    <span class="en-text">km</span>
-                  </span>
-                </div>
-                <p class="field-hint">
-                  <span class="he-text">מציג קבלנים שמוכנים להגיע לפחות למרחק הזה.</span>
-                  <span class="en-text">Shows contractors willing to travel at least this far.</span>
-                </p>
-              </div>
-
-              <!-- The minimum-rating stars are a pure-CSS selector built on radios. -->
-              <!-- The row is forced to LTR so the row-reverse fill trick works the same in both directions. -->
-              <div class="form-group">
-                <span class="form-label form-label--plain">
-                  <span class="he-text">דירוג מינימלי</span>
-                  <span class="en-text">Minimum rating</span>
+            <!-- Travel distance the contractor is willing to cover -->
+            <div class="form-group">
+              <label class="form-label" for="travel-min">
+                <span class="he-text">מרחק נסיעה — לפחות</span>
+                <span class="en-text">Travel distance — at least</span>
+              </label>
+              <div class="unit-field">
+                <input class="form-input form-input--num" type="number" id="travel-min"
+                       name="travelMinKm" form="filters-form" dir="ltr" min="0" max="500" step="5" placeholder="0" />
+                <span class="unit-field__unit">
+                  <span class="he-text">ק״מ</span>
+                  <span class="en-text">km</span>
                 </span>
-                <fieldset class="star-select" aria-label="Minimum rating">
-                  <input type="radio" name="minrating" id="mr5" value="5" form="filters-form"><label for="mr5" title="5">★</label>
-                  <input type="radio" name="minrating" id="mr4" value="4" form="filters-form"><label for="mr4" title="4">★</label>
-                  <input type="radio" name="minrating" id="mr3" value="3" form="filters-form"><label for="mr3" title="3">★</label>
-                  <input type="radio" name="minrating" id="mr2" value="2" form="filters-form"><label for="mr2" title="2">★</label>
-                  <input type="radio" name="minrating" id="mr1" value="1" form="filters-form"><label for="mr1" title="1">★</label>
-                </fieldset>
-                <p class="field-hint">
-                  <span class="he-text">לחצו על מספר הכוכבים המינימלי</span>
-                  <span class="en-text">Tap the minimum number of stars</span>
-                </p>
               </div>
-
-              <!-- Minimum flexibility is a progress-bar slider paired with a number box. -->
-              <!-- The accent-color fill is direction-aware, so the bar fills correctly in both RTL and LTR. -->
-              <!-- A small vanilla-JS snippet at the end of the body keeps the slider and the number box in sync. -->
-              <div class="form-group">
-                <label class="form-label form-label--plain" for="flexRange">
-                  <span class="he-text">גמישות מינימלית</span>
-                  <span class="en-text">Minimum flexibility</span>
-                </label>
-                <!-- Value indicator sits directly above the bar (not by the title) -->
-                <div class="flex-value">
-                  <input class="flex-num" type="number" id="flexNum" min="0" max="100" value="0" form="filters-form"
-                         step="1" inputmode="numeric" aria-label="גמישות מינימלית / Minimum flexibility value" />
-                </div>
-                <input class="flex-range" type="range" id="flexRange" min="0" max="100" value="0" step="1" form="filters-form"
-                       aria-label="גמישות מינימלית / Minimum flexibility" />
-                <div class="flex-range__scale" aria-hidden="true">
-                  <span>0</span>
-                  <span>50</span>
-                  <span>100</span>
-                </div>
-              </div>
-
+              <p class="field-hint">
+                <span class="he-text">מציג קבלנים שמוכנים להגיע לפחות למרחק הזה.</span>
+                <span class="en-text">Shows contractors willing to travel at least this far.</span>
+              </p>
             </div>
 
-            <div class="adv-panel__foot">
-              <!-- The rail's own Apply button is behind the sheet at narrow widths, so the panel carries one as well. -->
-              <button type="submit" form="filters-form" class="btn btn--primary btn--full btn--sm">
-                <span class="he-text">החלת סינון</span>
-                <span class="en-text">Apply filters</span>
-              </button>
+            <!-- The minimum-rating stars are a pure-CSS selector built on radios. -->
+            <!-- The row is forced to LTR so the row-reverse fill trick works the same in both directions. -->
+            <div class="form-group">
+              <span class="form-label form-label--plain">
+                <span class="he-text">דירוג מינימלי</span>
+                <span class="en-text">Minimum rating</span>
+              </span>
+              <fieldset class="star-select" aria-label="Minimum rating">
+                <input type="radio" name="minrating" id="mr5" value="5" form="filters-form"><label for="mr5" title="5">★</label>
+                <input type="radio" name="minrating" id="mr4" value="4" form="filters-form"><label for="mr4" title="4">★</label>
+                <input type="radio" name="minrating" id="mr3" value="3" form="filters-form"><label for="mr3" title="3">★</label>
+                <input type="radio" name="minrating" id="mr2" value="2" form="filters-form"><label for="mr2" title="2">★</label>
+                <input type="radio" name="minrating" id="mr1" value="1" form="filters-form"><label for="mr1" title="1">★</label>
+              </fieldset>
+              <p class="field-hint">
+                <span class="he-text">לחצו על מספר הכוכבים המינימלי</span>
+                <span class="en-text">Tap the minimum number of stars</span>
+              </p>
+            </div>
+
+            <!-- Minimum flexibility is a progress-bar slider paired with a number box. -->
+            <!-- The accent-color fill is direction-aware, so the bar fills correctly in both RTL and LTR. -->
+            <!-- A small vanilla-JS snippet at the end of the body keeps the slider and the number box in sync. -->
+            <div class="form-group">
+              <label class="form-label form-label--plain" for="flexRange">
+                <span class="he-text">גמישות מינימלית</span>
+                <span class="en-text">Minimum flexibility</span>
+              </label>
+              <!-- Value indicator sits directly above the bar (not by the title) -->
+              <div class="flex-value">
+                <input class="flex-num" type="number" id="flexNum" min="0" max="100" value="0" form="filters-form"
+                       step="1" inputmode="numeric" aria-label="גמישות מינימלית / Minimum flexibility value" />
+              </div>
+              <input class="flex-range" type="range" id="flexRange" min="0" max="100" value="0" step="1" form="filters-form"
+                     aria-label="גמישות מינימלית / Minimum flexibility" />
+              <div class="flex-range__scale" aria-hidden="true">
+                <span>0</span>
+                <span>50</span>
+                <span>100</span>
+              </div>
             </div>
 
           </div>
 
-          <!-- Tapping outside the sheet closes it, and this element is only ever visible at narrow widths. -->
-          <label for="adv-open" class="adv-scrim" aria-hidden="true"></label>
-        </aside>
+          <div class="adv-panel__foot">
+            <!-- The rail's own Apply button is behind the sheet at narrow widths, so the panel carries one as well. -->
+            <button type="submit" form="filters-form" class="btn btn--primary btn--full btn--sm">
+              <span class="he-text">החלת סינון</span>
+              <span class="en-text">Apply filters</span>
+            </button>
+          </div>
+
+        </div>
+
+        <!-- Tapping outside the sheet closes it, and this element is only ever visible at narrow widths. -->
+        <label for="adv-open" class="adv-scrim" aria-hidden="true"></label>
 
         <!-- ── Results ──────────────────────────────────── -->
         <section class="results" id="results" aria-label="Contractors">
 
           <!-- Result count (text only; static placeholder data) -->
           <p class="results__count">
-            <span class="he-text">מציג <strong>9</strong> מתוך <strong>128</strong> קבלנים</span>
-            <span class="en-text">Showing <strong>9</strong> of <strong>128</strong> contractors</span>
+            <span class="he-text">מציג <strong>8</strong> מתוך <strong>128</strong> קבלנים</span>
+            <span class="en-text">Showing <strong>8</strong> of <strong>128</strong> contractors</span>
           </p>
 
           <!-- These are throwaway placeholder cards, so every feature stays visible until real database data replaces them in React at Stage 2. -->
           <!-- A relationship is reported by the status badge, never by a disabled button, and Connect appears only when there is no relationship at all. -->
-          <!-- The five states are carried by modifier classes: no modifier is Connect, --pending is a sent request, --incoming is a received request, --connected is an accepted connection, and --blocked is a blocked one. -->
+          <!-- The four states are carried by modifier classes: no modifier is Connect, --pending is a sent request, --incoming is a received request, and --connected is an accepted connection. -->
+          <!-- Every badge shares one color treatment, so the state is told by its wording and its icon rather than by a tint. -->
+          <!-- Accepting or declining a request belongs to My network, so the two request states link there instead of carrying their own decision buttons. -->
+          <!-- A contractor the viewer has blocked is not discoverable here at all, so Browse has no blocked card and no blocked badge; the query that drops them is written with the real data at Stage 2. -->
           <ul class="card-grid">
 
             <!-- 1 · Connect (default) -->
@@ -735,6 +740,9 @@
               <div class="contractor-card__actions">
                 <a href="#profile" class="btn btn--ghost btn--sm">
                   <span class="he-text">פרופיל</span><span class="en-text">View profile</span>
+                </a>
+                <a href="my-network.html" class="btn btn--ghost btn--sm">
+                  <span class="he-text">הרשת שלי</span><span class="en-text">My network</span>
                 </a>
               </div>
             </li>
@@ -998,60 +1006,6 @@
               </div>
             </li>
 
-            <!-- 9 · Blocked — a blocked relationship is still a relationship, so the card reports it and never offers Connect. -->
-            <li class="contractor-card contractor-card--blocked">
-              <span class="conn-badge">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M5.6 5.6l12.8 12.8"/></svg>
-                <span class="he-text">חסום</span><span class="en-text">Blocked</span>
-              </span>
-              <div class="contractor-card__top">
-                <span class="avatar avatar--muted" aria-hidden="true"><span class="he-text">חמ</span><span class="en-text">KM</span></span>
-                <div class="contractor-card__id">
-                  <h3 class="contractor-card__name">
-                    <span class="he-text">ח'אלד מנסור</span>
-                    <span class="en-text">Khaled Mansour</span>
-                  </h3>
-                  <p class="contractor-card__org">
-                    <span class="he-text">מנסור עבודות עפר</span>
-                    <span class="en-text">Mansour Earthworks</span>
-                  </p>
-                </div>
-              </div>
-              <div class="tags">
-                <span class="tag"><span class="he-text">עבודות עפר</span><span class="en-text">Earthworks</span></span>
-              </div>
-              <p class="meta-row">
-                <svg class="meta-row__pin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M21 10c0 7-9 12-9 12s-9-5-9-12a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
-                <span class="he-text">צפון</span><span class="en-text">North</span>
-              </p>
-              <p class="avail avail--closed card-avail">
-                <span class="avail__dot" aria-hidden="true"></span>
-                <span class="he-text">אין זמינות לקבלת עבודות חדשות כעת</span>
-                <span class="en-text">No availability for new work at the moment</span>
-              </p>
-              <div class="card-metrics">
-                <div class="rating" title="4.0">
-                  <span class="rating__stars" style="--rating: 4.0" aria-hidden="true"><span class="rating__fill"></span></span>
-                  <span class="rating__value">4.0</span>
-                </div>
-                <div class="flex-meter">
-                  <div class="flex-meter__head">
-                    <span class="flex-meter__label"><span class="he-text">גמישות</span><span class="en-text">Flexibility</span></span>
-                    <span class="flex-meter__value">64</span>
-                  </div>
-                  <span class="flex-meter__track"><span class="flex-meter__fill" style="--score: 64"></span></span>
-                </div>
-              </div>
-              <div class="contractor-card__actions">
-                <a href="#profile" class="btn btn--ghost btn--sm">
-                  <span class="he-text">פרופיל</span><span class="en-text">View profile</span>
-                </a>
-                <a href="my-network.html" class="btn btn--ghost btn--sm">
-                  <span class="he-text">הרשת שלי</span><span class="en-text">My network</span>
-                </a>
-              </div>
-            </li>
-
           </ul>
 
           <!-- Pagination (visual; real paging wired in React Stage 2) -->
@@ -1076,9 +1030,10 @@
         <!-- PUBLIC PROFILE — side panel (a feature, not a route) -->
         <!-- This is one generic panel showing whichever contractor is currently selected, and every "View profile" opens it. -->
         <!-- Static HTML and CSS cannot inject the clicked contractor's data, so that binding belongs to the React stage where this becomes <PublicProfile /> taking the contractor as props. -->
-        <!-- It is deliberately not nine duplicated panels. -->
+        <!-- It is deliberately not one duplicated panel per card. -->
         <!-- The data below is representative mock data, so the structure is the deliverable rather than the values. -->
-        <!-- The panel is the third column of .browse__body, so opening it narrows the results to a single card column rather than covering anything. -->
+        <!-- The panel is a column of .browse__body, so opening it narrows the results to a single card column rather than covering anything. -->
+        <!-- When the advanced filters are open as well there is no room for a fourth column, so the profile moves under the results and the two never overlap. -->
         <!-- The action bar follows the same rule as the cards: Connect appears only with no relationship, and every other state is reported as a status. -->
         <!-- Rate is present only when shared completed work makes the viewer eligible, and it is removed rather than disabled when it does not. -->
         <!-- ═══════════════════════════════════════════════ -->

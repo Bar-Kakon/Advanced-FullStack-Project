@@ -340,8 +340,6 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 .filters {
   position: sticky;
   top: calc(var(--nav-h) + 22px);
-  /* Sticky positioning makes the rail its own stacking context, so the rail needs to outrank the results for the panel inside it to paint on top. */
-  z-index: 5;
   display: flex;
   flex-direction: column;
   max-height: calc(100vh - var(--nav-h) - 44px);
@@ -694,20 +692,16 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 .adv-toggle:checked:focus-visible ~ .filters__card .adv-trigger { outline-color: var(--secondary); }
 
 /* ── The panel itself ── */
-/* It is absolutely positioned against the rail, so opening it adds nothing to the rail's height. */
+/* It is a column of the body grid rather than a layer over it, so the results reflow beside it and no card is ever covered. */
+/* It is pinned and capped on its own, so opening it adds nothing to the rail's height either. */
 .adv-panel { display: none; }
 
-.adv-toggle:checked ~ .adv-panel {
+.browse__body:has(.adv-toggle:checked) > .adv-panel {
   display: flex;
   flex-direction: column;
-  position: absolute;
-  z-index: 6;
-  top: 0;
-  inset-inline-start: calc(100% + 18px);
-  width: 320px;
-  /* The panel is measured against the rail, so it can never reach further down the screen than the rail beside it. */
-  height: fit-content;
-  max-height: 100%;
+  position: sticky;
+  top: calc(var(--nav-h) + 22px);
+  max-height: calc(100vh - var(--nav-h) - 44px);
   background:
     linear-gradient(135deg, transparent 0 20px, var(--surface-96) 20px),
     linear-gradient(90deg, rgba(35, 56, 77, 0.035) 1px, transparent 1px),
@@ -715,20 +709,20 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
     linear-gradient(180deg, rgba(255, 253, 248, 0.98), rgba(243, 240, 234, 0.95));
   background-size: auto, 20px 20px, 20px 20px, auto;
   border: 1px solid var(--surface-75);
-  border-block-start: 4px solid var(--primary);
   border-radius: var(--r-md);
   box-shadow: var(--shadow-card);
   outline: 1px solid var(--primary-08);
   outline-offset: -7px;
 }
 
+/* The top padding matches the rail's, so the two titles sit on one line when the panel opens beside it. */
 .adv-panel__head {
   flex: none;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 18px 20px 14px;
+  padding: 30px 20px 14px;
   border-block-end: 1px solid var(--secondary-30);
 }
 .adv-panel__title {
@@ -766,7 +760,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   padding: 18px 20px;
 }
 
-/* The rail's own Apply button stays reachable beside the panel on a wide screen, so this copy is hidden until the narrow-width sheet needs it. */
+/* The rail's own Apply button stays pinned beside the panel on a wide screen, so this copy is hidden until the narrow-width sheet needs it. */
 .adv-panel__foot {
   display: none;
   flex: none;
@@ -789,10 +783,11 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 }
 .results__count strong { color: var(--surface); font-weight: 600; }
 
+/* The min() keeps a single track from outgrowing a narrow results column, which is what a plain 280px minimum would do. */
 .card-grid {
   list-style: none;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(280px, 100%), 1fr));
   gap: 18px;
 }
 
@@ -810,6 +805,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
     linear-gradient(180deg, rgba(255, 253, 248, 0.99), rgba(243, 240, 234, 0.96));
   background-size: auto, 20px 20px, 20px 20px, auto;
   border: 1px solid var(--surface-75);
+  /* Every card keeps this same edge, because color is not what tells the relationship states apart. */
   border-block-start: 4px solid var(--secondary);
   border-radius: var(--r-md);
   box-shadow: var(--shadow-card);
@@ -823,14 +819,10 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
     16px 18px 0 rgba(199, 184, 157, 0.20),
     0 34px 70px -42px rgba(31, 36, 40, 0.95);
 }
-.contractor-card--connected { border-block-start-color: var(--primary); }
-.contractor-card--pending   { border-block-start-color: var(--secondary-30); }
-/* An incoming request is the one state waiting on the viewer, so it keeps a full-strength edge. */
-.contractor-card--incoming  { border-block-start-color: var(--secondary); }
-.contractor-card--blocked   { border-block-start-color: var(--primary-30); }
 
 /* Connection badge */
 /* The badge sits on its own row above the identity block, because floating it in the corner made it collide with the name on a narrow card. */
+/* One treatment covers every relationship state: the wording and the icon carry the meaning, so a tint never has to. */
 .conn-badge {
   align-self: flex-start;
   max-width: 100%;
@@ -845,31 +837,12 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   line-height: 1.35;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  border-radius: 999px;
-}
-.conn-badge svg { flex-shrink: 0; }
-
-.contractor-card--connected .conn-badge {
-  color: var(--surface);
-  background: var(--primary);
-  border: 1px solid var(--primary);
-}
-.contractor-card--pending .conn-badge {
-  color: var(--text-soft);
-  background: var(--secondary-15);
-  border: 1px solid var(--secondary-45);
-}
-/* The incoming badge is darker than the sent one because it is asking the viewer for something. */
-.contractor-card--incoming .conn-badge {
   color: var(--primary);
   background: var(--secondary-45);
   border: 1px solid var(--secondary);
+  border-radius: 999px;
 }
-.contractor-card--blocked .conn-badge {
-  color: var(--text-soft);
-  background: var(--primary-08);
-  border: 1px solid var(--primary-30);
-}
+.conn-badge svg { flex-shrink: 0; }
 
 /* Identity row */
 .contractor-card__top { display: flex; align-items: center; gap: 12px; }
@@ -887,8 +860,6 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   border: 1px solid var(--secondary-55);
   box-shadow: inset 0 0 0 3px var(--surface-08);
 }
-/* A blocked contact is deliberately quieter than an active one, matching my-network.css. */
-.avatar--muted { background: var(--primary-45); border-color: var(--secondary-30); }
 
 .contractor-card__id { min-width: 0; }
 /* The identity and metadata sizes below match my-network.css so one contractor reads the same on both screens. */
@@ -1107,8 +1078,8 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   .app-nav__link { padding: 8px 10px; font-size: 12.5px; }
   .nav-profile__name { display: none; }
 
-  /* There is no column beside the rail at this width, so the panel becomes a centred sheet that scrolls inside itself. */
-  .adv-toggle:checked ~ .adv-panel {
+  /* The whole page is one column at this width, so the panel becomes a centred sheet that scrolls inside itself. */
+  .browse__body:has(.adv-toggle:checked) > .adv-panel {
     position: fixed;
     z-index: 60;
     inset: 16px;
@@ -1117,10 +1088,12 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
     height: fit-content;
     max-height: calc(100vh - 32px);
   }
+  /* A sheet has no rail beside it to line up with, so the head drops back to its own padding. */
+  .adv-panel__head { padding: 18px 20px 14px; }
   /* Apply moves into the sheet here, because the rail's own button is behind the scrim. */
   .adv-panel__foot { display: block; }
 
-  .adv-toggle:checked ~ .adv-scrim {
+  .browse__body:has(.adv-toggle:checked) > .adv-scrim {
     display: block;
     position: fixed;
     z-index: 55;
@@ -1214,7 +1187,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 
 /* ─────────────────────────────────────────────
    PUBLIC PROFILE — side panel
-   Third column of .browse__body, revealed by :target. No JS.
+   A column of .browse__body, revealed by :target. No JS.
    Styling copied from profile.css so the profile reads the same
    whether it is yours or someone else's. No new colors.
    Placed last: :has() must outrank the Responsive rules above.
@@ -1245,6 +1218,27 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 .browse__body:has(.profile-panel:target) .card-grid {
   grid-template-columns: minmax(0, 1fr);
 }
+
+/* ── Advanced filters: the column that opening the panel actually takes ── */
+/* This sits after the profile rules on purpose, so when both are open the three-column shape here is the one that wins. */
+/* The panel matches the rail's width, so the two read as one pinned column pair. */
+.browse__body:has(.adv-toggle:checked) {
+  grid-template-columns: 268px 268px minmax(0, 1fr);
+}
+
+/* The results give the panel a card column rather than a layer, so nothing is ever covered. */
+.browse__body:has(.adv-toggle:checked) .card-grid {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+/* A fourth column does not fit inside the page's 1200px, so the profile is the one that gives way — the same rule the narrow widths already follow. */
+/* An explicit column 3 is needed because auto-placement would otherwise drop the profile under the rail. */
+.browse__body:has(.adv-toggle:checked) .profile-panel:target {
+  grid-column: 3;
+  position: static;
+  max-height: none;
+}
+.browse__body:has(.adv-toggle:checked) .pp__body { overflow-y: visible; }
 
 .profile-panel:target {
   display: flex;
@@ -1610,12 +1604,28 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
     max-height: none;
   }
   .pp__body { overflow-y: visible; }
+
+  /* The open panel keeps its own column here too, so these two have to outrank the profile rules above. */
+  .browse__body:has(.adv-toggle:checked) {
+    grid-template-columns: 268px 268px minmax(0, 1fr);
+  }
+  .browse__body:has(.adv-toggle:checked) .profile-panel:target { grid-column: 3; }
 }
 
 /* Already single-column here before this feature; panel becomes the last block */
 @media (max-width: 860px) {
   .browse__body:has(.profile-panel:target) { grid-template-columns: 1fr; }
   .profile-panel:target { grid-column: auto; }
+
+  /* The panel is a fixed sheet at this width, so it is no longer a grid item and the body is back to one column. */
+  .browse__body:has(.adv-toggle:checked) { grid-template-columns: 1fr; }
+  .browse__body:has(.adv-toggle:checked) .card-grid { grid-template-columns: repeat(auto-fill, minmax(min(280px, 100%), 1fr)); }
+  .browse__body:has(.adv-toggle:checked) .profile-panel:target { grid-column: auto; }
+}
+
+/* One card per row here whatever is open, matching the plain .card-grid rule this has to outrank. */
+@media (max-width: 620px) {
+  .browse__body:has(.adv-toggle:checked) .card-grid { grid-template-columns: 1fr; }
 }
 
 @media (prefers-reduced-motion: reduce) {
