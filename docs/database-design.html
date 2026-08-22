@@ -287,6 +287,7 @@ pre .s { color: #DCCFB4; }                       /* strings */
 .jl.partial-f { background: rgba(199, 184, 157, 0.16); }
 .jl .jk { color: #9FB6CC; }
 .jl .jv { color: #DCCFB4; }
+.jl .jc { color: var(--secondary); }
 /* The lock label describes the redaction — it must not be struck through itself */
 .jl .lock { color: #E58C8C; font-size: 0.9em; text-decoration: none; display: inline-block; }
 .jl[data-note] { cursor: help; }
@@ -1168,10 +1169,10 @@ module.exports = mongoose.model('Task', taskSchema);`
 /* ─────────── fileassets ─────────── */
 {
   id: 'fileassets', model: 'FileAsset', domain: 'work', stage: 3,
-  tag: 'versioned uploads, GridFS metadata',
+  tag: 'versioned uploads, byte-store metadata',
   pos: { x: 290, y: 350 },
-  purpose: 'Metadata for every uploaded file — work plans, project photos, message attachments, avatars. The bytes themselves live in GridFS; this collection is the business-level record that points at them and carries the version and visibility that GridFS knows nothing about.',
-  callout: 'A MongoDB document is capped at **16 MB**. The product allows uploads up to 30 MB, so storing the bytes in a field is not merely bad practice — past 16 MB it is impossible. GridFS splits a file into 255 KB chunks across `fs.chunks` and keeps a header in `fs.files`. Heroku filesystem is also ephemeral, so local disk is not an option either. (This is decision D1.)',
+  purpose: 'Metadata for every uploaded file — work plans, project photos, message attachments, avatars. The bytes themselves live outside the document, in a byte store **still to be chosen under decision D1**; this collection is the business-level record that points at them and carries the version and visibility that no byte store knows anything about.',
+  callout: 'A MongoDB document is capped at **16 MB** and the product allows uploads up to 30 MB, so where the bytes go is a real question — it is **open decision D1 and nothing here selects an answer**. The candidate that keeps the full 30 MB is **GridFS**, which splits a file into 255 KB chunks across `fs.chunks` and keeps a header in `fs.files`; the candidate that avoids it is a **capped Buffer in the document**, which is simpler but bad practice and only works if uploads are capped below 16 MB. Heroku filesystem is also ephemeral, so local disk is not an option either way. This collection is written so that it does not care: see the `storage` sub-object below.',
   fields: [
     { name: '_id', type: 'ObjectId', note: '' },
     { name: 'owner', type: 'ObjectId', ref: 'users', req: true, idx: true, note: 'Who uploaded it.' },
@@ -1183,7 +1184,7 @@ module.exports = mongoose.model('Task', taskSchema);`
     { name: 'version', type: 'Number', req: true, note: 'Increments per upload within a group.' },
     { name: 'isCurrent', type: 'Boolean', idx: true, note: 'Exactly one true per `versionGroup`. Denormalised so "show me the current plan" is a filter, not a sort-and-take-first.' },
     { name: 'visibility', type: "'shared' | 'private'", req: true, note: '`private` is a **delegation-private upload** — a file the delegator and delegate exchange that the general contractor never sees.' },
-    { name: 'storage', type: "{ driver: 'gridfs', fileId: ObjectId }", req: true, note: 'Points at the `fs.files` document. Kept as a sub-object so a future move to object storage changes one field, not the schema.' },
+    { name: 'storage', type: "{ driver: String, fileId: ObjectId }", req: true, note: 'Points at wherever the bytes actually live. **`driver` has no approved value yet — that is open decision D1**; if GridFS closes it, the pointer is the `fs.files` document id. Kept as a sub-object precisely so the collection survives that decision either way, and so a later move to object storage changes one value, not the schema.' },
     { name: 'uploadedAt', type: 'Date', note: '' }
   ],
   indexes: [
@@ -1192,7 +1193,7 @@ module.exports = mongoose.model('Task', taskSchema);`
     { def: '{ owner: 1, uploadedAt: -1 }', serves: 'A user own uploads', why: '' }
   ],
   why: [
-    '**Metadata and bytes are separated.** GridFS gives you chunking and streaming but no business fields — no version, no visibility, no scope. Putting those in a normal collection keeps them indexable, which GridFS metadata is not, comfortably.',
+    '**Metadata and bytes are separated**, and this holds whichever way D1 closes. A byte store gives you storage and streaming but no business fields — no version, no visibility, no scope — and GridFS in particular keeps its own metadata in a form that is not comfortably indexable. Putting the business fields in a normal collection keeps them indexable and keeps them independent of the store underneath.',
     '**Versions are new documents, not overwrites.** The audit story depends on it: "which revision of the plan was current when this date was agreed?" is unanswerable if uploading replaces the bytes. Old versions stay; `isCurrent` marks the live one.',
     '**`visibility` is the delegation privacy model applied to files.** A single flag here is what lets a delegator share a marked-up plan with their delegate without it appearing in the general contractor file list.',
     '**Polymorphic `scope` is safe here because it is a leaf.** The general warning about polymorphic references is that you cannot `populate` them. This collection is only ever *filtered* by scope, never traversed through it, so the warning does not apply.'
@@ -1211,7 +1212,7 @@ module.exports = mongoose.model('Task', taskSchema);`
   version: 3,
   isCurrent: true,
   visibility: "shared",
-  storage: { driver: "gridfs", fileId: ObjectId("6661e0ab...") },  // → fs.files
+  storage: { driver: "<pending D1>", fileId: ObjectId("6661e0ab...") },  // driver unchosen
   uploadedAt: ISODate("2026-08-20T13:05:00Z")
 }`,
   schema: `const fileAssetSchema = new Schema({
@@ -1227,7 +1228,7 @@ module.exports = mongoose.model('Task', taskSchema);`
   version:   { type: Number, required: true, default: 1 },
   isCurrent: { type: Boolean, default: true },
   visibility:{ type: String, enum: ['shared','private'], default: 'shared' },
-  storage:   { driver: { type: String, default: 'gridfs' },
+  storage:   { driver: { type: String, required: true },  // value set by D1
                fileId: { type: Schema.Types.ObjectId, required: true } }
 }, { timestamps: { createdAt: 'uploadedAt', updatedAt: false } });
 
@@ -2201,9 +2202,9 @@ const VIEWERS = [
     id: 'outsider', name: 'Unrelated user',
     desc: 'Logged in, but with no membership, no assignment and no delegation on this task.',
     rules: [
-      'Returns **404, not 403**. A 403 confirms that the resource exists.',
-      'Same anti-enumeration reasoning as the login screen single "incorrect email or password" message.',
-      'This check happens *before* serialization — there is nothing to serialise.'
+      'Gets **no task payload at all** — that much is settled, and it is what this panel demonstrates.',
+      'Whether the refusal is reported as **404** or as **403** is **open decision D16** and is deliberately not answered here. The argument for 404 is anti-enumeration — a 403 confirms the resource exists, the same reasoning as the login screen single "incorrect email or password" message. The argument against is that a 404 for a permission failure misleads a legitimate user who simply lost access, and makes support harder.',
+      'Either way this check happens *before* serialization — there is nothing to serialise.'
     ]
   }
 ];
@@ -2621,7 +2622,7 @@ const MODEL_RULES = [
     } },
 
   { kicker: 'The hard limit', title: '16 MB per document — and what it forces',
-    body: 'A single MongoDB document cannot exceed 16 MB. It is not a tuning parameter. Three decisions in this schema follow directly from it: messages are their own collection rather than an array on the thread; file bytes live in **GridFS** rather than in a field (the product allows 30 MB uploads, which is simply impossible inline); and audit entries store a **diff** rather than a full document snapshot. The general rule: any array that grows with *time* rather than with a bounded quantity has to become a collection.' },
+    body: 'A single MongoDB document cannot exceed 16 MB. It is not a tuning parameter. Two decisions in this schema follow directly from it: messages are their own collection rather than an array on the thread, and audit entries store a **diff** rather than a full document snapshot. It also frames a third that is **still open** — the product allows 30 MB uploads, so keeping file bytes in a field would mean capping uploads below the limit; which store the bytes go to instead is **decision D1** and is not answered anywhere on this page. The general rule: any array that grows with *time* rather than with a bounded quantity has to become a collection.' },
 
   { kicker: 'What MongoDB will not do for you', title: 'No foreign keys, no cascade deletes',
     body: 'The database will happily store a `assignee` pointing at a user that no longer exists. Referential integrity is entirely the application job here, and that has one large consequence: **removal has to be soft** (decision D8). A user appears in other people [[auditentries]], [[ratings]] and [[messages]]; deleting the document would leave histories that no longer resolve. So `users.status` becomes `deleted`, the personal fields are scrubbed, and every reference still points at a real document.',
@@ -2673,7 +2674,7 @@ throw new AppError('INVALID_CREDENTIALS', 401);   // not 'Incorrect email or pas
 
 const OPEN_DECISIONS = [
   { id: 'D1', title: 'File storage', affects: ['fileassets'],
-    impact: 'GridFS versus a capped Buffer in the document. The 16 MB document limit makes the Buffer option **impossible** for the 30 MB uploads the product allows, and Heroku ephemeral filesystem rules out local disk. The schema above assumes GridFS — `storage.driver` is a field so a later move to object storage changes one value, not the model.' },
+    impact: '**Open — no storage driver has been approved.** The two documented options are **GridFS**, which streams the full 30 MB the product allows at the cost of more work, and **a capped Buffer held in the document**, which is simpler but bloats documents and is bad practice. A MongoDB document stops at 16 MB, so the Buffer option only works if uploads are capped below that — a product trade-off to weigh, not a settled disqualification. Heroku ephemeral filesystem rules out local disk. The model does **not** depend on the answer: `storage` is a sub-object carrying a `driver` and a `fileId`, so whichever option closes — including a later move to object storage — changes one value rather than the collection.' },
   { id: 'D2', title: 'Cascade negotiation semantics', affects: ['rescheduleproposals'],
     impact: 'Bundled versus per-task proposals. The schema models **bundled**: one document, one embedded item per affected task. Per-task collapses `items` to a single object and adds a shared `cascadeId`. Still unsettled either way: what "one round" means, whether a counter can re-trigger its own cascade, and whether `partially_applied` is a legal end state.' },
   { id: 'D3', title: 'Notification delivery', affects: ['notifications'],
@@ -2690,8 +2691,16 @@ const OPEN_DECISIONS = [
     impact: 'Connection only, or connection **or** shared project? Today the gate is one `findOne` against [[connections]] at thread-creation time. Widening it adds a second check against [[memberships]] — no new fields. What is genuinely open is what happens to an existing thread on disconnect, block or mute.' },
   { id: 'D10', title: 'i18n mechanism under React', affects: ['users', 'notifications'],
     impact: 'The **storage** side is settled — `users.language`, language-neutral enum codes, and structured rather than pre-rendered payloads. What is open is the client mechanism: a hand-rolled `LanguageContext` with `strings.he.json` / `strings.en.json`, or a library such as `react-i18next`. Two sub-questions do reach the server: which language **outbound email** uses (the stored `users.language`, or the request `Accept-Language`), and whether the URL carries the locale. Neither adds a field.' },
-  { id: 'D11', title: 'Subscription storage & quota enforcement', affects: ['plans', 'subscriptions', 'usagecounters', 'users'],
+  { id: 'D11', title: 'Subscription data model & quota enforcement', affects: ['plans', 'subscriptions', 'usagecounters', 'users'],
     impact: 'The **storage shape is now designed**: a seeded [[plans]] catalogue, one [[subscriptions]] document per period with a partial unique index permitting exactly one active row per user, a [[usagecounters]] document per user per metric per week, and a denormalised `users.planCode` for the authorization check. What remains open is **product, not shape** — every limit and price carries `provisional: true` and is expected to move; no payment provider has been chosen, so `provider.name` is `none` on every document; what a *read-only* project concretely forbids after a downgrade is unspecified; and whether the account country that selects `currency` becomes a field on [[users]] or is derived at checkout is undecided. None of this is an agreed price or a required feature — it is the structure that lets those answers land later without a migration.' },
+  { id: 'D13', title: 'Completed-work storage shape', affects: ['users', 'fileassets', 'tasks', 'projects'],
+    impact: 'Opened 2026-08-18 by the profile refinement pass. **Nothing has been added to the collections above for it yet, deliberately** — this row records the gap rather than closing it. The *product* model is decided: an entry may stand free or be optionally linked to work coordinated on the platform, and only a linked entry whose specific work is complete carries the `Completed on FieldSync` badge. What is **not** decided is where the data lives: a `workentries` collection of its own **versus** an embedded array on [[users]] referencing [[fileassets]]; whether a linked entry stores the [[tasks]] id, the [[projects]] id, or both, so that a task-scoped entry can be rendered without implying responsibility for the whole project; and whether the badge is recomputed on read — is the task still complete? — or frozen at link time. Whatever shape is chosen must be able to enforce the delegation rule sharpened on 2026-08-19: an image from work done through confidential delegation **may** appear, because forbidding it outright was itself a signal, but a **delegate must not receive the badge** for delegated work, no project or task linkage may be published for it, and there is never a "delegated" label of any kind.' },
+  { id: 'D14', title: 'Availability status and heavy-equipment selection', affects: ['users'],
+    impact: 'Opened 2026-08-19. Two fields reached the profile UI that this schema **does not define, so no schema was written for either.** **Availability** is a three-state status (`open` / `limited` / `closed`) shown as a dot plus its written label. Open: is it a plain enum on [[users]], does it carry an "until" date so a contractor can mark themselves unavailable for a fortnight, and does it feed the browse filter? It now appears in four places — chosen during registration, editable on the profile, displayed on the profile and on browse result cards, filterable in the browse rail, and since 2026-08-23 inside a Personal-dashboard counterparty chip — so the shape has to serve a **filter**, not only a display, and the enum needs **two label lengths per state**. The labels are gender-neutral in Hebrew by requirement, which rules out storing display strings on the document but does not otherwise constrain the shape; rendering them is a concern of **D10**, not a stored one. **Heavy equipment:** selecting `heavy_equipment` as a specialty opens a picker of ten machine types, because a contractor typically operates only part of the category. Open: a second array on [[users]] (`equipment: [String]`), a sub-document keyed by specialty, or a generalisation of "specialty attributes" that other trades would also reuse later. Decide before either is built.' },
+  { id: 'D15', title: 'Phone visibility on the public profile', affects: ['users', 'connections'],
+    impact: 'Opened 2026-08-20, and **renumbered from `D13`, which was already taken**. Is `users.phone` public to anyone viewing a profile, or withheld until a [[connections]] edge is accepted? Gating it makes the connection gate mean something and keeps the platform from becoming a sales-spam channel; publishing it matches how contractors actually reach each other on a job site, where a number on a profile is the point. Briefly written up as a decided rule on 2026-08-20 and **reopened the same day by the owner before it was settled** — the prototype currently shows the number, which is a placeholder and not the decision. No field changes either way; what changes is the public-profile projection, and the `.fact__value--gated` state is already built for either answer. **The serializer must not assume either** until this closes.' },
+  { id: 'D17', title: 'How a connection edge is torn down', affects: ['connections'],
+    impact: 'Opened 2026-08-20 while building `My network`, where three controls have no state behind them and are all one question. [[connections]] `status` is `pending | accepted | declined | blocked` — there is no `removed` and no `withdrawn`, so **removing an accepted connection** and **cancelling a request you sent** are both undefined. Three shapes: **delete the document**, which frees the unique `pair` index so the two can connect again later but erases that they ever were connected, and no [[auditentries]]-style history is kept for connections; **add a `removed` / `withdrawn` state**, which keeps that history, but then every "are these two connected" check must exclude it, and the unique `pair` index means a fresh request has to reuse the existing row rather than insert one; or **reuse `declined`**, which is the trap and should probably be rejected — `declined` is kept deliberately so the same person cannot re-request in a loop, so routing an ordinary disconnect through it would silently make the disconnect permanent. That same rule surfaces a consequence no screen states: **declining a request is already irreversible for the requester.** Entangled with **D9**, which asks what happens to an existing thread on disconnect, and with **D19**, which is asking what else this same enum has to record.' },
   { id: 'D18', title: 'Where a dismissed cleanup item is remembered', affects: ['messages'],
     impact: 'Opened 2026-08-23 by the Personal dashboard. Its **Things to clean up** widget lists contract exchanges that were never logged as a task — an [[messages]] document whose `agreementForm` exists but whose `createdTask` is still `null` — and the sparse index `{ "agreementForm.status": 1 }` already serves that read at no extra cost. **Dismissing one has nowhere to be written.** The approved behaviour is that a dismissal is permanent for that specific exchange, with no reminder and no recovery, and `agreementForm.status` is `draft | sent | accepted | declined`, none of which means *"I have decided not to open a task for this."* Three shapes are on the table: a **`cleanupDismissedBy: [ObjectId]` array on the message**, which is per-viewer and matches the rule, but adds a mutable per-user list to a collection that is otherwise written once and never updated; a **fifth `agreementForm.status` value**, cheapest to query but **shared**, so one party dismissing would silently clear it from the other party list; or a **separate `dismissals` collection keyed by user and message**, the only option that leaves [[messages]] untouched, at the cost of a second query on a widget that should be cheap. Reusing `declined` is rejected outright — it already records that the other party turned the agreement down, and a private housekeeping action must not rewrite a fact about the negotiation.' },
   { id: 'D19', title: 'Which side of a blocked edge did the blocking', affects: ['connections'],
@@ -3055,9 +3064,11 @@ function renderPrivacy() {
   const showRedacted = $('#show-redacted').checked;
   if (v.id === 'outsider') {
     $('#viewer-json').innerHTML =
-      '<span class="jl"><span class="jk">HTTP/1.1 404 Not Found</span></span>' +
+      '<span class="jl"><span class="jk">HTTP/1.1 4xx</span> <span class="jc">// 404 or 403 — open decision D16</span></span>' +
       '<span class="jl"></span>' +
-      '<span class="jl">{ <span class="jk">"message"</span>: <span class="jv">"Task not found"</span> }</span>';
+      '<span class="jl">{ <span class="jk">"message"</span>: <span class="jv">"&lt;refusal&gt;"</span> <span class="jc">// wording follows D16</span> }</span>' +
+      '<span class="jl"></span>' +
+      '<span class="jl"><span class="jc">// Settled either way: no task payload is returned.</span></span>';
     return;
   }
 
@@ -3149,7 +3160,13 @@ function renderRules() {
   html += '<div class="card"><div class="kicker">Still open</div>' +
     '<h3 style="margin-bottom:6px">Decisions this schema is waiting on</h3>' +
     '<p class="section-lede">Each row is a decision from §7 of the source-of-truth document, paired with what it ' +
-    'would actually change in the collections above.</p>' +
+    'would actually change in the collections above. <b>Scope, so an absence is never mistaken for an oversight:</b> ' +
+    'this table carries only decisions that are materially relevant to the data model. Three §7 decisions are ' +
+    'therefore deliberately absent — <b>D4</b> (repo layout) and <b>D12</b> (compiled-JavaScript tracking policy, ' +
+    'closed 2026-08-02) are repository and build concerns rather than database design, and <b>D16</b> (whether a ' +
+    'permission failure answers 404 or 403) is an API and privacy-behaviour decision; D16 is referenced in the ' +
+    '<a href="#" data-goto="privacy">Privacy</a> tab where it bears on what a viewer is told, but it changes no ' +
+    'collection. Every other open §7 decision belongs here.</p>' +
     '<div class="tbl-scroll"><table><thead><tr><th style="width:60px">#</th><th style="width:220px">Decision</th>' +
     '<th style="width:110px">Affects</th><th>Schema impact</th></tr></thead><tbody>' +
     OPEN_DECISIONS.map(d =>
