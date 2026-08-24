@@ -360,7 +360,7 @@ footer.foot { margin-top: 56px; padding-top: 22px; border-top: 1px solid var(--p
       <span class="meta-chip">Collections <b id="stat-collections">—</b></span>
       <span class="meta-chip">Relations <b id="stat-relations">—</b></span>
       <span class="meta-chip">Source of truth <b>Contractor Coordination Platform — Pro.md</b></span>
-      <span class="meta-chip">Updated <b id="stat-updated">2026-08-23</b></span>
+      <span class="meta-chip">Updated <b id="stat-updated">2026-08-24</b></span>
     </div>
   </div>
 </header>
@@ -3171,12 +3171,14 @@ function renderRules() {
     '<h3 style="margin-bottom:6px">Decisions this schema is waiting on</h3>' +
     '<p class="section-lede">Each row is a decision from §7 of the source-of-truth document, paired with what it ' +
     'would actually change in the collections above. <b>Scope, so an absence is never mistaken for an oversight:</b> ' +
-    'this table carries only decisions that are materially relevant to the data model. Three §7 decisions are ' +
+    'this table carries only decisions that are materially relevant to the data model. Four §7 decisions are ' +
     'therefore deliberately absent — <b>D4</b> (repo layout) and <b>D12</b> (compiled-JavaScript tracking policy, ' +
-    'closed 2026-08-02) are repository and build concerns rather than database design, and <b>D16</b> (whether a ' +
-    'permission failure answers 404 or 403) is an API and privacy-behaviour decision; D16 is referenced in the ' +
-    '<a href="#" data-goto="privacy">Privacy</a> tab where it bears on what a viewer is told, but it changes no ' +
-    'collection. Every other open §7 decision belongs here.</p>' +
+    'closed 2026-08-02) are repository and build concerns rather than database design, <b>D16</b> (whether a ' +
+    'permission failure answers 404 or 403) is an API and privacy-behaviour decision, and <b>D25</b> (whether ' +
+    'Terms and Privacy screens should exist at all) is a product-scope question about which screens are built. ' +
+    'D16 is referenced in the <a href="#" data-goto="privacy">Privacy</a> tab where it bears on what a viewer is ' +
+    'told, but it changes no collection; D25 names no collection either. Every other open §7 decision belongs ' +
+    'here.</p>' +
     '<div class="tbl-scroll"><table><thead><tr><th style="width:60px">#</th><th style="width:220px">Decision</th>' +
     '<th style="width:110px">Affects</th><th>Schema impact</th></tr></thead><tbody>' +
     OPEN_DECISIONS.map(d =>
