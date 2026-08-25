@@ -72,17 +72,21 @@ a    { text-decoration: none; color: inherit; }
 button { font-family: inherit; cursor: pointer; border: none; background: none; }
 
 /* ─────────────────────────────────────────────
-   Language switcher — fixed pill, trailing corner
+   Language switcher — fixed pill, leading corner
    ───────────────────────────────────────────── */
 .lang-switch {
   position: fixed;
   top: 18px;
-  inset-inline-end: 22px;
+  /* The inset is logical, so the pill follows the reading-start corner of the active language. */
+  inset-inline-start: 22px;
   z-index: 50;
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 5px 8px 5px 10px;
+  /* The padding is written logically so the wider side stays beside the globe when the pill mirrors. */
+  padding-block: 5px;
+  padding-inline-start: 10px;
+  padding-inline-end: 8px;
   background: var(--surface-90);
   border: 1px solid var(--secondary-30);
   border-radius: 999px;
@@ -591,6 +595,8 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 /* ── Default: content panels are RTL (Hebrew) ── */
 .brand-panel__inner { direction: rtl; }
 .form-panel         { direction: rtl; }
+/* The pill sits outside .auth-layout, so it carries its own direction rather than inheriting one. */
+.lang-switch        { direction: rtl; }
 
 /* ── Toggle button active states ──
    CSS resolves which is active from which radio is :checked */
@@ -607,6 +613,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 
 #lang-en:checked ~ .auth-layout .brand-panel__inner { direction: ltr; }
 #lang-en:checked ~ .auth-layout .form-panel         { direction: ltr; }
+#lang-en:checked ~ .lang-switch                     { direction: ltr; }
 
 #lang-en:checked ~ .auth-layout {
   --font-sans:  'Inter', system-ui, -apple-system, sans-serif;
