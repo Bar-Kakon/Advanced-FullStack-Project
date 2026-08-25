@@ -286,6 +286,11 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   padding-top: 22px;
 }
 
+/* Login-only bump so the note reads comfortably while staying secondary. */
+.brand-footer-note--lg {
+  font-size: 13.5px;
+}
+
 /* ─────────────────────────────────────────────
    Form panel (right) — clean surface, no glass
    Secondary accent on the reading-start edge.
