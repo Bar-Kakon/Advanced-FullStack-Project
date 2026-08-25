@@ -59,6 +59,9 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { height: 100%; }
 
+/* Hebrew is the default, so the root starts RTL and the English rule at the end of this file flips the whole page. */
+html { direction: rtl; }
+
 body {
   font-family: var(--font-sans);
   font-size: 16px;
@@ -77,8 +80,8 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 .lang-switch {
   position: fixed;
   top: 18px;
-  /* The inset is logical, so the pill follows the reading-start corner of the active language. */
-  inset-inline-start: 22px;
+  /* The inset is logical, so the pill follows the reading-end corner and stays over the light form panel in both languages. */
+  inset-inline-end: 22px;
   z-index: 50;
   display: flex;
   align-items: center;
@@ -126,7 +129,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 }
 
 /* ─────────────────────────────────────────────
-   Brand panel (left) — dark, grid, animated mesh
+   Brand panel — dark, grid, animated mesh
    ───────────────────────────────────────────── */
 .brand-panel {
   position: relative;
@@ -180,8 +183,9 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   border: 1.5px solid var(--secondary-30);
   pointer-events: none;
 }
-.reg-mark--tl { top: 24px; inset-inline-start: 24px; border-right: 0; border-bottom: 0; }
-.reg-mark--br { bottom: 24px; inset-inline-end: 24px; border-left: 0; border-top: 0; }
+/* The dropped sides are logical too, so each bracket still opens inward once the page mirrors. */
+.reg-mark--tl { top: 24px; inset-inline-start: 24px; border-inline-end: 0; border-block-end: 0; }
+.reg-mark--br { bottom: 24px; inset-inline-end: 24px; border-inline-start: 0; border-block-start: 0; }
 
 /* Small crosshairs */
 .crosshair { position: absolute; width: 12px; height: 12px; pointer-events: none; opacity: 0.5; }
@@ -293,8 +297,8 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 }
 
 /* ─────────────────────────────────────────────
-   Form panel (right) — clean surface, no glass
-   Secondary accent on the reading-start edge.
+   Form panel — clean surface, no glass
+   Secondary accent on the edge shared with the brand panel.
    ───────────────────────────────────────────── */
 .form-panel {
   position: relative;
@@ -304,11 +308,11 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   padding: 48px 32px;
   background: var(--surface);
   overflow-y: auto;
-  border-left: 3px solid var(--secondary);
+  /* The accent is logical so it stays on the edge shared with the brand panel after the page mirrors. */
+  border-inline-start: 3px solid var(--secondary);
 }
 
-/* No ::before grid overlay — clean right panel intentional.
-   Visual texture lives in the brand panel only. */
+/* The form panel deliberately has no grid overlay, so the visual texture lives in the brand panel only. */
 
 .form-card {
   width: 100%;
@@ -553,7 +557,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   .form-panel  {
     padding: 76px 18px 40px;
     align-items: flex-start;
-    border-left: none;
+    border-inline-start: none;
     border-top: 3px solid var(--secondary);
   }
   .mobile-logo { display: flex; margin-bottom: 4px; }
@@ -592,12 +596,6 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 .he-text { display: inline; }
 .en-text { display: none; }
 
-/* ── Default: content panels are RTL (Hebrew) ── */
-.brand-panel__inner { direction: rtl; }
-.form-panel         { direction: rtl; }
-/* The pill sits outside .auth-layout, so it carries its own direction rather than inheriting one. */
-.lang-switch        { direction: rtl; }
-
 /* ── Toggle button active states ──
    CSS resolves which is active from which radio is :checked */
 #lang-he:checked ~ .lang-switch label[for="lang-he"] { color: var(--surface); background: var(--primary); }
@@ -606,19 +604,15 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 #lang-en:checked ~ .lang-switch label[for="lang-he"] { color: var(--text-soft); background: none; }
 
 /* ── English selected: swap text + direction + fonts ── */
-#lang-en:checked ~ .lang-switch .he-text  { display: none;   }
-#lang-en:checked ~ .lang-switch .en-text  { display: inline; }
-#lang-en:checked ~ .auth-layout .he-text  { display: none;   }
-#lang-en:checked ~ .auth-layout .en-text  { display: inline; }
-
-#lang-en:checked ~ .auth-layout .brand-panel__inner { direction: ltr; }
-#lang-en:checked ~ .auth-layout .form-panel         { direction: ltr; }
-#lang-en:checked ~ .lang-switch                     { direction: ltr; }
-
-#lang-en:checked ~ .auth-layout {
+/* Matching the root instead of the radios' siblings lets one rule turn the page LTR, which the grid, both panels, and the fixed pill all inherit. */
+html:has(#lang-en:checked) {
+  direction: ltr;
   --font-sans:  'Inter', system-ui, -apple-system, sans-serif;
   --font-serif: 'Fraunces', 'Georgia', serif;
 }
+
+html:has(#lang-en:checked) .he-text { display: none;   }
+html:has(#lang-en:checked) .en-text { display: inline; }
 
 /* ─────────────────────────────────────────────
    Password-reset flow — forgot-password + reset-password
@@ -674,7 +668,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 }
 .back-link:hover { color: var(--primary); }
 .back-link__chev { flex-shrink: 0; transform: scaleX(-1); } /* RTL: point right */
-#lang-en:checked ~ .auth-layout .back-link__chev { transform: none; }
+html:has(#lang-en:checked) .back-link__chev { transform: none; }
 
 /* Status badge — envelope (sent) / check (done) */
 .status-badge {
