@@ -277,18 +277,14 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   transform: translateY(1px);
 }
 
+/* 15px matches register.css — the project minimum for supporting text. */
 .brand-footer-note {
-  font-size: 12px;
+  font-size: 15px;
   line-height: 1.6;
   max-width: 38ch;
   color: var(--surface-50);
   border-top: 1px solid var(--surface-15);
   padding-top: 22px;
-}
-
-/* Login-only bump so the note reads comfortably while staying secondary. */
-.brand-footer-note--lg {
-  font-size: 13.5px;
 }
 
 /* ─────────────────────────────────────────────
