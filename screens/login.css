@@ -48,7 +48,7 @@
   /* ── Shape ── */
   --r-sm:      6px;
   --r-md:      10px;
-  --panel-max: 440px;
+  --panel-max: 500px;
 }
 
 /* English override — applied via radio-hack selector in the bilingual section */
@@ -61,7 +61,7 @@ html, body { height: 100%; }
 
 body {
   font-family: var(--font-sans);
-  font-size: 15px;
+  font-size: 16px;
   line-height: 1.5;
   color: var(--text);
   background: var(--background);
@@ -184,8 +184,9 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 .crosshair::before, .crosshair::after { content: ''; position: absolute; background: var(--secondary-55); }
 .crosshair::before { inset: 5px 0; width: 100%; height: 1.5px; }
 .crosshair::after  { inset: 0 5px; width: 1.5px; height: 100%; }
-.crosshair--a { top: 30%; inset-inline-end: 16%; }
-.crosshair--b { bottom: 22%; inset-inline-start: 12%; }
+/* Pinned to the padding band, not a percentage — the text column reaches a percentage offset. */
+.crosshair--a { top: 30%; inset-inline-end: 12px; }
+.crosshair--b { bottom: 22%; inset-inline-start: 12px; }
 
 .brand-panel__inner {
   position: relative;
@@ -193,7 +194,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   display: flex;
   flex-direction: column;
   gap: 38px;
-  max-width: 390px;
+  max-width: 460px;
   width: 100%;
 }
 
@@ -217,7 +218,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 
 .brand-logo__badge {
   font-family: var(--font-mono);
-  font-size: 9.5px;
+  font-size: 12px;
   font-weight: 500;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -231,7 +232,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 .brand-eyebrow {
   display: block;
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 500;
   letter-spacing: 0.18em;
   color: var(--secondary);
@@ -249,7 +250,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 }
 
 .brand-sub {
-  font-size: 14.5px;
+  font-size: 19px;
   line-height: 1.62;
   margin-top: 16px;
   max-width: 34ch;
@@ -263,7 +264,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   display: flex;
   align-items: baseline;
   gap: 12px;
-  font-size: 13.5px;
+  font-size: 18px;
   line-height: 1.45;
   color: var(--surface-90);
 }
@@ -271,7 +272,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 .brand-feature__mark {
   flex-shrink: 0;
   font-family: var(--font-mono);
-  font-size: 14px;
+  font-size: 16px;
   line-height: 1;
   color: var(--secondary);
   transform: translateY(1px);
@@ -322,14 +323,14 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 
 .form-title {
   font-family: var(--font-serif);
-  font-size: 28px;
+  font-size: 31px;
   font-weight: 500;
   letter-spacing: -0.3px;
   line-height: 1.15;
   color: var(--primary);
 }
 
-.form-subtitle { font-size: 14px; color: var(--text-soft); }
+.form-subtitle { font-size: 17.5px; color: var(--text-soft); }
 
 /* ─────────────────────────────────────────────
    Alert
@@ -340,7 +341,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   gap: 10px;
   padding: 12px 16px;
   border-radius: var(--r-sm);
-  font-size: 13.5px;
+  font-size: 15.5px;
   line-height: 1.5;
   border: 1px solid transparent;
 }
@@ -369,10 +370,10 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 
 .form-input {
   width: 100%;
-  height: 48px;
-  padding: 0 15px;
+  height: 54px;
+  padding: 0 16px;
   font-family: var(--font-sans);
-  font-size: 14.5px;
+  font-size: 17px;
   color: var(--text);
   background: var(--background);
   border: 1.5px solid var(--secondary-30);
@@ -397,7 +398,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
    invalid field (empty required included), never on load or while editing. */
 .field-error {
   display: none;
-  font-size: 13.5px;
+  font-size: 14.5px;
   color: var(--error);
   margin-top: 5px;
   line-height: 1.4;
@@ -463,10 +464,10 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   align-items: center;
   justify-content: center;
   gap: 10px;
-  height: 48px;
-  padding: 0 20px;
+  height: 54px;
+  padding: 0 22px;
   font-family: var(--font-sans);
-  font-size: 14.5px;
+  font-size: 17px;
   font-weight: 600;
   border: 1.5px solid transparent;
   border-radius: var(--r-sm);
@@ -508,7 +509,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 .divider__line { flex: 1; height: 1px; background: var(--secondary-30); }
 .divider__label {
   font-family: var(--font-mono);
-  font-size: 11px;
+  font-size: 13px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--text-mute);
@@ -518,14 +519,14 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 /* ─────────────────────────────────────────────
    Links & footer text
    ───────────────────────────────────────────── */
-.form-link           { font-size: 13px; color: var(--text-soft); transition: color 0.15s; }
+.form-link           { font-size: 15.5px; color: var(--text-soft); transition: color 0.15s; }
 .form-link:hover     { color: var(--primary); }
-.form-link--small    { font-size: 12.5px; }
+.form-link--small    { font-size: 14px; }
 .forgot-link         { align-self: flex-end; margin-top: 2px; } /* beneath the password field */
 .form-link--strong   { font-size: inherit; font-weight: 600; color: var(--primary); }
 .form-link--strong:hover { text-decoration: underline; }
 
-.form-footer { text-align: center; font-size: 13.5px; color: var(--text-soft); }
+.form-footer { text-align: center; font-size: 16px; color: var(--text-soft); }
 
 .secure-note {
   display: flex;
@@ -533,7 +534,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   justify-content: center;
   gap: 6px;
   font-family: var(--font-mono);
-  font-size: 10.5px;
+  font-size: 13px;
   letter-spacing: 0.04em;
   color: var(--text-mute);
 }
