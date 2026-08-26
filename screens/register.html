@@ -157,9 +157,8 @@
               <span class="he-text">שם מלא</span>
               <span class="en-text">Full name</span>
             </label>
-            <!-- Two language variants so the example name matches the active language
-                 (placeholder is an attribute — can't be swapped with he-text/en-text
-                 spans). Same pattern the Location field below already uses.
+            <!-- Two language variants so the example name stays in the active language
+                 (placeholder is an attribute — can't be swapped with he-text/en-text spans).
                  No dir: a name follows the active UI language direction. -->
             <input
               class="form-input he-field"
@@ -332,16 +331,10 @@
 
           </div>
 
-          <!-- Two separate business numbers. They are different things and stay
-               separate: "Office phone" is the office line, "Business phone" is the
-               number the business publishes for work enquiries.
-
-               Both are optional, and optional independently of each other. Filling
-               one does not make the other required, and one is never used as a
-               stand-in for the other. All four combinations are valid.
-
-               Neither one is the personal / login phone, which this screen does not
-               collect. -->
+          <!-- Two separate business numbers, kept as two fields on purpose.
+               Both are optional independently — filling one never requires the other,
+               and neither stands in for the other. Neither is the personal/login
+               phone, which this screen does not collect. -->
           <div class="form-row">
 
             <!-- Office phone -->
@@ -354,9 +347,8 @@
                   <span class="en-text">Optional</span>
                 </span>
               </label>
-              <!-- dir="ltr" kept: phone numbers are always left-to-right.
-                   No `required` and no `pattern` — the field stays optional and adds
-                   no new validation rule beyond the native type="tel". -->
+              <!-- dir="ltr": phone numbers are always left-to-right.
+                   No required and no pattern — optional, and no new validation rule. -->
               <input
                 class="form-input"
                 type="tel"
