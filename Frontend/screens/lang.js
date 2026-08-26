@@ -5,17 +5,24 @@
     const en = document.getElementById('lang-en');
     if (!he || !en)
         return;
+    const syncRoot = () => {
+        const root = document.documentElement;
+        root.lang = en.checked ? 'en' : 'he';
+        root.dir = en.checked ? 'ltr' : 'rtl';
+    };
     try {
         if (localStorage.getItem(KEY) === 'en')
             en.checked = true;
     }
     catch (e) { }
-    const save = () => {
+    syncRoot();
+    const apply = () => {
+        syncRoot();
         try {
             localStorage.setItem(KEY, en.checked ? 'en' : 'he');
         }
         catch (e) { }
     };
-    he.addEventListener('change', save);
-    en.addEventListener('change', save);
+    he.addEventListener('change', apply);
+    en.addEventListener('change', apply);
 })();
