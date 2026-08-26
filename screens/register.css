@@ -723,6 +723,20 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 /* Visual-only label (a <span>, no for=) — drop the pointer affordance */
 .form-label--plain { cursor: default; }
 
+/* "Optional" marker inside a .form-label — same pill idiom as .brand-logo__badge.
+   Only the two business phone fields are optional; every other field is required,
+   so the marker is opt-in rather than a "required" marker on everything else. */
+.form-label__optional {
+  font-size: 12.5px;
+  font-weight: 400;
+  letter-spacing: 0.06em;
+  color: var(--text-mute);
+  padding: 2px 8px;
+  background: var(--surface);
+  border: 1px solid var(--secondary-30);
+  border-radius: 999px;
+}
+
 /* Hint line under a field (neutral helper, not an error) */
 .field-hint {
   font-size: 14.5px;
@@ -791,9 +805,10 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 }
 
 /* Disable "Create account" until every required field is filled and valid (pure CSS, no JS).
-   The bilingual trade/location fields are checked ONLY in the active language, so the hidden
-   copy of the other language can't keep the button disabled forever. */
-.register-form:has(#fullname:placeholder-shown) .btn--primary,
+   Name, trade and location each exist twice — one input per language. Each is checked only in
+   the language currently on screen, so the hidden copy can never keep the button disabled.
+
+   The two phone fields are optional, so they are deliberately not listed here. */
 .register-form:has(#email:placeholder-shown) .btn--primary,
 .register-form:has(#email:not(:placeholder-shown):invalid) .btn--primary,
 .register-form:has(#password:placeholder-shown) .btn--primary,

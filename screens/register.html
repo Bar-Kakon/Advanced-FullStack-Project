@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>הרשמה / Create account — FieldSync</title>
+  <title>יצירת חשבון / Create account — FieldSync</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <!--
@@ -74,12 +74,12 @@
             <span class="en-text">One account. Every project you run.</span>
           </h1>
           <p class="brand-sub">
-            <span class="he-text">קבלנים ראשיים, קבלני משנה וספקים — כולם משתמשים שווים, על אותה פלטפורמה.</span>
+            <span class="he-text">קבלנים ראשיים, קבלני משנה וספקים — כולם משתמשים שווים, על פלטפורמה אחת.</span>
             <span class="en-text">General contractors, subcontractors, and suppliers — all equal users, on one platform.</span>
           </p>
         </div>
 
-        <ul class="brand-features" aria-label="Platform highlights">
+        <ul class="brand-features" aria-label="עיקרי הפלטפורמה / Platform highlights">
           <li class="brand-feature">
             <span class="brand-feature__mark" aria-hidden="true">＋</span>
             <span class="he-text">תזמון מדורג עם משא ומתן בלחיצה אחת</span>
@@ -153,18 +153,30 @@
 
           <!-- Full name -->
           <div class="form-group">
-            <label class="form-label" for="fullname">
+            <label class="form-label">
               <span class="he-text">שם מלא</span>
               <span class="en-text">Full name</span>
             </label>
-            <!-- No dir: a name follows the active UI language direction -->
+            <!-- Two language variants so the example name matches the active language
+                 (placeholder is an attribute — can't be swapped with he-text/en-text
+                 spans). Same pattern the Location field below already uses.
+                 No dir: a name follows the active UI language direction. -->
             <input
-              class="form-input"
+              class="form-input he-field"
               type="text"
-              id="fullname"
               name="fullname"
               autocomplete="name"
               placeholder="ישראל ישראלי"
+              aria-label="שם מלא"
+              required
+            />
+            <input
+              class="form-input en-field"
+              type="text"
+              name="fullname"
+              autocomplete="name"
+              placeholder="John Smith"
+              aria-label="Full name"
               required
             />
           </div>
@@ -320,6 +332,65 @@
 
           </div>
 
+          <!-- Two separate business numbers. They are different things and stay
+               separate: "Office phone" is the office line, "Business phone" is the
+               number the business publishes for work enquiries.
+
+               Both are optional, and optional independently of each other. Filling
+               one does not make the other required, and one is never used as a
+               stand-in for the other. All four combinations are valid.
+
+               Neither one is the personal / login phone, which this screen does not
+               collect. -->
+          <div class="form-row">
+
+            <!-- Office phone -->
+            <div class="form-group">
+              <label class="form-label" for="office-phone">
+                <span class="he-text">טלפון משרד</span>
+                <span class="en-text">Office phone</span>
+                <span class="form-label__optional">
+                  <span class="he-text">לא חובה</span>
+                  <span class="en-text">Optional</span>
+                </span>
+              </label>
+              <!-- dir="ltr" kept: phone numbers are always left-to-right.
+                   No `required` and no `pattern` — the field stays optional and adds
+                   no new validation rule beyond the native type="tel". -->
+              <input
+                class="form-input"
+                type="tel"
+                id="office-phone"
+                name="office-phone"
+                dir="ltr"
+                placeholder="03-1234567"
+                autocomplete="work tel"
+              />
+            </div>
+
+            <!-- Business phone -->
+            <div class="form-group">
+              <label class="form-label" for="business-phone">
+                <span class="he-text">טלפון עסקי</span>
+                <span class="en-text">Business phone</span>
+                <span class="form-label__optional">
+                  <span class="he-text">לא חובה</span>
+                  <span class="en-text">Optional</span>
+                </span>
+              </label>
+              <input
+                class="form-input"
+                type="tel"
+                id="business-phone"
+                name="business-phone"
+                dir="ltr"
+                placeholder="050-1234567"
+                autocomplete="tel"
+              />
+            </div>
+
+          </div>
+
 
           <!-- Initial availability: the simple three-state contractor status, nothing calendar-based -->
           <fieldset class="form-group avail-filter">
@@ -393,7 +464,7 @@
                   required
                 />
                 <!-- Eye toggle: wired with JS in Stage 2 -->
-                <button type="button" class="input-action" aria-label="Toggle password visibility" aria-pressed="false">
+                <button type="button" class="input-action" aria-label="הצגת סיסמה / Toggle password visibility" aria-pressed="false">
                   <svg class="icon-eye" width="18" height="18" viewBox="0 0 24 24" fill="none"
                        stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
                     <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
@@ -435,7 +506,7 @@
                   required
                 />
                 <!-- Eye toggle: wired with JS in Stage 2 -->
-                <button type="button" class="input-action" aria-label="Toggle password visibility" aria-pressed="false">
+                <button type="button" class="input-action" aria-label="הצגת סיסמה / Toggle password visibility" aria-pressed="false">
                   <svg class="icon-eye" width="18" height="18" viewBox="0 0 24 24" fill="none"
                        stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
                     <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
@@ -516,7 +587,7 @@
             <rect x="4" y="11" width="16" height="9" rx="2"/>
             <path d="M8 11V8a4 4 0 0 1 8 0v3"/>
           </svg>
-          <span class="he-text">TLS · הפעלה מוצפנת מקצה לקצה</span>
+          <span class="he-text">TLS · חיבור מוצפן מקצה לקצה</span>
           <span class="en-text">TLS · end-to-end encrypted session</span>
         </p>
 
