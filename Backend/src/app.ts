@@ -1,3 +1,4 @@
+import cookieParser from 'cookie-parser';
 import cors from 'cors';
 import express, { type Express } from 'express';
 import helmet from 'helmet';
@@ -17,8 +18,9 @@ export const createApp = (config: AppConfig): Express => {
   app.use(helmet());
   app.use(cors(createCorsOptions(config.corsOrigins)));
   app.use(express.json({ limit: JSON_BODY_LIMIT }));
+  app.use(cookieParser());
 
-  app.use('/api', createApiRouter());
+  app.use('/api', createApiRouter(config));
 
   app.use(notFoundHandler);
   app.use(errorHandler);
