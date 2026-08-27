@@ -481,7 +481,9 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 52px 44px;
+  /* Vertical padding trimmed from 52px: on a form this tall it is pure scroll, and the card
+     already carries its own 32px inset. The horizontal 44px is unchanged. */
+  padding: 40px 44px;
   background:
     radial-gradient(circle at 78% 22%, rgba(255, 253, 248, 0.09) 0 10%, transparent 24%),
     linear-gradient(var(--surface-08) 1px, transparent 1px),
@@ -524,8 +526,11 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   max-width: var(--panel-max);
   display: flex;
   flex-direction: column;
-  gap: 24px;
-  padding: 38px;
+  /* Trimmed from 24/38px. The card stacks header, form, divider, OAuth and footer — six seams
+     at desktop — so a few px off each is worth more than it looks; both stay clear of the
+     type's own leading, and the narrow-screen overrides below are unchanged. */
+  gap: 18px;
+  padding: 32px;
   background:
     linear-gradient(135deg, transparent 0 24px, var(--surface-96) 24px),
     linear-gradient(90deg, rgba(35, 56, 77, 0.035) 1px, transparent 1px),
@@ -622,15 +627,45 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 /* ─────────────────────────────────────────────
    Form fields
    ───────────────────────────────────────────── */
-.register-form { display: flex; flex-direction: column; gap: 18px; }
+/* The form is one 6-column grid rather than a stack of two-column rows. Six divides by both
+   2 and 3, so a field asks for a half (span 3), a third (span 2) or the full width (span 6)
+   without any row wrappers — which is what lets a tall block sit beside a stack of short ones
+   instead of forcing a row of its own. Mobile-first: one column until there is room.
+   `align-items: start` keeps a short field from stretching to a tall neighbour's height. */
+.register-form {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 14px;
+  align-items: start;
+}
 .form-group    { display: flex; flex-direction: column; gap: 8px; }
 
-/* Two-column row — collapses to one column on narrow widths */
-.form-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 18px;
-  align-items: start;
+/* Two short fields sharing one grid cell, stacked — used for the phone pair, which is short
+   enough that both fit beside the availability block in the height that block needs anyway. */
+.field-stack { display: flex; flex-direction: column; gap: 14px; }
+
+/* Two columns as soon as the single-column mobile layout is no longer needed. Thirds are
+   still halves here: through this band the card runs ~428–602px, and a third of that is too
+   narrow for a company name or an email address to stay readable. */
+@media (min-width: 561px) {
+  .register-form { grid-template-columns: repeat(6, 1fr); column-gap: 18px; }
+  .col--third,
+  .col--half { grid-column: span 3; }
+  /* The third field of the identity trio. When thirds collapse to halves it takes the whole
+     row rather than pairing with whatever follows, which is what keeps the groupings below it
+     intact — otherwise auto-placement would put Email beside Primary trade and push every
+     later pair one slot out of step. */
+  .col--third-fill { grid-column: span 6; }
+  .col--full { grid-column: span 6; }
+}
+
+/* Three columns only from the width at which the card reaches its 620px cap, and only for the
+   three short identity fields. Their labels are the constraint, not their values: the longest
+   is EMAIL ADDRESS at ~146px against a ~167px column, so all three stay on one line and the
+   three inputs stay level. */
+@media (min-width: 1280px) {
+  .col--third,
+  .col--third-fill { grid-column: span 2; }
 }
 
 .form-label {
@@ -1072,9 +1107,9 @@ html:has(#lang-en:checked) .register-form:has(.form-group > .en-field:placeholde
   .form-title  { font-size: 24px; }
 }
 
-/* Stack the two-column rows on narrow screens */
+/* Below this the grid is already the single mobile column declared on .register-form itself,
+   so nothing here has to unstack it. */
 @media (max-width: 560px) {
-  .form-row { grid-template-columns: 1fr; }
   .lang-switch {
     top: 12px;
     inset-inline-end: 12px;
@@ -1090,7 +1125,11 @@ html:has(#lang-en:checked) .register-form:has(.form-group > .en-field:placeholde
 }
 
 @media (max-width: 1024px) and (min-width: 861px) {
-  .auth-layout    { grid-template-columns: 40% 1fr; }
+  /* 40% → 36%: this band squeezed the card to ~428px, which left a half-column too narrow for
+     the longest label (CONFIRM PASSWORD) — it wrapped while its neighbour did not, and the two
+     password inputs came out 15px apart. Widening the form side fixes the cause rather than
+     the symptom, and the brand panel is still the larger visual at this width. */
+  .auth-layout    { grid-template-columns: 36% 1fr; }
   .brand-panel    { padding: 44px 38px; }
   .brand-headline { font-size: 28px; }
 }
