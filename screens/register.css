@@ -71,7 +71,12 @@
 
   --r-sm:      8px;
   --r-md:      8px;
-  --panel-max: 500px; /* widened to keep proportion with the larger, more readable type */
+  /* The form panel is ~778px at 1440px, so 500px left roughly 280px of it unused while the
+     form ran to 1.76 screens. 620px spends that width on the paired rows instead of on
+     margin, and stops well short of the panel. The exact figure is set by the widest paired
+     label — OFFICE PHONE / BUSINESS PHONE with their optional markers need ~256px a column,
+     which 600px missed by 4px and wrapped one of them a line taller than the other. */
+  --panel-max: 620px;
 }
 
 /* ─────────────────────────────────────────────
@@ -632,6 +637,11 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   display: inline-flex;
   align-items: center;
   gap: 8px;
+  /* When a label carries an optional marker and the column is too narrow for both, the marker
+     drops to its own line as a unit. Without this the flex line had to shrink the text span
+     instead, which broke the phrase mid-way ("BUSINESS" / "PHONE") and made one label in a
+     row a line taller than its neighbour — which pushes the two inputs out of alignment. */
+  flex-wrap: wrap;
   font-family: var(--font-mono);
   font-size: 14px;
   font-weight: 500;
@@ -640,6 +650,11 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   color: var(--text-soft);
   cursor: pointer;
 }
+
+/* The label phrase itself never breaks; only the optional marker may wrap past it. This keeps
+   both labels in a paired row the same number of lines, so their inputs stay on one line. */
+.form-label > .he-text,
+.form-label > .en-text { white-space: nowrap; }
 
 .form-label::before {
   content: '';

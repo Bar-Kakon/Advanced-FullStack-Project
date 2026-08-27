@@ -155,68 +155,78 @@
 
         <form class="register-form" action="#" method="post" novalidate>
 
-          <!-- Full name -->
-          <div class="form-group">
-            <label class="form-label">
-              <span class="he-text">שם מלא</span>
-              <span class="en-text">Full name</span>
-            </label>
-            <!-- Two language variants so the example name stays in the active language
-                 (placeholder is an attribute — can't be swapped with he-text/en-text spans).
-                 No dir: a name follows the active UI language direction. -->
-            <input
-              class="form-input he-field"
-              type="text"
-              name="fullname"
-              autocomplete="name"
-              placeholder="ישראל ישראלי"
-              aria-label="שם מלא"
-              required
-            />
-            <input
-              class="form-input en-field"
-              type="text"
-              name="fullname"
-              autocomplete="name"
-              placeholder="John Smith"
-              aria-label="Full name"
-              required
-            />
-          </div>
+          <!-- Who you are + who you trade as: two short, related identity fields, paired so they
+               cost one row instead of two. Each keeps its own .form-group, so the submit gating
+               (.form-group > .he-field) still reads them individually. Order is unchanged —
+               a grid row follows the inline direction, so Full name stays first in both
+               languages — and .form-row stacks these back to one column under 560px. -->
+          <div class="form-row">
 
-          <!-- Company name — required (owner decision, 2026-08-27). Terminology follows the
-               only company wording the project had established: the browse-contractors search
-               placeholder "שם או חברה" / "Name or company".
-               Twin he-field/en-field inputs, like Full name: the placeholder is an attribute and
-               cannot be swapped with he-text/en-text spans. The twins are also what the submit
-               gating reads — .form-group > .he-field:placeholder-shown — so a required field in
-               this shape gates the button with no new rule. -->
-          <div class="form-group">
-            <label class="form-label">
-              <span class="he-text">שם חברה</span>
-              <span class="en-text">Company name</span>
-            </label>
-            <input
-              class="form-input he-field"
-              type="text"
-              name="company"
-              autocomplete="organization"
-              placeholder="ישראלי בנייה בע״מ"
-              aria-label="שם חברה"
-              required
-            />
-            <input
-              class="form-input en-field"
-              type="text"
-              name="company"
-              autocomplete="organization"
-              placeholder="Smith Contracting Ltd."
-              aria-label="Company name"
-              required
-            />
-          </div>
+            <!-- Full name -->
+            <div class="form-group">
+              <label class="form-label">
+                <span class="he-text">שם מלא</span>
+                <span class="en-text">Full name</span>
+              </label>
+              <!-- Two language variants so the example name stays in the active language
+                   (placeholder is an attribute — can't be swapped with he-text/en-text spans).
+                   No dir: a name follows the active UI language direction. -->
+              <input
+                class="form-input he-field"
+                type="text"
+                name="fullname"
+                autocomplete="name"
+                placeholder="ישראל ישראלי"
+                aria-label="שם מלא"
+                required
+              />
+              <input
+                class="form-input en-field"
+                type="text"
+                name="fullname"
+                autocomplete="name"
+                placeholder="John Smith"
+                aria-label="Full name"
+                required
+              />
+            </div>
 
-          <!-- Email -->
+            <!-- Company name — required (owner decision, 2026-08-27). Terminology follows the
+                 only company wording the project had established: the browse-contractors search
+                 placeholder "שם או חברה" / "Name or company".
+                 Twin he-field/en-field inputs, like Full name: the placeholder is an attribute and
+                 cannot be swapped with he-text/en-text spans. The twins are also what the submit
+                 gating reads — .form-group > .he-field:placeholder-shown — so a required field in
+                 this shape gates the button with no new rule. -->
+            <div class="form-group">
+              <label class="form-label">
+                <span class="he-text">שם חברה</span>
+                <span class="en-text">Company name</span>
+              </label>
+              <input
+                class="form-input he-field"
+                type="text"
+                name="company"
+                autocomplete="organization"
+                placeholder="ישראלי בנייה בע״מ"
+                aria-label="שם חברה"
+                required
+              />
+              <input
+                class="form-input en-field"
+                type="text"
+                name="company"
+                autocomplete="organization"
+                placeholder="Smith Contracting Ltd."
+                aria-label="Company name"
+                required
+              />
+            </div>
+
+          </div><!-- /.form-row — identity pair -->
+
+          <!-- Email stays full width: it is the login credential, and addresses run long
+               enough that halving the field would cost readability to save nothing. -->
           <div class="form-group">
             <label class="form-label" for="email">
               <span class="he-text">כתובת אימייל</span>
