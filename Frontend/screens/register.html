@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="he">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>יצירת חשבון / Create account — FieldSync</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <!--
+    Heebo + Frank Ruhl Libre → Hebrew (default)
+    Inter + Fraunces          → English (on toggle)
+    IBM Plex Mono             → both (technical/monospace accents)
+  -->
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=IBM+Plex+Mono:wght@400;500&family=Heebo:wght@400;500;600;700&family=Frank+Ruhl+Libre:wght@500;700&display=swap"
+    rel="stylesheet" />
+  <link rel="stylesheet" href="register.css" />
+</head>
+<body>
+
+  <!--
+    CSS-only bilingual toggle.
+    Two radio inputs drive all language state via sibling selectors.
+    Hebrew (#lang-he) is checked by default.
+  -->
+  <input type="radio" name="lang" id="lang-he" class="lang-radio" checked>
+  <input type="radio" name="lang" id="lang-en" class="lang-radio">
+
+  <!-- Language switcher -->
+  <div class="lang-switch" role="group" aria-label="Language / שפה">
+    <svg class="lang-switch__globe" width="15" height="15" viewBox="0 0 24 24"
+         fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+      <circle cx="12" cy="12" r="9"/>
+      <path d="M3 12h18M12 3c2.5 2.7 2.5 15.3 0 18M12 3c-2.5 2.7-2.5 15.3 0 18"/>
+    </svg>
+    <!-- Labels target the radio inputs — clicking sets language without toggling -->
+    <label for="lang-he" class="lang-switch__btn">עב</label>
+    <span class="lang-switch__sep" aria-hidden="true"></span>
+    <label for="lang-en" class="lang-switch__btn">EN</label>
+  </div>
+
+  <div class="auth-layout">
+
+    <!-- ── Brand panel (left) ── -->
+    <aside class="brand-panel">
+      <span class="reg-mark reg-mark--tl" aria-hidden="true"></span>
+      <span class="reg-mark reg-mark--br" aria-hidden="true"></span>
+      <span class="crosshair crosshair--a" aria-hidden="true"></span>
+      <span class="crosshair crosshair--b" aria-hidden="true"></span>
+
+      <div class="brand-panel__inner">
+
+        <div class="brand-logo">
+          <span class="brand-logo__mark" aria-hidden="true">
+            <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+              <circle cx="8"  cy="20" r="6" fill="rgba(199,184,157,0.30)" stroke="rgba(255,253,248,0.92)" stroke-width="2"/>
+              <circle cx="32" cy="8"  r="6" fill="rgba(199,184,157,0.30)" stroke="rgba(255,253,248,0.92)" stroke-width="2"/>
+              <circle cx="32" cy="32" r="6" fill="rgba(199,184,157,0.30)" stroke="rgba(255,253,248,0.92)" stroke-width="2"/>
+              <line x1="14" y1="17" x2="26" y2="11" stroke="rgba(255,253,248,0.55)" stroke-width="1.5" stroke-dasharray="3 2"/>
+              <line x1="14" y1="23" x2="26" y2="29" stroke="rgba(255,253,248,0.55)" stroke-width="1.5" stroke-dasharray="3 2"/>
+              <line x1="32" y1="14" x2="32" y2="26" stroke="rgba(255,253,248,0.40)" stroke-width="1.5" stroke-dasharray="3 2"/>
+            </svg>
+          </span>
+          <span class="brand-logo__name">FieldSync</span>
+          <span class="brand-logo__badge">
+            <span class="he-text">בטא</span>
+            <span class="en-text">Beta</span>
+          </span>
+        </div>
+
+        <div class="brand-copy">
+          <h1 class="brand-headline">
+            <span class="he-text">חשבון אחד. כל הפרויקטים שלך.</span>
+            <span class="en-text">One account. Every project you run.</span>
+          </h1>
+          <p class="brand-sub">
+            <span class="he-text">קבלנים ראשיים, קבלני משנה וספקים — כולם משתמשים שווים, על פלטפורמה אחת.</span>
+            <span class="en-text">General contractors, subcontractors, and suppliers — all equal users, on one platform.</span>
+          </p>
+        </div>
+
+        <ul class="brand-features" aria-label="עיקרי הפלטפורמה / Platform highlights">
+          <li class="brand-feature">
+            <span class="brand-feature__mark" aria-hidden="true">＋</span>
+            <span class="he-text">תזמון מדורג עם משא ומתן בלחיצה אחת</span>
+            <span class="en-text">Cascade scheduling with one-click negotiation</span>
+          </li>
+          <!-- The approved binary start/complete model (§1 non-goals: no progress nagging).
+               This panel is a signed-out surface, so every bullet on it describes product
+               behaviour only — never who may act on a task, or how anyone came to be able to.
+               See §3.3 constraint 5 before editing this list. -->
+          <li class="brand-feature">
+            <span class="brand-feature__mark" aria-hidden="true">＋</span>
+            <span class="he-text">דיווח בשתי פעולות — התחלה וסיום, בלי מעקב התקדמות</span>
+            <span class="en-text">Two actions, start and complete — no progress chasing</span>
+          </li>
+          <li class="brand-feature">
+            <span class="brand-feature__mark" aria-hidden="true">＋</span>
+            <span class="he-text">ציוני אמון מהתנהגות אמיתית — לא מדיווח עצמי</span>
+            <span class="en-text">Trust scores built from real behaviour — not self-reported</span>
+          </li>
+        </ul>
+
+        <p class="brand-footer-note">
+          <span class="he-text">אותו קבלן יכול להיות קבלן ראשי בפרויקט אחד וקבלן משנה באחר. התפקיד עוקב אחר העבודה, לא אחרי האדם.</span>
+          <span class="en-text">The same contractor can be a GC on one project and a sub on another. Roles follow the work, not the person.</span>
+        </p>
+
+      </div>
+    </aside>
+
+    <!-- ── Form panel (right) ── -->
+    <main class="form-panel">
+      <div class="form-card">
+
+        <!-- Mobile-only logo -->
+        <div class="mobile-logo" aria-hidden="true">
+          <svg width="26" height="26" viewBox="0 0 40 40" fill="none">
+            <circle cx="8"  cy="20" r="6" fill="rgba(35,56,77,0.15)" stroke="#23384D" stroke-width="2"/>
+            <circle cx="32" cy="8"  r="6" fill="rgba(35,56,77,0.15)" stroke="#23384D" stroke-width="2"/>
+            <circle cx="32" cy="32" r="6" fill="rgba(35,56,77,0.15)" stroke="#23384D" stroke-width="2"/>
+            <line x1="14" y1="17" x2="26" y2="11" stroke="#23384D" stroke-width="1.5" stroke-dasharray="3 2"/>
+            <line x1="14" y1="23" x2="26" y2="29" stroke="#23384D" stroke-width="1.5" stroke-dasharray="3 2"/>
+            <line x1="32" y1="14" x2="32" y2="26" stroke="#23384D" stroke-width="1.5" stroke-dasharray="3 2"/>
+          </svg>
+          <span class="mobile-logo__name">FieldSync</span>
+        </div>
+
+        <header class="form-header">
+          <h2 class="form-title">
+            <span class="he-text">יצירת חשבון</span>
+            <span class="en-text">Create your account</span>
+          </h2>
+          <p class="form-subtitle">
+            <span class="he-text">כמה פרטים ואפשר להתחיל לתאם</span>
+            <span class="en-text">A few details and you're ready to coordinate</span>
+          </p>
+        </header>
+
+        <!--
+          Error state: add class "alert--visible" to show.
+          Generic message — wired to real validation in Stage 2.
+        -->
+        <div class="alert alert--error" role="alert" aria-live="polite">
+          <svg class="alert__icon" width="18" height="18" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+            <circle cx="10" cy="10" r="9" stroke="currentColor" stroke-width="1.8"/>
+            <line x1="10" y1="6" x2="10" y2="11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+            <circle cx="10" cy="14" r="1" fill="currentColor"/>
+          </svg>
+          <span>
+            <span class="he-text">משהו השתבש. בדקו את הפרטים ונסו שוב.</span>
+            <span class="en-text">Something went wrong. Please check your details and try again.</span>
+          </span>
+        </div>
+
+        <form class="register-form" action="#" method="post" novalidate>
+
+          <!-- Who you are + who you trade as: two short, related identity fields, paired so they
+               cost one row instead of two. Each keeps its own .form-group, so the submit gating
+               (.form-group > .he-field) still reads them individually. Order is unchanged —
+               a grid row follows the inline direction, so Full name stays first in both
+               languages — and .form-row stacks these back to one column under 560px. -->
+          <!-- Full name -->
+          <div class="form-group col--narrow">
+            <label class="form-label">
+              <span class="he-text">שם מלא</span>
+              <span class="en-text">Full name</span>
+            </label>
+            <!-- Two language variants so the example name stays in the active language
+                 (placeholder is an attribute — can't be swapped with he-text/en-text spans).
+                 No dir: a name follows the active UI language direction. -->
+            <input
+              class="form-input he-field"
+              type="text"
+              name="fullname"
+              autocomplete="name"
+              placeholder="ישראל ישראלי"
+              aria-label="שם מלא"
+              required
+            />
+            <input
+              class="form-input en-field"
+              type="text"
+              name="fullname"
+              autocomplete="name"
+              placeholder="John Smith"
+              aria-label="Full name"
+              required
+            />
+          </div>
+
+          <!-- Company name — required (owner decision, 2026-08-27). Terminology follows the
+               only company wording the project had established: the browse-contractors search
+               placeholder "שם או חברה" / "Name or company".
+               Twin he-field/en-field inputs, like Full name: the placeholder is an attribute and
+               cannot be swapped with he-text/en-text spans. The twins are also what the submit
+               gating reads — .form-group > .he-field:placeholder-shown — so a required field in
+               this shape gates the button with no new rule. -->
+          <div class="form-group col--wide">
+            <label class="form-label">
+              <span class="he-text">שם חברה</span>
+              <span class="en-text">Company name</span>
+            </label>
+            <input
+              class="form-input he-field"
+              type="text"
+              name="company"
+              autocomplete="organization"
+              placeholder="ישראלי בנייה בע״מ"
+              aria-label="שם חברה"
+              required
+            />
+            <input
+              class="form-input en-field"
+              type="text"
+              name="company"
+              autocomplete="organization"
+              placeholder="Smith Contracting Ltd."
+              aria-label="Company name"
+              required
+            />
+          </div>
+
+          <!-- Email stays full width: it is the login credential, and addresses run long
+               enough that halving the field would cost readability to save nothing. -->
+          <div class="form-group col--half">
+            <label class="form-label" for="email">
+              <span class="he-text">כתובת אימייל</span>
+              <span class="en-text">Email address</span>
+            </label>
+            <!-- dir="ltr" kept: email addresses are always left-to-right -->
+            <input
+              class="form-input"
+              type="email"
+              id="email"
+              name="email"
+              dir="ltr"
+              placeholder="you@example.com"
+              autocomplete="email"
+              pattern="[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}"
+              required
+            />
+            <!-- Shown by CSS when input is non-empty and fails type="email" validation -->
+            <p class="field-error" aria-live="polite">
+              <span class="he-text">יש להזין כתובת אימייל תקינה</span>
+              <span class="en-text">Please enter a valid email address</span>
+            </p>
+          </div>
+
+          <!-- Trade + Location (two columns) -->
+          <!-- Primary trade — a specialty, NOT a fixed role (only admin is global) -->
+          <div class="form-group col--half">
+            <label class="form-label" for="trade-he">
+              <span class="he-text">תחום עיקרי</span>
+              <span class="en-text">Primary trade</span>
+            </label>
+            <div class="select-wrap">
+              <!-- Two language variants; CSS shows one at a time.
+                   Option text can't be toggled with spans, so the whole control swaps. -->
+              <select class="form-select he-select" id="trade-he" name="trade" required>
+                <option value="" disabled selected>בחירת תחום…</option>
+                <option value="general">קבלנות כללית</option>
+                <option value="electrical">חשמל</option>
+                <option value="plumbing">אינסטלציה</option>
+                <option value="drilling">קידוחים וביסוס</option>
+                <option value="shell">קבלן שלד</option>
+                <option value="concrete">בטון</option>
+                <option value="saferoom">בניית ממ"דים</option>
+                <option value="carpentry">נגרות</option>
+                <option value="aluminum">אלומיניום וזיגוג</option>
+                <option value="hvac">מיזוג אוויר</option>
+                <option value="painting">צביעה</option>
+                <option value="tiling">ריצוף וחיפוי</option>
+                <option value="plastering">טיח</option>
+                <option value="earthworks">עבודות עפר</option>
+                <option value="waterproofing">איטום</option>
+                <option value="supply">אספקה וחומרים</option>
+                <option value="development">קבלן לעבודות פיתוח ותשתיות</option>
+                <option value="doors">דלתות</option>
+                <option value="sandpumps">משאבות חול</option>
+                <option value="haulage_crane">הובלות ועבודות מנוף</option>
+                <option value="concrete_cutting">ניסור בטון</option>
+                <option value="heavy_equipment">כלי צמ״ה</option>
+                <option value="other">אחר</option>
+              </select>
+              <select class="form-select en-select" id="trade-en" name="trade" aria-label="Primary trade" required>
+                <option value="" disabled selected>Select your trade…</option>
+                <option value="general">General contracting</option>
+                <option value="electrical">Electrical</option>
+                <option value="plumbing">Plumbing</option>
+                <option value="drilling">Drilling &amp; foundations</option>
+                <option value="shell">Shell</option>
+                <option value="concrete">Concrete</option>
+                <option value="saferoom">Safe rooms (mamad)</option>
+                <option value="carpentry">Carpentry</option>
+                <option value="aluminum">Aluminum &amp; glazing</option>
+                <option value="hvac">HVAC / air conditioning</option>
+                <option value="painting">Painting</option>
+                <option value="tiling">Tiling &amp; flooring</option>
+                <option value="plastering">Plastering</option>
+                <option value="earthworks">Earthworks</option>
+                <option value="waterproofing">Waterproofing</option>
+                <option value="supply">Supply / materials</option>
+                <option value="development">Development &amp; infrastructure</option>
+                <option value="doors">Doors</option>
+                <option value="sandpumps">Sand pumping</option>
+                <option value="haulage_crane">Haulage &amp; crane work</option>
+                <option value="concrete_cutting">Concrete cutting</option>
+                <option value="heavy_equipment">Heavy equipment</option>
+                <option value="other">Other</option>
+              </select>
+              <span class="select-chevron" aria-hidden="true">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M6 9l6 6 6-6"/>
+                </svg>
+              </span>
+            </div>
+
+            <!-- Free-text trade — revealed by CSS only when "Other" is selected
+                 (.form-group:has(option[value="other"]:checked)). Two language
+                 variants keep the label + placeholder bilingual, like the select. -->
+            <div class="other-trade">
+              <span class="form-label form-label--plain">
+                <span class="he-text">פירוט התחום</span>
+                <span class="en-text">Specify your trade</span>
+              </span>
+              <input class="form-input he-field" type="text"
+                     name="trade-other" maxlength="60"
+                     placeholder="לדוגמה: פיגומים, גינון, מעליות"
+                     aria-label="פירוט התחום" />
+              <input class="form-input en-field" type="text"
+                     name="trade-other" maxlength="60"
+                     placeholder="e.g. scaffolding, landscaping, elevators"
+                     aria-label="Specify your trade" />
+            </div>
+
+            <p class="field-hint">
+              <span class="he-text">אפשר להוסיף ולשנות תחומים בהמשך</span>
+              <span class="en-text">You can add or change trades later</span>
+            </p>
+          </div>
+
+
+          <!-- Two separate business numbers, kept as two fields on purpose.
+               Both are optional independently — filling one never requires the other,
+               and neither stands in for the other. Neither is the personal/login
+               phone, which this screen does not collect. -->
+          <div class="field-stack col--half">
+
+            <!-- Location -->
+            <div class="form-group">
+              <label class="form-label">
+                <span class="he-text">אזור פעילות</span>
+                <span class="en-text">Location</span>
+              </label>
+              <!-- Two language variants so the placeholder stays in the active language
+                   (placeholder is an attribute — can't be swapped with he-text/en-text spans) -->
+              <input
+                class="form-input he-field"
+                type="text"
+                name="location"
+                autocomplete="address-level2"
+                placeholder="תל אביב, מרכז"
+                aria-label="אזור פעילות"
+                required
+              />
+              <input
+                class="form-input en-field"
+                type="text"
+                name="location"
+                autocomplete="address-level2"
+                placeholder="Tel Aviv, Central"
+                aria-label="Location"
+                required
+              />
+            </div>
+
+            <!-- Office phone -->
+            <div class="form-group">
+              <label class="form-label" for="office-phone">
+                <span class="he-text">טלפון משרד</span>
+                <span class="en-text">Office phone</span>
+                <span class="form-label__optional">
+                  <span class="he-text">אופציונלי</span>
+                  <span class="en-text">Optional</span>
+                </span>
+              </label>
+              <!-- dir="ltr": phone numbers are always left-to-right.
+                   No required and no pattern — optional, and no new validation rule. -->
+              <input
+                class="form-input"
+                type="tel"
+                id="office-phone"
+                name="office-phone"
+                dir="ltr"
+                placeholder="03-1234567"
+                autocomplete="work tel"
+              />
+            </div>
+
+            <!-- Business phone -->
+            <div class="form-group">
+              <label class="form-label" for="business-phone">
+                <span class="he-text">טלפון עסקי</span>
+                <span class="en-text">Business phone</span>
+                <span class="form-label__optional">
+                  <span class="he-text">אופציונלי</span>
+                  <span class="en-text">Optional</span>
+                </span>
+              </label>
+              <input
+                class="form-input"
+                type="tel"
+                id="business-phone"
+                name="business-phone"
+                dir="ltr"
+                placeholder="050-1234567"
+                autocomplete="tel"
+              />
+            </div>
+
+          </div><!-- /.field-stack -->
+
+
+          <!-- Initial availability: the simple three-state contractor status, nothing calendar-based.
+               The three states are the current browse-contractors wording, verbatim, so a contractor
+               never sets one label at signup and reads a different one in the directory.
+               The legend is just "Availability" for the same reason it is on browse: the open state
+               now carries the full wording, and repeating it above would print the same line twice. -->
+          <fieldset class="form-group avail-filter col--half">
+            <legend class="form-label form-label--plain">
+              <span class="he-text">זמינות</span>
+              <span class="en-text">Availability</span>
+            </legend>
+              <label class="avail-option">
+                <input class="avail-option__input" type="radio" name="availability" value="open" checked />
+                <span class="avail-option__box" aria-hidden="true">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                       stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+                </span>
+                <span class="avail avail--open">
+                  <span class="avail__dot" aria-hidden="true"></span>
+                  <span class="he-text">זמינות לעבודות חדשות</span>
+                  <span class="en-text">Available for new work</span>
+                </span>
+              </label>
+              <label class="avail-option">
+                <input class="avail-option__input" type="radio" name="availability" value="limited" />
+                <span class="avail-option__box" aria-hidden="true">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                       stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+                </span>
+                <span class="avail avail--limited">
+                  <span class="avail__dot" aria-hidden="true"></span>
+                  <span class="he-text">זמינות מוגבלת לעבודות חדשות</span>
+                  <span class="en-text">Limited availability for new work</span>
+                </span>
+              </label>
+              <label class="avail-option">
+                <input class="avail-option__input" type="radio" name="availability" value="closed" />
+                <span class="avail-option__box" aria-hidden="true">
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                       stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+                </span>
+                <span class="avail avail--closed">
+                  <span class="avail__dot" aria-hidden="true"></span>
+                  <span class="he-text">אין זמינות לקבלת עבודות חדשות כעת</span>
+                  <span class="en-text">No availability for new work at the moment</span>
+                </span>
+              </label>
+            <p class="field-hint">
+              <span class="he-text">אפשר לשנות בכל שלב בפרופיל.</span>
+              <span class="en-text">You can change this at any time from your profile.</span>
+            </p>
+          </fieldset>
+
+          <!-- Password + Confirm (two columns) -->
+          <!-- Password -->
+          <div class="form-group col--half">
+            <label class="form-label" for="password">
+              <span class="he-text">סיסמה</span>
+              <span class="en-text">Password</span>
+            </label>
+            <div class="input-wrapper">
+              <!-- dir="ltr" kept: passwords are always left-to-right -->
+              <input
+                class="form-input"
+                type="password"
+                id="password"
+                name="password"
+                dir="ltr"
+                placeholder="••••••••"
+                autocomplete="new-password"
+                minlength="8"
+                pattern=".{8,}"
+                required
+              />
+              <!-- Eye toggle: wired with JS in Stage 2 -->
+              <button type="button" class="input-action" aria-label="הצגת סיסמה / Toggle password visibility" aria-pressed="false">
+                <svg class="icon-eye" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                  <circle cx="12" cy="12" r="3"/>
+                </svg>
+                <svg class="icon-eye-off" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
+                  <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+                  <path d="M6.61 6.61A18.5 18.5 0 0 0 1 12s4 8 11 8a9.12 9.12 0 0 0 5.39-1.61"/>
+                  <line x1="2" y1="2" x2="22" y2="22"/>
+                </svg>
+              </button>
+            </div>
+            <p class="field-hint">
+              <span class="he-text">לפחות 8 תווים</span>
+              <span class="en-text">At least 8 characters</span>
+            </p>
+            <p class="field-error password-error" aria-live="polite">
+              <span class="he-text">הסיסמה חייבת להכיל לפחות 8 תווים</span>
+              <span class="en-text">Password must be at least 8 characters</span>
+            </p>
+          </div>
+
+          <!-- Confirm password -->
+          <div class="form-group col--half">
+            <label class="form-label" for="password-confirm">
+              <span class="he-text">אימות סיסמה</span>
+              <span class="en-text">Confirm password</span>
+            </label>
+            <div class="input-wrapper">
+              <input
+                class="form-input"
+                type="password"
+                id="password-confirm"
+                name="password-confirm"
+                dir="ltr"
+                placeholder="••••••••"
+                autocomplete="new-password"
+                required
+              />
+              <!-- Eye toggle: wired with JS in Stage 2 -->
+              <button type="button" class="input-action" aria-label="הצגת סיסמה / Toggle password visibility" aria-pressed="false">
+                <svg class="icon-eye" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                  <circle cx="12" cy="12" r="3"/>
+                </svg>
+                <svg class="icon-eye-off" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true">
+                  <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+                  <path d="M6.61 6.61A18.5 18.5 0 0 0 1 12s4 8 11 8a9.12 9.12 0 0 0 5.39-1.61"/>
+                  <line x1="2" y1="2" x2="22" y2="22"/>
+                </svg>
+              </button>
+            </div>
+            <!-- Match check needs JS (CSS can't compare two values) — shown in Stage 2 -->
+            <p class="field-error" aria-live="polite">
+              <span class="he-text">הסיסמאות אינן תואמות</span>
+              <span class="en-text">Passwords don't match</span>
+            </p>
+          </div>
+
+          <!-- Terms consent -->
+          <label class="checkbox-field col--full">
+            <input class="checkbox-input" type="checkbox" name="terms" required>
+            <span class="checkbox-box" aria-hidden="true">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+                   stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M5 12l5 5L20 6"/>
+              </svg>
+            </span>
+            <span class="checkbox-label">
+              <span class="he-text">קראתי ואני מסכים/ה ל<a href="#">תנאי השימוש</a> ול<a href="#">מדיניות הפרטיות</a></span>
+              <span class="en-text">I have read and agree to the <a href="#">Terms of Service</a> and <a href="#">Privacy Policy</a></span>
+            </span>
+          </label>
+
+          <button type="submit" class="btn btn--primary btn--full col--full">
+            <span class="he-text">יצירת חשבון</span>
+            <span class="en-text">Create account</span>
+          </button>
+
+        </form>
+
+        <div class="divider" aria-hidden="true">
+          <span class="divider__line"></span>
+          <span class="divider__label">
+            <span class="he-text">או</span>
+            <span class="en-text">or</span>
+          </span>
+          <span class="divider__line"></span>
+        </div>
+
+        <!-- Google OAuth — button stub, wired in Stage 2 -->
+        <button type="button" class="btn btn--google btn--full">
+          <svg class="google-icon" width="18" height="18" viewBox="0 0 18 18"
+               xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844a4.14 4.14 0 0 1-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="#4285F4"/>
+            <path d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z" fill="#34A853"/>
+            <path d="M3.964 10.706A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.706V4.962H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.038l3.007-2.332z" fill="#FBBC05"/>
+            <path d="M9 3.58c1.62 0 3.06.56 4.21 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.962L3.964 7.294C4.672 5.163 6.656 3.58 9 3.58z" fill="#EA4335"/>
+          </svg>
+          <span class="he-text">הרשמה עם Google</span>
+          <span class="en-text">Sign up with Google</span>
+        </button>
+
+        <p class="form-footer">
+          <span class="he-text">כבר יש לך חשבון?</span>
+          <span class="en-text">Already have an account?</span>
+          <a href="login.html" class="form-link form-link--strong">
+            <span class="he-text">התחברות</span>
+            <span class="en-text">Sign in</span>
+          </a>
+        </p>
+
+        <p class="secure-note" aria-hidden="true">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="4" y="11" width="16" height="9" rx="2"/>
+            <path d="M8 11V8a4 4 0 0 1 8 0v3"/>
+          </svg>
+          <span class="he-text">TLS · חיבור מוצפן מקצה לקצה</span>
+          <span class="en-text">TLS · end-to-end encrypted session</span>
+        </p>
+
+      </div>
+    </main>
+
+  </div>
+
+  <!-- Persists the language choice across screens and keeps <html lang>/<html dir> truthful.
+       This is the same shared module login and the profile screens load — not a second
+       language mechanism for this screen. Source: lang.ts → compiled to lang.js. -->
+  <script src="lang.js"></script>
+
+  <!-- Touched-state validation (progressive enhancement; no framework).
+       Source: register.ts → compiled to register.js (browsers can't run .ts directly). -->
+  <script src="register.js" defer></script>
+
+</body>
+</html>
