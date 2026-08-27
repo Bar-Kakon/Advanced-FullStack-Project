@@ -161,7 +161,7 @@
                a grid row follows the inline direction, so Full name stays first in both
                languages — and .form-row stacks these back to one column under 560px. -->
           <!-- Full name -->
-          <div class="form-group col--third">
+          <div class="form-group col--narrow">
             <label class="form-label">
               <span class="he-text">שם מלא</span>
               <span class="en-text">Full name</span>
@@ -196,7 +196,7 @@
                cannot be swapped with he-text/en-text spans. The twins are also what the submit
                gating reads — .form-group > .he-field:placeholder-shown — so a required field in
                this shape gates the button with no new rule. -->
-          <div class="form-group col--third">
+          <div class="form-group col--wide">
             <label class="form-label">
               <span class="he-text">שם חברה</span>
               <span class="en-text">Company name</span>
@@ -223,7 +223,7 @@
 
           <!-- Email stays full width: it is the login credential, and addresses run long
                enough that halving the field would cost readability to save nothing. -->
-          <div class="form-group col--third-fill">
+          <div class="form-group col--half">
             <label class="form-label" for="email">
               <span class="he-text">כתובת אימייל</span>
               <span class="en-text">Email address</span>
@@ -341,39 +341,40 @@
             </p>
           </div>
 
-          <!-- Location -->
-          <div class="form-group col--half">
-            <label class="form-label">
-              <span class="he-text">אזור פעילות</span>
-              <span class="en-text">Location</span>
-            </label>
-            <!-- Two language variants so the placeholder stays in the active language
-                 (placeholder is an attribute — can't be swapped with he-text/en-text spans) -->
-            <input
-              class="form-input he-field"
-              type="text"
-              name="location"
-              autocomplete="address-level2"
-              placeholder="תל אביב, מרכז"
-              aria-label="אזור פעילות"
-              required
-            />
-            <input
-              class="form-input en-field"
-              type="text"
-              name="location"
-              autocomplete="address-level2"
-              placeholder="Tel Aviv, Central"
-              aria-label="Location"
-              required
-            />
-          </div>
 
           <!-- Two separate business numbers, kept as two fields on purpose.
                Both are optional independently — filling one never requires the other,
                and neither stands in for the other. Neither is the personal/login
                phone, which this screen does not collect. -->
           <div class="field-stack col--half">
+
+            <!-- Location -->
+            <div class="form-group">
+              <label class="form-label">
+                <span class="he-text">אזור פעילות</span>
+                <span class="en-text">Location</span>
+              </label>
+              <!-- Two language variants so the placeholder stays in the active language
+                   (placeholder is an attribute — can't be swapped with he-text/en-text spans) -->
+              <input
+                class="form-input he-field"
+                type="text"
+                name="location"
+                autocomplete="address-level2"
+                placeholder="תל אביב, מרכז"
+                aria-label="אזור פעילות"
+                required
+              />
+              <input
+                class="form-input en-field"
+                type="text"
+                name="location"
+                autocomplete="address-level2"
+                placeholder="Tel Aviv, Central"
+                aria-label="Location"
+                required
+              />
+            </div>
 
             <!-- Office phone -->
             <div class="form-group">

@@ -524,6 +524,10 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   z-index: 1;
   width: 100%;
   max-width: var(--panel-max);
+  /* Makes the card queryable by its own width — see the @container rule under the grid. Safe
+     here because the card's width comes from its parent and its cap, never from its contents. */
+  container-type: inline-size;
+  container-name: regcard;
   display: flex;
   flex-direction: column;
   /* Trimmed from 24/38px. The card stacks header, form, divider, OAuth and footer — six seams
@@ -627,11 +631,17 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 /* ─────────────────────────────────────────────
    Form fields
    ───────────────────────────────────────────── */
-/* The form is one 6-column grid rather than a stack of two-column rows. Six divides by both
-   2 and 3, so a field asks for a half (span 3), a third (span 2) or the full width (span 6)
-   without any row wrappers — which is what lets a tall block sit beside a stack of short ones
-   instead of forcing a row of its own. Mobile-first: one column until there is room.
-   `align-items: start` keeps a short field from stretching to a tall neighbour's height. */
+/* The form is one 6-column grid rather than a stack of two-column rows, so a field asks for a
+   half (span 3) or the full width (span 6) without any row wrappers — which is what lets a tall
+   block sit beside a stack of short ones instead of forcing a row of its own. Mobile-first: one
+   column until there is room. `align-items: start` keeps a short field from stretching to a tall
+   neighbour's height.
+
+   There is deliberately no third-width track. A three-across identity row was measured and
+   cannot show its own placeholders: at 1280px those three fields need 536px of box width
+   (128 + 217 + 191) against a 502px row, so every possible split clipped Company name and
+   Email. Widening the card cannot close it either — the form panel caps the card at 603px
+   there. The fields that need reading width now get a half each. */
 .register-form {
   display: grid;
   grid-template-columns: 1fr;
@@ -640,32 +650,42 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 }
 .form-group    { display: flex; flex-direction: column; gap: 8px; }
 
-/* Two short fields sharing one grid cell, stacked — used for the phone pair, which is short
-   enough that both fit beside the availability block in the height that block needs anyway. */
-.field-stack { display: flex; flex-direction: column; gap: 14px; }
+/* Short fields sharing one grid cell, stacked. Location and the two phone numbers are all
+   short, and stacking them fills the height the availability block beside them needs anyway,
+   which is what keeps this regrouping nearly free in vertical space. The 10px gap is tighter
+   than the 14px between rows on purpose: these three read as one group inside a single cell,
+   and the difference is what stops the stack overrunning the block beside it. */
+.field-stack { display: flex; flex-direction: column; gap: 10px; }
 
-/* Two columns as soon as the single-column mobile layout is no longer needed. Thirds are
-   still halves here: through this band the card runs ~428–602px, and a third of that is too
-   narrow for a company name or an email address to stay readable. */
+/* Two columns as soon as the single-column mobile layout is no longer needed. One layout from
+   here up, so there is no second desktop arrangement to keep in step with this one. */
 @media (min-width: 561px) {
-  .register-form { grid-template-columns: repeat(6, 1fr); column-gap: 18px; }
-  .col--third,
-  .col--half { grid-column: span 3; }
-  /* The third field of the identity trio. When thirds collapse to halves it takes the whole
-     row rather than pairing with whatever follows, which is what keeps the groupings below it
-     intact — otherwise auto-placement would put Email beside Primary trade and push every
-     later pair one slot out of step. */
-  .col--third-fill { grid-column: span 6; }
-  .col--full { grid-column: span 6; }
+  .register-form { grid-template-columns: repeat(12, 1fr); column-gap: 18px; }
+  .col--half { grid-column: span 6; }
+  .col--full { grid-column: span 12; }
+  /* The identity row is deliberately not split down the middle. Full name needs ~128px to show
+     its placeholder and Company name needs ~217px, so an even split starves the one that has
+     the longer example. 5/7 hands the difference across, which is why both stay legible down to
+     a much narrower card than an even split survives. */
+  .col--narrow { grid-column: span 5; }
+  .col--wide   { grid-column: span 7; }
 }
 
-/* Three columns only from the width at which the card reaches its 620px cap, and only for the
-   three short identity fields. Their labels are the constraint, not their values: the longest
-   is EMAIL ADDRESS at ~146px against a ~167px column, so all three stay on one line and the
-   three inputs stay level. */
-@media (min-width: 1280px) {
-  .col--third,
-  .col--third-fill { grid-column: span 2; }
+/* The card's width does not track the viewport: the brand panel's share changes at 1024px, so
+   the same window can leave the card anywhere between ~428px and its 620px cap. The question
+   that decides the column count is therefore about the card, not the window — asked of the card
+   directly. Below the width at which a half still fits the longest field (Company name needs
+   ~217px and Email ~191px), two columns cannot show their own placeholders and the form drops
+   to one. With the uneven identity split above, this is now reached only just before the card
+   hits its narrowest — the mobile column arrives at essentially the same width the old
+   viewport breakpoint chose, rather than opening a tall single-column band mid-desktop.
+   Must stay after the rule above: a container query adds no specificity, so it wins on order. */
+@container regcard (max-width: 399px) {
+  .register-form { grid-template-columns: 1fr; }
+  .col--narrow,
+  .col--wide,
+  .col--half,
+  .col--full { grid-column: 1 / -1; }
 }
 
 .form-label {
