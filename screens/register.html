@@ -85,10 +85,14 @@
             <span class="he-text">תזמון מדורג עם משא ומתן בלחיצה אחת</span>
             <span class="en-text">Cascade scheduling with one-click negotiation</span>
           </li>
+          <!-- The approved binary start/complete model (§1 non-goals: no progress nagging).
+               This panel is a signed-out surface, so every bullet on it describes product
+               behaviour only — never who may act on a task, or how anyone came to be able to.
+               See §3.3 constraint 5 before editing this list. -->
           <li class="brand-feature">
             <span class="brand-feature__mark" aria-hidden="true">＋</span>
-            <span class="he-text">האצלת סמכות חשאית, בלתי נראית לצד שמעל</span>
-            <span class="en-text">Confidential delegation, invisible to the party above</span>
+            <span class="he-text">דיווח בשתי פעולות — התחלה וסיום, בלי מעקב התקדמות</span>
+            <span class="en-text">Two actions, start and complete — no progress chasing</span>
           </li>
           <li class="brand-feature">
             <span class="brand-feature__mark" aria-hidden="true">＋</span>
@@ -176,6 +180,38 @@
               autocomplete="name"
               placeholder="John Smith"
               aria-label="Full name"
+              required
+            />
+          </div>
+
+          <!-- Company name — required (owner decision, 2026-08-27). Terminology follows the
+               only company wording the project had established: the browse-contractors search
+               placeholder "שם או חברה" / "Name or company".
+               Twin he-field/en-field inputs, like Full name: the placeholder is an attribute and
+               cannot be swapped with he-text/en-text spans. The twins are also what the submit
+               gating reads — .form-group > .he-field:placeholder-shown — so a required field in
+               this shape gates the button with no new rule. -->
+          <div class="form-group">
+            <label class="form-label">
+              <span class="he-text">שם חברה</span>
+              <span class="en-text">Company name</span>
+            </label>
+            <input
+              class="form-input he-field"
+              type="text"
+              name="company"
+              autocomplete="organization"
+              placeholder="ישראלי בנייה בע״מ"
+              aria-label="שם חברה"
+              required
+            />
+            <input
+              class="form-input en-field"
+              type="text"
+              name="company"
+              autocomplete="organization"
+              placeholder="Smith Contracting Ltd."
+              aria-label="Company name"
               required
             />
           </div>
@@ -343,7 +379,7 @@
                 <span class="he-text">טלפון משרד</span>
                 <span class="en-text">Office phone</span>
                 <span class="form-label__optional">
-                  <span class="he-text">לא חובה</span>
+                  <span class="he-text">אופציונלי</span>
                   <span class="en-text">Optional</span>
                 </span>
               </label>
@@ -366,7 +402,7 @@
                 <span class="he-text">טלפון עסקי</span>
                 <span class="en-text">Business phone</span>
                 <span class="form-label__optional">
-                  <span class="he-text">לא חובה</span>
+                  <span class="he-text">אופציונלי</span>
                   <span class="en-text">Optional</span>
                 </span>
               </label>
@@ -384,11 +420,15 @@
           </div>
 
 
-          <!-- Initial availability: the simple three-state contractor status, nothing calendar-based -->
+          <!-- Initial availability: the simple three-state contractor status, nothing calendar-based.
+               The three states are the current browse-contractors wording, verbatim, so a contractor
+               never sets one label at signup and reads a different one in the directory.
+               The legend is just "Availability" for the same reason it is on browse: the open state
+               now carries the full wording, and repeating it above would print the same line twice. -->
           <fieldset class="form-group avail-filter">
             <legend class="form-label form-label--plain">
-              <span class="he-text">זמינות לעבודות חדשות</span>
-              <span class="en-text">Availability for new work</span>
+              <span class="he-text">זמינות</span>
+              <span class="en-text">Availability</span>
             </legend>
               <label class="avail-option">
                 <input class="avail-option__input" type="radio" name="availability" value="open" checked />
@@ -398,7 +438,7 @@
                 </span>
                 <span class="avail avail--open">
                   <span class="avail__dot" aria-hidden="true"></span>
-                  <span class="he-text">מקבל עבודות חדשות</span>
+                  <span class="he-text">זמינות לעבודות חדשות</span>
                   <span class="en-text">Available for new work</span>
                 </span>
               </label>
@@ -422,8 +462,8 @@
                 </span>
                 <span class="avail avail--closed">
                   <span class="avail__dot" aria-hidden="true"></span>
-                  <span class="he-text">לא מקבל עבודות חדשות כעת</span>
-                  <span class="en-text">Not accepting new work currently</span>
+                  <span class="he-text">אין זמינות לקבלת עבודות חדשות כעת</span>
+                  <span class="en-text">No availability for new work at the moment</span>
                 </span>
               </label>
             <p class="field-hint">
@@ -587,6 +627,11 @@
     </main>
 
   </div>
+
+  <!-- Persists the language choice across screens and keeps <html lang>/<html dir> truthful.
+       This is the same shared module login and the profile screens load — not a second
+       language mechanism for this screen. Source: lang.ts → compiled to lang.js. -->
+  <script src="lang.js"></script>
 
   <!-- Touched-state validation (progressive enhancement; no framework).
        Source: register.ts → compiled to register.js (browsers can't run .ts directly). -->

@@ -80,6 +80,13 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { height: 100%; }
 
+/* Hebrew is the default, and the direction is set on the root — the same place login.css
+   sets it. Putting it here rather than on the inner panels is what lets the grid, both
+   panels and the fixed language pill mirror from one declaration, and it is also why the
+   English font swap below reaches body: --font-sans is redefined on an ancestor of body,
+   not on a descendant of it. */
+html { direction: rtl; }
+
 body {
   font-family: var(--font-sans);
   font-size: 16px;
@@ -139,7 +146,11 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 6px 9px 6px 11px;
+  /* Written logically so the wider side stays beside the globe when the pill mirrors —
+     the four-value physical shorthand kept the tight side on the same physical edge. */
+  padding-block: 6px;
+  padding-inline-start: 11px;
+  padding-inline-end: 9px;
   background: var(--surface-96);
   border: 1px solid var(--secondary-55);
   border-radius: 999px;
@@ -281,8 +292,11 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   border: 1.5px solid var(--surface-50);
   pointer-events: none;
 }
-.reg-mark--tl { top: 24px; inset-inline-start: 24px; border-right: 0; border-bottom: 0; }
-.reg-mark--br { bottom: 24px; inset-inline-end: 24px; border-left: 0; border-top: 0; }
+/* The dropped sides are logical too, so each bracket still opens inward once the page mirrors.
+   With a physical border-right/left here the mark lands in the mirrored corner still pointing
+   the way it pointed in LTR, and brackets nothing — the same two-line fix login.css took. */
+.reg-mark--tl { top: 24px; inset-inline-start: 24px; border-inline-end: 0; border-block-end: 0; }
+.reg-mark--br { bottom: 24px; inset-inline-end: 24px; border-inline-start: 0; border-block-start: 0; }
 
 /* Small crosshairs */
 .crosshair { position: absolute; width: 12px; height: 12px; pointer-events: none; opacity: 0.5; }
@@ -803,19 +817,23 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 }
 
 /* Disable "Create account" until every required field is filled and valid (pure CSS, no JS).
-   Name, trade and location exist twice — one input per language — and each is checked only in
-   the language on screen, so the hidden copy can't keep the button disabled. The two phone
-   fields are optional and are deliberately not listed. */
+   Name, company, trade and location exist twice — one input per language — and each is checked
+   only in the language on screen, so the hidden copy can't keep the button disabled. The two
+   phone fields are optional and are deliberately not listed; they also carry neither .he-field
+   nor .en-field, which is what keeps them out of the generic rule at the end.
+   The language scope is read off the root here, matching the swap rules further down; the
+   child combinator in .form-group > .he-field is load-bearing — it excludes the optional
+   free-text "Other trade" input, which sits in .other-trade rather than directly in a group. */
 .register-form:has(#email:placeholder-shown) .btn--primary,
 .register-form:has(#email:not(:placeholder-shown):invalid) .btn--primary,
 .register-form:has(#password:placeholder-shown) .btn--primary,
 .register-form:has(#password:not(:placeholder-shown):invalid) .btn--primary,
 .register-form:has(#password-confirm:placeholder-shown) .btn--primary,
 .register-form:has(.checkbox-input:not(:checked)) .btn--primary,
-#lang-he:checked ~ .auth-layout .register-form:has(.he-select option[value=""]:checked) .btn--primary,
-#lang-en:checked ~ .auth-layout .register-form:has(.en-select option[value=""]:checked) .btn--primary,
-#lang-he:checked ~ .auth-layout .register-form:has(.form-group > .he-field:placeholder-shown) .btn--primary,
-#lang-en:checked ~ .auth-layout .register-form:has(.form-group > .en-field:placeholder-shown) .btn--primary {
+html:not(:has(#lang-en:checked)) .register-form:has(.he-select option[value=""]:checked) .btn--primary,
+html:has(#lang-en:checked) .register-form:has(.en-select option[value=""]:checked) .btn--primary,
+html:not(:has(#lang-en:checked)) .register-form:has(.form-group > .he-field:placeholder-shown) .btn--primary,
+html:has(#lang-en:checked) .register-form:has(.form-group > .en-field:placeholder-shown) .btn--primary {
   opacity: 0.45;
   pointer-events: none;
   cursor: not-allowed;
@@ -1100,9 +1118,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 .he-field { display: block; }
 .en-field { display: none; }
 
-/* ── Default: content panels are RTL (Hebrew) ── */
-.brand-panel__inner { direction: rtl; }
-.form-panel         { direction: rtl; }
+/* The panels inherit their direction from the root now, so they set none of their own. */
 
 /* ── Toggle button active states ──
    CSS resolves which is active from which radio is :checked */
@@ -1111,25 +1127,25 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 #lang-en:checked ~ .lang-switch label[for="lang-en"] { color: var(--surface); background: var(--primary); }
 #lang-en:checked ~ .lang-switch label[for="lang-he"] { color: var(--text-soft); background: none; }
 
-/* ── English selected: swap text + direction + fonts ── */
-#lang-en:checked ~ .lang-switch .he-text  { display: none;   }
-#lang-en:checked ~ .lang-switch .en-text  { display: inline; }
-#lang-en:checked ~ .auth-layout .he-text  { display: none;   }
-#lang-en:checked ~ .auth-layout .en-text  { display: inline; }
-
-/* Swap the trade select + "Other" free-text variant with language */
-#lang-en:checked ~ .auth-layout .he-select { display: none;  }
-#lang-en:checked ~ .auth-layout .en-select { display: block; }
-#lang-en:checked ~ .auth-layout .he-field  { display: none;  }
-#lang-en:checked ~ .auth-layout .en-field  { display: block; }
-
-#lang-en:checked ~ .auth-layout .brand-panel__inner { direction: ltr; }
-#lang-en:checked ~ .auth-layout .form-panel         { direction: ltr; }
-
-#lang-en:checked ~ .auth-layout {
+/* ── English selected: swap text + direction + fonts ──
+   Matching the root instead of the radios' siblings lets one rule turn the page LTR, which the
+   grid, both panels and the fixed pill all inherit. It also puts --font-sans on an ancestor of
+   body, so English copy actually renders in Inter; scoped to .auth-layout it did not, because
+   body resolved the variable against :root and computed Heebo first. */
+html:has(#lang-en:checked) {
+  direction: ltr;
   --font-sans:  'Inter', system-ui, -apple-system, sans-serif;
   --font-serif: 'Fraunces', 'Georgia', serif;
 }
+
+html:has(#lang-en:checked) .he-text { display: none;   }
+html:has(#lang-en:checked) .en-text { display: inline; }
+
+/* Swap the trade select + the twinned text inputs with language */
+html:has(#lang-en:checked) .he-select { display: none;  }
+html:has(#lang-en:checked) .en-select { display: block; }
+html:has(#lang-en:checked) .he-field  { display: none;  }
+html:has(#lang-en:checked) .en-field  { display: block; }
 
 /* ═══ Availability — the three approved states, label always beside the dot ═══ */
 .avail-filter { display: flex; flex-direction: column; gap: 8px; border: 0; padding: 0; }
