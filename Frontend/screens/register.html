@@ -155,48 +155,84 @@
 
         <form class="register-form" action="#" method="post" novalidate>
 
-          <!-- Who you are + who you trade as: two short, related identity fields, paired so they
-               cost one row instead of two. Each keeps its own .form-group, so the submit gating
-               (.form-group > .he-field) still reads them individually. Order is unchanged —
-               a grid row follows the inline direction, so Full name stays first in both
-               languages — and .form-row stacks these back to one column under 560px. -->
-          <!-- Full name -->
-          <div class="form-group col--narrow">
+          <!-- Who you are: the name is two fields because the Register endpoint takes two.
+               A single "Full name" cannot be divided into firstName and lastName reliably, so
+               the screen asks for both rather than guessing — no parsing heuristic anywhere.
+               This is also the split edit-profile.html already collects, so one concept no
+               longer has two vocabularies across two approved screens.
+               Each keeps its own .form-group, so the submit gating (.form-group > .he-field)
+               still reads them individually. A grid row follows the inline direction, so
+               First name stays first in both languages. -->
+          <!-- First name -->
+          <div class="form-group col--half">
             <label class="form-label">
-              <span class="he-text">שם מלא</span>
-              <span class="en-text">Full name</span>
+              <span class="he-text">שם פרטי</span>
+              <span class="en-text">First name</span>
             </label>
             <!-- Two language variants so the example name stays in the active language
                  (placeholder is an attribute — can't be swapped with he-text/en-text spans).
-                 No dir: a name follows the active UI language direction. -->
+                 No dir: a name follows the active UI language direction.
+                 maxlength mirrors the endpoint's 100-character bound. -->
             <input
               class="form-input he-field"
               type="text"
-              name="fullname"
-              autocomplete="name"
-              placeholder="ישראל ישראלי"
-              aria-label="שם מלא"
+              name="firstName"
+              autocomplete="given-name"
+              maxlength="100"
+              placeholder="ישראל"
+              aria-label="שם פרטי"
               required
             />
             <input
               class="form-input en-field"
               type="text"
-              name="fullname"
-              autocomplete="name"
-              placeholder="John Smith"
-              aria-label="Full name"
+              name="firstName"
+              autocomplete="given-name"
+              maxlength="100"
+              placeholder="John"
+              aria-label="First name"
               required
             />
           </div>
 
-          <!-- Company name — required (owner decision, 2026-08-27). Terminology follows the
-               only company wording the project had established: the browse-contractors search
-               placeholder "שם או חברה" / "Name or company".
-               Twin he-field/en-field inputs, like Full name: the placeholder is an attribute and
+          <!-- Last name -->
+          <div class="form-group col--half">
+            <label class="form-label">
+              <span class="he-text">שם משפחה</span>
+              <span class="en-text">Last name</span>
+            </label>
+            <input
+              class="form-input he-field"
+              type="text"
+              name="lastName"
+              autocomplete="family-name"
+              maxlength="100"
+              placeholder="ישראלי"
+              aria-label="שם משפחה"
+              required
+            />
+            <input
+              class="form-input en-field"
+              type="text"
+              name="lastName"
+              autocomplete="family-name"
+              maxlength="100"
+              placeholder="Smith"
+              aria-label="Last name"
+              required
+            />
+          </div>
+
+          <!-- Company name — required (owner decision, 2026-08-27; D28 closed 2026-08-28).
+               Terminology follows the only company wording the project had established: the
+               browse-contractors search placeholder "שם או חברה" / "Name or company".
+               It takes a full row because the identity row now holds the two name fields, and
+               a three-across row was measured and cannot show its own placeholders.
+               Twin he-field/en-field inputs, like the names: the placeholder is an attribute and
                cannot be swapped with he-text/en-text spans. The twins are also what the submit
                gating reads — .form-group > .he-field:placeholder-shown — so a required field in
                this shape gates the button with no new rule. -->
-          <div class="form-group col--wide">
+          <div class="form-group col--full">
             <label class="form-label">
               <span class="he-text">שם חברה</span>
               <span class="en-text">Company name</span>
@@ -204,8 +240,9 @@
             <input
               class="form-input he-field"
               type="text"
-              name="company"
+              name="companyName"
               autocomplete="organization"
+              maxlength="120"
               placeholder="ישראלי בנייה בע״מ"
               aria-label="שם חברה"
               required
@@ -213,8 +250,9 @@
             <input
               class="form-input en-field"
               type="text"
-              name="company"
+              name="companyName"
               autocomplete="organization"
+              maxlength="120"
               placeholder="Smith Contracting Ltd."
               aria-label="Company name"
               required
@@ -237,6 +275,7 @@
               dir="ltr"
               placeholder="you@example.com"
               autocomplete="email"
+              maxlength="254"
               pattern="[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}"
               required
             />
@@ -250,14 +289,15 @@
           <!-- Trade + Location (two columns) -->
           <!-- Primary trade — a specialty, NOT a fixed role (only admin is global) -->
           <div class="form-group col--half">
-            <label class="form-label" for="trade-he">
+            <label class="form-label" for="specialty-he">
               <span class="he-text">תחום עיקרי</span>
               <span class="en-text">Primary trade</span>
             </label>
             <div class="select-wrap">
               <!-- Two language variants; CSS shows one at a time.
-                   Option text can't be toggled with spans, so the whole control swaps. -->
-              <select class="form-select he-select" id="trade-he" name="trade" required>
+                   Option text can't be toggled with spans, so the whole control swaps.
+                   The option values are the endpoint's 23 trade codes, verbatim. -->
+              <select class="form-select he-select" id="specialty-he" name="specialty" required>
                 <option value="" disabled selected>בחירת תחום…</option>
                 <option value="general">קבלנות כללית</option>
                 <option value="electrical">חשמל</option>
@@ -283,7 +323,7 @@
                 <option value="heavy_equipment">כלי צמ״ה</option>
                 <option value="other">אחר</option>
               </select>
-              <select class="form-select en-select" id="trade-en" name="trade" aria-label="Primary trade" required>
+              <select class="form-select en-select" id="specialty-en" name="specialty" aria-label="Primary trade" required>
                 <option value="" disabled selected>Select your trade…</option>
                 <option value="general">General contracting</option>
                 <option value="electrical">Electrical</option>
@@ -319,18 +359,22 @@
 
             <!-- Free-text trade — revealed by CSS only when "Other" is selected
                  (.form-group:has(option[value="other"]:checked)). Two language
-                 variants keep the label + placeholder bilingual, like the select. -->
+                 variants keep the label + placeholder bilingual, like the select.
+                 Named specialtyOther, which is the endpoint's field and the name
+                 edit-profile.html already used. The endpoint requires it exactly when the
+                 trade is "other" and refuses it otherwise, which is the same condition
+                 this reveal already applies. maxlength matches its 60-character bound. -->
             <div class="other-trade">
               <span class="form-label form-label--plain">
                 <span class="he-text">פירוט התחום</span>
                 <span class="en-text">Specify your trade</span>
               </span>
               <input class="form-input he-field" type="text"
-                     name="trade-other" maxlength="60"
+                     name="specialtyOther" maxlength="60"
                      placeholder="לדוגמה: פיגומים, גינון, מעליות"
                      aria-label="פירוט התחום" />
               <input class="form-input en-field" type="text"
-                     name="trade-other" maxlength="60"
+                     name="specialtyOther" maxlength="60"
                      placeholder="e.g. scaffolding, landscaping, elevators"
                      aria-label="Specify your trade" />
             </div>
@@ -348,32 +392,84 @@
                phone, which this screen does not collect. -->
           <div class="field-stack col--half">
 
-            <!-- Location -->
+            <!-- Location is two fields, not one line of free text. The endpoint stores
+                 location as { city, region } and browse-contractors filters on the region
+                 *code*, which free text can never populate — so a combined "תל אביב, מרכז"
+                 would register an account the region filter can never return. The city stays
+                 free text; the region comes from the fixed list below. This is the same shape
+                 edit-profile.html and my-profile.html already collect. -->
+            <!-- City -->
             <div class="form-group">
               <label class="form-label">
-                <span class="he-text">אזור פעילות</span>
-                <span class="en-text">Location</span>
+                <span class="he-text">עיר</span>
+                <span class="en-text">City</span>
               </label>
               <!-- Two language variants so the placeholder stays in the active language
                    (placeholder is an attribute — can't be swapped with he-text/en-text spans) -->
               <input
                 class="form-input he-field"
                 type="text"
-                name="location"
+                name="city"
                 autocomplete="address-level2"
-                placeholder="תל אביב, מרכז"
-                aria-label="אזור פעילות"
+                maxlength="80"
+                placeholder="תל אביב"
+                aria-label="עיר"
                 required
               />
               <input
                 class="form-input en-field"
                 type="text"
-                name="location"
+                name="city"
                 autocomplete="address-level2"
-                placeholder="Tel Aviv, Central"
-                aria-label="Location"
+                maxlength="80"
+                placeholder="Tel Aviv"
+                aria-label="City"
                 required
               />
+            </div>
+
+            <!-- Region — the nine approved region codes, copied verbatim from
+                 edit-profile.html so one concept keeps one vocabulary. Two language variants,
+                 like the trade select. The empty first option is what makes the existing
+                 submit gating (.he-select option[value=""]:checked) hold the button until a
+                 region is chosen, so a required field arrives with no new CSS rule. -->
+            <div class="form-group">
+              <label class="form-label" for="region-he">
+                <span class="he-text">אזור</span>
+                <span class="en-text">Region</span>
+              </label>
+              <div class="select-wrap">
+                <select class="form-select he-select" id="region-he" name="region" required>
+                  <option value="" disabled selected>בחירת אזור…</option>
+                  <option value="nationwide">כל הארץ</option>
+                  <option value="north">צפון</option>
+                  <option value="haifa">חיפה והקריות</option>
+                  <option value="sharon">השרון</option>
+                  <option value="center">מרכז</option>
+                  <option value="telaviv">תל אביב</option>
+                  <option value="jerusalem">ירושלים והסביבה</option>
+                  <option value="lowlands">שפלה</option>
+                  <option value="south">דרום</option>
+                </select>
+                <select class="form-select en-select" id="region-en" name="region" aria-label="Region" required>
+                  <option value="" disabled selected>Select a region…</option>
+                  <option value="nationwide">Nationwide (all Israel)</option>
+                  <option value="north">North</option>
+                  <option value="haifa">Haifa &amp; Krayot</option>
+                  <option value="sharon">Sharon</option>
+                  <option value="center">Center</option>
+                  <option value="telaviv">Tel Aviv</option>
+                  <option value="jerusalem">Jerusalem area</option>
+                  <option value="lowlands">Lowlands (Shfela)</option>
+                  <option value="south">South</option>
+                </select>
+                <span class="select-chevron" aria-hidden="true">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+                       stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M6 9l6 6 6-6"/>
+                  </svg>
+                </span>
+              </div>
             </div>
 
             <!-- Office phone -->
@@ -387,13 +483,16 @@
                 </span>
               </label>
               <!-- dir="ltr": phone numbers are always left-to-right.
-                   No required and no pattern — optional, and no new validation rule. -->
+                   No required and no pattern — optional, and no new validation rule; the
+                   endpoint bounds the length and deliberately has no format rule either.
+                   This is the company's office line and is stored on the company. -->
               <input
                 class="form-input"
                 type="tel"
                 id="office-phone"
-                name="office-phone"
+                name="officePhone"
                 dir="ltr"
+                maxlength="30"
                 placeholder="03-1234567"
                 autocomplete="work tel"
               />
@@ -409,12 +508,15 @@
                   <span class="en-text">Optional</span>
                 </span>
               </label>
+              <!-- The individual's own business number, stored on the person. It is never
+                   filled from the office line above and never stands in for it. -->
               <input
                 class="form-input"
                 type="tel"
                 id="business-phone"
-                name="business-phone"
+                name="businessPhone"
                 dir="ltr"
+                maxlength="30"
                 placeholder="050-1234567"
                 autocomplete="tel"
               />
@@ -493,6 +595,7 @@
                 placeholder="••••••••"
                 autocomplete="new-password"
                 minlength="8"
+                maxlength="200"
                 pattern=".{8,}"
                 required
               />
@@ -528,14 +631,17 @@
               <span class="en-text">Confirm password</span>
             </label>
             <div class="input-wrapper">
+              <!-- The endpoint expects confirmPassword and checks it matches, so the screen
+                   sends it. The id stays password-confirm: the submit gating reads it. -->
               <input
                 class="form-input"
                 type="password"
                 id="password-confirm"
-                name="password-confirm"
+                name="confirmPassword"
                 dir="ltr"
                 placeholder="••••••••"
                 autocomplete="new-password"
+                maxlength="200"
                 required
               />
               <!-- Eye toggle: wired with JS in Stage 2 -->
@@ -560,9 +666,12 @@
             </p>
           </div>
 
-          <!-- Terms consent -->
+          <!-- Terms consent. The endpoint requires acceptedTerms to be true and records the
+               acceptance with the Terms version it is serving, so the version is never sent
+               from here. A checkbox submits the string "on", so the boolean the endpoint wants
+               has to be produced when the payload is built. -->
           <label class="checkbox-field col--full">
-            <input class="checkbox-input" type="checkbox" name="terms" required>
+            <input class="checkbox-input" type="checkbox" name="acceptedTerms" required>
             <span class="checkbox-box" aria-hidden="true">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
                    stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
