@@ -1,0 +1,1236 @@
+/* ─────────────────────────────────────────────
+   FieldSync — Register / Create account
+   Static HTML/CSS prototype for the academic project.
+   The visual language is a luxury blueprint board:
+   deep technical grid, warm vellum sheet, precise
+   registration marks, and calm construction geometry.
+
+   Palette: --primary #23384D · --secondary #C7B89D
+            --background #F3F0EA · --surface #FFFDF8
+            --text #1F2428 · --brand-gradient
+   Most colors come from the approved palette. The only
+   exceptions are documented functional/provider colors:
+   red for errors and Google brand colors inside its logo.
+   ───────────────────────────────────────────── */
+
+:root {
+  /* ── Approved brand palette ── */
+  --primary:         #23384D;
+  --secondary:       #C7B89D;
+  --background:      #F3F0EA;
+  --surface:         #FFFDF8;
+  --text:            #1F2428;
+  --brand-gradient:  linear-gradient(135deg, #23384D 0%, #4A5D6E 55%, #C7B89D 100%);
+
+  /* Approved functional exception: red for error states. */
+  --error:           #A63232;
+  /* Approved exception: availability uses the traffic-light convention (2026-08-19). */
+  /* Applied to the indicator dot only — the status text always stays readable ink. */
+  --avail-open:      #3F7A4C;
+  --avail-limited:   #C08A1E;
+  --avail-closed:    #A63232;
+  --error-bg:        rgba(166, 50, 50, 0.06);
+  --error-border:    rgba(166, 50, 50, 0.30);
+
+  /* ── Derived: opacity variants of palette colors ── */
+  --primary-08:      rgba(35, 56, 77, 0.08);
+  --primary-12:      rgba(35, 56, 77, 0.12);
+  --primary-20:      rgba(35, 56, 77, 0.20);
+  --primary-30:      rgba(35, 56, 77, 0.30);
+  --primary-45:      rgba(35, 56, 77, 0.45);
+  --secondary-15:    rgba(199, 184, 157, 0.15);
+  --secondary-30:    rgba(199, 184, 157, 0.30);
+  --secondary-55:    rgba(199, 184, 157, 0.55);
+  --secondary-70:    rgba(199, 184, 157, 0.70);
+  --text-mute:       rgba(31, 36, 40, 0.64);
+  --text-soft:       rgba(31, 36, 40, 0.75);
+  --surface-08:      rgba(255, 253, 248, 0.08);
+  --surface-15:      rgba(255, 253, 248, 0.15);
+  --surface-50:      rgba(255, 253, 248, 0.50);
+  --surface-75:      rgba(255, 253, 248, 0.75);
+  --surface-90:      rgba(255, 253, 248, 0.90);
+  --surface-96:      rgba(255, 253, 248, 0.96);
+
+  /* Grid lines derived from palette */
+  --grid-dark:       rgba(35, 56, 77, 0.05);
+  --grid-light:      rgba(255, 253, 248, 0.06);
+
+  /* ── Typography — Hebrew is the default UI language ── */
+  --font-sans:  'Heebo', 'Inter', system-ui, sans-serif;
+  --font-serif: 'Frank Ruhl Libre', 'Fraunces', serif;
+  --font-mono:  'IBM Plex Mono', ui-monospace, 'SF Mono', monospace;
+
+  /* ── Shape ── */
+  --shadow-soft:     0 22px 60px -42px rgba(35, 56, 77, 0.70);
+  --shadow-lift:     0 18px 36px -24px rgba(31, 36, 40, 0.70);
+  --shadow-stacked:  18px 18px 0 rgba(199, 184, 157, 0.18),
+                     0 30px 70px -46px rgba(35, 56, 77, 0.85);
+  --board-shadow:    inset 0 0 0 1px rgba(255, 253, 248, 0.08),
+                     inset 0 0 0 12px rgba(199, 184, 157, 0.08),
+                     0 34px 90px -54px rgba(31, 36, 40, 0.90);
+
+  --r-sm:      8px;
+  --r-md:      8px;
+  /* The form panel is ~778px at 1440px, so 500px left roughly 280px of it unused while the
+     form ran to 1.76 screens. 620px spends that width on the paired rows instead of on
+     margin, and stops well short of the panel. The exact figure is set by the widest paired
+     label — OFFICE PHONE / BUSINESS PHONE with their optional markers need ~256px a column,
+     which 600px missed by 4px and wrapped one of them a line taller than the other. */
+  --panel-max: 620px;
+}
+
+/* ─────────────────────────────────────────────
+   Reset
+   ───────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; }
+
+/* Hebrew is the default, and the direction is set on the root — the same place login.css
+   sets it. Putting it here rather than on the inner panels is what lets the grid, both
+   panels and the fixed language pill mirror from one declaration, and it is also why the
+   English font swap below reaches body: --font-sans is redefined on an ancestor of body,
+   not on a descendant of it. */
+html { direction: rtl; }
+
+body {
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--text);
+  background:
+    radial-gradient(circle at 14% 16%, rgba(199, 184, 157, 0.18) 0 11%, transparent 26%),
+    radial-gradient(circle at 86% 12%, rgba(255, 253, 248, 0.10) 0 9%, transparent 24%),
+    var(--brand-gradient);
+  background-attachment: fixed;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+body::before,
+body::after {
+  content: '';
+  position: fixed;
+  inset: 18px;
+  z-index: 0;
+  pointer-events: none;
+}
+
+body::before {
+  background:
+    linear-gradient(var(--surface-08) 1px, transparent 1px),
+    linear-gradient(90deg, var(--surface-08) 1px, transparent 1px),
+    linear-gradient(var(--surface-15) 2px, transparent 2px),
+    linear-gradient(90deg, var(--surface-15) 2px, transparent 2px),
+    repeating-linear-gradient(135deg, transparent 0 42px, rgba(199, 184, 157, 0.13) 42px 43px),
+    repeating-linear-gradient(45deg, transparent 0 96px, rgba(255, 253, 248, 0.06) 96px 97px);
+  background-size: 24px 24px, 24px 24px, 120px 120px, 120px 120px, 170px 170px, 220px 220px;
+  border: 1px solid var(--surface-15);
+  box-shadow: var(--board-shadow);
+}
+
+body::after {
+  inset: 34px;
+  border: 1px solid var(--secondary-30);
+  background:
+    linear-gradient(90deg, var(--secondary-30) 0 1px, transparent 1px calc(100% - 1px), var(--secondary-30) calc(100% - 1px)),
+    linear-gradient(0deg, var(--secondary-30) 0 1px, transparent 1px calc(100% - 1px), var(--secondary-30) calc(100% - 1px));
+  opacity: 0.7;
+}
+
+a    { text-decoration: none; color: inherit; }
+button { font-family: inherit; cursor: pointer; border: none; background: none; }
+
+/* ─────────────────────────────────────────────
+   Language switcher — fixed pill, trailing corner
+   ───────────────────────────────────────────── */
+.lang-switch {
+  position: fixed;
+  top: 18px;
+  inset-inline-end: 22px;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  /* Written logically so the wider side stays beside the globe when the pill mirrors —
+     the four-value physical shorthand kept the tight side on the same physical edge. */
+  padding-block: 6px;
+  padding-inline-start: 11px;
+  padding-inline-end: 9px;
+  background: var(--surface-96);
+  border: 1px solid var(--secondary-55);
+  border-radius: 999px;
+  box-shadow: var(--shadow-lift);
+  backdrop-filter: blur(10px);
+  outline: 1px solid var(--surface-50);
+  outline-offset: -4px;
+}
+
+.lang-switch__globe { color: var(--text-mute); flex-shrink: 0; }
+
+.lang-switch__btn {
+  font-family: var(--font-sans);
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--text-soft);
+  padding: 4px 10px;
+  border-radius: 999px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  transition: color 0.18s, background 0.18s;
+}
+.lang-switch__btn:hover { color: var(--primary); }
+
+.lang-switch__sep {
+  width: 1px;
+  height: 14px;
+  background: var(--secondary-30);
+}
+
+/* ─────────────────────────────────────────────
+   Layout — two-column split
+   ───────────────────────────────────────────── */
+.auth-layout {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: minmax(390px, 46%) 1fr;
+  min-height: 100vh;
+  isolation: isolate;
+}
+
+.auth-layout::before,
+.auth-layout::after {
+  content: '';
+  position: fixed;
+  inset-block: 44px;
+  z-index: 3;
+  width: 36px;
+  pointer-events: none;
+  opacity: 0.52;
+}
+
+.auth-layout::before {
+  inset-inline-start: 34px;
+  border-inline-start: 2px solid var(--secondary-55);
+  border-block: 1px solid var(--secondary-30);
+  background:
+    repeating-linear-gradient(0deg, var(--surface-15) 0 1px, transparent 1px 12px),
+    repeating-linear-gradient(90deg, var(--surface-08) 0 1px, transparent 1px 9px),
+    linear-gradient(90deg, var(--surface-08), transparent);
+}
+
+.auth-layout::after {
+  inset-inline-end: 34px;
+  border-inline-end: 2px solid var(--secondary-55);
+  border-block: 1px solid var(--secondary-30);
+  background:
+    repeating-linear-gradient(0deg, var(--surface-15) 0 1px, transparent 1px 12px),
+    repeating-linear-gradient(90deg, var(--surface-08) 0 1px, transparent 1px 9px),
+    linear-gradient(270deg, var(--surface-08), transparent);
+}
+
+/* ─────────────────────────────────────────────
+   Brand panel (left) — dark, grid, animated mesh
+   ───────────────────────────────────────────── */
+.brand-panel {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 68px 68px 68px 74px;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 78% 22%, rgba(255, 253, 248, 0.09) 0 10%, transparent 24%),
+    rgba(35, 56, 77, 0.72);
+  isolation: isolate;
+  border-inline-end: 1px solid var(--surface-15);
+}
+
+/* Drifting colour mesh — palette colors only */
+.brand-panel::before {
+  content: '';
+  position: absolute;
+  inset: 28px;
+  background:
+    radial-gradient(circle at 15% 35%, var(--secondary-55) 0 2px, transparent 3px),
+    radial-gradient(circle at 42% 18%, var(--surface-50) 0 2px, transparent 3px),
+    radial-gradient(circle at 74% 62%, var(--secondary-55) 0 2px, transparent 3px),
+    linear-gradient(32deg, transparent 0 21%, var(--surface-15) 21% 21.4%, transparent 21.4%),
+    linear-gradient(148deg, transparent 0 34%, var(--surface-15) 34% 34.35%, transparent 34.35%),
+    linear-gradient(84deg, transparent 0 54%, var(--secondary-30) 54% 54.25%, transparent 54.25%),
+    radial-gradient(circle at 28% 80%, rgba(199, 184, 157, 0.14) 0%, transparent 22%);
+  filter: none;
+  animation: boardPulse 18s ease-in-out infinite alternate;
+  pointer-events: none;
+  border: 1px solid var(--surface-15);
+}
+
+/* Engineering grid */
+.brand-panel::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(var(--surface-15) 2px, transparent 2px),
+    linear-gradient(90deg, var(--surface-15) 2px, transparent 2px),
+    linear-gradient(var(--grid-light) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-light) 1px, transparent 1px),
+    repeating-linear-gradient(115deg, transparent 0 18px, var(--surface-08) 18px 19px);
+  background-size: 120px 120px, 120px 120px, 24px 24px, 24px 24px, 96px 96px;
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, rgba(31, 36, 40, 1) 9%, rgba(31, 36, 40, 1) 91%, transparent 100%);
+          mask-image: linear-gradient(90deg, transparent 0, rgba(31, 36, 40, 1) 9%, rgba(31, 36, 40, 1) 91%, transparent 100%);
+  pointer-events: none;
+}
+
+@keyframes boardPulse {
+  0%   { opacity: 0.72; transform: scale(1); }
+  100% { opacity: 1; transform: scale(1.015); }
+}
+
+/* Blueprint corner registration marks */
+.reg-mark {
+  position: absolute;
+  width: 42px;
+  height: 42px;
+  border: 1.5px solid var(--surface-50);
+  pointer-events: none;
+}
+/* The dropped sides are logical too, so each bracket still opens inward once the page mirrors.
+   With a physical border-right/left here the mark lands in the mirrored corner still pointing
+   the way it pointed in LTR, and brackets nothing — the same two-line fix login.css took. */
+.reg-mark--tl { top: 24px; inset-inline-start: 24px; border-inline-end: 0; border-block-end: 0; }
+.reg-mark--br { bottom: 24px; inset-inline-end: 24px; border-inline-start: 0; border-block-start: 0; }
+
+/* Small crosshairs */
+.crosshair { position: absolute; width: 12px; height: 12px; pointer-events: none; opacity: 0.5; }
+.crosshair::before, .crosshair::after { content: ''; position: absolute; background: var(--secondary-55); }
+.crosshair::before { inset: 5px 0; width: 100%; height: 1.5px; }
+.crosshair::after  { inset: 0 5px; width: 1.5px; height: 100%; }
+.crosshair--a { top: 30%; inset-inline-end: 16%; }
+.crosshair--b { bottom: 22%; inset-inline-start: 12%; }
+
+.brand-panel__inner {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 38px;
+  max-width: 460px;
+  width: 100%;
+  padding: 44px;
+  overflow: hidden;
+  border: 1px solid var(--surface-50);
+  background:
+    linear-gradient(90deg, var(--surface-15) 0 1px, transparent 1px calc(100% - 1px), var(--surface-15) calc(100% - 1px)),
+    linear-gradient(0deg, var(--surface-15) 0 1px, transparent 1px calc(100% - 1px), var(--surface-15) calc(100% - 1px)),
+    linear-gradient(135deg, transparent 0 24px, var(--secondary-30) 24px 25px, transparent 25px),
+    linear-gradient(180deg, var(--surface-08), rgba(255, 253, 248, 0.03)),
+    var(--secondary-15); /* warm tan glass — no navy-on-navy (lecturer: no blue on blue) */
+  box-shadow:
+    12px 12px 0 rgba(199, 184, 157, 0.10),
+    0 30px 80px -52px rgba(31, 36, 40, 0.90);
+  backdrop-filter: blur(8px);
+}
+
+.brand-panel__inner::before {
+  content: '';
+  position: absolute;
+  inset: 16px;
+  border: 1px solid var(--surface-15);
+  border-inline-start: 5px solid var(--secondary);
+  background:
+    linear-gradient(90deg, transparent 0 64%, var(--surface-08) 64% 64.5%, transparent 64.5%),
+    linear-gradient(0deg, transparent 0 70%, var(--surface-08) 70% 70.5%, transparent 70.5%);
+  pointer-events: none;
+}
+
+/* Logo row */
+.brand-logo { display: flex; align-items: center; gap: 12px; }
+
+.brand-logo__mark {
+  display: inline-flex;
+  padding: 8px;
+  border-radius: 12px;
+  background: var(--surface-15);
+  border: 1px solid var(--surface-50);
+  box-shadow:
+    inset 0 0 0 6px var(--surface-08),
+    0 0 0 1px var(--secondary-30);
+}
+
+.brand-logo__name {
+  font-size: 21px;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+  color: var(--surface);
+}
+
+.brand-logo__badge {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--surface);
+  background: var(--surface-08);
+  border: 1px solid var(--secondary-55);
+  padding: 4px 9px;
+  border-radius: 999px;
+}
+
+/* Headline copy */
+.brand-headline {
+  font-family: var(--font-serif);
+  font-size: clamp(31px, 4vw, 44px);
+  font-weight: 500;
+  line-height: 1.06;
+  letter-spacing: 0;
+  color: var(--surface);
+  text-wrap: balance;
+}
+
+.brand-sub {
+  font-size: 19px;
+  line-height: 1.62;
+  margin-top: 16px;
+  max-width: 38ch;
+  color: var(--surface-75);
+  border-inline-start: 1px solid var(--surface-15);
+  padding-inline-start: 14px;
+}
+
+/* Feature list */
+.brand-features {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+  counter-reset: feature;
+}
+
+.brand-feature {
+  counter-increment: feature;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 64px;
+  padding: 16px 18px;
+  font-size: 18px;
+  line-height: 1.5;
+  color: var(--surface-90);
+  background:
+    linear-gradient(90deg, var(--surface-08), rgba(255, 253, 248, 0.03)),
+    rgba(199, 184, 157, 0.18); /* tan card fill (was navy) — kills blue-on-blue, lifts off canvas */
+  border: 1px solid var(--surface-15);
+  border-inline-start: 4px solid var(--secondary);
+  border-radius: var(--r-sm);
+  position: relative;
+  overflow: hidden;
+}
+
+.brand-feature:nth-child(2) { margin-inline-start: 18px; }
+.brand-feature:nth-child(3) { margin-inline-start: 36px; }
+
+.brand-feature::after {
+  content: '';
+  position: absolute;
+  inset-block: 0;
+  inset-inline-end: 0;
+  width: 42%;
+  background: linear-gradient(90deg, transparent, var(--surface-08));
+  pointer-events: none;
+}
+
+.brand-feature__mark {
+  flex-shrink: 0;
+  display: inline-grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  font-family: var(--font-mono);
+  font-size: 0;
+  line-height: 1;
+  color: var(--primary);            /* navy number on tan — high contrast, not blue-on-blue */
+  background: var(--secondary);     /* solid tan badge (was navy) */
+  border: 1px solid var(--secondary);
+  border-radius: 50%;
+}
+.brand-feature__mark::before {
+  content: counter(feature, decimal-leading-zero);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.brand-footer-note {
+  font-size: 15px;
+  line-height: 1.6;
+  max-width: 38ch;
+  color: var(--surface-50);
+  border-top: 1px solid var(--surface-15);
+  padding-top: 22px;
+}
+
+/* ─────────────────────────────────────────────
+   Form panel (right) — warm technical sheet
+   Secondary accent on the reading-start edge.
+   ───────────────────────────────────────────── */
+.form-panel {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Vertical padding trimmed from 52px: on a form this tall it is pure scroll, and the card
+     already carries its own 32px inset. The horizontal 44px is unchanged. */
+  padding: 40px 44px;
+  background:
+    radial-gradient(circle at 78% 22%, rgba(255, 253, 248, 0.09) 0 10%, transparent 24%),
+    linear-gradient(var(--surface-08) 1px, transparent 1px),
+    linear-gradient(90deg, var(--surface-08) 1px, transparent 1px),
+    linear-gradient(var(--surface-15) 2px, transparent 2px),
+    linear-gradient(90deg, var(--surface-15) 2px, transparent 2px),
+    repeating-linear-gradient(0deg, transparent 0 47px, var(--secondary-15) 47px 48px),
+    linear-gradient(115deg, transparent 0 42%, var(--secondary-15) 42% 43%, transparent 43% 100%),
+    rgba(35, 56, 77, 0.72);
+  background-size: auto, 24px 24px, 24px 24px, 140px 140px, 140px 140px, auto, 160px 160px, auto;
+  overflow-y: auto;
+  border-inline-start: 1px solid var(--surface-15);
+}
+
+.form-panel::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 20% 18%, rgba(199, 184, 157, 0.16) 0 13%, transparent 30%),
+    linear-gradient(32deg, transparent 0 38%, var(--surface-08) 38% 38.25%, transparent 38.25%),
+    linear-gradient(148deg, transparent 0 64%, var(--surface-08) 64% 64.25%, transparent 64.25%);
+  pointer-events: none;
+}
+
+.form-panel::after {
+  content: '';
+  position: absolute;
+  inset: 28px;
+  border: 1px solid var(--surface-15);
+  border-block-start: 6px solid var(--secondary-30);
+  pointer-events: none;
+  clip-path: polygon(0 0, calc(100% - 34px) 0, 100% 34px, 100% 100%, 0 100%);
+}
+
+.form-card {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: var(--panel-max);
+  /* Makes the card queryable by its own width — see the @container rule under the grid. Safe
+     here because the card's width comes from its parent and its cap, never from its contents. */
+  container-type: inline-size;
+  container-name: regcard;
+  display: flex;
+  flex-direction: column;
+  /* Trimmed from 24/38px. The card stacks header, form, divider, OAuth and footer — six seams
+     at desktop — so a few px off each is worth more than it looks; both stay clear of the
+     type's own leading, and the narrow-screen overrides below are unchanged. */
+  gap: 18px;
+  padding: 32px;
+  background:
+    linear-gradient(135deg, transparent 0 24px, var(--surface-96) 24px),
+    linear-gradient(90deg, rgba(35, 56, 77, 0.035) 1px, transparent 1px),
+    linear-gradient(0deg, rgba(35, 56, 77, 0.035) 1px, transparent 1px),
+    linear-gradient(180deg, rgba(255, 253, 248, 0.98), rgba(243, 240, 234, 0.95));
+  background-size: auto, 22px 22px, 22px 22px, auto;
+  border: 1px solid var(--surface-75);
+  border-radius: var(--r-md);
+  box-shadow:
+    18px 18px 0 rgba(199, 184, 157, 0.20),
+    28px 28px 0 rgba(255, 253, 248, 0.08),
+    0 30px 70px -44px rgba(31, 36, 40, 0.95);
+  outline: 1px solid rgba(35, 56, 77, 0.08);
+  outline-offset: -8px;
+}
+
+.form-card::before,
+.form-card::after {
+  content: '';
+  position: absolute;
+  width: 18px;
+  height: 18px;
+  border-color: var(--secondary);
+  border-style: solid;
+  pointer-events: none;
+}
+
+.form-card::before {
+  top: 14px;
+  inset-inline-start: 14px;
+  border-width: 2px 0 0 2px;
+}
+
+.form-card::after {
+  inset-inline-end: 14px;
+  bottom: 14px;
+  border-width: 0 2px 2px 0;
+}
+
+/* Mobile-only logo */
+.mobile-logo { display: none; align-items: center; gap: 10px; justify-content: center; }
+.mobile-logo__name { font-size: 18px; font-weight: 700; color: var(--primary); }
+
+/* Form header */
+.form-header {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--secondary-30);
+  position: relative;
+}
+
+.form-header::after {
+  content: '';
+  position: absolute;
+  inset-inline-start: 0;
+  bottom: -1px;
+  width: 92px;
+  height: 3px;
+  background: var(--primary);
+}
+
+.form-title {
+  font-family: var(--font-serif);
+  font-size: 31px;
+  font-weight: 500;
+  letter-spacing: 0;
+  line-height: 1.15;
+  color: var(--primary);
+  text-shadow: 1px 1px 0 var(--secondary-15);
+}
+
+.form-subtitle { font-size: 17.5px; color: var(--text-soft); }
+
+/* ─────────────────────────────────────────────
+   Alert
+   ───────────────────────────────────────────── */
+.alert {
+  display: none;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 16px;
+  border-radius: var(--r-sm);
+  font-size: 15.5px;
+  line-height: 1.5;
+  border: 1px solid transparent;
+  box-shadow: inset 5px 0 0 var(--error), 0 10px 22px -18px rgba(166, 50, 50, 0.70);
+}
+.alert--visible  { display: flex; }
+.alert--error    { color: var(--error); background: var(--error-bg); border-color: var(--error-border); }
+.alert__icon     { flex-shrink: 0; margin-top: 1px; }
+
+/* ─────────────────────────────────────────────
+   Form fields
+   ───────────────────────────────────────────── */
+/* The form is one 6-column grid rather than a stack of two-column rows, so a field asks for a
+   half (span 3) or the full width (span 6) without any row wrappers — which is what lets a tall
+   block sit beside a stack of short ones instead of forcing a row of its own. Mobile-first: one
+   column until there is room. `align-items: start` keeps a short field from stretching to a tall
+   neighbour's height.
+
+   There is deliberately no third-width track. A three-across identity row was measured and
+   cannot show its own placeholders: at 1280px those three fields need 536px of box width
+   (128 + 217 + 191) against a 502px row, so every possible split clipped Company name and
+   Email. Widening the card cannot close it either — the form panel caps the card at 603px
+   there. That measurement is why First name, Last name and Company name occupy two rows
+   rather than one: the fields that need reading width get a half each. */
+.register-form {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 14px;
+  align-items: start;
+}
+.form-group    { display: flex; flex-direction: column; gap: 8px; }
+
+/* Short fields sharing one grid cell, stacked. City, Region and the two phone numbers are all
+   short, and stacking them fills the height the availability block beside them needs anyway,
+   which is what keeps this regrouping nearly free in vertical space. The 10px gap is tighter
+   than the 14px between rows on purpose: these four read as one group inside a single cell,
+   and the difference is what stops the stack overrunning the block beside it. Splitting the
+   old single Location field into City + Region added a control here rather than a grid cell,
+   so the row count is unchanged. */
+.field-stack { display: flex; flex-direction: column; gap: 10px; }
+
+/* Two columns as soon as the single-column mobile layout is no longer needed. One layout from
+   here up, so there is no second desktop arrangement to keep in step with this one. */
+@media (min-width: 561px) {
+  .register-form { grid-template-columns: repeat(12, 1fr); column-gap: 18px; }
+  .col--half { grid-column: span 6; }
+  .col--full { grid-column: span 12; }
+}
+
+/* The card's width does not track the viewport: the brand panel's share changes at 1024px, so
+   the same window can leave the card anywhere between ~428px and its 620px cap. The question
+   that decides the column count is therefore about the card, not the window — asked of the card
+   directly. Below the width at which a half still fits the longest field placed on one, two
+   columns cannot show their own placeholders and the form drops to one. Company name takes the
+   full width, so that longest field is Email at ~191px — which is the half this 399px threshold
+   is measured against, and why the mobile column still arrives at essentially the same width
+   the old viewport breakpoint chose rather than opening a tall single-column band mid-desktop.
+   Must stay after the rule above: a container query adds no specificity, so it wins on order. */
+@container regcard (max-width: 399px) {
+  .register-form { grid-template-columns: 1fr; }
+  .col--half,
+  .col--full { grid-column: 1 / -1; }
+}
+
+.form-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  /* When a label carries an optional marker and the column is too narrow for both, the marker
+     drops to its own line as a unit. Without this the flex line had to shrink the text span
+     instead, which broke the phrase mid-way ("BUSINESS" / "PHONE") and made one label in a
+     row a line taller than its neighbour — which pushes the two inputs out of alignment. */
+  flex-wrap: wrap;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-soft);
+  cursor: pointer;
+}
+
+/* The label phrase itself never breaks; only the optional marker may wrap past it. This keeps
+   both labels in a paired row the same number of lines, so their inputs stay on one line.
+   This is a layout rule, not a language one: it used to sit on the duplicated .he-text/.en-text
+   spans, and deleting those with the twins would have silently let labels wrap again. */
+.form-label > .form-label__text { white-space: nowrap; }
+
+.form-label::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border: 1px solid var(--secondary);
+  background: var(--primary-08);
+  transform: rotate(45deg);
+  flex-shrink: 0;
+}
+
+.form-label-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+
+/* Shared field look for text inputs and the trade select */
+.form-input,
+.form-select {
+  width: 100%;
+  height: 54px;
+  padding: 0 16px;
+  font-family: var(--font-sans);
+  font-size: 17px;
+  color: var(--text);
+  background:
+    linear-gradient(90deg, rgba(35, 56, 77, 0.035) 1px, transparent 1px),
+    var(--surface);
+  background-size: 14px 100%, auto;
+  border: 1.5px solid var(--secondary-30);
+  border-inline-start-width: 5px;
+  border-radius: var(--r-sm);
+  outline: none;
+  box-shadow:
+    inset 0 -2px 0 var(--secondary-15),
+    4px 4px 0 rgba(199, 184, 157, 0.08);
+  transition: border-color 0.16s, box-shadow 0.16s, background 0.16s;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.form-input::placeholder { color: var(--text-mute); }
+.form-input:hover,
+.form-select:hover {
+  border-color: var(--secondary-55);
+  border-inline-start-color: var(--secondary);
+}
+
+.form-input:focus,
+.form-select:focus {
+  border-color: var(--primary);
+  border-inline-start-color: var(--primary);
+  background: var(--surface);
+  box-shadow:
+    0 0 0 4px var(--primary-08),
+    inset 0 -2px 0 var(--primary),
+    4px 4px 0 rgba(35, 56, 77, 0.10);
+}
+
+/* ── Trade select — native <select> dressed as a field ──
+   One control per field. The prototype needed two, one per language, because option text is not
+   a span and could not be toggled; here the options are rendered from the string resource. */
+.select-wrap { position: relative; }
+.form-select {
+  padding-inline-end: 40px; /* room for the chevron */
+  cursor: pointer;
+}
+/* Placeholder option (value="") reads as muted until a real trade is picked */
+.form-select:required:invalid { color: var(--text-mute); }
+
+.select-chevron {
+  position: absolute;
+  inset-inline-end: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-flex;
+  color: var(--text-mute);
+  pointer-events: none;
+}
+
+/* Free-text trade — revealed only when "Other" is selected (pure CSS, no JS).
+   :has() lets the form-group react to the currently-checked <option>; works for
+   whichever language select is active since both carry an option[value="other"]. */
+/* React only renders this block when the trade is "other", so the modifier class is what shows
+   it. The prototype had to ask the DOM the same question with :has(), because it could not
+   choose whether to render the element at all. */
+.other-trade { display: none; }
+.other-trade--visible {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 10px;
+  padding: 12px;
+  background: var(--background);
+  border: 1px dashed var(--secondary-55);
+  border-inline-start: 5px solid var(--secondary);
+  border-radius: var(--r-sm);
+}
+
+/* Visual-only label (a <span>, no for=) — drop the pointer affordance */
+.form-label--plain { cursor: default; }
+
+/* "Optional" marker inside a label (sized like the label — it's text, not a chip) */
+.form-label__optional {
+  font-size: 14px;
+  font-weight: 400;
+  letter-spacing: 0.06em;
+  color: var(--text-mute);
+  padding: 2px 8px;
+  background: var(--surface);
+  border: 1px solid var(--secondary-30);
+  border-radius: 999px;
+}
+
+/* Hint line under a field (neutral helper, not an error) */
+.field-hint {
+  font-size: 14.5px;
+  color: var(--text-soft);
+  margin-top: 5px;
+  line-height: 1.4;
+}
+
+/* Email/password validation — CSS only, no JS.
+   :invalid/:valid pseudo-classes fire normally. */
+.field-error {
+  display: none;
+  font-size: 14.5px;
+  color: var(--error);
+  margin-top: 4px;
+  padding: 8px 10px;
+  line-height: 1.4;
+  background: var(--error-bg);
+  border: 1px solid var(--error-border);
+  border-inline-start: 4px solid var(--error);
+  border-radius: var(--r-sm);
+  box-shadow: 3px 3px 0 rgba(166, 50, 50, 0.08);
+}
+
+/* Non-empty + invalid → red warning border + glow (email & password) */
+.form-input[type="email"]:not(:placeholder-shown):invalid,
+.form-input[type="password"]:not(:placeholder-shown):invalid {
+  border-color: var(--error);
+  box-shadow:
+    0 0 0 4px var(--error-bg),
+    inset 0 -2px 0 var(--error),
+    4px 4px 0 rgba(166, 50, 50, 0.08);
+}
+
+/* Red state ONLY for fields the user actually touched (focused then left) and
+   left empty/invalid. The `.touched` class is added by the shared validation.js,
+   on blur for text inputs and on change for the select and the checkbox, so
+   reddening is per-field — never the whole form, never on initial load.
+   :not(:focus) hides the red while the user is back in the field fixing it. */
+.form-input.touched:not(:focus):invalid,
+.form-select.touched:not(:focus):invalid {
+  border-color: var(--error);
+  border-inline-start-color: var(--error);
+  box-shadow:
+    0 0 0 4px var(--error-bg),
+    inset 0 -2px 0 var(--error),
+    4px 4px 0 rgba(166, 50, 50, 0.08);
+}
+
+.checkbox-input.touched:not(:focus):invalid + .checkbox-box {
+  border-color: var(--error);
+  box-shadow: 0 0 0 4px var(--error-bg);
+}
+
+/* React decides when a message applies — including the passwords-do-not-match case, which no CSS
+   selector can express, since a stylesheet cannot compare two values. The two native rules below
+   are kept because they still hold for the fields they name and cost nothing. */
+.field-error--visible { display: block; }
+
+/* Non-empty + invalid email → show inline message */
+.form-input[type="email"]:not(:placeholder-shown):invalid ~ .field-error {
+  display: block;
+}
+
+/* The prototype's `.password-error` rule stood here. It is gone rather than kept, because React
+   renders no such element: the password message is now shown by `.field-error--visible` on the
+   same terms as every other message, including the match check CSS could never express. */
+
+/* Non-empty + valid email → secondary accent confirms it */
+.form-input[type="email"]:not(:placeholder-shown):valid {
+  border-color: var(--secondary);
+}
+
+/* "Create account" stays disabled until every required field is filled and valid.
+   The prototype computed this in CSS with a chain of :has() rules, because it had no JavaScript.
+   Here the form's validity is already in React state, so the button carries a real `disabled`
+   attribute and this rule only paints it. Two reasons for the move: deriving validity a second
+   time from the DOM would give one answer two sources that can disagree, and `pointer-events`
+   alone merely *looks* disabled — a real disabled button is announced as such and leaves the tab
+   order. The five declarations are unchanged, so the appearance is identical.
+   It also now covers the passwords-do-not-match case, which CSS could not express at all. */
+.btn--primary:disabled {
+  opacity: 0.45;
+  pointer-events: none;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Password + reveal toggle
+   Physical right/padding-right used intentionally:
+   the password field is always LTR regardless of UI language. */
+.input-wrapper { position: relative; }
+.input-wrapper .form-input { padding-right: 48px; }
+
+.input-action {
+  position: absolute;
+  right: 0;
+  top: 0;
+  height: 50px;
+  width: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-mute);
+  transition: color 0.15s;
+}
+.input-action:hover { color: var(--primary); }
+
+/* Eye / eye-off state swap driven by JS class (Stage 2) */
+.icon-eye-off                           { display: none; }
+.input-action.is-revealed .icon-eye     { display: none; }
+.input-action.is-revealed .icon-eye-off { display: block; }
+
+/* ─────────────────────────────────────────────
+   Custom checkbox — Terms & Privacy consent
+   ───────────────────────────────────────────── */
+.checkbox-field {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--text-soft);
+  padding: 12px;
+  background:
+    linear-gradient(90deg, rgba(35, 56, 77, 0.035) 1px, transparent 1px),
+    var(--background);
+  background-size: 18px 100%, auto;
+  border: 1px solid var(--secondary-30);
+  border-radius: var(--r-sm);
+}
+
+.checkbox-input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+}
+
+.checkbox-box {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  margin-top: 1px;
+  border: 1.5px solid var(--secondary-55);
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--surface);
+  transition: background 0.15s, border-color 0.15s;
+}
+.checkbox-box svg { opacity: 0; transition: opacity 0.15s; }
+
+.checkbox-input:checked + .checkbox-box {
+  background: var(--primary);
+  border-color: var(--primary);
+}
+.checkbox-input:checked + .checkbox-box svg { opacity: 1; }
+
+.checkbox-input:focus-visible + .checkbox-box {
+  box-shadow: 0 0 0 4px var(--primary-08);
+}
+
+.checkbox-label a {
+  color: var(--primary);
+  font-weight: 600;
+}
+.checkbox-label a:hover { text-decoration: underline; }
+
+/* ─────────────────────────────────────────────
+   Buttons
+   ───────────────────────────────────────────── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  position: relative;
+  height: 54px;
+  padding: 0 22px;
+  font-family: var(--font-sans);
+  font-size: 17px;
+  font-weight: 600;
+  border: 1.5px solid transparent;
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  transition: background 0.16s, box-shadow 0.2s, transform 0.12s, border-color 0.16s;
+  white-space: nowrap;
+  overflow: hidden;
+}
+.btn--full { width: 100%; }
+
+/* Primary: solid primary, gradient on hover */
+.btn--primary {
+  color: var(--surface);
+  background: var(--brand-gradient);
+  border-color: var(--primary);
+  box-shadow:
+    8px 8px 0 var(--secondary-30),
+    0 14px 28px -16px rgba(35, 56, 77, 0.80);
+}
+.btn--primary::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, var(--surface-15), transparent);
+  transform: translateX(-100%);
+  transition: transform 0.4s ease;
+}
+.btn--primary > span,
+.btn--primary > svg { position: relative; z-index: 1; }
+.btn--primary:hover {
+  box-shadow:
+    5px 5px 0 var(--secondary-55),
+    0 18px 32px -18px rgba(35, 56, 77, 0.90);
+  transform: translate(3px, 3px);
+}
+.btn--primary:hover::before { transform: translateX(100%); }
+.btn--primary:active { transform: translateY(1px); }
+
+/* Google OAuth stub */
+.btn--google {
+  background: var(--surface);
+  color: var(--text);
+  border-color: var(--secondary-30);
+  font-weight: 500;
+  box-shadow: inset 0 -2px 0 var(--secondary-15), 6px 6px 0 var(--primary-08);
+}
+.btn--google:hover  {
+  background: var(--background);
+  border-color: var(--secondary-55);
+  transform: translate(2px, 2px);
+  box-shadow: inset 0 -2px 0 var(--secondary-15), 3px 3px 0 var(--primary-12);
+}
+.btn--google:active { transform: translateY(1px); }
+.google-icon { flex-shrink: 0; }
+
+/* ─────────────────────────────────────────────
+   Divider
+   ───────────────────────────────────────────── */
+.divider { display: flex; align-items: center; gap: 14px; }
+.divider__line { flex: 1; height: 1px; background: var(--secondary-30); }
+.divider__label {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-mute);
+  flex-shrink: 0;
+}
+
+/* ─────────────────────────────────────────────
+   Links & footer text
+   ───────────────────────────────────────────── */
+.form-link           { font-size: 15.5px; color: var(--text-soft); transition: color 0.15s; }
+.form-link:hover     { color: var(--primary); }
+.form-link--small    { font-size: 14px; }
+.form-link--strong   { font-size: inherit; font-weight: 600; color: var(--primary); }
+.form-link--strong:hover { text-decoration: underline; }
+
+.form-footer {
+  text-align: center;
+  font-size: 16px;
+  color: var(--text-soft);
+  padding-top: 2px;
+}
+
+.secure-note {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  color: var(--text-mute);
+}
+.secure-note svg { flex-shrink: 0; }
+
+/* ─────────────────────────────────────────────
+   Responsive
+   ───────────────────────────────────────────── */
+@media (max-width: 860px) {
+  .auth-layout { grid-template-columns: 1fr; }
+  .brand-panel { display: none; }
+  .form-panel  {
+    padding: 72px 18px 40px;
+    align-items: flex-start;
+    border-inline-start: none;
+    border-top: 3px solid var(--secondary);
+  }
+  .form-panel::after { inset: 18px; }
+  .form-card {
+    max-width: 560px;
+    margin-inline: auto;
+    padding: 26px 22px;
+  }
+  .mobile-logo { display: flex; margin-bottom: 4px; }
+  .form-title  { font-size: 24px; }
+}
+
+/* Below this the grid is already the single mobile column declared on .register-form itself,
+   so nothing here has to unstack it. */
+@media (max-width: 560px) {
+  .lang-switch {
+    top: 12px;
+    inset-inline-end: 12px;
+  }
+  .form-panel { padding-inline: 12px; }
+  .form-card {
+    padding: 24px 16px;
+    border-radius: var(--r-sm);
+  }
+  .form-card::before,
+  .form-card::after { display: none; }
+  .form-panel::after { display: none; }
+}
+
+@media (max-width: 1024px) and (min-width: 861px) {
+  /* 40% → 36%: this band squeezed the card to ~428px, which left a half-column too narrow for
+     the longest label (CONFIRM PASSWORD) — it wrapped while its neighbour did not, and the two
+     password inputs came out 15px apart. Widening the form side fixes the cause rather than
+     the symptom, and the brand panel is still the larger visual at this width. */
+  .auth-layout    { grid-template-columns: 36% 1fr; }
+  .brand-panel    { padding: 44px 38px; }
+  .brand-headline { font-size: 28px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .brand-panel::before { animation: none; }
+  .btn--primary:hover,
+  .btn--google:hover,
+  .form-input:hover,
+  .form-select:hover { transform: none; }
+  .btn--primary::before { display: none; }
+}
+
+/* ─────────────────────────────────────────────
+   Language — Hebrew + RTL is the default, English + LTR on toggle
+   The prototype stored the language in a hidden radio because it had no JavaScript, and rendered
+   every string and every field twice so CSS could hide one copy. React holds the language in a
+   context and renders one of each, so all that duplication is gone: what remains is the part that
+   was never about duplication — the direction and the typeface, still set on the root element.
+   ───────────────────────────────────────────── */
+
+/* The panels inherit their direction from the root, so they set none of their own. */
+
+/* ── Toggle button active states ──
+   The active pill used to be resolved from which radio was :checked; React marks it directly.
+   The declarations are unchanged. */
+.lang-switch__btn--active   { color: var(--surface); background: var(--primary); }
+.lang-switch__btn--inactive { color: var(--text-soft); background: none; }
+
+/* ── English selected: swap direction + fonts ──
+   Matching the root lets one rule turn the page LTR, which the grid, both panels and the fixed
+   pill all inherit. It also puts --font-sans on an ancestor of body, so English copy actually
+   renders in Inter; scoped to .auth-layout it did not, because body resolved the variable against
+   :root and computed Heebo first. The selector is the only change — `data-lang` is written by the
+   language context, where `#lang-en:checked` used to be written by a radio nobody could see. */
+html[data-lang="en"] {
+  direction: ltr;
+  --font-sans:  'Inter', system-ui, -apple-system, sans-serif;
+  --font-serif: 'Fraunces', 'Georgia', serif;
+}
+
+/* ═══ Availability — the three approved states, label always beside the dot ═══ */
+.avail-filter { display: flex; flex-direction: column; gap: 8px; border: 0; padding: 0; }
+.avail-filter .field-hint { margin-top: 2px; }
+.avail-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 13px;
+  font-size: 15px;
+  line-height: 1.35;
+  cursor: pointer;
+  background: var(--background);
+  border: 1.5px solid var(--secondary-30);
+  border-radius: var(--r-sm);
+  transition: border-color 0.15s, background 0.15s;
+}
+.avail-option:hover { border-color: var(--secondary-55); }
+.avail-option__input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.avail-option__box {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--surface);
+  background: var(--surface);
+  border: 1.5px solid var(--secondary-55);
+  border-radius: 50%;
+  transition: background 0.15s, border-color 0.15s;
+}
+.avail-option__box svg { opacity: 0; transition: opacity 0.15s; }
+.avail-option__input:checked + .avail-option__box { background: var(--primary); border-color: var(--primary); }
+.avail-option__input:checked + .avail-option__box svg { opacity: 1; }
+.avail-option:has(.avail-option__input:checked) { border-color: var(--primary-30); background: var(--secondary-15); }
+.avail-option__input:focus-visible + .avail-option__box { box-shadow: 0 0 0 4px var(--primary-08); }
+
+.avail { display: inline-flex; align-items: center; gap: 8px; color: var(--text); }
+.avail__dot {
+  width: 11px;
+  height: 11px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  box-shadow: 0 0 0 3px rgba(31, 36, 40, 0.06);
+}
+.avail--open    .avail__dot { background: var(--avail-open); }
+.avail--limited .avail__dot { background: var(--avail-limited); }
+.avail--closed  .avail__dot { background: var(--avail-closed); }
