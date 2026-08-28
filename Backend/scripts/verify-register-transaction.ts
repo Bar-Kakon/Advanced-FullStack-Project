@@ -141,8 +141,8 @@ const run = async (): Promise<void> => {
   check('standing is owner', membership?.standing === 'owner', `standing=${membership?.standing}`);
   check('status is active', membership?.status === 'active', `status=${membership?.status}`);
   check(
-    'owner holds the four default permissions',
-    membership?.permissions.length === 4,
+    'permissions empty — no code is approved yet',
+    membership?.permissions.length === 0,
     JSON.stringify(membership?.permissions),
   );
   const user = await UserModel.findOne({ email: EMAIL }).lean();

@@ -214,15 +214,28 @@ without their account changing type.
                       permissions     what they MAY DO
 ```
 
-**`companyPosition` and `permissions` are separate and neither is derived from the other.** Being a
-Site Manager grants nothing. An owner or an authorized manager grants capabilities explicitly.
+**`standing`, `companyPosition` and `permissions` are three separate things and none is derived from
+another.** `standing` is where the person sits in the business; `companyPosition` is their job;
+`permissions` is what they are authorized to do. Being a Site Manager grants nothing.
 
-| | Owner (public Register) | Employee |
-|---|---|---|
-| `project.create` | ✅ | ❌ by default |
-| `task.create` | ✅ | ❌ by default |
-| `company.manage` | ✅ | ❌ by default |
-| `company.invite_employees` | ✅ | ❌ by default |
+**There are no permission codes yet, deliberately.** A code is added only when the capability it
+names is implemented and approved — never ahead of it — so the list can never describe a power the
+platform does not have. Today `COMPANY_PERMISSIONS` is empty, which makes `CompanyPermission` the
+type `never`: **the compiler rejects any code that has not been approved.**
+
+```ts
+const p: readonly CompanyPermission[] = ['any.code.at.all'];
+//                                       ^^^^^^^^^^^^^^^^^
+// Type 'string' is not assignable to type 'never'.
+```
+
+The schema carries no `enum` on `permissions` for the same reason — Mongoose treats an empty enum as
+*no constraint*, which would read like a guard while being none. Both arrive with the first code.
+
+Owner and employee defaults are named separately (`OWNER_DEFAULT_PERMISSIONS`,
+`EMPLOYEE_DEFAULT_PERMISSIONS`) and are **both empty today**. They are two decisions that are allowed
+to differ: each future code chooses its own default on each side, rather than an employee inheriting
+an owner's set.
 
 Two indexes carry the rules: `{ company, status }` serves "this company's pending activations", and
 a **partial unique** index on `{ user }` where `status: 'active'` enforces **one active relationship
