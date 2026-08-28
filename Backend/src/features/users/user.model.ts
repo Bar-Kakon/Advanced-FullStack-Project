@@ -43,26 +43,8 @@ export const REGIONS = [
   'south',
 ] as const;
 
-/** Do I own this business? Kept apart from position, trade, membership state and permissions. */
-export const COMPANY_STANDINGS = ['owner', 'member'] as const;
-
-/** What is my job inside the business? Never implies ownership and never implies a trade. */
-export const COMPANY_POSITIONS = [
-  'main_contractor',
-  'construction_manager',
-  'site_manager',
-  'contractor',
-  'employee',
-] as const;
-
-/** Is my link to the business live? The invitation flow that writes `invited` is not built yet. */
-export const COMPANY_MEMBERSHIP_STATUSES = ['invited', 'active', 'inactive'] as const;
-
 export type Trade = (typeof TRADES)[number];
 export type Region = (typeof REGIONS)[number];
-export type CompanyStanding = (typeof COMPANY_STANDINGS)[number];
-export type CompanyPosition = (typeof COMPANY_POSITIONS)[number];
-export type CompanyMembershipStatus = (typeof COMPANY_MEMBERSHIP_STATUSES)[number];
 
 /** The authentication identity. `passwordHash` is absent by default — see `UserWithPasswordHash`. */
 export interface UserRecord {
@@ -91,18 +73,9 @@ const userSchema = new Schema(
     language: { type: String, enum: ['he', 'en'], default: 'he', required: true },
     profileComplete: { type: Boolean, default: false, required: true },
 
-    // The organization the person works through, and their standing inside it. Four separate
-    // concepts on purpose: standing, position, trade and membership state never imply each other.
-    company: { type: Schema.Types.ObjectId, ref: 'Company', required: true },
-    companyStanding: { type: String, enum: COMPANY_STANDINGS, required: true },
-    companyPosition: { type: String, enum: COMPANY_POSITIONS },
-    companyMembershipStatus: {
-      type: String,
-      enum: COMPANY_MEMBERSHIP_STATUSES,
-      default: 'active',
-      required: true,
-    },
-
+    // A person carries no company fields. Which business they belong to, on what terms, in what
+    // position and with what permissions is a *relationship* and lives in `companymemberships` —
+    // so a User is never an "owner account" or an "employee account", only a person.
     specialties: [{ type: String, enum: TRADES }],
     // Descriptive only. It never becomes a browse filter value — `specialties` stays the enum.
     specialtyOther: { type: String, trim: true, maxlength: 60 },

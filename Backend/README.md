@@ -15,6 +15,14 @@ cp .env.example .env        # fill in MONGODB_URI, CORS_ORIGINS and both token s
 npm run dev                 # watch mode
 ```
 
+**MongoDB must run as a replica set** — Register commits three documents in one transaction, and
+transactions are unavailable on a standalone `mongod`. A single-member set is enough locally:
+
+```bash
+mongod --replSet rs0 --dbpath <your data dir>
+mongosh --eval 'rs.initiate()'      # once
+```
+
 Generate the two token secrets separately — the server refuses to start if they match:
 
 ```bash
@@ -26,7 +34,8 @@ node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"
 | `npm run dev` | Runs `src/server.ts` in watch mode |
 | `npm run build` | Type-checks and emits `dist/` |
 | `npm start` | Runs the built `dist/server.js` |
-| `npm run typecheck` | Type-checks without emitting |
+| `npm run typecheck` | Type-checks `src/` and `scripts/` without emitting |
+| `npm run verify:register-txn` | Proves the Register transaction is all-or-nothing (needs a database) |
 
 Verify it is up:
 
@@ -48,7 +57,7 @@ src/
 │   ├── env.ts             the only reader of process.env; validates and returns AppConfig
 │   └── cors.ts            turns the configured allowlist into CorsOptions
 ├── db/
-│   └── mongoose.ts        connect / disconnect / status
+│   └── mongoose.ts        connect / disconnect / status / runInTransaction
 ├── middleware/
 │   ├── validateRequest.ts JOI request-validation boundary
 │   ├── notFoundHandler.ts unmatched route → AppError(…, 404, 'ROUTE_NOT_FOUND')
@@ -59,10 +68,13 @@ src/
 │   └── healthAuth.routes.ts  protected GET /api/health-auth — proves the Access Token path
 ├── features/
 │   ├── companies/
-│   │   ├── company.model.ts       Mongoose Company — the business, and its availability
-│   │   └── company.repository.ts  create, and the compensating delete Register needs
+│   │   ├── company.model.ts                Mongoose Company — the business + work availability
+│   │   ├── company.repository.ts           create
+│   │   ├── companyMembership.model.ts      person × company: standing, status, position,
+│   │   │                                   permissions — and the enums for all four
+│   │   └── companyMembership.repository.ts create
 │   ├── users/
-│   │   ├── user.model.ts       Mongoose User — identity, company link, trade, location
+│   │   ├── user.model.ts       Mongoose User — a PERSON: identity, trade, location. No company fields
 │   │   └── user.repository.ts  the only module that queries users for auth
 │   └── auth/
 │       ├── auth.module.ts              the feature's composition root; the only file given config
@@ -118,8 +130,8 @@ Request collection for every case: [`requests/auth.http`](requests/auth.http).
 immediately** (approved 2026-08-28), issuing the same Access + Refresh pair Login issues, through
 the same `tokenPair` service. There is no second token mechanism and no weaker signup session.
 
-One signup writes **two** documents, because a person and the business they operate through are two
-different things:
+It is the onboarding flow for somebody who runs their own business — an independent contractor,
+a supplier, or a company owner. One signup writes **three** documents inside **one transaction**:
 
 ```
 POST /api/auth/register
@@ -127,16 +139,30 @@ POST /api/auth/register
   ├─ 1. JOI validates the body      unknown keys stripped, so isAdmin / status
   │                                 / passwordHash in a body go nowhere
   ├─ 2. email already taken? ───────► 409 EMAIL_ALREADY_REGISTERED, nothing written
-  ├─ 3. bcrypt hash (cost 12)
-  ├─ 4. create the company          name, officePhone?, availability
-  ├─ 5. create the user             + company id, companyStanding 'owner'
-  │        └─ fails? ───────────────► delete ONLY the company from step 4, then 409/500
-  ├─ 6. issueTokenPair()            the exact Login path
-  └─ 7. 201 { accessToken, user }   + Set-Cookie refreshToken
+  ├─ 3. bcrypt hash (cost 12)       ← OUTSIDE the transaction: ~250ms of CPU
+  │                                    must not hold one open
+  │  ╔═ TRANSACTION ═══════════════════════════════════════════╗
+  ├──╢ 4. create the Company         name, officePhone?, availability
+  │  ║ 5. create the User            a PERSON — no company fields
+  │  ║ 6. create the owner membership standing 'owner', status 'active',
+  │  ║                               permissions = owner defaults
+  │  ║    any throw, including a unique-index violation
+  │  ║    ────────────────────────► ABORT ALL THREE
+  │  ╚═════════════════════════════════════════════════════════╝
+  ├─ 7. issueTokenPair()            AFTER commit — a token is never issued
+  └─ 8. 201 { accessToken, user }     for a user that was rolled back
 ```
 
+**There is no partial Register state.** Either the company, the person and the owner relationship
+all exist, or none of them does — no orphan company, and no user who belongs to nothing.
+
 The `email` unique index is the real guarantee; step 2 is a courtesy that makes the ordinary
-duplicate cheap. No transaction is used — a standalone `mongod` has none, and the dev setup is one.
+duplicate cheap. `runInTransaction` lives in `db/mongoose.ts`, beside the connection it uses; the
+service receives it as a dependency and never imports the database library itself.
+
+> **Transactions require a replica set.** A standalone `mongod` rejects the session. That is a
+> configuration failure rather than something to fall back from — a half-created account is not a
+> lesser kind of success. Local dev runs a single-member replica set.
 
 | Register field | Required | Stored as |
 |---|---|---|
@@ -150,6 +176,7 @@ duplicate cheap. No transaction is used — a standalone `mongod` has none, and 
 | `city` | ✅ | `users.location.city` |
 | `region` | ✅ (enum code) | `users.location.region` |
 | `officePhone` | ➖ | **`companies.officePhone`** — the business's number |
+| *(derived)* | — | **`companymemberships`**: `standing: 'owner'` · `status: 'active'` · owner permissions |
 | `businessPhone` | ➖ | **`users.businessPhone`** — the person's number |
 | `availability` | ➖ (default `open`) | **`companies.availability`** |
 | `acceptedTerms` | ✅ must be `true` | **never stored** — D25 has not settled the documents |
@@ -166,12 +193,81 @@ companies.officePhone  the organization   ← Register, optional
 
 Either optional phone may be present without the other, and omitting both is valid.
 
+### Who belongs to a company, and what they may do
+
+A **User is a person.** There is no "contractor account" and no "employee account" — the relationship
+to a business is its own document, so the same person can be an owner today and something else later
+without their account changing type.
+
+```
+  companies ──────┐
+                  │  companymemberships          ┌────── users
+                  └─  company ───────────────────┘
+                      user            ← null while the seat is unclaimed
+                      invitedFullName ← what the owner typed when opening it
+                      standing        'owner' | 'employee'
+                      status          'invited' → 'pending_company_approval'
+                                              → 'active' → 'inactive'
+                      companyPosition the JOB      (main_contractor,
+                                                    construction_manager,
+                                                    site_manager, contractor, employee)
+                      permissions     what they MAY DO
+```
+
+**`companyPosition` and `permissions` are separate and neither is derived from the other.** Being a
+Site Manager grants nothing. An owner or an authorized manager grants capabilities explicitly.
+
+| | Owner (public Register) | Employee |
+|---|---|---|
+| `project.create` | ✅ | ❌ by default |
+| `task.create` | ✅ | ❌ by default |
+| `company.manage` | ✅ | ❌ by default |
+| `company.invite_employees` | ✅ | ❌ by default |
+
+Two indexes carry the rules: `{ company, status }` serves "this company's pending activations", and
+a **partial unique** index on `{ user }` where `status: 'active'` enforces **one active relationship
+per person at a time**.
+
+### Not built here — the future employee flow this model must not block
+
+Public Register creates an **owner** and nothing else. The rest is documented so a later endpoint
+cannot contradict the model, and **none of it is implemented**:
+
+```
+ 1. OWNER INVITES         owner adds staff with full name + company position only.
+    (future screen)       The company is known from their own account.
+                          → membership { user: null, status: 'invited' }
+                          → creates NO user account
+
+ 2. EMPLOYEE REGISTERS    a separate path: full name + company name + position.
+    (future endpoint)     The backend looks for a matching 'invited' row.
+                          no match  → cannot join that company, full stop
+                          match     → account created, the SAME row becomes
+                                      status: 'pending_company_approval'
+
+ 3. OWNER APPROVES        one, several, or all valid pending activations.
+    (future screen)       → status: 'active'
+```
+
+Because the pending list is *the invited row itself*, somebody who merely types a company name has
+no row to claim and **can never appear in it**. That is structural, not a filter that could be
+forgotten.
+
+Two further rules recorded here, not implemented: an employee is **not an independent professional
+profile and must not appear in Browse** (Browse selects people holding an `owner` membership), and
+**employee availability is a separate future concept** — it must never reuse or overwrite
+`companies.availability`, and its vocabulary is not invented yet.
+
 ### Availability belongs to the business
 
 `companies.availability` is the single source of truth for whether an organization is taking new
 work. It is **not** duplicated onto users and there is no per-user override: everyone working under
 a company derives their effective availability from it. Browse chooses its own read strategy when
 it is built.
+
+This is **work availability of the organization** and nothing else. It is not the personal
+availability of each employee: managing staff availability is a separate future concept that must
+not touch this field.
 
 ## API error contract
 

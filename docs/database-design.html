@@ -657,11 +657,8 @@ const COLLECTIONS = [
     { name: 'travelRadiusKm', type: 'Number', note: 'How far this contractor will travel. Onboarding step 2.' },
     { name: 'schedulingPrefs', type: '{ delayToleranceDays, noticeRequiredDays }', note: 'Embedded 1:1. Feeds the tolerance signal shown on a reschedule proposal, and later the rules engine. **Public (decided 2026-08-18):** both numbers are serialized onto the public profile, so a GC can propose a workable date first time instead of learning the constraint from a rejected proposal. Edited on My profile; bounds (0–30 and 0–14 days) are provisional.' },
 
-    { group: 'Organization', groupNote: 'the business this person works through — five separate concepts, none implying another' },
-    { name: 'company', type: 'ObjectId', ref: 'companies', req: true, note: 'The business this person operates through. Added 2026-08-28 with the Register backend; see [[companies]]. A foreign key on the user rather than its own membership collection, because a person belongs to one business at a time and that covers every case the model has to hold. If someone ever needs two, this pair promotes into a `companymemberships` collection — a migration, not a redesign.' },
-    { name: 'companyStanding', type: "'owner' | 'member'", req: true, note: '**Do I own this business?** The single record of ownership — [[companies]] deliberately carries no owner field, so the two can never disagree. Register always writes `owner`, because signup has no way to join an existing business safely. Never inferred from a trade: a drilling contractor employing another driller is two users with identical `specialties` and different standing.' },
-    { name: 'companyPosition', type: "'main_contractor' | 'construction_manager' | 'site_manager' | 'contractor' | 'employee'", note: '**What is my job inside the business?** `מנהל אתרים` (Construction Manager) and `מנהל עבודה / מנהל אתר` (Site Manager) are the two the owner named. Deliberately separate from standing, from trade and from permissions. **Nothing writes it yet** — Register leaves it unset, and no backend code reads it to grant or deny anything; it is a place for the fact, not a permission system.' },
-    { name: 'companyMembershipStatus', type: "'invited' | 'active' | 'inactive'", req: true, note: '**Is my link to the business live?** Default and Register-written value is `active`. `invited` exists for the company-invitation flow that would let an employee join an existing business — that flow is **not built**, which is why Register can only ever create an owner.' },
+    { group: 'Organization', groupNote: 'a person carries NO company fields — the relationship is its own document' },
+    { name: '— see [[companymemberships]] —', type: '', note: 'Which business this person belongs to, on what terms, in which position and with what permissions is a **relationship**, not a property of the person. It lives in [[companymemberships]]. Recorded here because it is the first thing a reader looks for on [[users]] and does not find. **Revised 2026-08-28:** an earlier version of this design put `company`, `companyStanding`, `companyPosition` and `companyMembershipStatus` directly on this document. That shape could not hold a pending invitation, which by approved rule has **no user at all**, so the fields were promoted into their own collection — the migration the original note had already named as the upgrade path.' },
     { name: 'specialtyOther', type: 'String', note: 'The free text collected when `specialties` contains `other`, max 60. Descriptive only: it **never becomes a browse filter value**, so the specialty enum and its index stay closed. Required exactly when the trade is `other` and refused otherwise, so the code and the text can never describe two different things. Named to match the `edit-profile.html` input that already existed; the Register screen\'s `trade-other` is aligned to it.' },
     { name: 'businessPhone', type: 'String', note: 'The **individual professional\'s** business number, optional, collected at Register. One of three phone concepts that never fall back to one another: `phone` is personal/login, this is the person\'s business line, and `companies.officePhone` is the organization\'s. The third lives on a different document, so no fallback between them is reachable. Half of what [[D27]] asked; D15 visibility is untouched.' },
 
@@ -698,7 +695,7 @@ const COLLECTIONS = [
     '**Sorting by name needs a collation.** MongoDB sorts byte-wise by default, which is not alphabetical for Hebrew. Browse-contractors name sort has to pass a collation (`{ locale: "he" }`) or sort client-side with `Intl.Collator`. `ratingSummary` and `flexibility` sort numerically and are unaffected.'
   ],
   relations: [
-    { to: 'companies', via: 'company', store: 'ref', card: 'N:1', why: 'Every person works through exactly one business. Referenced, not embedded: several people share one company document, and embedding it would copy the office number and the availability status into every employee — the duplication this split exists to remove.' }
+    { to: 'companymemberships', via: 'user', store: 'ref', card: '1:N', why: 'A person holds relationships with companies rather than a field naming one. Referenced from the membership side, because an invitation exists **before** any user does and therefore cannot be a field on this document.' }
   ],
   sample: `{
   _id: ObjectId("6650a1f4c2b9e30012af0b21"),
@@ -712,9 +709,7 @@ const COLLECTIONS = [
   lastName: "Aviv",
   phone: "+972-52-555-0123",                    // personal / login — onboarding step 3
   businessPhone: "+972-52-555-0199",            // her own business line — never a fallback
-  company: ObjectId("6a918a76435b0d493fda94e0"),// the business; availability lives there
-  companyStanding: "owner",
-  companyMembershipStatus: "active",
+  // no company fields: see companymemberships for which business she belongs to
   bio: "Concrete and formwork. 14 years, mostly residential towers.",
   avatar: { fileId: ObjectId("6650a2..."), url: "/files/6650a2..." },
   specialties: ["concrete", "formwork"],
@@ -749,12 +744,7 @@ const userSchema = new Schema({
   phone:     String,                       // personal / login. Never a business number.
   businessPhone: { type: String, trim: true },   // the person's own business line
 
-  company:         { type: Schema.Types.ObjectId, ref: 'Company', required: true },
-  companyStanding: { type: String, enum: ['owner','member'], required: true },
-  companyPosition: { type: String, enum: ['main_contractor','construction_manager',
-                                          'site_manager','contractor','employee'] },
-  companyMembershipStatus: { type: String, enum: ['invited','active','inactive'],
-                             default: 'active', required: true },
+  // No company fields. The relationship lives in companymemberships.
   bio:       { type: String, maxlength: 600 },
   avatar:    { fileId: { type: Schema.Types.ObjectId, ref: 'FileAsset' }, url: String },
 
@@ -805,20 +795,21 @@ module.exports = mongoose.model('User', userSchema);`
     { name: '_id', type: 'ObjectId', note: '' },
     { name: 'name', type: 'String', req: true, note: 'The business name, collected at Register. Not unique: two unrelated businesses may legitimately share a name, and a unique index would make the second signup fail for a reason the user could not fix. Browse-contractors searches `שם או חברה` / *Name or company*, so this is the value that half of that search reads.' },
     { name: 'officePhone', type: 'String', note: 'The **business office** number, optional. It lives here rather than on each person precisely because several users under one contractor share one office line — storing it per user would be the same fact copied N times, free to drift. Distinct from `users.businessPhone` and from `users.phone`, and there is **no fallback in any direction**: they are on two different documents, so a fallback is not reachable by accident. Half of what [[D27]] asked; the D15 visibility question is untouched by it.' },
-    { name: 'availability', type: "'open' | 'limited' | 'closed'", req: true, note: 'Whether **the organization** is currently accepting new work — default `open`. This is the [[D14]] enum, and it is stored here rather than on [[users]] by decision (2026-08-28): a Main Contractor decides whether their company takes work, and everyone working under that company derives their effective availability from it. There is deliberately **no per-user copy and no per-user override**, so two employees can never disagree about their own business. The three approved labels are gender-neutral in Hebrew and are never stored — only the code is.' },
+    { name: 'availability', type: "'open' | 'limited' | 'closed'", req: true, note: 'Whether **the organization** is currently accepting new work — default `open`. This is the [[D14]] enum, and it is stored here rather than on [[users]] by decision (2026-08-28): a Main Contractor decides whether their company takes work, and everyone working under that company derives their effective availability from it. There is deliberately **no per-user copy and no per-user override**, so two employees can never disagree about their own business. The three approved labels are gender-neutral in Hebrew and are never stored — only the code is. **This is the organization\'s *work* availability and nothing else.** It must never be reinterpreted as the personal availability of each employee: managing staff availability is a separate future internal concept with **no approved vocabulary yet**, and it may not reuse or overwrite this field.' },
     { name: 'createdAt / updatedAt', type: 'Date', note: 'Mongoose `timestamps: true`.' }
   ],
   indexes: [
     { def: '— none beyond `_id` —', serves: 'Nothing yet', why: 'No query in the backend reads companies by any field today: Register writes one and reads it back by id. The index that lists a company\'s people belongs with the first screen that lists them, on the same principle the error-code table already follows — nothing is defined ahead of the condition that needs it.' }
   ],
   why: [
-    '**There is no `owner` field, and that is the point.** Ownership is recorded exactly once, as `users.companyStanding === "owner"`. A second copy here could disagree with it the first time a write path updated one and not the other — the same trap [[D19]] and [[D20]] are both stuck in, avoided rather than repeated.',
+    '**There is no `owner` field, and that is the point.** Ownership is recorded exactly once, as a [[companymemberships]] row with `standing: "owner"`. A second copy here could disagree with it the first time a write path updated one and not the other — the same trap [[D19]] and [[D20]] are both stuck in, avoided rather than repeated.',
     '**Availability is organizational, not personal, and it is not delegation.** [§3.3](#) delegation is one hop, confidential, and about a specific task. This is a standing fact about a business, with no confidentiality rule attached. Modelling availability as delegation would put a private mechanism behind a value that appears on every browse card.',
-    '**Register can only create the owner case.** The signup screen has one free-text company-name box and no invitation flow, and matching a typed string to an existing business would let anyone join it by guessing the name. So every registrant becomes the owner of the company they name. Attaching an employee to an existing business needs the invitation flow that `companyMembershipStatus: "invited"` is waiting for — it is not built, and the gap is recorded rather than papered over.',
+    '**Register can only create the owner case, and that is now a missing *flow* rather than a missing model.** Public Register onboards somebody who runs their own business, so every registrant becomes the owner of the company they name. An employee joining an existing business goes through invitation → self-registration → owner approval, which [[companymemberships]] can express in full and **which is not built**. Matching a typed company name to an existing business is deliberately not how anyone joins one.',
+    '**A signup writes this document, the user and the membership in one transaction.** All three commit or none does, so an orphan company cannot exist. This replaced a compensating delete on 2026-08-28; transactions require the deployment to run as a replica set.',
     '**A company holds no trade.** Profession lives on the person, in `users.specialties`. A drilling contractor employing another driller is two users with the same specialty and different standing, so nothing can infer ownership from a trade.'
   ],
   relations: [
-    { to: 'users', via: 'company', store: 'ref', card: '1:N', why: 'One business, many people. Referenced rather than embedded because the people are queried on their own — browse searches users, not companies — and an embedded roster would have to be rewritten every time anyone joined or left.' }
+    { to: 'companymemberships', via: 'company', store: 'ref', card: '1:N', why: 'One business, many relationships — including seats nobody has claimed yet. Referenced rather than embedded because an embedded roster would have to be rewritten on every invitation, claim and approval, and because the pending-activation screen queries the relationships directly.' }
   ],
   sample: `{
   _id:          ObjectId("6a918a76435b0d493fda94e0"),
@@ -836,6 +827,81 @@ module.exports = mongoose.model('User', userSchema);`
 }, { timestamps: true });
 
 module.exports = mongoose.model('Company', companySchema);`
+},
+
+/* ─────────── companymemberships ─────────── */
+{
+  id: 'companymemberships', model: 'CompanyMembership', domain: 'identity', stage: 2,
+  tag: 'person × company: standing, status, position, permissions',
+  pos: { x: 810, y: 670 },
+  purpose: 'One document per relationship between a person and a business. Added 2026-08-28 by approved product rules, replacing the four `company*` fields an earlier version of this design put on [[users]]. It exists because **an invitation has no user**: an owner opens a seat with a name and a position before any account is created, so the relationship cannot be a property of a person who does not exist yet.',
+  fields: [
+    { name: '_id', type: 'ObjectId', note: '' },
+    { name: 'company', type: 'ObjectId', ref: 'companies', req: true, idx: true, note: 'The business. Always present — a relationship with no company is not a relationship.' },
+    { name: 'user', type: 'ObjectId | null', ref: 'users', note: '**Null while the seat is unclaimed.** This is the field that makes an invitation expressible: an owner opens a row before the person has an account, and self-registration fills it in. Never null once the status is `pending_company_approval` or beyond.' },
+    { name: 'invitedFullName', type: 'String', note: 'What the owner typed when opening the seat, and the value a later self-registration is matched against. It is not an identity: the account the employee eventually creates carries the canonical `firstName` / `lastName`.' },
+    { name: 'standing', type: "'owner' | 'employee'", req: true, note: 'Whether this person runs the business or works under it. **On the relationship, never on the account** — there is deliberately no "contractor account type" and no "employee account type", because the same person may stand differently to different companies over time. Public Register writes `owner`; nothing writes `employee` yet.' },
+    { name: 'status', type: "'invited' | 'pending_company_approval' | 'active' | 'inactive'", req: true, note: 'The life of one relationship, in order. `invited` = an owner opened a seat, no user. `pending_company_approval` = somebody matched that invitation and created an account, **but is not yet a member**. `active` = the owner approved them. `inactive` = they have left. **Matching an invitation is never enough to activate** — approval is a separate act by the owner. `pending_company_approval` is **new vocabulary, not previously approved**: no existing status in this design covers it (`memberships.status` is project-scoped and `connections.status` is a different graph).' },
+    { name: 'companyPosition', type: "'main_contractor' | 'construction_manager' | 'site_manager' | 'contractor' | 'employee'", note: 'The organizational **job** — `מנהל אתרים` / Construction Manager and `מנהל עבודה / מנהל אתר` / Site Manager are the two the owner named. **It grants nothing.** Permissions are a separate field and are never derived from a position, so a Site Manager is authorized for exactly what someone chose to authorize them for. Supplied per employee at invitation time; unset for a public-Register owner, who is never asked for one.' },
+    { name: 'permissions', type: '[String]', note: 'What this person **may do** in FieldSync inside this company. An owner from public Register receives every capability the platform currently names; an **employee receives none by default** — having an account or a position grants nothing, and an owner or authorized manager grants capabilities explicitly. Codes today: `project.create`, `task.create`, `company.manage`, `company.invite_employees`. **The four codes are transcriptions of the approved rule wording and are not themselves an approved vocabulary yet.**' },
+    { name: 'createdAt / updatedAt', type: 'Date', note: 'Mongoose `timestamps: true`.' }
+  ],
+  indexes: [
+    { def: '{ company: 1, status: 1 }', serves: 'This company pending activations, and the invitation lookup', why: 'Both future employee flows ask the same question — give me the rows of this company in this state. The owner approval screen reads `pending_company_approval`; a self-registration reads `invited` to find the seat it may claim.' },
+    { def: '{ user: 1 }', opts: "unique, partialFilterExpression: { status: 'active' }", serves: 'One active relationship per person at a time', why: 'Partial, so the invited and pending rows a person may hold against several companies are untouched — only **activation** is exclusive. The same technique [[subscriptions]] uses to permit exactly one active row per user. Enforced by the database rather than by a check, because two concurrent approvals would both pass a read-then-write test.' }
+  ],
+  why: [
+    '**This collection is what makes the invitation rule structural instead of a filter.** The pending-activation list an owner approves from is *the invited row itself*, claimed by a registration that matched it. Somebody who merely searches for or types a company name has no row to claim, so they can never appear in that list — there is nothing to filter out, which is a stronger guarantee than remembering to filter.',
+    '**Position and permission are two fields because they are two questions.** *What is your job here* and *what are you allowed to do here* have different answers, change at different times, and are decided by different people. Deriving the second from the first would mean promoting somebody to Site Manager silently granted them authority nobody chose to give.',
+    '**Ownership is recorded here and nowhere else.** [[companies]] deliberately carries no owner field, so the two can never disagree — the trap [[D19]] and [[D20]] are both stuck in.',
+    '**An employee is not a professional profile.** Browse-contractors lists people offering work to the market, which is those holding an `owner` relationship. Nothing denormalises a flag onto [[users]] for this: the read strategy belongs with the screen that performs it, on the same principle `companies.availability` already follows.',
+    '**Nothing writes `employee` yet.** Public Register creates an owner. The invitation, self-registration and approval endpoints are **not built** — this collection exists so that when they are, the model does not have to change underneath them.'
+  ],
+  relations: [
+    { to: 'companies', via: 'company', store: 'ref', card: 'N:1', why: 'Many people to one business.' },
+    { to: 'users', via: 'user', store: 'ref', card: 'N:1', why: 'Nullable on purpose — the row outlives the absence of an account, which is the entire reason this is a collection rather than fields on a person.' }
+  ],
+  sample: `{
+  _id:       ObjectId("6a91a068337b84fdc826c5dc"),
+  company:   ObjectId("6a91a068337b84fdc826c5da"),
+  user:      ObjectId("6a91a068337b84fdc826c5db"),
+  standing:  "owner",              // public Register always writes this
+  status:    "active",
+  permissions: [ "project.create", "task.create",
+                 "company.manage", "company.invite_employees" ],
+  createdAt: ISODate("2026-08-28T14:51:20Z")
+}
+
+// An invitation an owner opened, before anyone has claimed it:
+{
+  _id:      ObjectId("6a91a0aa337b84fdc826c600"),
+  company:  ObjectId("6a91a068337b84fdc826c5da"),
+  user:     null,                       // <- no account exists yet
+  invitedFullName: "יוסי מזרחי",
+  standing: "employee",
+  status:   "invited",
+  companyPosition: "site_manager",
+  permissions: []                       // employees start with none
+}`,
+  schema: `const companyMembershipSchema = new Schema({
+  company: { type: Schema.Types.ObjectId, ref: 'Company', required: true, index: true },
+  user:    { type: Schema.Types.ObjectId, ref: 'User', default: null },
+  invitedFullName: { type: String, trim: true },
+  standing: { type: String, enum: ['owner','employee'], required: true },
+  status:   { type: String, required: true,
+              enum: ['invited','pending_company_approval','active','inactive'] },
+  companyPosition: { type: String, enum: ['main_contractor','construction_manager',
+                                          'site_manager','contractor','employee'] },
+  permissions: [{ type: String, enum: ['project.create','task.create',
+                                       'company.manage','company.invite_employees'] }]
+}, { timestamps: true });
+
+companyMembershipSchema.index({ company: 1, status: 1 });
+// One ACTIVE relationship per person; invited/pending rows are unaffected.
+companyMembershipSchema.index({ user: 1 },
+  { unique: true, partialFilterExpression: { status: 'active' } });
+
+module.exports = mongoose.model('CompanyMembership', companyMembershipSchema);`
 },
 
 /* ─────────── connections ─────────── */
@@ -2974,7 +3040,7 @@ function renderOverview() {
 }
 
 /* ── ERD ──────────────────────────────────────────── */
-const NW = 196, NH = 56, CW = 1360, CH = 800;
+const NW = 196, NH = 56, CW = 1360, CH = 810;
 let erdSelected = null, erdDomains = new Set(Object.keys(DOMAINS));
 
 function nodeAnchor(a, b) {

@@ -1,5 +1,7 @@
 # VS Code REST Client (`humao.rest-client`). Run top to bottom.
 # The Refresh Token is an HttpOnly cookie and is sent automatically.
+# Register commits three documents in one transaction, so MongoDB must run as a replica set.
+# The all-or-nothing behaviour itself is proven by `npm run verify:register-txn`.
 
 @host = http://localhost:3000/api
 @email = dana@betonaviv.co.il

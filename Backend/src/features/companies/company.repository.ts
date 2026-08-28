@@ -1,5 +1,6 @@
 import type { Types } from 'mongoose';
 
+import type { DbSession } from '../../db/mongoose.js';
 import { CompanyModel, type Availability } from './company.model.js';
 
 export interface NewCompany {
@@ -9,22 +10,18 @@ export interface NewCompany {
 }
 
 export interface CompanyRepository {
-  create(company: NewCompany): Promise<Types.ObjectId>;
-  deleteById(id: Types.ObjectId): Promise<void>;
+  create(company: NewCompany, session?: DbSession): Promise<Types.ObjectId>;
 }
 
 /**
- * `deleteById` exists to undo a company this same request created, nothing else. Register writes two
- * documents and a standalone mongod has no transactions, so the compensating delete is what keeps a
- * failed signup from leaving an orphan behind.
+ * There is no delete here on purpose. Undoing a half-finished signup was what the compensating
+ * delete existed for, and a transaction removes the situation rather than cleaning up after it.
  */
 export const companyRepository: CompanyRepository = {
-  async create(company) {
-    const created = await CompanyModel.create(company);
-    return created._id;
-  },
+  async create(company, session) {
+    const [created] = await CompanyModel.create([company], session ? { session } : {});
+    if (created === undefined) throw new Error('Company insert returned no document.');
 
-  async deleteById(id) {
-    await CompanyModel.deleteOne({ _id: id }).exec();
+    return created._id;
   },
 };

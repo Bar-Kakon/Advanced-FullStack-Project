@@ -1,7 +1,9 @@
 import type { Router, RequestHandler } from 'express';
 
 import type { AppConfig } from '../../config/env.js';
+import { runInTransaction } from '../../db/mongoose.js';
 import { companyRepository } from '../companies/company.repository.js';
+import { companyMembershipRepository } from '../companies/companyMembership.repository.js';
 import { userRepository } from '../users/user.repository.js';
 import { createAuthController } from './auth.controller.js';
 import { createAuthRouter } from './auth.routes.js';
@@ -57,8 +59,10 @@ export const createAuthModule = (config: AppConfig): AuthModule => {
   const registrationService = createRegistrationService({
     users: userRepository,
     companies: companyRepository,
+    memberships: companyMembershipRepository,
     passwords: passwordService,
     tokenPair,
+    transactions: { run: runInTransaction },
   });
 
   const cookie = createRefreshTokenCookie(config.nodeEnv, config.tokens.refreshTtlSeconds);
