@@ -662,6 +662,8 @@ const COLLECTIONS = [
     { name: 'specialtyOther', type: 'String', note: 'The free text collected when `specialties` contains `other`, max 60. Descriptive only: it **never becomes a browse filter value**, so the specialty enum and its index stay closed. Required exactly when the trade is `other` and refused otherwise, so the code and the text can never describe two different things. Named to match the `edit-profile.html` input that already existed; the Register screen\'s `trade-other` is aligned to it.' },
     { name: 'businessPhone', type: 'String', note: 'The **individual professional\'s** business number, optional, collected at Register. One of three phone concepts that never fall back to one another: `phone` is personal/login, this is the person\'s business line, and `companies.officePhone` is the organization\'s. The third lives on a different document, so no fallback between them is reachable. Half of what [[D27]] asked; D15 visibility is untouched.' },
 
+    { name: 'termsAcceptances', type: '[{ version: String, acceptedAt: Date }]', note: '**Proof of consent, persisted rather than discarded** — approved 2026-08-28, closing [[D25]]\'s storage half. `acceptedTerms` arrives as a boolean the Register schema requires to be `true`, and **the boolean itself is not stored**: it carries nothing the dated record does not, and alone it could never say *what* was agreed to once the Terms change. **Appended to, never overwritten** — accepting a later version adds an entry, so the proof of the earlier acceptance survives. Embedded rather than a collection because it is small and bounded: one entry per Terms version a person has seen. The `version` comes from the server\'s `TERMS_VERSION` config and **never from the request body**, because the server knows which version it serves and a client could claim any value. **No Terms document exists yet**, so the value in force is the honest string `draft`.' },
+
     { group: 'Computed trust signals', groupNote: 'denormalised on purpose — see the reasoning below' },
     { name: 'ratingSummary', type: '{ average: Number, count: Number }', denorm: true, idx: true, note: 'Recomputed whenever a [[ratings]] document is written. Never edited by hand.' },
     { name: 'flexibility', type: '{ score: Number, sampleSize: Number, lastComputedAt: Date }', denorm: true, idx: true, note: 'Recomputed when a [[rescheduleproposals]] document resolves. The formula itself is still open (D6). `sampleSize` exists so the UI can distinguish a 90 from five responses from a 90 from ninety.' },
@@ -710,6 +712,7 @@ const COLLECTIONS = [
   phone: "+972-52-555-0123",                    // personal / login — onboarding step 3
   businessPhone: "+972-52-555-0199",            // her own business line — never a fallback
   // no company fields: see companymemberships for which business she belongs to
+  termsAcceptances: [ { version: "draft", acceptedAt: ISODate("2026-03-02T08:00:00Z") } ],
   bio: "Concrete and formwork. 14 years, mostly residential towers.",
   avatar: { fileId: ObjectId("6650a2..."), url: "/files/6650a2..." },
   specialties: ["concrete", "formwork"],
@@ -745,6 +748,11 @@ const userSchema = new Schema({
   businessPhone: { type: String, trim: true },   // the person's own business line
 
   // No company fields. The relationship lives in companymemberships.
+
+  // Append-only in practice: one entry per Terms version accepted.
+  termsAcceptances: [{ _id: false,
+    version:    { type: String, required: true, trim: true },
+    acceptedAt: { type: Date,   required: true } }],
   bio:       { type: String, maxlength: 600 },
   avatar:    { fileId: { type: Schema.Types.ObjectId, ref: 'FileAsset' }, url: String },
 

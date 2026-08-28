@@ -63,6 +63,7 @@ export const createAuthModule = (config: AppConfig): AuthModule => {
     passwords: passwordService,
     tokenPair,
     transactions: { run: runInTransaction },
+    termsVersion: config.terms.version,
   });
 
   const cookie = createRefreshTokenCookie(config.nodeEnv, config.tokens.refreshTtlSeconds);

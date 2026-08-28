@@ -46,6 +46,15 @@ export const REGIONS = [
 export type Trade = (typeof TRADES)[number];
 export type Region = (typeof REGIONS)[number];
 
+/**
+ * One recorded consent. The version is what makes it provable: a timestamp alone cannot say *what*
+ * was agreed to once the Terms change.
+ */
+export interface TermsAcceptance {
+  readonly version: string;
+  readonly acceptedAt: Date;
+}
+
 /** The authentication identity. `passwordHash` is absent by default — see `UserWithPasswordHash`. */
 export interface UserRecord {
   readonly _id: Types.ObjectId;
@@ -88,6 +97,17 @@ const userSchema = new Schema(
       city: { type: String, trim: true },
       region: { type: String, enum: REGIONS },
     },
+
+    // Appended to, never overwritten: a new entry per acceptance, so agreeing to a later version
+    // does not erase the proof that an earlier one was agreed to. Small and bounded — one entry per
+    // Terms version a person has seen — which is why it embeds rather than becoming a collection.
+    termsAcceptances: [
+      {
+        _id: false,
+        version: { type: String, required: true, trim: true },
+        acceptedAt: { type: Date, required: true },
+      },
+    ],
   },
   { timestamps: true },
 );

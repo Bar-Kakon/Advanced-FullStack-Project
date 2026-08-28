@@ -31,6 +31,7 @@ import {
 import type { RegisterBody } from '../src/features/auth/auth.validation.js';
 
 const MARKER = 'txn-verify';
+const TERMS_VERSION = 'txn-verify-terms-v1';
 const EMAIL = `${MARKER}@example.com`;
 const COMPANY = `${MARKER} Ltd`;
 
@@ -58,6 +59,7 @@ const baseDeps = (): Omit<RegistrationDependencies, 'memberships' | 'users'> => 
   passwords: passwordService,
   tokenPair: stubTokenPair,
   transactions: { run: runInTransaction },
+  termsVersion: TERMS_VERSION,
 });
 
 const countLeftovers = async (): Promise<{ companies: number; users: number; memberships: number }> => {
@@ -160,6 +162,18 @@ const run = async (): Promise<void> => {
     'the user document carries NO company fields',
     user !== null && !('company' in user) && !('companyStanding' in user),
     Object.keys(user ?? {}).filter((k) => k.toLowerCase().includes('company')).join(',') || 'none',
+  );
+
+  const accepted = user?.termsAcceptances?.[0];
+  check(
+    'terms acceptance persisted with version + timestamp',
+    accepted?.version === TERMS_VERSION && accepted?.acceptedAt instanceof Date,
+    JSON.stringify(user?.termsAcceptances),
+  );
+  check(
+    'the acceptedTerms boolean itself is NOT stored',
+    user !== null && !('acceptedTerms' in user),
+    'acceptedTerms' in (user ?? {}) ? 'present' : 'absent',
   );
 
   console.log('\n4. A second active membership for the same person is refused');

@@ -4,6 +4,7 @@ import type { DbSession } from '../../db/mongoose.js';
 import {
   UserModel,
   type Region,
+  type TermsAcceptance,
   type Trade,
   type UserRecord,
   type UserWithPasswordHash,
@@ -28,6 +29,7 @@ export interface NewUser {
   readonly specialtyOther?: string;
   readonly businessPhone?: string;
   readonly location: { readonly city: string; readonly region: Region };
+  readonly termsAcceptances: readonly TermsAcceptance[];
 }
 
 export interface UserRepository {
@@ -69,7 +71,13 @@ export const userRepository: UserRepository = {
    */
   async create(user, session) {
     const [created] = await UserModel.create(
-      [{ ...user, specialties: [...user.specialties] }],
+      [
+        {
+          ...user,
+          specialties: [...user.specialties],
+          termsAcceptances: [...user.termsAcceptances],
+        },
+      ],
       session ? { session } : {},
     );
     if (created === undefined) throw new Error('User insert returned no document.');

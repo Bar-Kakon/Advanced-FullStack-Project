@@ -35,6 +35,8 @@ export interface RegistrationDependencies {
   readonly passwords: PasswordService;
   readonly tokenPair: TokenPairService;
   readonly transactions: TransactionRunner;
+  /** The Terms version currently in force, from config — never taken from the request body. */
+  readonly termsVersion: string;
 }
 
 const DUPLICATE_KEY_CODE = 11000;
@@ -66,14 +68,19 @@ const toNewCompany = (input: RegisterBody): NewCompany => ({
 /**
  * `businessPhone` is the person's own number and is never filled from the company's office number —
  * they are on two different documents, so no fallback is even reachable.
+ *
+ * The consent is recorded rather than discarded: validation already proved `acceptedTerms` was
+ * `true`, and the version plus the timestamp are what make that provable after the Terms change.
+ * The boolean itself is not stored — it carries no information the dated record does not.
  */
-const toNewUser = (input: RegisterBody, passwordHash: string): NewUser => ({
+const toNewUser = (input: RegisterBody, passwordHash: string, termsVersion: string): NewUser => ({
   email: input.email,
   passwordHash,
   firstName: input.firstName,
   lastName: input.lastName,
   specialties: [input.specialty],
   location: { city: input.city, region: input.region },
+  termsAcceptances: [{ version: termsVersion, acceptedAt: new Date() }],
   ...(input.specialtyOther === undefined ? {} : { specialtyOther: input.specialtyOther }),
   ...(input.businessPhone === undefined ? {} : { businessPhone: input.businessPhone }),
 });
@@ -101,6 +108,7 @@ export const createRegistrationService = ({
   passwords,
   tokenPair,
   transactions,
+  termsVersion,
 }: RegistrationDependencies): RegistrationService => ({
   /**
    * Three documents, one transaction: the company, the person, and the owner relationship between
@@ -120,7 +128,10 @@ export const createRegistrationService = ({
     try {
       const user = await transactions.run(async (session): Promise<UserRecord> => {
         const company = await companies.create(toNewCompany(input), session);
-        const created = await users.create(toNewUser(input, passwordHash), session);
+        const created = await users.create(
+          toNewUser(input, passwordHash, termsVersion),
+          session,
+        );
 
         await memberships.create(toOwnerMembership(created._id, company), session);
         return created;

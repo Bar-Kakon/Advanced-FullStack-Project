@@ -179,11 +179,35 @@ service receives it as a dependency and never imports the database library itsel
 | *(derived)* | — | **`companymemberships`**: `standing: 'owner'` · `status: 'active'` · owner permissions |
 | `businessPhone` | ➖ | **`users.businessPhone`** — the person's number |
 | `availability` | ➖ (default `open`) | **`companies.availability`** |
-| `acceptedTerms` | ✅ must be `true` | **never stored** — D25 has not settled the documents |
+| `acceptedTerms` | ✅ must be `true` | **`users.termsAcceptances[]`** — the version + a timestamp. The boolean itself is not stored |
+
+### Recording consent
+
+`acceptedTerms` must be `true` or the request is rejected, and the consent is **persisted, not
+discarded** (approved 2026-08-28). A boolean alone cannot prove *what* was agreed to once the Terms
+change, so each acceptance records the version and when it happened:
+
+```
+users.termsAcceptances: [ { version: "draft", acceptedAt: 2026-08-28T16:11:39Z } ]
+```
+
+**Appended to, never overwritten.** Agreeing to a later version adds an entry rather than replacing
+the earlier one, so the proof of the first acceptance survives. It embeds rather than becoming a
+collection because it is small and bounded — one entry per Terms version a person has seen.
+
+**The version comes from `TERMS_VERSION` in config, never from the request body.** The server knows
+which version it is serving; a client could claim any value. **The boolean itself is not stored** —
+it carries nothing the dated record does not.
+
+> No Terms document has been written yet, so the default version is the honest string `draft` and
+> the register screen still links to `href="#"`. The deployment sets a real version the moment one
+> is published. Whether the client should also echo the version it actually rendered is worth
+> deciding then; today there is nothing for it to echo.
 
 ### The three phone concepts
 
-They live in three places on purpose, so no fallback between them is even reachable:
+Both belong in Register, both are optional, and they are independent — approved 2026-08-28,
+closing D27. They live in three places on purpose, so no fallback between them is even reachable:
 
 ```
 users.phone            personal / login   ← onboarding step 3. Register never asks.
