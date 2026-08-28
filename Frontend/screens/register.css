@@ -641,7 +641,8 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
    cannot show its own placeholders: at 1280px those three fields need 536px of box width
    (128 + 217 + 191) against a 502px row, so every possible split clipped Company name and
    Email. Widening the card cannot close it either — the form panel caps the card at 603px
-   there. The fields that need reading width now get a half each. */
+   there. That measurement is why First name, Last name and Company name occupy two rows
+   rather than one: the fields that need reading width get a half each. */
 .register-form {
   display: grid;
   grid-template-columns: 1fr;
@@ -650,11 +651,13 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 }
 .form-group    { display: flex; flex-direction: column; gap: 8px; }
 
-/* Short fields sharing one grid cell, stacked. Location and the two phone numbers are all
+/* Short fields sharing one grid cell, stacked. City, Region and the two phone numbers are all
    short, and stacking them fills the height the availability block beside them needs anyway,
    which is what keeps this regrouping nearly free in vertical space. The 10px gap is tighter
-   than the 14px between rows on purpose: these three read as one group inside a single cell,
-   and the difference is what stops the stack overrunning the block beside it. */
+   than the 14px between rows on purpose: these four read as one group inside a single cell,
+   and the difference is what stops the stack overrunning the block beside it. Splitting the
+   old single Location field into City + Region added a control here rather than a grid cell,
+   so the row count is unchanged. */
 .field-stack { display: flex; flex-direction: column; gap: 10px; }
 
 /* Two columns as soon as the single-column mobile layout is no longer needed. One layout from
@@ -663,27 +666,19 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   .register-form { grid-template-columns: repeat(12, 1fr); column-gap: 18px; }
   .col--half { grid-column: span 6; }
   .col--full { grid-column: span 12; }
-  /* The identity row is deliberately not split down the middle. Full name needs ~128px to show
-     its placeholder and Company name needs ~217px, so an even split starves the one that has
-     the longer example. 5/7 hands the difference across, which is why both stay legible down to
-     a much narrower card than an even split survives. */
-  .col--narrow { grid-column: span 5; }
-  .col--wide   { grid-column: span 7; }
 }
 
 /* The card's width does not track the viewport: the brand panel's share changes at 1024px, so
    the same window can leave the card anywhere between ~428px and its 620px cap. The question
    that decides the column count is therefore about the card, not the window — asked of the card
-   directly. Below the width at which a half still fits the longest field (Company name needs
-   ~217px and Email ~191px), two columns cannot show their own placeholders and the form drops
-   to one. With the uneven identity split above, this is now reached only just before the card
-   hits its narrowest — the mobile column arrives at essentially the same width the old
-   viewport breakpoint chose, rather than opening a tall single-column band mid-desktop.
+   directly. Below the width at which a half still fits the longest field placed on one, two
+   columns cannot show their own placeholders and the form drops to one. Company name takes the
+   full width, so that longest field is Email at ~191px — which is the half this 399px threshold
+   is measured against, and why the mobile column still arrives at essentially the same width
+   the old viewport breakpoint chose rather than opening a tall single-column band mid-desktop.
    Must stay after the rule above: a container query adds no specificity, so it wins on order. */
 @container regcard (max-width: 399px) {
   .register-form { grid-template-columns: 1fr; }
-  .col--narrow,
-  .col--wide,
   .col--half,
   .col--full { grid-column: 1 / -1; }
 }
