@@ -657,6 +657,14 @@ const COLLECTIONS = [
     { name: 'travelRadiusKm', type: 'Number', note: 'How far this contractor will travel. Onboarding step 2.' },
     { name: 'schedulingPrefs', type: '{ delayToleranceDays, noticeRequiredDays }', note: 'Embedded 1:1. Feeds the tolerance signal shown on a reschedule proposal, and later the rules engine. **Public (decided 2026-08-18):** both numbers are serialized onto the public profile, so a GC can propose a workable date first time instead of learning the constraint from a rejected proposal. Edited on My profile; bounds (0–30 and 0–14 days) are provisional.' },
 
+    { group: 'Organization', groupNote: 'the business this person works through — five separate concepts, none implying another' },
+    { name: 'company', type: 'ObjectId', ref: 'companies', req: true, note: 'The business this person operates through. Added 2026-08-28 with the Register backend; see [[companies]]. A foreign key on the user rather than its own membership collection, because a person belongs to one business at a time and that covers every case the model has to hold. If someone ever needs two, this pair promotes into a `companymemberships` collection — a migration, not a redesign.' },
+    { name: 'companyStanding', type: "'owner' | 'member'", req: true, note: '**Do I own this business?** The single record of ownership — [[companies]] deliberately carries no owner field, so the two can never disagree. Register always writes `owner`, because signup has no way to join an existing business safely. Never inferred from a trade: a drilling contractor employing another driller is two users with identical `specialties` and different standing.' },
+    { name: 'companyPosition', type: "'main_contractor' | 'construction_manager' | 'site_manager' | 'contractor' | 'employee'", note: '**What is my job inside the business?** `מנהל אתרים` (Construction Manager) and `מנהל עבודה / מנהל אתר` (Site Manager) are the two the owner named. Deliberately separate from standing, from trade and from permissions. **Nothing writes it yet** — Register leaves it unset, and no backend code reads it to grant or deny anything; it is a place for the fact, not a permission system.' },
+    { name: 'companyMembershipStatus', type: "'invited' | 'active' | 'inactive'", req: true, note: '**Is my link to the business live?** Default and Register-written value is `active`. `invited` exists for the company-invitation flow that would let an employee join an existing business — that flow is **not built**, which is why Register can only ever create an owner.' },
+    { name: 'specialtyOther', type: 'String', note: 'The free text collected when `specialties` contains `other`, max 60. Descriptive only: it **never becomes a browse filter value**, so the specialty enum and its index stay closed. Required exactly when the trade is `other` and refused otherwise, so the code and the text can never describe two different things. Named to match the `edit-profile.html` input that already existed; the Register screen\'s `trade-other` is aligned to it.' },
+    { name: 'businessPhone', type: 'String', note: 'The **individual professional\'s** business number, optional, collected at Register. One of three phone concepts that never fall back to one another: `phone` is personal/login, this is the person\'s business line, and `companies.officePhone` is the organization\'s. The third lives on a different document, so no fallback between them is reachable. Half of what [[D27]] asked; D15 visibility is untouched.' },
+
     { group: 'Computed trust signals', groupNote: 'denormalised on purpose — see the reasoning below' },
     { name: 'ratingSummary', type: '{ average: Number, count: Number }', denorm: true, idx: true, note: 'Recomputed whenever a [[ratings]] document is written. Never edited by hand.' },
     { name: 'flexibility', type: '{ score: Number, sampleSize: Number, lastComputedAt: Date }', denorm: true, idx: true, note: 'Recomputed when a [[rescheduleproposals]] document resolves. The formula itself is still open (D6). `sampleSize` exists so the UI can distinguish a 90 from five responses from a 90 from ninety.' },
@@ -689,7 +697,9 @@ const COLLECTIONS = [
     '**`planCode` is denormalised, and is the third computed value here.** It follows the same rule as `ratingSummary` and `flexibility`: the authorization layer reads the tier on effectively every request, so the cost belongs on the rare write — a purchase, a cancellation, an expiry sweep — rather than on the common read. [[subscriptions]] stays the source of truth; this field is a cache with exactly one writer.',
     '**Sorting by name needs a collation.** MongoDB sorts byte-wise by default, which is not alphabetical for Hebrew. Browse-contractors name sort has to pass a collation (`{ locale: "he" }`) or sort client-side with `Intl.Collator`. `ratingSummary` and `flexibility` sort numerically and are unaffected.'
   ],
-  relations: [],
+  relations: [
+    { to: 'companies', via: 'company', store: 'ref', card: 'N:1', why: 'Every person works through exactly one business. Referenced, not embedded: several people share one company document, and embedding it would copy the office number and the availability status into every employee — the duplication this split exists to remove.' }
+  ],
   sample: `{
   _id: ObjectId("6650a1f4c2b9e30012af0b21"),
   email: "dana@betonaviv.co.il",
@@ -700,7 +710,11 @@ const COLLECTIONS = [
 
   firstName: "Dana",
   lastName: "Aviv",
-  phone: "+972-52-555-0123",
+  phone: "+972-52-555-0123",                    // personal / login — onboarding step 3
+  businessPhone: "+972-52-555-0199",            // her own business line — never a fallback
+  company: ObjectId("6a918a76435b0d493fda94e0"),// the business; availability lives there
+  companyStanding: "owner",
+  companyMembershipStatus: "active",
   bio: "Concrete and formwork. 14 years, mostly residential towers.",
   avatar: { fileId: ObjectId("6650a2..."), url: "/files/6650a2..." },
   specialties: ["concrete", "formwork"],
@@ -732,11 +746,20 @@ const userSchema = new Schema({
 
   firstName: { type: String, required: true, trim: true },
   lastName:  { type: String, required: true, trim: true },
-  phone:     String,
+  phone:     String,                       // personal / login. Never a business number.
+  businessPhone: { type: String, trim: true },   // the person's own business line
+
+  company:         { type: Schema.Types.ObjectId, ref: 'Company', required: true },
+  companyStanding: { type: String, enum: ['owner','member'], required: true },
+  companyPosition: { type: String, enum: ['main_contractor','construction_manager',
+                                          'site_manager','contractor','employee'] },
+  companyMembershipStatus: { type: String, enum: ['invited','active','inactive'],
+                             default: 'active', required: true },
   bio:       { type: String, maxlength: 600 },
   avatar:    { fileId: { type: Schema.Types.ObjectId, ref: 'FileAsset' }, url: String },
 
-  specialties: [{ type: String, enum: TRADES }],
+  specialties:    [{ type: String, enum: TRADES }],
+  specialtyOther: { type: String, trim: true, maxlength: 60 },
   location: {
     city: String, region: String, country: String,
     geo: { type: { type: String, enum: ['Point'], default: 'Point' }, coordinates: [Number] }
@@ -770,6 +793,49 @@ userSchema.index({ 'location.geo': '2dsphere' });
 userSchema.index({ 'security.resetTokenHash': 1 }, { sparse: true });
 
 module.exports = mongoose.model('User', userSchema);`
+},
+
+/* ─────────── companies ─────────── */
+{
+  id: 'companies', model: 'Company', domain: 'identity', stage: 2,
+  tag: 'the business a contractor operates through',
+  pos: { x: 550, y: 670 },
+  purpose: 'One document per contractor business. Added 2026-08-28 with the Register backend, and it is what closes [[D28]]: `company` had been a required field on the signup screen with nowhere in the model to live. A person and the business they trade as are two different things, so they are two documents — a Main Contractor operating through a company, the Construction Managers and Site Managers working under it, and a specialty contractor who employs another contractor of the same trade are all one shape here.',
+  fields: [
+    { name: '_id', type: 'ObjectId', note: '' },
+    { name: 'name', type: 'String', req: true, note: 'The business name, collected at Register. Not unique: two unrelated businesses may legitimately share a name, and a unique index would make the second signup fail for a reason the user could not fix. Browse-contractors searches `שם או חברה` / *Name or company*, so this is the value that half of that search reads.' },
+    { name: 'officePhone', type: 'String', note: 'The **business office** number, optional. It lives here rather than on each person precisely because several users under one contractor share one office line — storing it per user would be the same fact copied N times, free to drift. Distinct from `users.businessPhone` and from `users.phone`, and there is **no fallback in any direction**: they are on two different documents, so a fallback is not reachable by accident. Half of what [[D27]] asked; the D15 visibility question is untouched by it.' },
+    { name: 'availability', type: "'open' | 'limited' | 'closed'", req: true, note: 'Whether **the organization** is currently accepting new work — default `open`. This is the [[D14]] enum, and it is stored here rather than on [[users]] by decision (2026-08-28): a Main Contractor decides whether their company takes work, and everyone working under that company derives their effective availability from it. There is deliberately **no per-user copy and no per-user override**, so two employees can never disagree about their own business. The three approved labels are gender-neutral in Hebrew and are never stored — only the code is.' },
+    { name: 'createdAt / updatedAt', type: 'Date', note: 'Mongoose `timestamps: true`.' }
+  ],
+  indexes: [
+    { def: '— none beyond `_id` —', serves: 'Nothing yet', why: 'No query in the backend reads companies by any field today: Register writes one and reads it back by id. The index that lists a company\'s people belongs with the first screen that lists them, on the same principle the error-code table already follows — nothing is defined ahead of the condition that needs it.' }
+  ],
+  why: [
+    '**There is no `owner` field, and that is the point.** Ownership is recorded exactly once, as `users.companyStanding === "owner"`. A second copy here could disagree with it the first time a write path updated one and not the other — the same trap [[D19]] and [[D20]] are both stuck in, avoided rather than repeated.',
+    '**Availability is organizational, not personal, and it is not delegation.** [§3.3](#) delegation is one hop, confidential, and about a specific task. This is a standing fact about a business, with no confidentiality rule attached. Modelling availability as delegation would put a private mechanism behind a value that appears on every browse card.',
+    '**Register can only create the owner case.** The signup screen has one free-text company-name box and no invitation flow, and matching a typed string to an existing business would let anyone join it by guessing the name. So every registrant becomes the owner of the company they name. Attaching an employee to an existing business needs the invitation flow that `companyMembershipStatus: "invited"` is waiting for — it is not built, and the gap is recorded rather than papered over.',
+    '**A company holds no trade.** Profession lives on the person, in `users.specialties`. A drilling contractor employing another driller is two users with the same specialty and different standing, so nothing can infer ownership from a trade.'
+  ],
+  relations: [
+    { to: 'users', via: 'company', store: 'ref', card: '1:N', why: 'One business, many people. Referenced rather than embedded because the people are queried on their own — browse searches users, not companies — and an embedded roster would have to be rewritten every time anyone joined or left.' }
+  ],
+  sample: `{
+  _id:          ObjectId("6a918a76435b0d493fda94e0"),
+  name:         "כאכון קידוחים בע\"מ",
+  officePhone:  "03-1234567",        // the office line — optional
+  availability: "limited",           // the BUSINESS is limited, not one person
+  createdAt:    ISODate("2026-08-28T13:17:42Z"),
+  updatedAt:    ISODate("2026-08-28T13:17:42Z")
+}`,
+  schema: `const companySchema = new Schema({
+  name:         { type: String, required: true, trim: true },
+  officePhone:  { type: String, trim: true },
+  availability: { type: String, enum: ['open','limited','closed'],
+                  default: 'open', required: true }
+}, { timestamps: true });
+
+module.exports = mongoose.model('Company', companySchema);`
 },
 
 /* ─────────── connections ─────────── */
@@ -2789,7 +2855,10 @@ const OPEN_DECISIONS = [
   { id: 'D24', title: 'What Delete Project does', affects: ['projects', 'tasks', 'memberships', 'fileassets', 'threads', 'messages', 'rescheduleproposals', 'auditentries'],
     impact: 'Opened 2026-08-23 by the `Create / edit project` screen, which renders the control and deliberately states nothing about the behaviour. **Nothing is decided:** not hard delete versus soft delete versus archive, not a retention period, not whether the action is reversible, and not what becomes of the project [[tasks]], [[memberships]], [[fileassets]], [[threads]] and [[messages]], [[rescheduleproposals]] or [[auditentries]]. Two constraints already exist and **neither is a decision**: [[auditentries]] is append-only and snapshots the actor name precisely so history survives a removal, which is the argument that pushed **D8** toward soft-delete for users and applies here with equal force; and `projects.status` already carries **`archived`**, so an archive path exists in the enum with no rule saying deletion should use it. That is also the trap **D17** and **D18** both name — **reusing a nearby status because it is nearby**. `archived` today means *this project is finished and put away*, a statement about the work rather than about a deletion, and routing a delete through it would rewrite that meaning for every project already carrying it. One question nobody has asked: whether a project with members may be deleted **by its owner alone**, given that the other parties record of what was agreed lives inside it. **No field was added or changed for this row.**' },
   { id: 'D27', title: 'Whether Register collects business phone numbers at all, and how they relate to users.phone', affects: ['users', 'connections'],
-    impact: 'Opened 2026-08-26 by two optional phone fields added to `register.html` on owner instruction. **The screen now collects something this design does not have.** [[users]] carries exactly one phone — `phone`, a single `String`, described on that field as *collected in onboarding step 3* — and the register screen now asks for **two more**, an office number and a business number, on a screen that had never asked for a number at all. Three things are open. **Do these become stored fields?** Two new keys on [[users]], one embedded object, or a single field carrying a type — the prototype takes no position and **no field was added or changed for this row**, because a schema change is its own act rather than a side effect of building a screen. **Does Register remain the place to ask?** Onboarding step 3 exists precisely to collect a phone, and moving contact detail out of signup is why the profile wizard exists; asking for two numbers before an account exists cuts against that, which is part of why both fields are optional. **What is the relationship to `phone`?** The personal / login number is a separate concept and must never be shown as a business-facing number — satisfied on the screen today by simply not collecting it there — and the owner instruction is explicit that **no fallback exists** between any of the three. That last part binds **D15**: if `phone` is withheld until a [[connections]] edge is accepted and a business number is not, the public-profile projection has to say which of them it shows, and D15 is still open. **No validation rule was introduced** — the fields carry `type="tel"` and no pattern, because what counts as a valid number here has never been approved.' }
+    impact: 'Opened 2026-08-26 by two optional phone fields added to `register.html` on owner instruction. **The screen now collects something this design does not have.** [[users]] carries exactly one phone — `phone`, a single `String`, described on that field as *collected in onboarding step 3* — and the register screen now asks for **two more**, an office number and a business number, on a screen that had never asked for a number at all. Three things are open. **Do these become stored fields?** Two new keys on [[users]], one embedded object, or a single field carrying a type — the prototype takes no position and **no field was added or changed for this row**, because a schema change is its own act rather than a side effect of building a screen. **Does Register remain the place to ask?** Onboarding step 3 exists precisely to collect a phone, and moving contact detail out of signup is why the profile wizard exists; asking for two numbers before an account exists cuts against that, which is part of why both fields are optional. **What is the relationship to `phone`?** The personal / login number is a separate concept and must never be shown as a business-facing number — satisfied on the screen today by simply not collecting it there — and the owner instruction is explicit that **no fallback exists** between any of the three. That last part binds **D15**: if `phone` is withheld until a [[connections]] edge is accepted and a business number is not, the public-profile projection has to say which of them it shows, and D15 is still open. **No validation rule was introduced** — the fields carry `type="tel"` and no pattern, because what counts as a valid number here has never been approved. **Storage answered 2026-08-28 by the Register backend; the rest stays open.** The two numbers are two fields on two different documents: `companies.officePhone` is the business office line, shared by everyone under one contractor, and `users.businessPhone` is the individual professional\'s own. `users.phone` is untouched and Register still never asks for it. Because the office number lives on a different document, **no fallback between the three is reachable** rather than merely forbidden. Register\'s Joi schema gives both a length bound and **still no format rule**, exactly as this row required. What remains open is unchanged: whether Register is the right place to ask at all, and the D15 interaction — which of the three a public profile shows.' },
+
+  { id: 'D28', title: 'Where a company name is stored, and whether it belongs on Register at all', affects: ['companies', 'users'],
+    impact: '**Storage CLOSED 2026-08-28 by the Register backend; the product half stays open.** Opened 2026-08-27 by a **required** Company name on `register.html`, which blocked account creation on a value this design could not hold — and unlike [[D27]]\'s optional phones, it could not be deferred past the first real signup. The answer is a [[companies]] collection, not a string on each person, decided by the owner on the ground that a User is an individual and a Company is the business: a Main Contractor operating through one, the Construction Managers and Site Managers under it, and a specialty contractor employing another contractor of the same trade all have to be expressible, and a descriptive string expresses none of them. The link is `users.company`, a foreign key, because a person belongs to one business at a time. **Ownership is `users.companyStanding`, recorded exactly once** — [[companies]] has no owner field, so the two cannot disagree. **Trade never implies ownership:** two drillers, identical `specialties`, different standing. What is **still open**: whether a company should be searchable and public, which the browse placeholder `שם או חברה` implies but nothing has approved; whether Register remains the right place to ask, given that the profile wizard exists to move detail out of signup; and the gap the model exposes rather than hides — **there is no company-invitation flow**, so Register can only ever create an owner, and an employee joining an existing business has nothing to do it with. `companyMembershipStatus: \'invited\' waits for exactly that.' }
 ];
 
 /* ══════════════════════════════════════════════════════
@@ -2905,7 +2974,7 @@ function renderOverview() {
 }
 
 /* ── ERD ──────────────────────────────────────────── */
-const NW = 196, NH = 56, CW = 1360, CH = 660;
+const NW = 196, NH = 56, CW = 1360, CH = 800;
 let erdSelected = null, erdDomains = new Set(Object.keys(DOMAINS));
 
 function nodeAnchor(a, b) {
