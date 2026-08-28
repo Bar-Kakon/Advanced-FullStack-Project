@@ -1,0 +1,111 @@
+# VS Code REST Client (`humao.rest-client`). Run top to bottom.
+# The Refresh Token is an HttpOnly cookie and is sent automatically.
+
+@host = http://localhost:3000/api
+@email = dana@betonaviv.co.il
+@password = CorrectHorse42!
+
+### Login — 200 + accessToken + safe user + Set-Cookie
+# @name login
+POST {{host}}/auth/login
+Content-Type: application/json
+
+{ "email": "{{email}}", "password": "{{password}}" }
+
+### Unknown account — 401 INVALID_CREDENTIALS
+POST {{host}}/auth/login
+Content-Type: application/json
+
+{ "email": "nobody@example.com", "password": "{{password}}" }
+
+### Wrong password — 401 INVALID_CREDENTIALS
+POST {{host}}/auth/login
+Content-Type: application/json
+
+{ "email": "{{email}}", "password": "WrongPassword99!" }
+
+### Non-active account — 401 INVALID_CREDENTIALS
+POST {{host}}/auth/login
+Content-Type: application/json
+
+{ "email": "banned@example.com", "password": "{{password}}" }
+
+### Password missing — 400 REQUEST_VALIDATION_FAILED
+POST {{host}}/auth/login
+Content-Type: application/json
+
+{ "email": "a@b.com" }
+
+### Email malformed — 400 REQUEST_VALIDATION_FAILED
+POST {{host}}/auth/login
+Content-Type: application/json
+
+{ "email": "not-an-email", "password": "x" }
+
+### Password empty — 400 REQUEST_VALIDATION_FAILED
+POST {{host}}/auth/login
+Content-Type: application/json
+
+{ "email": "a@b.com", "password": "" }
+
+### Email normalised, not rejected — 200
+POST {{host}}/auth/login
+Content-Type: application/json
+
+{ "email": "  DANA@BetonAviv.CO.IL  ", "password": "{{password}}" }
+
+### Valid Access Token — 200
+GET {{host}}/health-auth
+Authorization: Bearer {{login.response.body.accessToken}}
+
+### No header — 401 UNAUTHENTICATED
+GET {{host}}/health-auth
+
+### Malformed token — 401 UNAUTHENTICATED
+GET {{host}}/health-auth
+Authorization: Bearer not.a.real.token
+
+### No Bearer prefix — 401 UNAUTHENTICATED
+GET {{host}}/health-auth
+Authorization: {{login.response.body.accessToken}}
+
+### Refresh — 200 + new accessToken + new Set-Cookie (old one retired)
+# @name refresh
+POST {{host}}/auth/refresh
+
+### New Access Token works — 200
+GET {{host}}/health-auth
+Authorization: Bearer {{refresh.response.body.accessToken}}
+
+### No cookie — 401 INVALID_REFRESH_TOKEN
+POST {{host}}/auth/refresh
+Cookie: refreshToken=
+
+### Garbage cookie — 401 INVALID_REFRESH_TOKEN
+POST {{host}}/auth/refresh
+Cookie: refreshToken=garbage
+
+### Access Token used as Refresh Token — 401 INVALID_REFRESH_TOKEN
+POST {{host}}/auth/refresh
+Cookie: refreshToken={{login.response.body.accessToken}}
+
+### Refresh Token used as Access Token — 401 UNAUTHENTICATED
+# Paste a refreshToken from the Set-Cookie header of the Login response.
+GET {{host}}/health-auth
+Authorization: Bearer PASTE_A_REFRESH_TOKEN
+
+### Replay a retired Refresh Token — 401, and revokes the whole family
+# Paste the refreshToken value from before the Refresh request above.
+POST {{host}}/auth/refresh
+Cookie: refreshToken=PASTE_THE_RETIRED_REFRESH_TOKEN
+
+### The current Refresh Token is now dead too — 401 INVALID_REFRESH_TOKEN
+POST {{host}}/auth/refresh
+
+### Expired tokens: set ACCESS_TOKEN_TTL_SECONDS=1 / REFRESH_TOKEN_TTL_SECONDS=2, restart, wait, retry.
+
+### Health — 200
+GET {{host}}/health
+
+### Unmatched route — 404 ROUTE_NOT_FOUND
+GET {{host}}/nope
