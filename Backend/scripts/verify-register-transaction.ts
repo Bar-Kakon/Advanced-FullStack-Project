@@ -14,7 +14,11 @@ import mongoose from 'mongoose';
 import { loadConfig } from '../src/config/env.js';
 import { connectToDatabase, disconnectFromDatabase, runInTransaction } from '../src/db/mongoose.js';
 import { CompanyModel } from '../src/features/companies/company.model.js';
-import { CompanyMembershipModel } from '../src/features/companies/companyMembership.model.js';
+import {
+  CompanyMembershipModel,
+  EMPLOYEE_DEFAULT_PERMISSIONS,
+  OWNER_DEFAULT_PERMISSIONS,
+} from '../src/features/companies/companyMembership.model.js';
 import { companyMembershipRepository } from '../src/features/companies/companyMembership.repository.js';
 import { companyRepository } from '../src/features/companies/company.repository.js';
 import { UserModel } from '../src/features/users/user.model.js';
@@ -141,9 +145,15 @@ const run = async (): Promise<void> => {
   check('standing is owner', membership?.standing === 'owner', `standing=${membership?.standing}`);
   check('status is active', membership?.status === 'active', `status=${membership?.status}`);
   check(
-    'permissions empty — no code is approved yet',
-    membership?.permissions.length === 0,
+    'owner holds the four approved default capabilities',
+    OWNER_DEFAULT_PERMISSIONS.length === 4 &&
+      OWNER_DEFAULT_PERMISSIONS.every((p) => membership?.permissions.includes(p)),
     JSON.stringify(membership?.permissions),
+  );
+  check(
+    'employees receive none of them by default',
+    EMPLOYEE_DEFAULT_PERMISSIONS.length === 0,
+    JSON.stringify(EMPLOYEE_DEFAULT_PERMISSIONS),
   );
   const user = await UserModel.findOne({ email: EMAIL }).lean();
   check(

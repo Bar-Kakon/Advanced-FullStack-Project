@@ -32,17 +32,20 @@ export const COMPANY_POSITIONS = [
 ] as const;
 
 /**
- * The approved permission codes — **currently none**, and that is deliberate.
+ * The approved permission codes, and **exactly** these four. Each names a capability that was
+ * approved as an owner default: create projects, create tasks, manage their own company, and
+ * add/invite employees.
  *
- * A code is added only when the capability it names is implemented and approved, never ahead of it,
- * so this list can never describe a power the platform does not actually have. Because the list is
- * empty, `CompanyPermission` is `never` today: the compiler rejects any code that has not been
- * approved, and the first approved capability makes the type meaningful in the same edit.
- *
- * The schema below carries no `enum` for the same reason — Mongoose treats an empty one as no
- * constraint at all, which would read like a guard while being none. It arrives with the first code.
+ * The list is closed on purpose. Because `CompanyPermission` is derived from it, a fifth code is a
+ * compile error until the capability it names is itself implemented and approved — so the
+ * vocabulary can never run ahead of the product.
  */
-export const COMPANY_PERMISSIONS = [] as const;
+export const COMPANY_PERMISSIONS = [
+  'project.create',
+  'task.create',
+  'company.manage',
+  'company.invite_employees',
+] as const;
 
 export type CompanyStanding = (typeof COMPANY_STANDINGS)[number];
 export type CompanyMembershipStatus = (typeof COMPANY_MEMBERSHIP_STATUSES)[number];
@@ -50,11 +53,16 @@ export type CompanyPosition = (typeof COMPANY_POSITIONS)[number];
 export type CompanyPermission = (typeof COMPANY_PERMISSIONS)[number];
 
 /**
- * Two separate decisions that are allowed to differ, which is the approved rule. Both are empty
- * today only because there is no capability to grant yet — each future code decides its own default
- * on each side when it is approved, rather than an employee inheriting an owner's set.
+ * An owner runs the business, so public Register grants all four at signup. Writing them now rather
+ * than deriving them later is what keeps the rule true for accounts created before the
+ * authorization layer exists — no backfill, and no owner who silently has no authority.
  */
-export const OWNER_DEFAULT_PERMISSIONS: readonly CompanyPermission[] = [];
+export const OWNER_DEFAULT_PERMISSIONS: readonly CompanyPermission[] = [...COMPANY_PERMISSIONS];
+
+/**
+ * An employee receives **none** of them. Having an account, or a company position, grants nothing;
+ * an owner or an authorized manager grants capabilities explicitly, one at a time.
+ */
 export const EMPLOYEE_DEFAULT_PERMISSIONS: readonly CompanyPermission[] = [];
 
 export interface CompanyMembershipRecord {
@@ -79,8 +87,7 @@ const companyMembershipSchema = new Schema(
     standing: { type: String, enum: COMPANY_STANDINGS, required: true },
     status: { type: String, enum: COMPANY_MEMBERSHIP_STATUSES, required: true },
     companyPosition: { type: String, enum: COMPANY_POSITIONS },
-    // No enum until the first permission code is approved — see COMPANY_PERMISSIONS.
-    permissions: [{ type: String }],
+    permissions: [{ type: String, enum: COMPANY_PERMISSIONS }],
   },
   { timestamps: true },
 );

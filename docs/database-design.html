@@ -843,7 +843,7 @@ module.exports = mongoose.model('Company', companySchema);`
     { name: 'standing', type: "'owner' | 'employee'", req: true, note: 'Whether this person runs the business or works under it. **On the relationship, never on the account** — there is deliberately no "contractor account type" and no "employee account type", because the same person may stand differently to different companies over time. **Approved 2026-08-28** ([[D29]]): standing is the person\'s *organizational standing within the company* — **not** their professional position (`companyPosition`) and **not** their permissions. Public Register writes `owner`; nothing writes `employee` yet.' },
     { name: 'status', type: "'invited' | 'pending_company_approval' | 'active' | 'inactive'", req: true, note: 'The life of one relationship, in order. `invited` = an owner opened a seat, no user. `pending_company_approval` = somebody matched that invitation and created an account, **but is not yet a member**. `active` = the owner approved them. `inactive` = they have left. **Matching an invitation is never enough to activate** — approval is a separate act by the owner. `pending_company_approval` was coined here because no existing status covers it (`memberships.status` is project-scoped, `connections.status` is a different graph), and it was **approved 2026-08-28** ([[D29]]).' },
     { name: 'companyPosition', type: "'main_contractor' | 'construction_manager' | 'site_manager' | 'contractor' | 'employee'", note: 'The organizational **job** — `מנהל אתרים` / Construction Manager and `מנהל עבודה / מנהל אתר` / Site Manager are the two the owner named. **It grants nothing.** Permissions are a separate field and are never derived from a position, so a Site Manager is authorized for exactly what someone chose to authorize them for. Supplied per employee at invitation time; unset for a public-Register owner, who is never asked for one.' },
-    { name: 'permissions', type: '[String]', note: 'What this person **may do** in FieldSync inside this company. **There are no codes yet, by decision ([[D29]], 2026-08-28): a permission code is added only when the capability it names is implemented and approved, never ahead of it**, so this vocabulary can never describe a power the platform does not have. Public Register therefore writes an empty array. The rule it serves is unchanged — an **employee receives nothing by default**, having an account or a company position grants nothing, and an owner or authorized manager grants capabilities explicitly — and owner and employee defaults are two separate decisions that are allowed to differ. No `enum` is declared: Mongoose treats an empty one as no constraint at all, which would read like a guard while being none, so the code list is enforced in TypeScript (where the empty list makes the type `never`) until the first code arrives.' },
+    { name: 'permissions', type: '[String]', note: 'What this person **may do** in FieldSync inside this company. Four approved codes and **exactly** four ([[D29]], 2026-08-28), one per approved owner default capability: `project.create`, `task.create`, `company.manage`, `company.invite_employees`. Public Register grants an owner **all four at signup**; an **employee receives none by default** — an account and a company position grant nothing, and an owner or authorized manager grants capabilities explicitly. **The list is closed**: the TypeScript type is derived from it, so a fifth code is a compile error until the capability it names is implemented and approved, and the vocabulary can never run ahead of the product. **Nothing reads this field yet** — none of the four capabilities is built. They are written at signup anyway so the rule holds for accounts created before the check exists, needing no backfill; whatever authorization layer arrives must honour these defaults as they stand and must not restate the product rule, and neither set may be derived from `companyPosition`.' },
     { name: 'createdAt / updatedAt', type: 'Date', note: 'Mongoose `timestamps: true`.' }
   ],
   indexes: [
@@ -867,7 +867,8 @@ module.exports = mongoose.model('Company', companySchema);`
   user:      ObjectId("6a91a068337b84fdc826c5db"),
   standing:  "owner",              // public Register always writes this
   status:    "active",
-  permissions: [],                 // no code is approved yet — see D29
+  permissions: [ "project.create", "task.create",     // the four approved
+                 "company.manage", "company.invite_employees" ],  // owner defaults
   createdAt: ISODate("2026-08-28T14:51:20Z")
 }
 
@@ -891,9 +892,8 @@ module.exports = mongoose.model('Company', companySchema);`
               enum: ['invited','pending_company_approval','active','inactive'] },
   companyPosition: { type: String, enum: ['main_contractor','construction_manager',
                                           'site_manager','contractor','employee'] },
-  // No enum until the first permission code is approved (D29). An empty Mongoose
-  // enum is silently no constraint, so declaring one here would be misleading.
-  permissions: [{ type: String }]
+  permissions: [{ type: String, enum: ['project.create','task.create',
+                                       'company.manage','company.invite_employees'] }]
 }, { timestamps: true });
 
 companyMembershipSchema.index({ company: 1, status: 1 });

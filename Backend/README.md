@@ -218,24 +218,35 @@ without their account changing type.
 another.** `standing` is where the person sits in the business; `companyPosition` is their job;
 `permissions` is what they are authorized to do. Being a Site Manager grants nothing.
 
-**There are no permission codes yet, deliberately.** A code is added only when the capability it
-names is implemented and approved — never ahead of it — so the list can never describe a power the
-platform does not have. Today `COMPANY_PERMISSIONS` is empty, which makes `CompanyPermission` the
-type `never`: **the compiler rejects any code that has not been approved.**
+**Four approved owner default capabilities, and exactly four codes.**
+
+| Capability | Code | Owner (public Register) | Employee |
+|---|---|---|---|
+| Create projects | `project.create` | ✅ granted at signup | ❌ never by default |
+| Create tasks | `task.create` | ✅ granted at signup | ❌ never by default |
+| Manage their own company | `company.manage` | ✅ granted at signup | ❌ never by default |
+| Add / invite employees | `company.invite_employees` | ✅ granted at signup | ❌ never by default |
+
+**The list is closed.** `CompanyPermission` is derived from it, so a fifth code is a compile error
+until the capability it names is itself implemented and approved — the vocabulary can never run
+ahead of the product:
 
 ```ts
-const p: readonly CompanyPermission[] = ['any.code.at.all'];
-//                                       ^^^^^^^^^^^^^^^^^
-// Type 'string' is not assignable to type 'never'.
+const p: readonly CompanyPermission[] = ['project.delete'];
+// Type '"project.delete"' is not assignable to type
+//   '"company.invite_employees" | "company.manage" | "project.create" | "task.create"'.
 ```
 
-The schema carries no `enum` on `permissions` for the same reason — Mongoose treats an empty enum as
-*no constraint*, which would read like a guard while being none. Both arrive with the first code.
+### The future authorization layer
 
-Owner and employee defaults are named separately (`OWNER_DEFAULT_PERMISSIONS`,
-`EMPLOYEE_DEFAULT_PERMISSIONS`) and are **both empty today**. They are two decisions that are allowed
-to differ: each future code chooses its own default on each side, rather than an employee inheriting
-an owner's set.
+**Nothing reads `permissions` yet** — no endpoint checks them, because none of the four capabilities
+is implemented. They are written at signup anyway, so the rule holds for accounts created before the
+check exists: no backfill, and no owner who silently has no authority.
+
+Whatever authorization layer is built **must honour this as-is and must not restate the product
+rule**: an owner holds all four, an employee holds none by default, and neither set may be derived
+from `companyPosition`. Grants beyond the defaults are an explicit act by an owner or an authorized
+manager.
 
 Two indexes carry the rules: `{ company, status }` serves "this company's pending activations", and
 a **partial unique** index on `{ user }` where `status: 'active'` enforces **one active relationship
