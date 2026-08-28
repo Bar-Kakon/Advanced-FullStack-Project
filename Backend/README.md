@@ -29,6 +29,17 @@ Generate the two token secrets separately — the server refuses to start if the
 node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"
 ```
 
+> **If your `.env` predates a variable, nothing tells you.** Copying `.env.example` only helps a
+> `.env` that does not exist yet. Today exactly one variable is affected: `TERMS_VERSION` is absent
+> from local `.env` files and silently defaults to `draft`. That is the correct value while no Terms
+> document exists — and the wrong one the day after one is published, because the version is written
+> verbatim into `users.termsAcceptances[]`, which is appended to and never rewritten. Compare the two
+> files before trusting a long-lived `.env`:
+>
+> ```bash
+> diff <(grep -o '^[A-Z_]*=' .env.example | sort) <(grep -o '^[A-Z_]*=' .env | sort)
+> ```
+
 | Script | Does |
 |---|---|
 | `npm run dev` | Runs `src/server.ts` in watch mode |
