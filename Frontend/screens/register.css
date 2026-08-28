@@ -854,7 +854,8 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 }
 
 /* Red state ONLY for fields the user actually touched (focused then left) and
-   left empty/invalid. The `.touched` class is added on blur by register.js, so
+   left empty/invalid. The `.touched` class is added by the shared validation.js,
+   on blur for text inputs and on change for the select and the checkbox, so
    reddening is per-field — never the whole form, never on initial load.
    :not(:focus) hides the red while the user is back in the field fixing it. */
 .form-input.touched:not(:focus):invalid,

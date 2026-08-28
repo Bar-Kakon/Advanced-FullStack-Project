@@ -633,8 +633,10 @@
   <script src="lang.js"></script>
 
   <!-- Touched-state validation (progressive enhancement; no framework).
-       Source: register.ts → compiled to register.js (browsers can't run .ts directly). -->
-  <script src="register.js" defer></script>
+       This is the same shared module the login and profile screens load, and it covers
+       this screen's selects and consent checkbox as well as its text inputs.
+       Source: validation.ts → compiled to validation.js (browsers can't run .ts directly). -->
+  <script src="validation.js"></script>
 
 </body>
 </html>

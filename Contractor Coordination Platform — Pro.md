@@ -621,10 +621,25 @@ _Later stages live in the [Roadmap](#4-roadmap-stages); we'll expand the next on
   profile screens — loads it, so the choice persists across page loads. On register it does not: switching to
   English and moving to the next screen silently returns to Hebrew. Belongs to `feature/register-screen`;
   it is a one-line `<script>` addition, not a redesign.
-- **`register.ts` is redundant but cannot be deleted yet.** `validation.ts` now covers everything it did
-  (`refactor/shared-ui`, `ccbfdc7`). `register.html` still loads `register.js` on its own branch, so removing
-  it before that branch swaps its `<script src>` would break the register screen. Retire both files in the
-  same commit that changes that tag.
+- ~~**`register.ts` is redundant but cannot be deleted yet.** `validation.ts` now covers everything it did
+  (`refactor/shared-ui`, `ccbfdc7`).~~ ✅ **Consolidated 2026-08-28. The claim above was wrong, and acting on
+  it as written would have broken the screen.** `validation.ts` did **not** cover everything `register.ts` did:
+  it bound `.form-input` on `blur` only, while `register.ts` bound `.form-input`, **`.form-select` and
+  `.checkbox-input`** on **`blur` and `change`**. Register is the only auth screen with selects (2) and a
+  consent checkbox (1) — `login.html` has neither — and `change` is what those two control types actually
+  commit on, since blur is unreliable for a control changed by click or by keyboard. Swapping the
+  `<script src>` on the strength of the original sentence would have silently killed the red state on
+  Register's trade select and its terms checkbox; `register.css` lines 861 and 870 are the rules that would
+  have stopped matching. **The resolution was to widen the shared module rather than delete the specific
+  one:** `validation.ts` now takes all three selectors and both events, `register.html` loads
+  `validation.js`, and `register.ts` / `register.js` are deleted. **The touched-state implementation now
+  exists in exactly one file.** Confirmed behaviour-preserving for the other four screens before the change:
+  `login.html`, `forgot-password.html` and `reset-password.html` have no selects or checkboxes at all, and
+  `edit-profile.html` has two selects but **`edit-profile.css` carries no `.form-select.touched` rule**, so
+  the added class is inert there. Also confirmed that all 16 of Register's controls sit inside
+  `.register-form`, so trading `register.ts`'s form scoping for the shared module's document-wide query
+  reaches exactly the same elements. The `defer` attribute was dropped with the swap, matching the four
+  sibling screens; at the end of `<body>` it was already a no-op.
 - ~~**`login.css` mirrors its corner registration marks the wrong way**~~ ✅ **Fixed 2026-08-25 (`c6d53c5`),
   two lines exactly as predicted** — `border-right: 0` / `border-bottom: 0` became `border-inline-end: 0` /
   `border-block-end: 0` on `.reg-mark--tl`, and the mirror of that on `--br`. It was found independently a
