@@ -16,3 +16,10 @@ export const unauthenticated = (): AppError =>
 /** The Refresh Token was missing, malformed, expired, unknown, already used, revoked, or not a Refresh Token. */
 export const invalidRefreshToken = (): AppError =>
   new AppError('Refresh token is not usable', 401, 'INVALID_REFRESH_TOKEN');
+
+/**
+ * Register only. A signup form has to say which field to correct, and it is already an enumeration
+ * surface by nature. Login and password reset keep their unified answers unchanged.
+ */
+export const emailAlreadyRegistered = (): AppError =>
+  new AppError('Email is already registered', 409, 'EMAIL_ALREADY_REGISTERED');

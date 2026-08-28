@@ -13,12 +13,22 @@ export interface TokenConfig {
   readonly refreshTtlSeconds: number;
 }
 
+/**
+ * Which Terms a signup is accepting. It comes from the deployment rather than the request: the
+ * server knows which version it is currently serving, and a client-supplied version could claim
+ * anything. Stored with every acceptance so the record stays provable after the terms change.
+ */
+export interface TermsConfig {
+  readonly version: string;
+}
+
 export interface AppConfig {
   readonly nodeEnv: NodeEnv;
   readonly port: number;
   readonly mongoUri: string;
   readonly corsOrigins: readonly string[];
   readonly tokens: TokenConfig;
+  readonly terms: TermsConfig;
 }
 
 interface RawEnv {
@@ -30,6 +40,7 @@ interface RawEnv {
   readonly ACCESS_TOKEN_TTL_SECONDS: number;
   readonly REFRESH_TOKEN_SECRET: string;
   readonly REFRESH_TOKEN_TTL_SECONDS: number;
+  readonly TERMS_VERSION: string;
 }
 
 const MIN_SECRET_LENGTH = 32;
@@ -50,6 +61,10 @@ const rawEnvSchema: Joi.ObjectSchema<RawEnv> = Joi.object({
     .required()
     .messages({ 'any.invalid': 'REFRESH_TOKEN_SECRET must not be the same value as ACCESS_TOKEN_SECRET.' }),
   REFRESH_TOKEN_TTL_SECONDS: Joi.number().integer().positive().default(DEFAULT_REFRESH_TTL_SECONDS),
+
+  // No Terms document exists yet, so the default says so rather than naming a version that was
+  // never published. The deployment replaces it the moment real Terms ship.
+  TERMS_VERSION: Joi.string().trim().min(1).default('draft'),
 }).unknown(true);
 
 const parseOrigins = (value: string): readonly string[] => {
@@ -100,5 +115,6 @@ export const loadConfig = (source: NodeJS.ProcessEnv = process.env): AppConfig =
     mongoUri: value.MONGODB_URI,
     corsOrigins: parseOrigins(value.CORS_ORIGINS),
     tokens: buildTokenConfig(value),
+    terms: { version: value.TERMS_VERSION },
   };
 };

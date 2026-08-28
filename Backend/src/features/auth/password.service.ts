@@ -7,7 +7,12 @@ import bcrypt from 'bcrypt';
  */
 const DUMMY_HASH = '$2b$12$Z651brCDk7E6ZfVNKDXDBev7wQY8J0Gz07qRoN5emdwZREiz5JvoS';
 
+/** The cost `docs/database-design.html` specifies, and the cost `DUMMY_HASH` was produced at. */
+const BCRYPT_COST = 12;
+
 export interface PasswordService {
+  /** Returns the hash only. The plaintext is never returned, logged or stored by any caller. */
+  hash(plainPassword: string): Promise<string>;
   verify(plainPassword: string, passwordHash: string): Promise<boolean>;
   /**
    * Burns the same time a real comparison would when no account was found. Without it, an unknown
@@ -19,6 +24,10 @@ export interface PasswordService {
 
 /** The only module in the backend that calls bcrypt. */
 export const passwordService: PasswordService = {
+  async hash(plainPassword) {
+    return bcrypt.hash(plainPassword, BCRYPT_COST);
+  },
+
   async verify(plainPassword, passwordHash) {
     return bcrypt.compare(plainPassword, passwordHash);
   },
