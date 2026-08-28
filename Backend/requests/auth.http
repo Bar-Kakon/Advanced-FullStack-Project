@@ -1,9 +1,182 @@
 # VS Code REST Client (`humao.rest-client`). Run top to bottom.
 # The Refresh Token is an HttpOnly cookie and is sent automatically.
+# Register commits three documents in one transaction, so MongoDB must run as a replica set.
+# The all-or-nothing behaviour itself is proven by `npm run verify:register-txn`.
 
 @host = http://localhost:3000/api
 @email = dana@betonaviv.co.il
 @password = CorrectHorse42!
+@newEmail = nina@ninaworks.co.il
+
+### Register — 201 + accessToken + safe user + Set-Cookie. Creates a company and its owner.
+# @name register
+POST {{host}}/auth/register
+Content-Type: application/json
+
+{
+  "firstName": "נינה", "lastName": "לוי",
+  "companyName": "לוי עבודות חשמל בע\"מ",
+  "email": "{{newEmail}}",
+  "password": "CorrectHorse42!", "confirmPassword": "CorrectHorse42!",
+  "specialty": "electrical",
+  "city": "חיפה", "region": "haifa",
+  "officePhone": "04-8123456", "businessPhone": "052-5550101",
+  "availability": "limited",
+  "acceptedTerms": true
+}
+
+### The Register Access Token opens a protected route — 200
+GET {{host}}/health-auth
+Authorization: Bearer {{register.response.body.accessToken}}
+
+### The account Register created can then log in normally — 200
+POST {{host}}/auth/login
+Content-Type: application/json
+
+{ "email": "{{newEmail}}", "password": "CorrectHorse42!" }
+
+### Same email again — 409 EMAIL_ALREADY_REGISTERED, and no second company is created
+POST {{host}}/auth/register
+Content-Type: application/json
+
+{
+  "firstName": "Someone", "lastName": "Else", "companyName": "Different Ltd",
+  "email": "{{newEmail}}",
+  "password": "CorrectHorse42!", "confirmPassword": "CorrectHorse42!",
+  "specialty": "plumbing", "city": "חיפה", "region": "haifa", "acceptedTerms": true
+}
+
+### Both optional phones omitted — 201. Neither field is required by the other.
+POST {{host}}/auth/register
+Content-Type: application/json
+
+{
+  "firstName": "No", "lastName": "Phones", "companyName": "Quiet Ltd",
+  "email": "quiet@example.com",
+  "password": "CorrectHorse42!", "confirmPassword": "CorrectHorse42!",
+  "specialty": "concrete", "city": "אשדוד", "region": "south", "acceptedTerms": true
+}
+
+### Office phone only — 201. It lands on the company, never copied to businessPhone.
+POST {{host}}/auth/register
+Content-Type: application/json
+
+{
+  "firstName": "Office", "lastName": "Only", "companyName": "Office Ltd",
+  "email": "office-only@example.com",
+  "password": "CorrectHorse42!", "confirmPassword": "CorrectHorse42!",
+  "specialty": "tiling", "city": "רמלה", "region": "lowlands",
+  "officePhone": "08-9000000", "acceptedTerms": true
+}
+
+### Business phone only — 201. It lands on the user, never copied to officePhone.
+POST {{host}}/auth/register
+Content-Type: application/json
+
+{
+  "firstName": "Business", "lastName": "Only", "companyName": "Business Ltd",
+  "email": "business-only@example.com",
+  "password": "CorrectHorse42!", "confirmPassword": "CorrectHorse42!",
+  "specialty": "painting", "city": "נתניה", "region": "sharon",
+  "businessPhone": "053-5550202", "acceptedTerms": true
+}
+
+### specialty "other" carries its free text — 201, stored as specialtyOther
+POST {{host}}/auth/register
+Content-Type: application/json
+
+{
+  "firstName": "Other", "lastName": "Trade", "companyName": "Scaffold Ltd",
+  "email": "other-trade@example.com",
+  "password": "CorrectHorse42!", "confirmPassword": "CorrectHorse42!",
+  "specialty": "other", "specialtyOther": "פיגומים",
+  "city": "רמת גן", "region": "telaviv", "acceptedTerms": true
+}
+
+### specialtyOther without specialty "other" — 400 REQUEST_VALIDATION_FAILED
+POST {{host}}/auth/register
+Content-Type: application/json
+
+{
+  "firstName": "A", "lastName": "B", "companyName": "C", "email": "v1@example.com",
+  "password": "CorrectHorse42!", "confirmPassword": "CorrectHorse42!",
+  "specialty": "drilling", "specialtyOther": "scaffolding",
+  "city": "חיפה", "region": "haifa", "acceptedTerms": true
+}
+
+### specialty "other" with no free text — 400 REQUEST_VALIDATION_FAILED
+POST {{host}}/auth/register
+Content-Type: application/json
+
+{
+  "firstName": "A", "lastName": "B", "companyName": "C", "email": "v2@example.com",
+  "password": "CorrectHorse42!", "confirmPassword": "CorrectHorse42!",
+  "specialty": "other", "city": "חיפה", "region": "haifa", "acceptedTerms": true
+}
+
+### Passwords do not match — 400 REQUEST_VALIDATION_FAILED
+POST {{host}}/auth/register
+Content-Type: application/json
+
+{
+  "firstName": "A", "lastName": "B", "companyName": "C", "email": "v3@example.com",
+  "password": "CorrectHorse42!", "confirmPassword": "Different99!",
+  "specialty": "drilling", "city": "חיפה", "region": "haifa", "acceptedTerms": true
+}
+
+### Password under 8 characters — 400 REQUEST_VALIDATION_FAILED
+POST {{host}}/auth/register
+Content-Type: application/json
+
+{
+  "firstName": "A", "lastName": "B", "companyName": "C", "email": "v4@example.com",
+  "password": "short", "confirmPassword": "short",
+  "specialty": "drilling", "city": "חיפה", "region": "haifa", "acceptedTerms": true
+}
+
+### Unknown availability — 400 REQUEST_VALIDATION_FAILED
+POST {{host}}/auth/register
+Content-Type: application/json
+
+{
+  "firstName": "A", "lastName": "B", "companyName": "C", "email": "v5@example.com",
+  "password": "CorrectHorse42!", "confirmPassword": "CorrectHorse42!",
+  "specialty": "drilling", "city": "חיפה", "region": "haifa",
+  "availability": "vacation", "acceptedTerms": true
+}
+
+### Region as display text rather than a code — 400 REQUEST_VALIDATION_FAILED
+POST {{host}}/auth/register
+Content-Type: application/json
+
+{
+  "firstName": "A", "lastName": "B", "companyName": "C", "email": "v6@example.com",
+  "password": "CorrectHorse42!", "confirmPassword": "CorrectHorse42!",
+  "specialty": "drilling", "city": "חיפה", "region": "מרכז", "acceptedTerms": true
+}
+
+### Terms not accepted — 400 REQUEST_VALIDATION_FAILED
+POST {{host}}/auth/register
+Content-Type: application/json
+
+{
+  "firstName": "A", "lastName": "B", "companyName": "C", "email": "v7@example.com",
+  "password": "CorrectHorse42!", "confirmPassword": "CorrectHorse42!",
+  "specialty": "drilling", "city": "חיפה", "region": "haifa", "acceptedTerms": false
+}
+
+### Privileged fields in the body are stripped — 201, and none of them is honoured
+POST {{host}}/auth/register
+Content-Type: application/json
+
+{
+  "firstName": "Mal", "lastName": "Icious", "companyName": "EvilCo",
+  "email": "inject@example.com",
+  "password": "CorrectHorse42!", "confirmPassword": "CorrectHorse42!",
+  "specialty": "general", "city": "אשדוד", "region": "south", "acceptedTerms": true,
+  "isAdmin": true, "status": "active", "profileComplete": true,
+  "passwordHash": "$2b$12$attackerControlledHash", "companyStanding": "member"
+}
 
 ### Login — 200 + accessToken + safe user + Set-Cookie
 # @name login
