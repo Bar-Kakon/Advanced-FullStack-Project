@@ -31,9 +31,12 @@ const MAX = { name: 100, companyName: 120, city: 80, phone: 30, specialtyOther: 
  * the form is fully wired in React state, so the moment an endpoint exists it has one caller to
  * add rather than a screen to build.
  *
- * Rating, flexibility, the ratings list and Completed work are all read-only here, for the same
- * reasons they are read-only everywhere: the first two are computed from behaviour, the third is
- * other people's words, and the fourth has no storage decided (D13).
+ * Rating, flexibility and the ratings list are read-only here, as they are everywhere: the first
+ * two are computed from behaviour and the third is other people's words. **Completed work is
+ * not** — this screen carries its manager, with a remove control per tile and an add tile, which
+ * is what the approved edit screen has always had. Neither action can persist: D13 has not
+ * decided where an entry lives and D1 has not decided where an uploaded image lives, so removal
+ * is honest about being on-screen only and adding says what is missing.
  */
 export const EditProfilePage = () => {
   const { t, lang } = useLanguage();
@@ -47,10 +50,11 @@ export const EditProfilePage = () => {
 
   const profile = representativeProfile(user, lang);
   const form = useEditProfileForm(fromProfile(profile));
-  const { values, setValue, touched, markTouched, toggleSpecialty, toggleEquipment, flags } = form;
+  const { values, setValue, touched, markTouched, toggleSpecialty, toggleEquipment, removeWork, flags } = form;
 
   const [equipmentOpen, setEquipmentOpen] = useState(false);
   const [saveAttempted, setSaveAttempted] = useState(false);
+  const [workTouched, setWorkTouched] = useState(false);
 
   const fullName = `${values.firstName} ${values.lastName}`.trim();
   const initials = initialsOf(values.firstName, values.lastName);
@@ -297,7 +301,17 @@ export const EditProfilePage = () => {
             </div>
           </div>
 
-          <CompletedWorkPanel entries={profile.work} />
+          <CompletedWorkPanel
+            entries={values.work}
+            lede={t.editProfile.work.lede}
+            manage={{
+              addLabel: t.editProfile.work.add,
+              removeLabel: t.editProfile.work.remove,
+              onAdd: () => setWorkTouched(true),
+              onRemove: (id) => { removeWork(id); setWorkTouched(true); },
+            }}
+            notice={workTouched ? <p className="field-hint" role="status">{t.editProfile.work.notStored}</p> : null}
+          />
 
           <RatingsPanel
             ratings={profile.ratings}

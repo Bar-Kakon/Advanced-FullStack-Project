@@ -99,7 +99,7 @@ export const MyProfilePage = () => {
               <p className="bio-text" dir="auto">{profile.bio}</p>
             </section>
 
-            <CompletedWorkPanel entries={profile.work} />
+            <CompletedWorkPanel entries={profile.work} lede={t.profile.work.lede} />
           </div>
 
           <div className="profile-grid__col">

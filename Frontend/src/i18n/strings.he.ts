@@ -127,9 +127,9 @@ export const he = {
       featuresLabel: 'עיקרי הפלטפורמה',
       features: [
         'תזמון מדורג עם משא ומתן בלחיצה אחת',
-        // Replaces `הודעות נפתחות רק לאחר אישור בקשת חיבור`, which stated the connection gate
-        // D9 reversed on 2026-08-28. PROPOSED WORDING, AWAITING OWNER APPROVAL: it states the
-        // request gate, names no delegation, and repeats neither bullet beside it.
+        // Approved 2026-08-29. It replaces `הודעות נפתחות רק לאחר אישור בקשת חיבור`, which stated
+        // the connection gate D9 reversed: it states the request gate instead, names no
+        // delegation, and repeats neither bullet beside it.
         'הודעה ראשונה ממי שאינכם מחוברים אליו מגיעה כבקשה — לאישור, לדחייה או לחסימה',
         'ציוני אמון מהתנהגות אמיתית — לא מדיווח עצמי',
       ],
@@ -289,6 +289,13 @@ export const he = {
       notice2: 'התראה מראש שאתם צריכים',
       notice2Hint: 'ההתראה המוקדמת הנדרשת לצורך היערכות של צוות וציוד.',
       days: 'ימים',
+    },
+    work: {
+      lede: 'תמונות מעבודות שהשלמתם, כולל עבודות מלפני ההצטרפות. קישור לעבודה שנוהלה בפלטפורמה הוא רשות.',
+      add: 'הוספת תמונה',
+      remove: 'הסרת התמונה',
+      // The same honest note Save carries, for the half of the screen that has even less behind it.
+      notStored: 'עבודות שהושלמו עדיין אינן נשמרות בשרת — אין להן מבנה נתונים ואין העלאת קבצים — ולכן השינוי הזה לא נשמר.',
     },
     ratingsLede: '{count} דירוגים מקבלנים שעבדתם איתם על עבודה משותפת שהושלמה. אי אפשר לערוך אותם.',
     actions: {

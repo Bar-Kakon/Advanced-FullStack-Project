@@ -126,8 +126,8 @@ export const en: Strings = {
       featuresLabel: 'Platform highlights',
       features: [
         'Cascade scheduling with one-click negotiation',
-        // Replaces "Messaging opens only after a connection is accepted" — the gate D9 reversed.
-        // PROPOSED WORDING, AWAITING OWNER APPROVAL.
+        // Approved 2026-08-29. Replaces "Messaging opens only after a connection is accepted",
+        // the gate D9 reversed; it states the request gate instead and names no delegation.
         'A first message from someone you are not connected to arrives as a request — approve, decline, or block',
         'Trust scores built from real behaviour — not self-reported',
       ],
@@ -286,6 +286,12 @@ export const en: Strings = {
       notice2: 'Notice you need',
       notice2Hint: 'The advance notice required in order to arrange crew and equipment.',
       days: 'days',
+    },
+    work: {
+      lede: 'Images from work you have completed, including work from before you joined. Linking an entry to work coordinated on the platform is optional.',
+      add: 'Add image',
+      remove: 'Remove image',
+      notStored: 'Completed work is not stored on the server yet — it has no data model and no file upload — so this change was not saved.',
     },
     ratingsLede: '{count} ratings from contractors you worked with on shared completed work. They cannot be edited.',
     actions: {

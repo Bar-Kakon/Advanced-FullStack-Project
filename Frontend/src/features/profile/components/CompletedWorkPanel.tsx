@@ -1,27 +1,59 @@
+import type { ReactNode } from 'react';
+
 import { useLanguage } from '../../../i18n/useLanguage';
 import type { CompletedWorkEntry } from '../profileModel';
 
 /**
- * Completed work — read-only on both profile screens.
- *
- * The prototype's edit screen carried an add-and-remove manager. It is not here: D13, which is
- * where completed-work entries would be stored, is open — there is no collection, no decision
- * between a `workentries` collection and an embedded array, and no endpoint — so an add button
- * and a per-tile remove would be controls with nowhere to write.
+ * Completed work. My profile renders it read-only; Edit profile passes `manage`, which turns it
+ * into the manager the approved edit screen has always carried — a remove control on every tile
+ * and an add tile at the end of the grid.
  *
  * The badge appears only where the work the entry represents is itself complete, and it says the
  * completion is *recorded*, not that it was good.
+ *
+ * The lede is a prop rather than a fixed string: the two screens say different things about the
+ * same section on purpose. The view screen explains what the badge means to someone reading it;
+ * the edit screen explains what may be put here and that linking an entry is optional — which is
+ * only in question while entries are being added.
  */
-export const CompletedWorkPanel = ({ entries }: { entries: readonly CompletedWorkEntry[] }) => {
+export const CompletedWorkPanel = ({
+  entries,
+  lede,
+  manage,
+  notice = null,
+}: {
+  entries: readonly CompletedWorkEntry[];
+  lede: string;
+  /** Absent on the read view. Present on Edit profile, where the section is editable. */
+  manage?: {
+    addLabel: string;
+    removeLabel: string;
+    onAdd: () => void;
+    onRemove: (id: string) => void;
+  };
+  /** Anything the screen needs to say about what just happened to the list. */
+  notice?: ReactNode;
+}) => {
   const { t } = useLanguage();
 
   return (
     <section className="panel panel--work" aria-labelledby="work-title">
       <h2 id="work-title" className="panel__title">{t.profile.work.title}</h2>
-      <p className="panel__lede">{t.profile.work.lede}</p>
+      <p className="panel__lede">{lede}</p>
       <ul className="work-grid">
         {entries.map((entry) => (
           <li className="work-item" key={entry.id}>
+            {manage ? (
+              <button
+                type="button"
+                className="work-item__remove"
+                aria-label={manage.removeLabel}
+                onClick={() => manage.onRemove(entry.id)}
+              >
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                     strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6L6 18M6 6l12 12" /></svg>
+              </button>
+            ) : null}
             <span className="work-item__thumb" aria-hidden="true">
               <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                    strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
@@ -47,7 +79,19 @@ export const CompletedWorkPanel = ({ entries }: { entries: readonly CompletedWor
             </div>
           </li>
         ))}
+        {manage ? (
+          <li>
+            <button type="button" className="work-add" onClick={manage.onAdd}>
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                   strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <path d="M12 5v14M5 12h14" />
+              </svg>
+              {manage.addLabel}
+            </button>
+          </li>
+        ) : null}
       </ul>
+      {notice}
     </section>
   );
 };

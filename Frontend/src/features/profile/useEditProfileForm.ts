@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useState } from 'react';
 
 import type { Availability, Region, Trade } from '../../api/types';
-import type { EquipmentCode, ProfileView } from './profileModel';
+import type { CompletedWorkEntry, EquipmentCode, ProfileView } from './profileModel';
 
 /**
  * Everything Edit profile holds while it is being edited.
@@ -28,6 +28,8 @@ export interface EditProfileValues {
   travelRadiusKm: string;
   delayToleranceDays: string;
   noticeRequiredDays: string;
+  /** Editable here: the approved edit screen carries a manager, not a read-only list. */
+  work: readonly CompletedWorkEntry[];
 }
 
 export type EditProfileField = keyof EditProfileValues;
@@ -49,6 +51,7 @@ export const fromProfile = (profile: ProfileView): EditProfileValues => ({
   travelRadiusKm: String(profile.travelRadiusKm),
   delayToleranceDays: String(profile.delayToleranceDays),
   noticeRequiredDays: String(profile.noticeRequiredDays),
+  work: profile.work,
 });
 
 const toggle = <T,>(list: readonly T[], item: T, on: boolean): readonly T[] =>
@@ -74,6 +77,16 @@ export const useEditProfileForm = (initial: EditProfileValues) => {
     setValues((prev) => ({ ...prev, equipment: toggle(prev.equipment, code, on) }));
   }, []);
 
+  /**
+   * Removing an entry takes the tile off the screen, which is the whole of what the client can
+   * honestly do: there is no collection to delete from and no endpoint to call. Adding one cannot
+   * go even that far — an entry is an uploaded image plus its details, and neither file storage
+   * nor an entry shape exists — so the screen reports that rather than inventing a tile.
+   */
+  const removeWork = useCallback((id: string): void => {
+    setValues((prev) => ({ ...prev, work: prev.work.filter((entry) => entry.id !== id) }));
+  }, []);
+
   const flags = useMemo(
     () => ({
       // The free-text box and the equipment picker are revealed by the value the form already
@@ -86,5 +99,5 @@ export const useEditProfileForm = (initial: EditProfileValues) => {
     [values.specialties, values.region],
   );
 
-  return { values, setValue, touched, markTouched, toggleSpecialty, toggleEquipment, flags };
+  return { values, setValue, touched, markTouched, toggleSpecialty, toggleEquipment, removeWork, flags };
 };
