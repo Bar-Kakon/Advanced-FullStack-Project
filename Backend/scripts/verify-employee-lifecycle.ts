@@ -252,6 +252,30 @@ const run = async (): Promise<void> => {
   check('repeating it keeps the original stamp rather than moving it',
     String((await CompanyModel.findById(companyId).lean())?.employeeSetupCompletedAt) === String(stampedAt));
 
+  console.log('\n10. One person, one company');
+  const rival = await CompanyModel.create([{ name: `${MARKER} Rival Ltd`, availability: 'open' }]);
+  const rivalId = rival[0]!._id;
+
+  let secondCompany = 'REJECTED';
+  try {
+    await CompanyMembershipModel.create([{
+      company: rivalId, user: employeeId, standing: 'employee',
+      status: 'pending_company_approval', companyPosition: 'employee', permissions: [],
+    }]);
+    secondCompany = 'ACCEPTED';
+  } catch { /* user_current_unique refused it */ }
+  check('an active employee cannot also be pending at another company', secondCompany === 'REJECTED', secondCompany);
+
+  await CompanyMembershipModel.updateOne({ user: employeeId }, { $set: { status: 'inactive' } }).exec();
+  const ended = await send('GET', '/auth/me', undefined, employeeToken);
+  const endedContext = (ended.body['user'] as { company?: unknown })?.company;
+  check('an ended relationship is not served as a current company context',
+    endedContext === null, JSON.stringify(endedContext));
+  check('so no stale permissions survive it',
+    endedContext === null || ((endedContext as Record<string, unknown>)['permissions'] as unknown[]).length === 0);
+
+  await CompanyModel.deleteOne({ _id: rivalId });
+
   await wipe();
   await disconnectFromDatabase();
 

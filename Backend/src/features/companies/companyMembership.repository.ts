@@ -3,6 +3,7 @@ import { Types } from 'mongoose';
 import type { DbSession } from '../../db/mongoose.js';
 import {
   CompanyMembershipModel,
+  CURRENT_MEMBERSHIP_STATUSES,
   type CompanyPermission,
   type CompanyPosition,
   type CompanyMembershipRecord,
@@ -35,8 +36,7 @@ export interface CompanyMembershipRepository {
   claimInvitation(id: Types.ObjectId, user: Types.ObjectId, session?: DbSession): Promise<boolean>;
   /** Ids arriving from a request are strings; an unparseable one is "no such row", never a throw. */
   findActiveByUser(userId: string): Promise<CompanyMembershipRecord | null>;
-  /** The relationship this person holds, in whatever state. `null` from `findActiveByUser` would
-   *  say somebody waiting for approval belongs to no company at all. */
+  /** Their one company, active or waiting for approval. An ended relationship is not one. */
   findCurrentByUser(userId: string): Promise<CompanyMembershipRecord | null>;
   listByCompany(company: Types.ObjectId): Promise<CompanyMembershipRecord[]>;
   /** `pending_company_approval` → `active`. Returns how many rows actually moved. */
@@ -90,21 +90,16 @@ export const companyMembershipRepository: CompanyMembershipRepository = {
       .exec();
   },
 
-  /** Active wins: only activation is exclusive, so a pending row may sit beside a live one. */
+  /** `user_current_unique` guarantees at most one match, so there is nothing here to choose between. */
   async findCurrentByUser(userId) {
     if (!Types.ObjectId.isValid(userId)) return null;
 
-    const rows = await CompanyMembershipModel.find({ user: new Types.ObjectId(userId) })
-      .sort({ createdAt: -1 })
-      .lean<CompanyMembershipRecord[]>()
+    return CompanyMembershipModel.findOne({
+      user: new Types.ObjectId(userId),
+      status: { $in: [...CURRENT_MEMBERSHIP_STATUSES] },
+    })
+      .lean<CompanyMembershipRecord>()
       .exec();
-
-    return (
-      rows.find((row) => row.status === 'active') ??
-      rows.find((row) => row.status === 'pending_company_approval') ??
-      rows[0] ??
-      null
-    );
   },
 
   async listByCompany(company) {

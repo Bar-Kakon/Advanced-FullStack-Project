@@ -59,6 +59,9 @@ export type CompanyMembershipStatus = (typeof COMPANY_MEMBERSHIP_STATUSES)[numbe
 export type CompanyPosition = (typeof COMPANY_POSITIONS)[number];
 export type CompanyPermission = (typeof COMPANY_PERMISSIONS)[number];
 
+/** The states that mean a person is in a company: waiting to be let in, or in. */
+export const CURRENT_MEMBERSHIP_STATUSES = ['pending_company_approval', 'active'] as const;
+
 /**
  * An owner runs the business, so public Register grants all four at signup. Writing them now rather
  * than deriving them later is what keeps the rule true for accounts created before the
@@ -103,12 +106,15 @@ const companyMembershipSchema = new Schema(
 // invitation lookup a self-registration has to match against.
 companyMembershipSchema.index({ company: 1, status: 1 });
 
-// One active relationship per person at a time. Partial, so the invited and pending rows a person
-// may hold against several companies are untouched — only activation is exclusive. Same technique
-// `subscriptions` uses for one active row per user.
+// One company per person. Invited seats carry no user and inactive rows are history, so neither
+// is in the filter. Supersedes `user_1` — `npm run migrate:membership-uniqueness` drops it.
 companyMembershipSchema.index(
   { user: 1 },
-  { unique: true, partialFilterExpression: { status: 'active' } },
+  {
+    name: 'user_current_unique',
+    unique: true,
+    partialFilterExpression: { status: { $in: [...CURRENT_MEMBERSHIP_STATUSES] } },
+  },
 );
 
 export const CompanyMembershipModel = model('CompanyMembership', companyMembershipSchema);
