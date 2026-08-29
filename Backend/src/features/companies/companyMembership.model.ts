@@ -22,10 +22,17 @@ export const COMPANY_MEMBERSHIP_STATUSES = [
   'inactive',
 ] as const;
 
-/** The organizational job. Deliberately never consulted when deciding what someone may do. */
+/**
+ * The organizational job. Deliberately never consulted when deciding what someone may do.
+ *
+ * `regional_construction_manager` was added 2026-08-29 on owner instruction, naming a role the
+ * vocabulary already distinguished in words but had no code for. The codes are stable identifiers:
+ * a display label may be reworded without touching one.
+ */
 export const COMPANY_POSITIONS = [
   'main_contractor',
   'construction_manager',
+  'regional_construction_manager',
   'site_manager',
   'contractor',
   'employee',

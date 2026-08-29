@@ -221,6 +221,13 @@ win, and it commits inside the same transaction as the account.
 Capabilities come only from `permissions`, and an employee is created with none — approval does not
 change that. Project and task creation need `project.create` / `task.create`, granted explicitly.
 
+**The six `companyPosition` codes** are `main_contractor`, `construction_manager`,
+`regional_construction_manager`, `site_manager`, `contractor` and `employee`. They are stable
+identifiers and are never renamed to follow a label: the Hebrew wording for a site manager was
+reworded twice while `site_manager` stayed exactly what it was.
+`regional_construction_manager` was added 2026-08-29 on owner instruction, naming a role the
+terminology already distinguished in words but had no code for.
+
 ### Employee management endpoints
 
 All authenticated, and all authorised by the caller's own recorded `company.invite_employees`
@@ -468,6 +475,7 @@ without their account changing type.
                                               → 'active' → 'inactive'
                       companyPosition the JOB      (main_contractor,
                                                     construction_manager,
+                                                    regional_construction_manager,
                                                     site_manager, contractor, employee)
                       permissions     what they MAY DO
 ```
