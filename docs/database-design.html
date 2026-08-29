@@ -644,7 +644,7 @@ const COLLECTIONS = [
     { name: 'status', type: "'active' | 'deactivated' | 'banned' | 'deleted'", req: true, idx: true, note: 'Soft-delete state (decision D8). A hard delete is impossible for anyone referenced in another party audit history, so removal is a status change plus a scrub of personal fields.' },
     { name: 'isAdmin', type: 'Boolean', note: 'The only global role in the system. Gates the admin module.' },
     { name: 'profileComplete', type: 'Boolean', note: 'Set true when the 3-step onboarding wizard finishes. Drives the profile-incomplete nag.' },
-    { name: 'security', type: '{ emailVerifiedAt, resetTokenHash, resetTokenExpiresAt, passwordChangedAt }', select: true, note: 'Embedded 1:1. The reset token is stored **hashed** — the raw token only ever exists in the email — so a database leak cannot be replayed to take over accounts. `passwordChangedAt` lets the auth middleware reject JWTs issued before a password change.' },
+    { name: 'security', type: '{ emailVerifiedAt, passwordChangedAt }', select: true, note: 'Embedded 1:1. **Revised 2026-08-29:** `passwordChangedAt` is built and does exactly what it was designed for — the auth middleware refuses any Access Token whose `iat` predates it, which is what makes a *stateless* JWT revocable after a password change. `resetTokenHash` and `resetTokenExpiresAt` were **moved out** to the [[passwordresettokens]] collection, because a hash-plus-expiry pair cannot tell a spent link from an absent one or record that a newer request replaced an older one. `emailVerifiedAt` is designed and not built. The reset token is still stored **hashed**, with the raw value only ever in the email.' },
 
     { group: 'Identity & discovery', groupNote: 'the fields `browse contractors` searches and filters on' },
     { name: 'firstName', type: 'String', req: true, note: '' },
@@ -675,7 +675,7 @@ const COLLECTIONS = [
     { def: "{ 'ratingSummary.average': -1 }", serves: 'Minimum-rating filter and sort', why: 'Only possible because the average is stored. You cannot index the result of an aggregation.' },
     { def: "{ 'flexibility.score': -1 }", serves: 'Minimum-flexibility filter and sort', why: 'Same reasoning — the filter rail on browse contractors sorts and pages on this value.' },
     { def: "{ 'location.geo': '2dsphere' }", serves: 'Travel-radius / near-me search', why: 'Geospatial queries need a dedicated index type; a normal compound index cannot answer `$near`.' },
-    { def: "{ 'security.resetTokenHash': 1 }", opts: 'sparse', serves: 'Password reset link verification', why: 'Sparse: almost no user has a live reset token, so the index only stores the handful that do.' }
+    { def: "{ 'security.resetTokenHash': 1 }", opts: 'sparse — REMOVED 2026-08-29', serves: 'Password reset link verification (superseded)', why: 'Kept here as a record of the reasoning, not as a live index. The field it covered moved to [[passwordresettokens]], where the equivalent lookup is a unique index on `tokenHash`. The sparse argument was sound and simply no longer applies: the rows are now in a collection of their own, so there is nothing sparse about them.' }
   ],
   why: [
     '**`location`, `avatar`, `schedulingPrefs` and `security` are embedded** because each is exactly one per user, is always loaded with the user, and is never queried on its own. Splitting them into collections would add a lookup for zero benefit.',
@@ -1656,6 +1656,57 @@ module.exports = mongoose.model('Notification', notificationSchema);`
 refreshTokenSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 
 module.exports = mongoose.model('RefreshToken', refreshTokenSchema);`
+},
+
+/* ─────────── passwordresettokens ─────────── */
+{
+  id: 'passwordresettokens', model: 'PasswordResetToken', domain: 'core', stage: 1,
+  tag: 'one-time reset links, hashed',
+  pos: { x: 30, y: 470 },
+  purpose: 'One row per issued password-reset link. Added 2026-08-29 with the reset flow, and it is where the design on this page changed: `users.security.resetTokenHash` + `resetTokenExpiresAt` were what this file specified, and the code uses a collection instead. See the why below — the pair of fields cannot express a lifecycle.',
+  fields: [
+    { name: '_id', type: 'ObjectId', note: '' },
+    { name: 'tokenHash', type: 'String', req: true, idx: true, note: 'SHA-256 of the raw token, hex. The raw value exists only in the email, so a database leak yields nothing replayable. SHA-256 rather than bcrypt for the same reason [[refreshtokens]] uses it: the input is 32 bytes of machine entropy, and there is no dictionary for bcrypt cost to defend against.' },
+    { name: 'user', type: 'ObjectId', ref: 'users', req: true, idx: true, note: 'Whose link this is. Indexed because every issue retires that user\'s other live links.' },
+    { name: 'expiresAt', type: 'Date', req: true, idx: true, note: 'Thirty minutes after issue — the figure the Forgot password screen already promises, in both languages. Backed by a TTL index, but the reset path checks it directly: the TTL monitor runs about once a minute and a link must be dead the second it expires, not the next time a sweep happens.' },
+    { name: 'usedAt', type: 'Date | null', note: 'Set inside the reset transaction. One-time use is this staying null, and it is what makes a replayed link fail.' },
+    { name: 'invalidatedAt', type: 'Date | null', note: 'Set when a newer request for the same user replaced this link. Deliberately NOT the same field as `usedAt`: "spent" and "superseded" are different facts, and collapsing them loses the reason a link stopped working.' },
+    { name: 'createdAt / updatedAt', type: 'Date', note: 'Mongoose `timestamps: true`.' }
+  ],
+  indexes: [
+    { def: '{ tokenHash: 1 }', opts: 'unique', serves: 'The reset lookup', why: 'The only read path. Unique because two rows for one hash would make "has this been spent" ambiguous.' },
+    { def: '{ user: 1 }', serves: 'Retiring a user\'s older links when a new one is issued', why: 'Every issue runs an updateMany over that user\'s live rows; without this it is a collection scan on the common path.' },
+    { def: '{ expiresAt: 1 }', opts: 'expireAfterSeconds: 0', serves: 'Automatic cleanup', why: 'A row is worthless once its link has expired. TTL means no sweep job has to be written.' }
+  ],
+  why: [
+    '**Why a collection and not the two fields this page used to specify.** A reset token has a lifecycle — issued, superseded, spent, expired — and `security.resetTokenHash` + `security.resetTokenExpiresAt` can only say "there is a live link" or "there is not". A spent link and an absent one become the same state, there is nowhere to record that a newer request replaced an earlier one, and every reset writes security state into the permanent identity document. The shape mirrors [[refreshtokens]] because it is the same kind of object: a temporary credential the server hands out, stores only as a hash, and must be able to retire.',
+    '**One usable link at a time, and the newer one wins.** Issuing invalidates every live row for that user before inserting, so two requests racing each other converge on "the later link works" rather than on whichever write landed last. Asking again says the earlier email is not the one being held, and two live links widen the window an intercepted email is useful in.',
+    '**Every failure answers the same thing.** Unknown, expired, superseded and already-spent all raise one `INVALID_RESET_TOKEN`. The person holding a dead link learns it is dead and nothing else — the same discipline the unified login error follows.',
+    '**`users.security.passwordChangedAt` is the half of the old design that survived**, and it does exactly what this page said it would: it lets the auth middleware reject a JWT issued before a password change, which is what makes a stateless Access Token revocable. `emailVerifiedAt` is still unbuilt.'
+  ],
+  relations: [
+    { to: 'users', via: 'user', store: 'ref', card: 'N:1', why: 'A user may hold at most one live link, but spent and superseded rows survive until the TTL removes them, so the relationship is one-to-many over time.' }
+  ],
+  sample: `{
+  _id:           ObjectId("66a2f100c2b9e30012af3301"),
+  tokenHash:     "9f2a17c0b4e5d6318a77c2ef05b1d9c4471f6a83d2e0b5c7a91d43e6f8027b15",
+  user:          ObjectId("6650a1f4c2b9e30012af0b21"),
+  expiresAt:     ISODate("2026-08-29T02:03:17Z"),
+  usedAt:        null,
+  invalidatedAt: null,
+  createdAt:     ISODate("2026-08-29T01:33:17Z")
+}`,
+  schema: `const passwordResetTokenSchema = new Schema({
+  tokenHash:     { type: String, required: true, unique: true },
+  user:          { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
+  expiresAt:     { type: Date, required: true },
+  usedAt:        { type: Date, default: null },
+  invalidatedAt: { type: Date, default: null }
+}, { timestamps: true });
+
+passwordResetTokenSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
+
+module.exports = mongoose.model('PasswordResetToken', passwordResetTokenSchema);`
 },
 
 /* ─────────── mutes ─────────── */
