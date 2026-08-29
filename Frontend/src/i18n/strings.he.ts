@@ -95,9 +95,13 @@ export const he = {
    * synonym of `מנהל עבודה` and is deliberately NOT a second primary label — a product that calls
    * the same role two things on two screens is a product with two roles as far as a reader is
    * concerned. Keep it for a glossary or a search alias if one is ever needed, never here.
+   *
+   * `main_contractor` is `קבלן ביצוע ראשי`, not `קבלן ראשי`: that shorter form is already the
+   * Hebrew for the per-project `gc` role, and a company job title must not share a string with a
+   * project role. It stays correct in the brand footer above, which is about that role.
    */
   companyPositions: {
-    main_contractor: 'קבלן ראשי',
+    main_contractor: 'קבלן ביצוע ראשי',
     construction_manager: 'מנהל אתרים',
     regional_construction_manager: 'מנהל אתרים אזורי',
     site_manager: 'מנהל עבודה',
