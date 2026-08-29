@@ -25,8 +25,13 @@ export interface AuthServiceDependencies {
   readonly tokenPair: TokenPairService;
 }
 
-/** Only an `active` account may hold a session; D8 has not defined what the other states may do. */
-export const isSessionPermitted = (user: UserRecord): boolean => user.status === 'active';
+/**
+ * Only an `active` account may hold a session; D8 has not defined what the other states may do.
+ * It takes the status alone so Login, Refresh and every protected route can ask the same question
+ * — the protected-route path holds a projection, not a whole user.
+ */
+export const isSessionPermitted = (user: Pick<UserRecord, 'status'>): boolean =>
+  user.status === 'active';
 
 export const createAuthService = ({
   users,

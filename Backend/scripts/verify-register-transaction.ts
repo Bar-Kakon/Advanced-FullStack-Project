@@ -38,6 +38,7 @@ const COMPANY = `${MARKER} Ltd`;
 const body: RegisterBody = {
   firstName: 'Txn',
   lastName: 'Verify',
+  standing: 'owner',
   companyName: COMPANY,
   email: EMAIL,
   password: 'CorrectHorse42!',

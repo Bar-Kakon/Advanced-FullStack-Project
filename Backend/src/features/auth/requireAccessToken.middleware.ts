@@ -2,6 +2,7 @@ import type { RequestHandler, Response } from 'express';
 
 import type { CredentialState } from '../users/user.repository.js';
 import { unauthenticated } from './auth.errors.js';
+import { isSessionPermitted } from './auth.service.js';
 import type { AccessTokenService } from './tokens/accessToken.service.js';
 
 const BEARER_PREFIX = 'Bearer ';
@@ -39,10 +40,11 @@ const issuedBeforePasswordChange = (issuedAtSeconds: number, passwordChangedAt: 
  * A Refresh Token presented here fails at the `verify` call, because that call uses the Access
  * Token secret and then insists on `typ: 'access'`.
  *
- * A valid signature is necessary and no longer sufficient: an Access Token is stateless, so a
- * password reset cannot reach one that is already in circulation. Every accepted token is checked
- * against the account's own record of when its password last changed, which costs one indexed
- * lookup per authenticated request.
+ * A valid signature is necessary and no longer sufficient. An Access Token is stateless, so
+ * nothing that happens to the account can reach one already in circulation — so every accepted
+ * token is checked against the account's current state: it must still be permitted a session, by
+ * the same `isSessionPermitted` rule Login and Refresh apply, and it must not predate the last
+ * password change. That costs one indexed lookup per authenticated request.
  */
 export const createRequireAccessToken = (
   accessTokens: AccessTokenService,
@@ -64,8 +66,13 @@ export const createRequireAccessToken = (
     void users
       .findCredentialState(claims.sub)
       .then((state) => {
-        // No such account, or a token predating the current password: neither may proceed.
-        if (state === null || issuedBeforePasswordChange(claims.iat, state.passwordChangedAt)) {
+        // No such account, an account no longer permitted a session, or a token predating the
+        // current password: none of the three may proceed.
+        if (
+          state === null ||
+          !isSessionPermitted(state) ||
+          issuedBeforePasswordChange(claims.iat, state.passwordChangedAt)
+        ) {
           next(unauthenticated());
           return;
         }

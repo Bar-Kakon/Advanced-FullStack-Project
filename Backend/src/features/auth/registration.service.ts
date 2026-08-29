@@ -6,11 +6,15 @@ import type {
   CompanyMembershipRepository,
   NewCompanyMembership,
 } from '../companies/companyMembership.repository.js';
+import type { Availability } from '../companies/company.model.js';
 import type { CompanyRepository, NewCompany } from '../companies/company.repository.js';
 import type { UserRecord } from '../users/user.model.js';
 import type { NewUser, UserRepository } from '../users/user.repository.js';
 import { emailAlreadyRegistered } from './auth.errors.js';
 import type { RegisterBody } from './auth.validation.js';
+
+/** What the schema guarantees once `standing` is `owner`: the company-scoped fields are present. */
+type OwnerRegisterBody = RegisterBody & { readonly companyName: string; readonly availability: Availability };
 import { toAuthenticatedUser, type AuthenticatedUser } from './authenticatedUser.mapper.js';
 import type { PasswordService } from './password.service.js';
 
@@ -57,8 +61,12 @@ const isDuplicateEmailError = (error: unknown): boolean => {
   return candidate.code === DUPLICATE_KEY_CODE && candidate.keyPattern?.['email'] !== undefined;
 };
 
-/** The office number belongs to the business, so it is the company document that carries it. */
-const toNewCompany = (input: RegisterBody): NewCompany => ({
+/**
+ * The office number belongs to the business, so it is the company document that carries it. Only
+ * an owner registration reaches this — validation refuses these fields for an employee, so the
+ * non-null assertions here rest on the schema rather than on hope.
+ */
+const toNewCompany = (input: OwnerRegisterBody): NewCompany => ({
   name: input.companyName,
   availability: input.availability,
   ...(input.officePhone === undefined ? {} : { officePhone: input.officePhone }),
@@ -100,6 +108,9 @@ const toOwnerMembership = (
   permissions: OWNER_DEFAULT_PERMISSIONS,
 });
 
+const isOwnerRegistration = (input: RegisterBody): input is OwnerRegisterBody =>
+  input.standing === 'owner';
+
 export const createRegistrationService = ({
   users,
   companies,
@@ -124,12 +135,21 @@ export const createRegistrationService = ({
 
     try {
       const user = await transactions.run(async (session): Promise<UserRecord> => {
-        const company = await companies.create(toNewCompany(input), session);
         const created = await users.create(
           toNewUser(input, passwordHash, termsVersion),
           session,
         );
 
+        /*
+         * An employee registration stops at the person. It creates no company and no membership,
+         * because there is nothing here that could prove which company they belong to — a company
+         * name is public, so accepting one as evidence would hand anybody a seat in any business.
+         * The approved path is an owner opening an `invited` seat that a registration then claims,
+         * and no endpoint creates one yet. That gap is reported rather than filled from here.
+         */
+        if (!isOwnerRegistration(input)) return created;
+
+        const company = await companies.create(toNewCompany(input), session);
         await memberships.create(toOwnerMembership(created._id, company), session);
         return created;
       });

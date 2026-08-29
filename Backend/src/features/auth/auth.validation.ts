@@ -1,6 +1,7 @@
 import Joi from 'joi';
 
 import { AVAILABILITY_STATUSES, type Availability } from '../companies/company.model.js';
+import { COMPANY_STANDINGS, type CompanyStanding } from '../companies/companyMembership.model.js';
 import { REGIONS, TRADES, type Region, type Trade } from '../users/user.model.js';
 
 export interface LoginBody {
@@ -20,7 +21,9 @@ export interface ResetPasswordBody {
 export interface RegisterBody {
   readonly firstName: string;
   readonly lastName: string;
-  readonly companyName: string;
+  /** Organizational standing, and nothing else. It is not a permission and not a job title. */
+  readonly standing: CompanyStanding;
+  readonly companyName?: string;
   readonly email: string;
   readonly password: string;
   readonly confirmPassword: string;
@@ -30,7 +33,7 @@ export interface RegisterBody {
   readonly region: Region;
   readonly officePhone?: string;
   readonly businessPhone?: string;
-  readonly availability: Availability;
+  readonly availability?: Availability;
   readonly acceptedTerms: true;
 }
 
@@ -83,7 +86,24 @@ export const resetPasswordBodySchema = Joi.object<ResetPasswordBody>({
 export const registerBodySchema = Joi.object<RegisterBody>({
   firstName: Joi.string().trim().min(1).max(MAX_NAME_LENGTH).required(),
   lastName: Joi.string().trim().min(1).max(MAX_NAME_LENGTH).required(),
-  companyName: Joi.string().trim().min(1).max(MAX_COMPANY_NAME_LENGTH).required(),
+
+  // Defaults to `owner`, which is what public Register has always created, so a client that does
+  // not send it is unchanged.
+  standing: Joi.string()
+    .valid(...COMPANY_STANDINGS)
+    .default('owner'),
+
+  /*
+   * The three company-scoped fields are required for an owner and REFUSED for an employee — the
+   * same `when` idiom `specialtyOther` already uses. Refusing rather than ignoring is the security
+   * property: a public company name is not proof of employment, so the endpoint must not be able
+   * to receive one on a path that could act on it.
+   */
+  companyName: Joi.when('standing', {
+    is: 'employee',
+    then: Joi.any().forbidden(),
+    otherwise: Joi.string().trim().min(1).max(MAX_COMPANY_NAME_LENGTH).required(),
+  }),
 
   email,
   password: Joi.string().min(MIN_PASSWORD_LENGTH).max(MAX_PASSWORD_LENGTH).required(),
@@ -109,13 +129,23 @@ export const registerBodySchema = Joi.object<RegisterBody>({
     .required(),
 
   // Two independent numbers. Neither is required by the other's presence and neither has a format
-  // rule, because none has been approved.
-  officePhone: Joi.string().trim().max(MAX_PHONE_LENGTH).optional(),
+  // rule, because none has been approved. The office line belongs to the business, so an employee
+  // registration cannot carry one.
+  officePhone: Joi.when('standing', {
+    is: 'employee',
+    then: Joi.any().forbidden(),
+    otherwise: Joi.string().trim().max(MAX_PHONE_LENGTH).optional(),
+  }),
   businessPhone: Joi.string().trim().max(MAX_PHONE_LENGTH).optional(),
 
-  availability: Joi.string()
-    .valid(...AVAILABILITY_STATUSES)
-    .default('open'),
+  // Availability is the organization's, set by whoever runs it, so it is an owner-only field.
+  availability: Joi.when('standing', {
+    is: 'employee',
+    then: Joi.any().forbidden(),
+    otherwise: Joi.string()
+      .valid(...AVAILABILITY_STATUSES)
+      .default('open'),
+  }),
 
   acceptedTerms: Joi.boolean().valid(true).required(),
 });

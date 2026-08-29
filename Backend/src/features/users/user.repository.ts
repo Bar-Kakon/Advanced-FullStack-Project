@@ -7,6 +7,7 @@ import {
   type TermsAcceptance,
   type Trade,
   type UserRecord,
+  type UserStatus,
   type UserWithPasswordHash,
 } from './user.model.js';
 
@@ -34,6 +35,7 @@ export interface NewUser {
 
 /** What a protected route needs to know about a token holder, and nothing more. */
 export interface CredentialState {
+  readonly status: UserStatus;
   readonly passwordChangedAt: Date | null;
 }
 
@@ -75,12 +77,12 @@ export const userRepository: UserRepository = {
     if (!Types.ObjectId.isValid(id)) return null;
 
     const found = await UserModel.findById(id)
-      .select('security.passwordChangedAt')
-      .lean<{ security?: { passwordChangedAt?: Date } }>()
+      .select('status security.passwordChangedAt')
+      .lean<{ status: UserStatus; security?: { passwordChangedAt?: Date } }>()
       .exec();
 
     if (found === null) return null;
-    return { passwordChangedAt: found.security?.passwordChangedAt ?? null };
+    return { status: found.status, passwordChangedAt: found.security?.passwordChangedAt ?? null };
   },
 
   async updatePassword(id, { passwordHash, passwordChangedAt }, session) {

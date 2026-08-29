@@ -9,7 +9,8 @@
 @newEmail = nina@ninaworks.co.il
 
 ### Register — 201 + { user }. NO accessToken and NO Set-Cookie: Register creates an account,
-### it does not open a session. Creates a company and its owner in one transaction.
+### it does not open a session. `standing` defaults to "owner" and creates a company and its
+### owner membership in one transaction. Rate limited: 10 per hour per IP.
 # @name register
 POST {{host}}/auth/register
 Content-Type: application/json
@@ -178,7 +179,43 @@ Content-Type: application/json
   "passwordHash": "$2b$12$attackerControlledHash", "companyStanding": "member"
 }
 
-### Login — 200 + accessToken + safe user + Set-Cookie
+### Employee registration — 201, and it creates NO company and NO membership.
+### There is no invitation endpoint yet, so an employee has no company relationship to claim.
+POST {{host}}/auth/register
+Content-Type: application/json
+
+{
+  "firstName": "Emp", "lastName": "Loyee", "standing": "employee",
+  "email": "employee@example.com",
+  "password": "CorrectHorse42!", "confirmPassword": "CorrectHorse42!",
+  "specialty": "electrical", "city": "חיפה", "region": "haifa", "acceptedTerms": true
+}
+
+### Employee sending a real company name — 400 REQUEST_VALIDATION_FAILED.
+### A public company name is not proof of employment, so the field is refused, not ignored.
+POST {{host}}/auth/register
+Content-Type: application/json
+
+{
+  "firstName": "Sneak", "lastName": "In", "standing": "employee",
+  "companyName": "לוי עבודות חשמל בע\"מ",
+  "email": "sneak@example.com",
+  "password": "CorrectHorse42!", "confirmPassword": "CorrectHorse42!",
+  "specialty": "electrical", "city": "חיפה", "region": "haifa", "acceptedTerms": true
+}
+
+### Unknown standing — 400 REQUEST_VALIDATION_FAILED
+POST {{host}}/auth/register
+Content-Type: application/json
+
+{
+  "firstName": "A", "lastName": "B", "standing": "admin", "companyName": "C",
+  "email": "badstanding@example.com",
+  "password": "CorrectHorse42!", "confirmPassword": "CorrectHorse42!",
+  "specialty": "drilling", "city": "חיפה", "region": "haifa", "acceptedTerms": true
+}
+
+### Login — 200 + accessToken + safe user + Set-Cookie. Rate limited: 10 per 15 minutes per IP.
 # @name login
 POST {{host}}/auth/login
 Content-Type: application/json
@@ -342,6 +379,15 @@ Content-Type: application/json
 ###
 GET {{host}}/health-auth
 Authorization: Bearer {{loginAfterReset.response.body.accessToken}}
+
+### Rate limiting — send any of these faster than its budget and the next one is
+### 429 { "code": "TOO_MANY_REQUESTS", … }. Counters are per IP and in memory, so
+### restarting the server clears them. `npm run verify:rate-limit` proves all four.
+
+### A banned account: a live Access Token stops working immediately, not at expiry.
+### Set status directly (no admin endpoint exists yet), then retry a protected route — 401.
+GET {{host}}/health-auth
+Authorization: Bearer {{login.response.body.accessToken}}
 
 ### Health — 200
 GET {{host}}/health

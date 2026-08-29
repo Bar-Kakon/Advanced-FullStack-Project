@@ -47,7 +47,8 @@ node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"
 | `npm start` | Runs the built `dist/server.js` |
 | `npm run typecheck` | Type-checks `src/` and `scripts/` without emitting |
 | `npm run verify:register-txn` | Proves the Register transaction is all-or-nothing (needs a database) |
-| `npm run verify:password-reset` | Walks Register → Login → forgot → reset → Login against the running server and the real database |
+| `npm run verify:password-reset` | Walks Register → Login → forgot → reset → Login against the running server and the real database. **Needs a freshly started server** — it spends much of the auth rate-limit budget |
+| `npm run verify:rate-limit` | Proves each auth limiter fires, at its configured budget, through the project error contract. **Needs a freshly started server** |
 
 Verify it is up:
 
@@ -155,12 +156,37 @@ Token, issues no Refresh Token, writes no `refreshtokens` row and sets no cookie
 > removed rather than kept as an option — a credential the flow guarantees nobody uses is worth
 > removing, not tolerating.
 
-It is the onboarding flow for somebody who runs their own business — an independent contractor,
-a supplier, or a company owner. One signup writes **three** documents inside **one transaction**:
+`standing` decides what a registration means. It is **organizational standing only** — not a
+permission, not a project role, not a job title — and it defaults to `owner`, which is what public
+Register has always created.
+
+| | `standing: 'owner'` | `standing: 'employee'` |
+|---|---|---|
+| Writes | company + user + owner membership | **the user, and nothing else** |
+| `companyName` | **required** | **refused** |
+| `officePhone` | optional | **refused** |
+| `availability` | optional, defaults `open` | **refused** |
+| Permissions | the four approved owner defaults | **none** |
+
+**Why an employee registration creates no membership.** A company name is public, so accepting one
+as evidence of employment would hand anybody a seat in any business. The approved path is an owner
+opening an `invited` seat that a later registration claims — and **no endpoint creates one yet**, so
+an employee registration currently produces an account with no company relationship. That is a
+reported gap, not a design.
+
+**The three company-scoped fields are refused rather than ignored**, using the same `Joi.when` idiom
+`specialtyOther` already uses. Refusing is the security property: the endpoint cannot receive a
+company name on a path that could act on it.
+
+**No authority is ever inferred.** Not from `standing`, and not from `companyPosition` — which
+public Register does not set at all.
+
+One owner signup writes **three** documents inside **one transaction**:
 
 ```
-POST /api/auth/register
+POST /api/auth/register            (owner path)
   │
+  ├─ 0. rate limiter                10 per hour per IP
   ├─ 1. JOI validates the body      unknown keys stripped, so isAdmin / status
   │                                 / passwordHash in a body go nowhere
   ├─ 2. email already taken? ───────► 409 EMAIL_ALREADY_REGISTERED, nothing written
@@ -282,11 +308,17 @@ are invalidated instead — the reset writes **`users.security.passwordChangedAt
 Authorization: Bearer …
       │
       ├─ 1. signature + `typ: access`        the token is genuine
-      ├─ 2. look the account up               ONE indexed read, projected to one field
+      ├─ 2. look the account up               ONE indexed read, two projected fields
       ├─ 3. no such account?          ──────► 401 UNAUTHENTICATED
-      ├─ 4. iat < security.passwordChangedAt? 401 UNAUTHENTICATED
-      └─ 5. res.locals.auth = { userId }
+      ├─ 4. isSessionPermitted(status)? ─no─► 401 UNAUTHENTICATED
+      ├─ 5. iat < security.passwordChangedAt? 401 UNAUTHENTICATED
+      └─ 6. res.locals.auth = { userId }
 ```
+
+**Step 4 is the same rule Login and Refresh apply** — the one `isSessionPermitted` function, given a
+status rather than a whole user so all three callers can ask it. A ban therefore reaches a token
+already in circulation, immediately, instead of waiting for it to expire. **It closes access and
+nothing else:** no task, project, membership, message or consent record is touched.
 
 **The cost is one indexed `findById` per authenticated request**, projected to
 `security.passwordChangedAt` alone. That is the price of making a stateless token revocable, and it
@@ -464,6 +496,43 @@ This is **work availability of the organization** and nothing else. It is not th
 availability of each employee: managing staff availability is a separate future concept that must
 not touch this field.
 
+## Rate limiting
+
+The four auth entry points are limited per caller IP. Ordinary authenticated application traffic is
+**not** limited — that is a separate decision and this is not it.
+
+| Endpoint | Limit | Window | The abuse it answers |
+|---|---|---|---|
+| `POST /auth/login` | 10 | 15 min | credential stuffing / brute force |
+| `POST /auth/register` | 10 | 60 min | automated account creation |
+| `POST /auth/forgot-password` | 5 | 15 min | mail flooding, Brevo quota abuse |
+| `POST /auth/reset-password` | 10 | 15 min | repeated invalid-token and password attempts |
+
+**These numbers are engineering defaults, not approved product values.** They live in one place —
+`AUTH_RATE_LIMITS` in `middleware/rateLimit.ts` — so a route asks for a named limit instead of
+carrying a window and a count of its own.
+
+**Keyed on IP, never on the submitted email.** A forgot-password limiter keyed on the address in the
+body would let anyone lock a chosen person out of password recovery by spending their quota. IPv6 is
+normalised to a /64 block, so one client cannot rotate addresses inside its own prefix for extra
+attempts.
+
+**The limiter sits in front of validation**, so a flood costs a counter increment rather than a JOI
+pass — and on login it never reaches bcrypt.
+
+**`POST /auth/refresh` is deliberately not limited.** It is spent by an HttpOnly cookie the browser
+sends on its own, and rotation plus family revocation already answer a replayed one.
+
+**The answer is the project's own error contract**, not the library's default body:
+`429 { "code": "TOO_MANY_REQUESTS", "message": … }`, raised as an `AppError` and rendered by the
+same error handler as everything else. Standard `RateLimit` headers are sent; the legacy
+`X-RateLimit-*` ones are not.
+
+> **Deployment.** Counters are in memory, so each dyno limits independently and a restart clears
+> them. `trust proxy` is enabled only in production, where Heroku puts exactly one proxy in front —
+> without it every caller behind that proxy would share a single key. Trusting the header anywhere
+> else would let a client forge it and buy a fresh quota per request.
+
 ## API error contract
 
 Every deliberate failure answers with an HTTP status, a stable machine-readable `code`, and a
@@ -491,6 +560,7 @@ ahead of the conditions that need it. Everything this branch actually implements
 | `UNAUTHENTICATED` | 401 | The Access Token was missing, malformed, expired, was not an Access Token, belongs to no account, or was issued before the account's password last changed |
 | `INVALID_REFRESH_TOKEN` | 401 | The Refresh Token was missing, malformed, expired, unknown, already spent, revoked, or was not a Refresh Token |
 | `INVALID_RESET_TOKEN` | 401 | The reset link was unknown, expired, superseded by a newer request, or already spent |
+| `TOO_MANY_REQUESTS` | 429 | An auth endpoint's rate limit was exceeded for the caller's IP |
 | `INTERNAL_SERVER_ERROR` | 500 | Anything unexpected |
 
 `INVALID_CREDENTIALS` cannot distinguish an unknown account from a wrong password from a suspended

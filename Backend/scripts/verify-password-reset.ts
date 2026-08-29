@@ -2,6 +2,9 @@
  * End-to-end verification of the auth flow, against the running server and the real database.
  *
  * Start the API first (`npm run dev`), then: `npm run verify:password-reset`.
+ *
+ * It expects a FRESHLY STARTED server: the rate limiters keep their counters in memory, and this
+ * script deliberately spends a large share of the register and forgot-password budgets.
  */
 import { config as loadEnvFile } from 'dotenv';
 
@@ -46,11 +49,22 @@ const post = async (path: string, payload: unknown, cookie?: string): Promise<Re
     headers: { 'Content-Type': 'application/json', ...(cookie ? { Cookie: cookie } : {}) },
     body: JSON.stringify(payload),
   });
-  return {
+  const reply = {
     status: response.status,
     body: (await response.json().catch(() => ({}))) as Record<string, unknown>,
     setCookie: response.headers.get('set-cookie'),
   };
+
+  // This script is not the rate-limit test; `verify:rate-limit` is. Meeting a limiter here means
+  // the budget was already spent, which makes every later assertion meaningless.
+  if (reply.status === 429) {
+    throw new Error(
+      `A rate limiter answered on ${path}. This script spends a large share of the auth budget, so ` +
+        'it needs a freshly started server — the counters live in memory. Restart the API and retry.',
+    );
+  }
+
+  return reply;
 };
 
 const getHealthAuth = async (accessToken?: string): Promise<number> => {
@@ -63,6 +77,7 @@ const getHealthAuth = async (accessToken?: string): Promise<number> => {
 const registerBody = (password: string) => ({
   firstName: 'Reset',
   lastName: 'Verify',
+  standing: 'owner',
   companyName: COMPANY,
   email: EMAIL,
   password,
@@ -74,13 +89,13 @@ const registerBody = (password: string) => ({
 });
 
 const wipe = async (): Promise<void> => {
-  const users = await UserModel.find({ email: EMAIL }).distinct('_id');
+  const users = await UserModel.find({ email: { $regex: `^${MARKER}` } }).distinct('_id');
   const companies = await CompanyModel.find({ name: COMPANY }).distinct('_id');
   await PasswordResetTokenModel.deleteMany({ user: { $in: users } });
   await RefreshTokenModel.deleteMany({ user: { $in: users } });
   await CompanyMembershipModel.deleteMany({ company: { $in: companies } });
   await CompanyModel.deleteMany({ name: COMPANY });
-  await UserModel.deleteMany({ email: EMAIL });
+  await UserModel.deleteMany({ email: { $regex: `^${MARKER}` } });
 };
 
 const run = async (): Promise<void> => {
@@ -99,6 +114,58 @@ const run = async (): Promise<void> => {
     user: { $in: await UserModel.find({ email: EMAIL }).distinct('_id') },
   })) === 0);
   check('a protected route rejects the brand-new account', (await getHealthAuth()) === 401);
+
+  console.log('\nREGISTER — organizational standing survives the whole path');
+  const ownerId = (await UserModel.findOne({ email: EMAIL }).select('_id').lean())?._id;
+  if (!ownerId) throw new Error('the owner account was not created');
+  const ownerMembership = await CompanyMembershipModel.findOne({ user: ownerId }).lean();
+  check('an owner registration persists standing "owner"', ownerMembership?.standing === 'owner', String(ownerMembership?.standing));
+  check('the owner relationship is active and holds the four approved defaults',
+    ownerMembership?.status === 'active' && (ownerMembership?.permissions ?? []).length === 4,
+    `${ownerMembership?.status} · ${(ownerMembership?.permissions ?? []).join(',')}`);
+  check('no companyPosition was invented from the registration',
+    ownerMembership?.companyPosition === undefined, String(ownerMembership?.companyPosition));
+
+  const employeeEmail = `${MARKER}-employee@example.com`;
+  const employee = await post('/auth/register', {
+    firstName: 'Emp', lastName: 'Loyee', standing: 'employee', email: employeeEmail,
+    password: OLD_PASSWORD, confirmPassword: OLD_PASSWORD,
+    specialty: 'drilling', city: 'חיפה', region: 'haifa', acceptedTerms: true,
+  });
+  check('an employee registration is accepted', employee.status === 201, JSON.stringify(employee.body));
+  const employeeId = (await UserModel.findOne({ email: employeeEmail }).select('_id').lean())?._id;
+  check('the employee account exists', !!employeeId);
+  if (!employeeId) throw new Error('the employee account was not created');
+  check('the employee holds NO company membership at all',
+    (await CompanyMembershipModel.countDocuments({ user: employeeId })) === 0);
+  check('no company was created for the employee',
+    (await CompanyModel.countDocuments({ name: { $regex: 'Loyee|Emp' } })) === 0);
+  check('the employee registration issued no session either',
+    !('accessToken' in employee.body) && employee.setCookie === null);
+
+  const namedCompany = await post('/auth/register', {
+    firstName: 'Sneak', lastName: 'In', standing: 'employee', companyName: COMPANY,
+    email: `${MARKER}-sneak@example.com`, password: OLD_PASSWORD, confirmPassword: OLD_PASSWORD,
+    specialty: 'drilling', city: 'חיפה', region: 'haifa', acceptedTerms: true,
+  });
+  check('typing a real company name as an employee is REFUSED, not ignored',
+    namedCompany.status === 400 && namedCompany.body['code'] === 'REQUEST_VALIDATION_FAILED',
+    `${namedCompany.status} ${String(namedCompany.body['code'])}`);
+
+  const employeeAvailability = await post('/auth/register', {
+    firstName: 'A', lastName: 'B', standing: 'employee', availability: 'open',
+    email: `${MARKER}-avail@example.com`, password: OLD_PASSWORD, confirmPassword: OLD_PASSWORD,
+    specialty: 'drilling', city: 'חיפה', region: 'haifa', acceptedTerms: true,
+  });
+  check('an employee cannot set the business availability', employeeAvailability.status === 400);
+
+  const badStanding = await post('/auth/register', {
+    firstName: 'A', lastName: 'B', standing: 'admin', companyName: 'X',
+    email: `${MARKER}-bad@example.com`, password: OLD_PASSWORD, confirmPassword: OLD_PASSWORD,
+    specialty: 'drilling', city: 'חיפה', region: 'haifa', acceptedTerms: true,
+  });
+  check('an unknown standing is rejected', badStanding.status === 400 &&
+    badStanding.body['code'] === 'REQUEST_VALIDATION_FAILED', String(badStanding.status));
 
   console.log('\nLOGIN — unchanged, and still the only authenticator');
   const loggedIn = await post('/auth/login', { email: EMAIL, password: OLD_PASSWORD });
@@ -256,15 +323,11 @@ const run = async (): Promise<void> => {
   }
 
   console.log('\nFORGOT PASSWORD — language must not reach the requester');
-  await UserModel.updateOne({ _id: userId }, { $set: { language: 'he' } });
-  const asHebrew = await post('/auth/forgot-password', { email: EMAIL });
   await UserModel.updateOne({ _id: userId }, { $set: { language: 'en' } });
   const asEnglish = await post('/auth/forgot-password', { email: EMAIL });
-  const asUnknown = await post('/auth/forgot-password', { email: 'no-such-person@example.com' });
-  check('the answer is identical for a Hebrew account, an English one and an unknown address',
-    JSON.stringify(asHebrew) === JSON.stringify(asEnglish) &&
-      JSON.stringify(asHebrew) === JSON.stringify(asUnknown),
-    JSON.stringify(asHebrew.body));
+  check('an English account answers exactly as the Hebrew one and the unknown address did',
+    JSON.stringify(asEnglish) === JSON.stringify(known) && JSON.stringify(asEnglish) === JSON.stringify(unknown),
+    JSON.stringify(asEnglish.body));
 
   console.log('\nSESSION SECURITY — the reset closed the sessions that existed before it');
   const liveAfter = await RefreshTokenModel.countDocuments({
@@ -278,6 +341,46 @@ const run = async (): Promise<void> => {
   check('the pre-reset Refresh cookie is dead', refreshWithOld.status === 401 &&
     refreshWithOld.body['code'] === 'INVALID_REFRESH_TOKEN', `${refreshWithOld.status}`);
   check('the session opened after the reset is untouched', liveAfter >= 0);
+
+  console.log('\nACCOUNT STATUS — one rule, applied by Login, Refresh and every protected route');
+  const active = await post('/auth/login', { email: EMAIL, password: NEW_PASSWORD });
+  const activeToken = active.body['accessToken'] as string;
+  const activeCookie = active.setCookie?.split(';')[0] ?? '';
+  check('an active account signs in and its token opens a protected route',
+    active.status === 200 && (await getHealthAuth(activeToken)) === 200);
+
+  const workBefore = {
+    companies: await CompanyModel.countDocuments({ name: COMPANY }),
+    memberships: await CompanyMembershipModel.countDocuments({ user: ownerId }),
+    terms: ((await UserModel.findById(ownerId).select('termsAcceptances').lean())
+      ?.termsAcceptances ?? []).length,
+  };
+
+  // The legitimate setup mechanism: no admin endpoint exists, so the status is set directly.
+  await UserModel.updateOne({ _id: userId }, { $set: { status: 'banned' } });
+
+  check('the live Access Token is refused immediately', (await getHealthAuth(activeToken)) === 401);
+  const refreshBanned = await post('/auth/refresh', {}, activeCookie);
+  check('Refresh refuses the same account', refreshBanned.status === 401 &&
+    refreshBanned.body['code'] === 'INVALID_REFRESH_TOKEN', String(refreshBanned.status));
+  const loginBanned = await post('/auth/login', { email: EMAIL, password: NEW_PASSWORD });
+  check('Login refuses it too, with the unified answer', loginBanned.status === 401 &&
+    loginBanned.body['code'] === 'INVALID_CREDENTIALS', String(loginBanned.body['code']));
+
+  const workAfter = {
+    companies: await CompanyModel.countDocuments({ name: COMPANY }),
+    memberships: await CompanyMembershipModel.countDocuments({ user: ownerId }),
+    terms: ((await UserModel.findById(ownerId).select('termsAcceptances').lean())
+      ?.termsAcceptances ?? []).length,
+  };
+  check('closing access deleted no company, membership or consent record',
+    JSON.stringify(workBefore) === JSON.stringify(workAfter),
+    `${JSON.stringify(workBefore)} -> ${JSON.stringify(workAfter)}`);
+
+  await UserModel.updateOne({ _id: userId }, { $set: { status: 'active' } });
+  const restored = await post('/auth/login', { email: EMAIL, password: NEW_PASSWORD });
+  check('restoring the status restores access', restored.status === 200);
+  check('and that fresh token works', (await getHealthAuth(restored.body['accessToken'] as string)) === 200);
 
   await wipe();
   await disconnectFromDatabase();

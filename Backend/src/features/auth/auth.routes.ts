@@ -1,5 +1,6 @@
 import { Router } from 'express';
 
+import { createAuthRateLimiter } from '../../middleware/rateLimit.js';
 import { validateRequest } from '../../middleware/validateRequest.js';
 import type { AuthController } from './auth.controller.js';
 import {
@@ -20,17 +21,33 @@ import {
 export const createAuthRouter = (controller: AuthController): Router => {
   const router = Router();
 
-  router.post('/register', validateRequest({ body: registerBodySchema }), controller.handleRegister);
-  router.post('/login', validateRequest({ body: loginBodySchema }), controller.handleLogin);
+  // The limiter sits in front of validation, so a flood costs a counter increment rather than a
+  // JOI pass — and, on login, never reaches bcrypt.
+  router.post(
+    '/register',
+    createAuthRateLimiter('register'),
+    validateRequest({ body: registerBodySchema }),
+    controller.handleRegister,
+  );
+  router.post(
+    '/login',
+    createAuthRateLimiter('login'),
+    validateRequest({ body: loginBodySchema }),
+    controller.handleLogin,
+  );
+  // `/refresh` is deliberately not limited: it is spent by an HttpOnly cookie the browser sends on
+  // its own, and rotation plus family revocation already answer a replayed one.
   router.post('/refresh', controller.handleRefresh);
 
   router.post(
     '/forgot-password',
+    createAuthRateLimiter('forgotPassword'),
     validateRequest({ body: forgotPasswordBodySchema }),
     controller.handleForgotPassword,
   );
   router.post(
     '/reset-password',
+    createAuthRateLimiter('resetPassword'),
     validateRequest({ body: resetPasswordBodySchema }),
     controller.handleResetPassword,
   );

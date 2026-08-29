@@ -13,7 +13,8 @@
     "start": "node dist/server.js",
     "typecheck": "tsc --noEmit && tsc -p tsconfig.scripts.json",
     "verify:register-txn": "tsx scripts/verify-register-transaction.ts",
-    "verify:password-reset": "tsx scripts/verify-password-reset.ts"
+    "verify:password-reset": "tsx scripts/verify-password-reset.ts",
+    "verify:rate-limit": "tsx scripts/verify-rate-limit.ts"
   },
   "dependencies": {
     "@types/nodemailer": "^8.0.1",
@@ -22,6 +23,7 @@
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
+    "express-rate-limit": "^8.7.0",
     "helmet": "^8.3.0",
     "joi": "^18.2.5",
     "jsonwebtoken": "^9.0.3",
