@@ -767,6 +767,18 @@ _Later stages live in the [Roadmap](#4-roadmap-stages); we'll expand the next on
 
 ## 8. Known issues & risks
 
+**Merging `fix/owner-qa-corrections.react` as it stands would resurrect every static prototype the cleanup deleted (found 2026-08-29).**
+That branch was cut from `68dcc04`, which is **before** the static deletion at `ced43ba`. Its diff
+against current `develop` therefore lists `browse-contractors.html` + `.css`, `login.html` + `.css`,
+`register.html` + `.css`, `edit-profile.html` + `.css`, `my-profile.html` + `.css`,
+`forgot-password.html`, `reset-password.html`, `profile.css` and `validation.ts` / `.js` as
+**additions** — roughly 8,000 lines that an owner-approved cleanup removed on purpose. A plain merge
+brings them all back. Either **rebase the branch onto current `develop`**, or take the merge and
+delete those files again in the same commit. The backend correction branch does not have this
+problem: it was cut from `ced43ba` itself. Nothing was done about either branch — they are
+unmerged and awaiting owner QA, and §0A forbids reproducing their work elsewhere.
+
+
 > Awareness items to keep in front of us. Not all are decisions — some are just traps to avoid.
 
 - **Current implementation dependencies after the 2026-08-29 integration (`13a7e0e`).** Each is a thing the code is
