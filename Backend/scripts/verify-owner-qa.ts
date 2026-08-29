@@ -1,0 +1,268 @@
+/** Work-entry editing, work-entry photos, heavy-equipment storage and Browse self-exclusion. */
+import { FileAssetModel } from '../src/features/files/fileAsset.model.js';
+import { UserModel } from '../src/features/users/user.model.js';
+import { WorkEntryModel } from '../src/features/workentries/workEntry.model.js';
+import { cleanUp, createAccount } from './support/accounts.js';
+import { check, finish, rawRequest, request, section, startHarness } from './support/harness.js';
+
+const MARKER = 'ownerqa-verify';
+
+const PNG_BYTES = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
+  'base64',
+);
+
+const workForm = (fields: Record<string, string>, imageName?: string): FormData => {
+  const form = new FormData();
+  for (const [key, value] of Object.entries(fields)) form.append(key, value);
+  if (imageName !== undefined) {
+    form.append('image', new Blob([new Uint8Array(PNG_BYTES)], { type: 'image/png' }), imageName);
+  }
+  return form;
+};
+
+interface WorkEntryShape {
+  readonly id: string;
+  readonly title: string;
+  readonly scope?: string;
+  readonly meta: string;
+  readonly imageUrl: string | null;
+}
+
+const run = async (): Promise<never> => {
+  const harness = await startHarness();
+  const { baseUrl } = harness;
+  await cleanUp(MARKER);
+
+  const owner = await createAccount(baseUrl, MARKER, 1);
+  const stranger = await createAccount(baseUrl, MARKER, 2);
+
+  const me = (token: string) => request(baseUrl, 'GET', '/api/users/me', { token });
+  const workOf = (body: Record<string, unknown>): WorkEntryShape[] =>
+    (body['user'] as { work: WorkEntryShape[] }).work;
+
+  section('1. Editing a Completed Work entry');
+  const created = await request(baseUrl, 'POST', '/api/users/me/work-entries', {
+    token: owner.token,
+    form: workForm({ title: 'Original title', meta: 'Haifa · 2024', scope: 'Original scope' }),
+  });
+  check(created.status === 201, 'an entry is created', created.body);
+  const entry = created.body['entry'] as WorkEntryShape;
+
+  const edited = await request(baseUrl, 'PATCH', `/api/users/me/work-entries/${entry.id}`, {
+    token: owner.token,
+    form: workForm({ title: 'Edited title', meta: 'Haifa · 2025' }),
+  });
+  check(edited.status === 200, 'editing answers 200', edited.body);
+  const editedEntry = edited.body['entry'] as WorkEntryShape;
+  check(editedEntry.title === 'Edited title', 'the title is the edited one', editedEntry.title);
+  check(editedEntry.meta === 'Haifa · 2025', 'the meta is the edited one', editedEntry.meta);
+  check(editedEntry.scope === 'Original scope', 'an untouched field is not wiped', editedEntry.scope);
+
+  const reread = await me(owner.token);
+  const rereadEntry = workOf(reread.body).find((row) => row.id === entry.id);
+  check(rereadEntry?.title === 'Edited title', 'a fresh read still shows it', rereadEntry?.title);
+
+  const stored = await WorkEntryModel.findById(entry.id).lean().exec();
+  check(stored?.title === 'Edited title', 'and the database holds it', stored?.title);
+
+  section('2. An empty scope clears the optional line');
+  const cleared = await request(baseUrl, 'PATCH', `/api/users/me/work-entries/${entry.id}`, {
+    token: owner.token,
+    form: workForm({ scope: '' }),
+  });
+  check(cleared.status === 200, 'clearing the scope answers 200', cleared.body);
+  const afterClear = await WorkEntryModel.findById(entry.id).lean().exec();
+  check(afterClear?.scope === undefined, 'the field is absent, not blank', afterClear?.scope);
+
+  section('3. A person can only edit their own work');
+  const byStranger = await request(baseUrl, 'PATCH', `/api/users/me/work-entries/${entry.id}`, {
+    token: stranger.token,
+    form: workForm({ title: 'Hijacked' }),
+  });
+  check(byStranger.status === 404, 'another account is answered 404', byStranger.status);
+  const untouched = await WorkEntryModel.findById(entry.id).lean().exec();
+  check(untouched?.title === 'Edited title', 'and the entry is unchanged', untouched?.title);
+
+  const anonymous = await request(baseUrl, 'PATCH', `/api/users/me/work-entries/${entry.id}`, {
+    form: workForm({ title: 'Hijacked' }),
+  });
+  check(anonymous.status === 401, 'an unauthenticated caller is refused', anonymous.status);
+
+  section('4. A failed edit is a failure, never a quiet success');
+  const empty = await request(baseUrl, 'PATCH', `/api/users/me/work-entries/${entry.id}`, {
+    token: owner.token,
+    form: workForm({ title: '' }),
+  });
+  check(empty.status === 400, 'an empty title is refused', empty.status);
+  const stillThere = await WorkEntryModel.findById(entry.id).lean().exec();
+  check(stillThere?.title === 'Edited title', 'and nothing was written', stillThere?.title);
+
+  const missing = await request(baseUrl, 'PATCH', '/api/users/me/work-entries/64b7f3a2c1d4e5f6a7b8c9d0', {
+    token: owner.token,
+    form: workForm({ title: 'Nowhere' }),
+  });
+  check(missing.status === 404, 'an unknown entry answers 404', missing.status);
+
+  section('5. A work-entry photo is stored, served and survives a reload');
+  const withPhoto = await request(baseUrl, 'POST', '/api/users/me/work-entries', {
+    token: owner.token,
+    form: workForm({ title: 'Photographed job', meta: 'Tel Aviv · 2025' }, 'job.png'),
+  });
+  check(withPhoto.status === 201, 'an entry with a picture is created', withPhoto.body);
+  const photoEntry = withPhoto.body['entry'] as WorkEntryShape;
+  check(photoEntry.imageUrl !== null, 'the answer carries an image URL', photoEntry.imageUrl);
+
+  const firstAssetId = photoEntry.imageUrl?.split('/').pop() ?? '';
+  const fetched = await rawRequest(baseUrl, `/api/users/me/assets/${firstAssetId}`, owner.token);
+  check(fetched.status === 200, 'the owner can fetch the bytes', fetched.status);
+  check(fetched.headers.get('content-type')?.startsWith('image/png') === true,
+    'and they are served as a PNG', fetched.headers.get('content-type'));
+  const bytes = Buffer.from(await fetched.arrayBuffer());
+  check(bytes.equals(PNG_BYTES), 'byte for byte the file that was uploaded');
+
+  const byOther = await rawRequest(baseUrl, `/api/users/me/assets/${firstAssetId}`, stranger.token);
+  check(byOther.status === 404, 'another account cannot fetch it', byOther.status);
+
+  const afterReload = await me(owner.token);
+  const reloadedPhoto = workOf(afterReload.body).find((row) => row.id === photoEntry.id);
+  check(reloadedPhoto?.imageUrl === photoEntry.imageUrl, 'a fresh read returns the same URL',
+    reloadedPhoto?.imageUrl);
+
+  section('6. Replacing a photo deletes the one it replaced');
+  const assetsBefore = await FileAssetModel.countDocuments({ owner: owner.userId }).exec();
+  const replaced = await request(baseUrl, 'PATCH', `/api/users/me/work-entries/${photoEntry.id}`, {
+    token: owner.token,
+    form: workForm({ title: 'Photographed job, corrected' }, 'job-2.png'),
+  });
+  check(replaced.status === 200, 'replacing answers 200', replaced.body);
+  const replacedEntry = replaced.body['entry'] as WorkEntryShape;
+  check(replacedEntry.imageUrl !== photoEntry.imageUrl, 'the image URL moved on', replacedEntry.imageUrl);
+  check(replacedEntry.title === 'Photographed job, corrected', 'and the text edit landed too');
+
+  const assetsAfter = await FileAssetModel.countDocuments({ owner: owner.userId }).exec();
+  check(assetsAfter === assetsBefore, 'one asset in, one asset out', { assetsBefore, assetsAfter });
+  const oldAsset = await rawRequest(baseUrl, `/api/users/me/assets/${firstAssetId}`, owner.token);
+  check(oldAsset.status === 404, 'the replaced file is gone', oldAsset.status);
+
+  section('7. A bad file is refused and leaves nothing behind');
+  const assetsBeforeBad = await FileAssetModel.countDocuments({ owner: owner.userId }).exec();
+  const badForm = new FormData();
+  badForm.append('title', 'Text file');
+  badForm.append('image', new Blob(['not an image'], { type: 'text/plain' }), 'notes.txt');
+  const badType = await request(baseUrl, 'PATCH', `/api/users/me/work-entries/${photoEntry.id}`, {
+    token: owner.token, form: badForm,
+  });
+  check(badType.status === 415 || badType.status === 400, 'a non-image is refused', badType.status);
+  const assetsAfterBad = await FileAssetModel.countDocuments({ owner: owner.userId }).exec();
+  check(assetsAfterBad === assetsBeforeBad, 'and no asset row was written',
+    { assetsBeforeBad, assetsAfterBad });
+
+  section('8. The heavy-equipment selection is stored');
+  const saved = await request(baseUrl, 'PATCH', '/api/users/me', {
+    token: owner.token,
+    json: { specialties: ['heavy_equipment', 'drilling'], heavyEquipment: ['excavator', 'bobcat'] },
+  });
+  check(saved.status === 200, 'saving answers 200', saved.body);
+  const savedUser = saved.body['user'] as { heavyEquipment: string[] };
+  check(savedUser.heavyEquipment.length === 2, 'the answer carries both machines', savedUser.heavyEquipment);
+
+  const storedUser = await UserModel.findById(owner.userId).lean().exec();
+  check(
+    JSON.stringify(storedUser?.heavyEquipment) === JSON.stringify(['excavator', 'bobcat']),
+    'and the database holds them in order',
+    storedUser?.heavyEquipment,
+  );
+
+  const afterProfileReload = await me(owner.token);
+  const reloadedUser = afterProfileReload.body['user'] as { heavyEquipment: string[] };
+  check(reloadedUser.heavyEquipment.includes('excavator'), 'a fresh read returns the saved list',
+    reloadedUser.heavyEquipment);
+
+  section('9. The machines cannot outlive the trade that carries them');
+  const dropped = await request(baseUrl, 'PATCH', '/api/users/me', {
+    token: owner.token,
+    json: { specialties: ['drilling'] },
+  });
+  check(dropped.status === 200, 'dropping the trade answers 200', dropped.body);
+  const afterDrop = await UserModel.findById(owner.userId).lean().exec();
+  check((afterDrop?.heavyEquipment ?? []).length === 0, 'the machine list is cleared with it',
+    afterDrop?.heavyEquipment);
+
+  const sneaked = await request(baseUrl, 'PATCH', '/api/users/me', {
+    token: owner.token,
+    json: { heavyEquipment: ['bulldozer'] },
+  });
+  check(sneaked.status === 200, 'sending machines without the trade is accepted', sneaked.body);
+  const afterSneak = await UserModel.findById(owner.userId).lean().exec();
+  check((afterSneak?.heavyEquipment ?? []).length === 0, 'but nothing is stored',
+    afterSneak?.heavyEquipment);
+
+  section('10. Only the ten approved machine codes are accepted');
+  const invented = await request(baseUrl, 'PATCH', '/api/users/me', {
+    token: owner.token,
+    json: { specialties: ['heavy_equipment'], heavyEquipment: ['spaceship'] },
+  });
+  check(invented.status === 400, 'an invented code is refused', invented.status);
+
+  const restored = await request(baseUrl, 'PATCH', '/api/users/me', {
+    token: owner.token,
+    json: { specialties: ['heavy_equipment'], heavyEquipment: [] },
+  });
+  check(restored.status === 200, 'an empty list is a real answer', restored.status);
+  const afterEmpty = await UserModel.findById(owner.userId).lean().exec();
+  check((afterEmpty?.heavyEquipment ?? []).length === 0, 'and it is stored as empty',
+    afterEmpty?.heavyEquipment);
+
+  section('11. The searcher is never one of their own Browse results');
+  const ownerId = owner.userId.toString();
+  const paths = [
+    '/api/browse/contractors',
+    '/api/browse/contractors?q=Verify',
+    '/api/browse/contractors?specialty=heavy_equipment',
+    '/api/browse/contractors?region=haifa',
+    '/api/browse/contractors?availability=open',
+    '/api/browse/contractors?limit=1',
+  ];
+
+  for (const path of paths) {
+    const page = await request(baseUrl, 'GET', path, { token: owner.token });
+    const rows = (page.body['contractors'] ?? []) as { userId: string }[];
+    check(page.status === 200, `${path} answers 200`, page.status);
+    check(!rows.some((row) => row.userId === ownerId), `${path} does not contain the searcher`);
+  }
+
+  section('12. Paging past the first page still never shows the searcher');
+  let cursor: string | null = null;
+  let pages = 0;
+  let sawSelf = false;
+  do {
+    const page: { status: number; body: Record<string, unknown> } = await request(
+      baseUrl,
+      'GET',
+      `/api/browse/contractors?limit=1${cursor === null ? '' : `&cursor=${encodeURIComponent(cursor)}`}`,
+      { token: owner.token },
+    );
+    const rows = (page.body['contractors'] ?? []) as { userId: string }[];
+    if (rows.some((row) => row.userId === ownerId)) sawSelf = true;
+    cursor = (page.body['nextCursor'] ?? null) as string | null;
+    pages += 1;
+  } while (cursor !== null && pages < 12);
+  check(!sawSelf, `walked ${pages} page(s) and never met the searcher`);
+
+  section('13. Everybody else is still discoverable');
+  const strangerSees = await request(baseUrl, 'GET', '/api/browse/contractors?q=Verify', {
+    token: stranger.token,
+  });
+  const strangerRows = (strangerSees.body['contractors'] ?? []) as { userId: string }[];
+  check(strangerRows.some((row) => row.userId === ownerId),
+    'a different viewer still finds the same person');
+
+  await cleanUp(MARKER);
+  return finish(harness);
+};
+
+run().catch((error: unknown) => {
+  console.error(error);
+  process.exit(2);
+});

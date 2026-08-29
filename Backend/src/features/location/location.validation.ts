@@ -7,7 +7,7 @@ export interface ProposeTravelBody {
 
 export const proposeTravelBodySchema = Joi.object<ProposeTravelBody>({
   originPlaceId: Joi.string().trim().min(1).max(300).required(),
-  travelRadiusKm: Joi.number().min(1).max(500).required(),
+  travelRadiusKm: Joi.number().integer().min(1).max(500).required(),
 });
 
 export interface SaveTravelLocationBody {
@@ -51,7 +51,7 @@ export interface SaveTravelBody {
 
 /** The list is required even when empty: an empty array is a real answer, not a missing one. */
 export const saveTravelBodySchema = Joi.object<SaveTravelBody>({
-  travelRadiusKm: Joi.number().min(1).max(500).optional(),
+  travelRadiusKm: Joi.number().integer().min(1).max(500).optional(),
   basePlace: travelLocation.optional(),
   approvedTravelLocations: Joi.array().items(travelLocation).max(300).required(),
   removedTravelLocations: Joi.array().items(removedTravelLocation).max(300).optional(),

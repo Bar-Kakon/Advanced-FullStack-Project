@@ -43,8 +43,23 @@ export const REGIONS = [
   'south',
 ] as const;
 
+/** The ten machine codes the approved profile screens have always offered. */
+export const HEAVY_EQUIPMENT = [
+  'excavator',
+  'backhoe',
+  'drill_rig',
+  'mini_excavator',
+  'crawler',
+  'jcb',
+  'wheel_loader',
+  'bobcat',
+  'bulldozer',
+  'hooklift_truck',
+] as const;
+
 export type Trade = (typeof TRADES)[number];
 export type Region = (typeof REGIONS)[number];
+export type HeavyEquipment = (typeof HEAVY_EQUIPMENT)[number];
 
 /**
  * One recorded consent. The version is what makes it provable: a timestamp alone cannot say *what*
@@ -60,6 +75,7 @@ export interface UserProfileFields {
   readonly bio?: string;
   readonly specialties: readonly Trade[];
   readonly specialtyOther?: string;
+  readonly heavyEquipment?: readonly HeavyEquipment[];
   readonly businessPhone?: string;
   readonly location?: {
     readonly city?: string;
@@ -167,6 +183,9 @@ const userSchema = new Schema(
     specialties: [{ type: String, enum: TRADES }],
     // Descriptive only. It never becomes a browse filter value — `specialties` stays the enum.
     specialtyOther: { type: String, trim: true, maxlength: 60 },
+
+    // Refines the `heavy_equipment` trade the way `specialtyOther` refines `other`.
+    heavyEquipment: [{ type: String, enum: HEAVY_EQUIPMENT }],
 
     // The individual's own business number. Never a fallback for the company office number, which
     // lives on a different document entirely, and never the personal/login `phone`.

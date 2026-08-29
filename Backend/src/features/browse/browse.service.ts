@@ -1,4 +1,4 @@
-import type { Types } from 'mongoose';
+import { Types } from 'mongoose';
 
 import type { BlocksService } from '../blocks/blocks.service.js';
 import type { RelationshipService } from '../connections/relationship.service.js';
@@ -51,7 +51,7 @@ export const createBrowseService = ({
   async search(viewerId, filters) {
     // One indexed read resolves every person hidden from this viewer, in either direction.
     const hidden = await blocks.hiddenUserIdsFor(viewerId);
-    const excludeUserIds = [...hidden];
+    const excludeUserIds = [new Types.ObjectId(viewerId), ...hidden];
 
     const wantsDistance = Boolean(filters.originPlaceId && filters.maxDrivingKm);
     const wantsRating = filters.minRating !== undefined;

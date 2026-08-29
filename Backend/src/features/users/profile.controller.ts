@@ -9,6 +9,7 @@ import type {
   CompanyUpdateBody,
   ProfileUpdateBody,
   WorkEntryBody,
+  WorkEntryUpdateBody,
 } from './profile.validation.js';
 
 export interface ProfileController {
@@ -16,6 +17,7 @@ export interface ProfileController {
   readonly handleUpdateMe: RequestHandler;
   readonly handleUpdateMyCompany: RequestHandler;
   readonly handleAddWorkEntry: RequestHandler;
+  readonly handleUpdateWorkEntry: RequestHandler;
   readonly handleRemoveWorkEntry: RequestHandler;
   readonly handleSetAvatar: RequestHandler;
   readonly handleRemoveAvatar: RequestHandler;
@@ -67,6 +69,16 @@ export const createProfileController = ({
     const created = await profiles.addWorkEntry(getAuthenticatedUserId(res), entry, readUpload(req));
 
     res.status(201).json({ entry: created });
+  },
+
+  handleUpdateWorkEntry: async (req: Request, res: Response) => {
+    const { id } = getValidated<{ id: string }>(res, 'params');
+    const edit = getValidated<WorkEntryUpdateBody>(res, 'body');
+    const updated = await profiles.updateWorkEntry(
+      getAuthenticatedUserId(res), id, edit, readUpload(req),
+    );
+
+    res.json({ entry: updated });
   },
 
   handleRemoveWorkEntry: async (_req: Request, res: Response) => {

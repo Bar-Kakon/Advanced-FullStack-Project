@@ -3,6 +3,7 @@ import { Types } from 'mongoose';
 import type { DbSession } from '../../db/mongoose.js';
 import {
   UserModel,
+  type HeavyEquipment,
   type Region,
   type TermsAcceptance,
   type Trade,
@@ -22,7 +23,7 @@ const IDENTITY_FIELDS = 'email status firstName lastName language profileComplet
  * absent from this list anyway; `termsAcceptances` and `security` are deliberately not here,
  * because no profile screen shows them and a projection is the cheapest place to keep it that way.
  */
-const PROFILE_FIELDS = `${IDENTITY_FIELDS} bio specialties specialtyOther businessPhone location approvedTravelLocations schedulingPrefs avatar`;
+const PROFILE_FIELDS = `${IDENTITY_FIELDS} bio specialties specialtyOther heavyEquipment businessPhone location approvedTravelLocations schedulingPrefs avatar`;
 
 /**
  * The write shape, deliberately separate from `UserRecord`. A caller can only supply what it lists,
@@ -51,6 +52,8 @@ export interface ProfileUpdate {
   readonly bio?: string;
   readonly specialties?: readonly Trade[];
   readonly specialtyOther?: string | null;
+  /** An empty array is a real answer: the trade is held, no machine is named yet. */
+  readonly heavyEquipment?: readonly HeavyEquipment[];
   readonly businessPhone?: string | null;
   readonly city?: string;
   readonly region?: Region;
@@ -177,6 +180,7 @@ export const userRepository: UserRepository = {
     put('bio', update.bio);
     if (update.specialties !== undefined) $set['specialties'] = [...update.specialties];
     put('specialtyOther', update.specialtyOther);
+    if (update.heavyEquipment !== undefined) $set['heavyEquipment'] = [...update.heavyEquipment];
     put('businessPhone', update.businessPhone);
     put('location.city', update.city);
     put('location.region', update.region);

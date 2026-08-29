@@ -2,7 +2,14 @@ import Joi from 'joi';
 
 import { structuredPlaceSchema, type StructuredPlaceBody } from '../location/place.validation.js';
 
-import { REGIONS, TRADES, type Region, type Trade } from './user.model.js';
+import {
+  HEAVY_EQUIPMENT,
+  REGIONS,
+  TRADES,
+  type HeavyEquipment,
+  type Region,
+  type Trade,
+} from './user.model.js';
 import { AVAILABILITY_STATUSES, type Availability } from '../companies/company.model.js';
 
 const MAX_NAME_LENGTH = 100;
@@ -22,6 +29,7 @@ export interface ProfileUpdateBody {
   readonly bio?: string;
   readonly specialties?: readonly Trade[];
   readonly specialtyOther?: string | null;
+  readonly heavyEquipment?: readonly HeavyEquipment[];
   readonly businessPhone?: string | null;
   readonly city?: string;
   readonly region?: Region;
@@ -50,6 +58,8 @@ export const profileUpdateBodySchema = Joi.object<ProfileUpdateBody>({
     then: Joi.string().trim().min(1).max(MAX_SPECIALTY_OTHER_LENGTH).required(),
     otherwise: clearableString(MAX_SPECIALTY_OTHER_LENGTH),
   }),
+
+  heavyEquipment: Joi.array().items(Joi.string().valid(...HEAVY_EQUIPMENT)).unique(),
 
   businessPhone: clearableString(MAX_PHONE_LENGTH),
 
@@ -98,4 +108,17 @@ export const workEntryBodySchema = Joi.object<WorkEntryBody>({
   projectId: objectId,
   taskId: objectId,
   imageAssetId: objectId,
+});
+
+export interface WorkEntryUpdateBody {
+  readonly title?: string;
+  readonly scope?: string;
+  readonly meta?: string;
+}
+
+/** The three fields the owner typed; an empty `scope` clears the optional line. */
+export const workEntryUpdateBodySchema = Joi.object<WorkEntryUpdateBody>({
+  title: Joi.string().trim().min(1).max(120),
+  scope: Joi.string().trim().max(160).allow(''),
+  meta: Joi.string().trim().min(1).max(120),
 });
