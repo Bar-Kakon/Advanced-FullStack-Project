@@ -2,6 +2,7 @@ import type { Types } from 'mongoose';
 
 import { EMPLOYEE_DEFAULT_PERMISSIONS, type CompanyMembershipRecord } from './companyMembership.model.js';
 import type { CompanyMembershipRepository } from './companyMembership.repository.js';
+import type { CompanyRepository } from './company.repository.js';
 import { noActiveCompany, notPermittedToManageEmployees, nothingToApprove } from './company.errors.js';
 import type { CreateInvitationBody } from './employeeManagement.validation.js';
 
@@ -13,14 +14,18 @@ export interface EmployeeManagementService {
   list(actorId: string): Promise<CompanyMembershipRecord[]>;
   approve(actorId: string, membershipId: string): Promise<number>;
   approveAllPending(actorId: string): Promise<number>;
+  /** Records that this business has been through employee setup, by inviting or by skipping. */
+  completeEmployeeSetup(actorId: string): Promise<void>;
 }
 
 export interface EmployeeManagementDependencies {
   readonly memberships: CompanyMembershipRepository;
+  readonly companies: CompanyRepository;
 }
 
 export const createEmployeeManagementService = ({
   memberships,
+  companies,
 }: EmployeeManagementDependencies): EmployeeManagementService => {
   /**
    * Authority comes from the permission recorded on the caller's own active membership, never from
@@ -66,6 +71,15 @@ export const createEmployeeManagementService = ({
     /** Approving every waiting activation at once, which the employee-management flow requires. */
     async approveAllPending(actorId) {
       return memberships.approveAllPending(await requireManager(actorId));
+    },
+
+    /*
+     * Skipping and finishing are the same fact — this business has been offered the step and has
+     * dealt with it — so they are one call and one stamp. A separate `skipped` state would be a
+     * distinction nothing downstream asks about.
+     */
+    async completeEmployeeSetup(actorId) {
+      await companies.markEmployeeSetupComplete(await requireManager(actorId), new Date());
     },
   };
 };

@@ -1,7 +1,8 @@
+import type { CompanyContextService } from '../companies/companyContext.service.js';
 import type { UserRecord } from '../users/user.model.js';
 import type { UserRepository } from '../users/user.repository.js';
-import { invalidCredentials, invalidRefreshToken } from './auth.errors.js';
-import { toAuthenticatedUser, type AuthenticatedUser } from './authenticatedUser.mapper.js';
+import { invalidCredentials, invalidRefreshToken, unauthenticated } from './auth.errors.js';
+import { toSessionUser, type SessionUser } from './authenticatedUser.mapper.js';
 import type { PasswordService } from './password.service.js';
 import type { RefreshTokenRepository } from './refreshToken.repository.js';
 import type { LoginBody } from './auth.validation.js';
@@ -9,12 +10,14 @@ import type { RefreshTokenService } from './tokens/refreshToken.service.js';
 import type { TokenPair, TokenPairService } from './tokens/tokenPair.service.js';
 
 export interface LoginResult extends TokenPair {
-  readonly user: AuthenticatedUser;
+  readonly user: SessionUser;
 }
 
 export interface AuthService {
   login(credentials: LoginBody): Promise<LoginResult>;
   refresh(rawRefreshToken: string | undefined): Promise<TokenPair>;
+  /** The same answer Login gives, re-read. It is how a client asks whether anything has changed. */
+  currentUser(userId: string): Promise<SessionUser>;
 }
 
 export interface AuthServiceDependencies {
@@ -23,6 +26,7 @@ export interface AuthServiceDependencies {
   readonly refreshTokens: RefreshTokenService;
   readonly refreshTokenStore: RefreshTokenRepository;
   readonly tokenPair: TokenPairService;
+  readonly companyContext: CompanyContextService;
 }
 
 /**
@@ -39,6 +43,7 @@ export const createAuthService = ({
   refreshTokens,
   refreshTokenStore,
   tokenPair,
+  companyContext,
 }: AuthServiceDependencies): AuthService => ({
   /**
    * Order matters: the password is compared *before* the status is inspected, so a banned account
@@ -58,7 +63,10 @@ export const createAuthService = ({
     }
 
     const tokens = await tokenPair.issue(user._id.toString());
-    return { ...tokens, user: toAuthenticatedUser(user) };
+    // The company context travels with the sign-in because the client has to route on it
+    // immediately. Fetching it here costs the one read a `/me` call would have cost anyway.
+    const company = await companyContext.forUser(user._id.toString());
+    return { ...tokens, user: toSessionUser(user, company) };
   },
 
   /**
@@ -85,5 +93,20 @@ export const createAuthService = ({
 
     await refreshTokenStore.markUsed(stored._id);
     return tokenPair.issue(user._id.toString(), stored.family);
+  },
+
+  /**
+   * Re-reads what Login answered. An Access Token is stateless, so nothing that happened after it
+   * was minted — an employer approving a membership, most of all — can reach the copy the client is
+   * holding. This is how the client asks; it issues nothing and rotates nothing.
+   *
+   * The middleware has already proved the account may hold a session, so the only failure left is
+   * an account that vanished between that check and this read.
+   */
+  async currentUser(userId) {
+    const user = await users.findById(userId);
+    if (user === null) throw unauthenticated();
+
+    return toSessionUser(user, await companyContext.forUser(userId));
   },
 });

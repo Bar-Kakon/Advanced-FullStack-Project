@@ -1,6 +1,7 @@
 import type { Request, RequestHandler, Response } from 'express';
 
 import { getValidated } from '../../middleware/validateRequest.js';
+import { getAuthenticatedUserId } from './requireAccessToken.middleware.js';
 import type { AuthService } from './auth.service.js';
 import type {
   ForgotPasswordBody,
@@ -16,6 +17,7 @@ export interface AuthController {
   readonly handleRegister: RequestHandler;
   readonly handleLogin: RequestHandler;
   readonly handleRefresh: RequestHandler;
+  readonly handleMe: RequestHandler;
   readonly handleForgotPassword: RequestHandler;
   readonly handleResetPassword: RequestHandler;
 }
@@ -66,6 +68,13 @@ export const createAuthController = ({
 
       sendRefreshToken(res, refreshToken);
       res.json({ accessToken });
+    },
+
+    /** A read: who the caller is now. Nothing is issued and the Refresh cookie is untouched. */
+    handleMe: async (req: Request, res: Response) => {
+      const user = await authService.currentUser(getAuthenticatedUserId(res));
+
+      res.json({ user });
     },
 
     /** Always 200, and always the same body. The answer carries no fact about the address. */

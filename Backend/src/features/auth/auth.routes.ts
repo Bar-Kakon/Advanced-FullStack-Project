@@ -1,4 +1,4 @@
-import { Router } from 'express';
+import { Router, type RequestHandler } from 'express';
 
 import { createAuthRateLimiter } from '../../middleware/rateLimit.js';
 import { validateRequest } from '../../middleware/validateRequest.js';
@@ -18,7 +18,10 @@ import {
  * The refresh route carries no schema because it carries no request body: its only input is the
  * HttpOnly cookie, which is verified cryptographically rather than shape-checked.
  */
-export const createAuthRouter = (controller: AuthController): Router => {
+export const createAuthRouter = (
+  controller: AuthController,
+  requireAccessToken: RequestHandler,
+): Router => {
   const router = Router();
 
   // The limiter sits in front of validation, so a flood costs a counter increment rather than a
@@ -38,6 +41,9 @@ export const createAuthRouter = (controller: AuthController): Router => {
   // `/refresh` is deliberately not limited: it is spent by an HttpOnly cookie the browser sends on
   // its own, and rotation plus family revocation already answer a replayed one.
   router.post('/refresh', controller.handleRefresh);
+
+  // The only authenticated route in this feature, and the only one that reads rather than writes.
+  router.get('/me', requireAccessToken, controller.handleMe);
 
   router.post(
     '/forgot-password',

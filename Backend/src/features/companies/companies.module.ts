@@ -1,6 +1,7 @@
 import { Router, type RequestHandler } from 'express';
 
 import { validateRequest } from '../../middleware/validateRequest.js';
+import { companyRepository } from './company.repository.js';
 import { companyMembershipRepository } from './companyMembership.repository.js';
 import { createEmployeeManagementController } from './employeeManagement.controller.js';
 import { createEmployeeManagementService } from './employeeManagement.service.js';
@@ -12,7 +13,10 @@ import { createInvitationBodySchema } from './employeeManagement.validation.js';
  */
 export const createCompaniesModule = (requireAccessToken: RequestHandler): Router => {
   const controller = createEmployeeManagementController(
-    createEmployeeManagementService({ memberships: companyMembershipRepository }),
+    createEmployeeManagementService({
+      memberships: companyMembershipRepository,
+      companies: companyRepository,
+    }),
   );
 
   const router = Router();
@@ -22,6 +26,10 @@ export const createCompaniesModule = (requireAccessToken: RequestHandler): Route
   router.get('/employees', controller.handleList);
   router.post('/employees/approve-all', controller.handleApproveAll);
   router.post('/employees/:membershipId/approve', controller.handleApprove);
+
+  // Not under `/employees`: it is a fact about the company, and it is recorded whether or not an
+  // employee was ever invited.
+  router.post('/employee-setup/complete', controller.handleCompleteSetup);
 
   return router;
 };

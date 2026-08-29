@@ -161,6 +161,23 @@ const run = async (): Promise<void> => {
   const employeeLogin = await send('POST', '/auth/login', { email: `${MARKER}-erez-employee@example.com`, password: PASSWORD });
   const employeeToken = employeeLogin.body['accessToken'] as string;
   check('the pending employee can still sign in to their own account', employeeLogin.status === 200 && !!employeeToken);
+
+  // The one fact a client cannot infer: waiting for approval is not the same as belonging to no
+  // company, and no boolean tells it apart from a relationship that ended.
+  const loginContext = (employeeLogin.body['user'] as { company?: Record<string, unknown> })?.company;
+  check('Login names the relationship they are waiting on, rather than answering null',
+    loginContext?.['membershipStatus'] === 'pending_company_approval' && loginContext?.['standing'] === 'employee',
+    `${String(loginContext?.['membershipStatus'])} · ${String(loginContext?.['standing'])}`);
+  check('and it grants them nothing while they wait',
+    ((loginContext?.['permissions'] ?? []) as unknown[]).length === 0);
+
+  const employeeMe = await send('GET', '/auth/me', undefined, employeeToken);
+  const employeeMeContext = (employeeMe.body['user'] as { company?: Record<string, unknown> })?.company;
+  check('GET /auth/me re-reads the same answer, which is what Check status asks',
+    employeeMe.status === 200 && employeeMeContext?.['membershipStatus'] === 'pending_company_approval',
+    `${employeeMe.status} ${String(employeeMeContext?.['membershipStatus'])}`);
+  check('an unauthenticated caller gets nothing from it',
+    (await send('GET', '/auth/me')).status === 401);
   const selfApprove = await send('POST', `/companies/employees/${String(seat?._id)}/approve`, undefined, employeeToken);
   check('the employee cannot approve themselves',
     selfApprove.status === 403 && selfApprove.body['code'] === 'NO_ACTIVE_COMPANY',
@@ -177,6 +194,13 @@ const run = async (): Promise<void> => {
 
   const approved = await send('POST', `/companies/employees/${String(seat?._id)}/approve`, undefined, ownerToken);
   check('the approval succeeds', approved.status === 200 && approved.body['approved'] === 1, JSON.stringify(approved.body));
+
+  // Nothing was reissued and no second sign-in happened: the token from step 6 is the same one.
+  const afterApproval = await send('GET', '/auth/me', undefined, employeeToken);
+  const afterContext = (afterApproval.body['user'] as { company?: Record<string, unknown> })?.company;
+  check('the employee reads themselves active on their ORIGINAL token, with no new Login',
+    afterApproval.status === 200 && afterContext?.['membershipStatus'] === 'active',
+    String(afterContext?.['membershipStatus']));
   const activated = await CompanyMembershipModel.findById(seat?._id).lean();
   check('the membership is now active', activated?.status === 'active', String(activated?.status));
   check('approval granted no permissions', (activated?.permissions ?? []).length === 0);
@@ -203,6 +227,30 @@ const run = async (): Promise<void> => {
       _id: { $in: [String(secondSeat.body['invitationId']), String(thirdSeat.body['invitationId'])] },
       status: 'active',
     })) === 2);
+
+  console.log('\n9. Employee setup is recorded on the company, and survives');
+  const ownerMe = await send('GET', '/auth/me', undefined, ownerToken);
+  const ownerContext = (ownerMe.body['user'] as { company?: Record<string, unknown> })?.company;
+  check('the owner carries the capability that opens this whole surface',
+    ((ownerContext?.['permissions'] ?? []) as string[]).includes('company.invite_employees'));
+  check('and the company has not been through employee setup yet',
+    ownerContext?.['employeeSetupComplete'] === false, String(ownerContext?.['employeeSetupComplete']));
+
+  const employeeSetup = await send('POST', '/companies/employee-setup/complete', undefined, employeeToken);
+  check('an employee may not record it', employeeSetup.status === 403, String(employeeSetup.status));
+
+  const completed = await send('POST', '/companies/employee-setup/complete', undefined, ownerToken);
+  check('the owner may', completed.status === 200 && completed.body['employeeSetupComplete'] === true,
+    JSON.stringify(completed.body));
+  const stampedAt = (await CompanyModel.findById(companyId).lean())?.employeeSetupCompletedAt;
+  check('it is stamped on the COMPANY, not on the person', stampedAt instanceof Date);
+  check('a fresh read reports it, so a later Login does not offer the step again',
+    ((await send('GET', '/auth/me', undefined, ownerToken)).body['user'] as { company?: Record<string, unknown> })
+      ?.company?.['employeeSetupComplete'] === true);
+
+  await send('POST', '/companies/employee-setup/complete', undefined, ownerToken);
+  check('repeating it keeps the original stamp rather than moving it',
+    String((await CompanyModel.findById(companyId).lean())?.employeeSetupCompletedAt) === String(stampedAt));
 
   await wipe();
   await disconnectFromDatabase();

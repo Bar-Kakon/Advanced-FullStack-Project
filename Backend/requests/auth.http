@@ -232,6 +232,13 @@ Authorization: Bearer {{login.response.body.accessToken}}
 POST {{host}}/companies/employees/approve-all
 Authorization: Bearer PASTE_THE_PENDING_EMPLOYEE_ACCESS_TOKEN
 
+### 5. The company has been through employee setup — 200 { employeeSetupComplete: true }.
+### Inviting somebody and deciding not to are the same fact, so both end here. Idempotent, and
+### the first stamp is the one kept. Afterwards `GET /auth/me` reports it and the step is not
+### offered again. Needs the same company.invite_employees capability.
+POST {{host}}/companies/employee-setup/complete
+Authorization: Bearer {{login.response.body.accessToken}}
+
 ### standing omitted entirely — 400 REQUEST_VALIDATION_FAILED. There is no silent default.
 POST {{host}}/auth/register
 Content-Type: application/json
@@ -317,6 +324,16 @@ Authorization: Bearer not.a.real.token
 ### No Bearer prefix — 401 UNAUTHENTICATED
 GET {{host}}/health-auth
 Authorization: {{login.response.body.accessToken}}
+
+### Who the caller is now — 200 + { user }, the same shape Login answered.
+### `user.company` carries membershipStatus, permissions and employeeSetupComplete. An Access Token
+### is stateless, so an employer approving a membership cannot reach the copy the client holds —
+### this is how the client asks. It issues nothing and leaves the Refresh cookie alone.
+GET {{host}}/auth/me
+Authorization: Bearer {{login.response.body.accessToken}}
+
+### No token — 401 UNAUTHENTICATED
+GET {{host}}/auth/me
 
 ### Refresh — 200 + new accessToken + new Set-Cookie (old one retired)
 # @name refresh

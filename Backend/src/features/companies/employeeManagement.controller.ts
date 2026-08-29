@@ -10,6 +10,7 @@ export interface EmployeeManagementController {
   readonly handleList: RequestHandler;
   readonly handleApprove: RequestHandler;
   readonly handleApproveAll: RequestHandler;
+  readonly handleCompleteSetup: RequestHandler;
 }
 
 /** Reads who is calling, calls one use case, and places the result in a response. Nothing else. */
@@ -53,5 +54,12 @@ export const createEmployeeManagementController = (
     const approved = await service.approveAllPending(getAuthenticatedUserId(res));
 
     res.json({ approved });
+  },
+
+  /** Idempotent, so a client that repeats it after a dropped response is not an error case. */
+  handleCompleteSetup: async (req: Request, res: Response) => {
+    await service.completeEmployeeSetup(getAuthenticatedUserId(res));
+
+    res.json({ employeeSetupComplete: true });
   },
 });

@@ -3,6 +3,7 @@ import type { Router, RequestHandler } from 'express';
 import type { AppConfig } from '../../config/env.js';
 import { runInTransaction } from '../../db/mongoose.js';
 import { companyRepository } from '../companies/company.repository.js';
+import { createCompanyContextService } from '../companies/companyContext.service.js';
 import { companyMembershipRepository } from '../companies/companyMembership.repository.js';
 import { createMailer } from '../../mail/mailer.js';
 import { userRepository } from '../users/user.repository.js';
@@ -57,6 +58,10 @@ export const createAuthModule = (config: AppConfig): AuthModule => {
     refreshTokens,
     refreshTokenStore: refreshTokenRepository,
     tokenPair,
+    companyContext: createCompanyContextService({
+      memberships: companyMembershipRepository,
+      companies: companyRepository,
+    }),
   });
 
   const registrationService = createRegistrationService({
@@ -79,11 +84,13 @@ export const createAuthModule = (config: AppConfig): AuthModule => {
   });
 
   const cookie = createRefreshTokenCookie(config.nodeEnv, config.tokens.refreshTtlSeconds);
+  const requireAccessToken = createRequireAccessToken(accessTokens, userRepository);
 
   return {
     router: createAuthRouter(
       createAuthController({ authService, registrationService, passwordResetService, cookie }),
+      requireAccessToken,
     ),
-    requireAccessToken: createRequireAccessToken(accessTokens, userRepository),
+    requireAccessToken,
   };
 };
