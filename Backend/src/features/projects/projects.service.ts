@@ -1,6 +1,12 @@
 import { Types } from 'mongoose';
 
-import type { CompanyContextService } from '../companies/companyContext.service.js';
+import type { CompanyContext, CompanyContextService } from '../companies/companyContext.service.js';
+import {
+  requireMayCreateProject,
+  requireMayManageProject,
+  requireMayReadProjects,
+  type ProjectAuthority,
+} from './projectAuthorization.js';
 import type { ProjectDto, ProjectPageDto } from './project.dto.js';
 import type { ProjectRecord, TargetChangeRecord } from './project.model.js';
 import type { ProjectCursor, ProjectRepository, ProjectUpdate } from './project.repository.js';
@@ -17,8 +23,6 @@ import {
   type ProjectExecutionPort,
 } from './projectLifecycle.service.js';
 import {
-  noActiveCompany,
-  notPermittedToCreate,
   overrunCeilingExceeded,
   projectAlreadyStarted,
   projectNotFound,
@@ -89,15 +93,14 @@ export const createProjectsService = ({
   execution,
 }: ProjectsDependencies): ProjectsService => {
   /** The caller's company is read from their session, never from the request body. */
-  const activeCompany = async (userId: string) => {
-    const context = await companyContext.forUser(userId);
-    if (context === null || context.membershipStatus !== 'active') throw noActiveCompany();
-    return context;
-  };
+  const authorityFor = async (
+    userId: string,
+    require: (context: CompanyContext | null) => ProjectAuthority,
+  ) => require(await companyContext.forUser(userId));
 
-  const load = async (userId: string, projectId: string) => {
-    const context = await activeCompany(userId);
-    const project = await projects.findOwnedById(projectId, new Types.ObjectId(context.id));
+  const load = async (userId: string, projectId: string, require = requireMayReadProjects) => {
+    const context = await authorityFor(userId, require);
+    const project = await projects.findOwnedById(projectId, new Types.ObjectId(context.companyId));
     // Another company's project, and one that never existed, answer identically (D16).
     if (project === null) throw projectNotFound();
     return { context, project };
@@ -105,8 +108,7 @@ export const createProjectsService = ({
 
   return {
     async create(userId, body) {
-      const context = await activeCompany(userId);
-      if (!context.permissions.includes('project.create')) throw notPermittedToCreate();
+      const context = await authorityFor(userId, requireMayCreateProject);
 
       const startDate = parseCalendarDate(body.startDate);
       const targetEndDate = parseCalendarDate(body.targetEndDate);
@@ -114,7 +116,7 @@ export const createProjectsService = ({
       if (targetEndDate.getTime() < startDate.getTime()) throw targetBeforeStart();
 
       const created = await projects.create({
-        company: new Types.ObjectId(context.id),
+        company: new Types.ObjectId(context.companyId),
         createdBy: new Types.ObjectId(userId),
         name: body.name,
         ...(body.description ? { description: body.description } : {}),
@@ -130,9 +132,9 @@ export const createProjectsService = ({
     },
 
     async list(userId, limit, cursor) {
-      const context = await activeCompany(userId);
+      const context = await authorityFor(userId, requireMayReadProjects);
       const rows = await projects.listByCompany(
-        new Types.ObjectId(context.id),
+        new Types.ObjectId(context.companyId),
         decodeCursor(cursor),
         limit + 1,
       );
@@ -154,7 +156,7 @@ export const createProjectsService = ({
     },
 
     async update(userId, projectId, body) {
-      const { project } = await load(userId, projectId);
+      const { project } = await load(userId, projectId, requireMayManageProject);
 
       const update: ProjectUpdate = {};
       if (body.name !== undefined) Object.assign(update, { name: body.name });
@@ -194,7 +196,7 @@ export const createProjectsService = ({
     },
 
     async cancel(userId, projectId) {
-      const { context, project } = await load(userId, projectId);
+      const { context, project } = await load(userId, projectId, requireMayManageProject);
 
       // Pre-start only. The stored flags answer first; the port covers the case where execution
       // has begun but the flag has not been written yet.
@@ -202,7 +204,7 @@ export const createProjectsService = ({
         throw projectAlreadyStarted();
       }
 
-      const removed = await projects.deleteOwnedById(projectId, new Types.ObjectId(context.id));
+      const removed = await projects.deleteOwnedById(projectId, new Types.ObjectId(context.companyId));
       if (!removed) throw projectNotFound();
     },
   };

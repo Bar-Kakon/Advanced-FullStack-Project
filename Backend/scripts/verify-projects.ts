@@ -239,6 +239,43 @@ const run = async (): Promise<void> => {
     'The owning company sees it',
   );
 
+  section('Authority comes from a grant, never from a role name');
+  const keeper = await request(baseUrl, 'POST', '/api/projects', { token: alice.token, json: { ...valid, name: 'grant test' } });
+  const keeperId = (keeper.body as unknown as ProjectBody).project.id;
+
+  // Strip only the grant. Standing stays `owner` and the job title is untouched, so anything that
+  // still succeeds would be reading a role rather than a permission.
+  await CompanyMembershipModel.updateOne(
+    { user: alice.userId, company: alice.companyId },
+    { $pull: { permissions: 'project.create' } },
+  ).exec();
+
+  const ungrantedCreate = await request(baseUrl, 'POST', '/api/projects', { token: alice.token, json: valid });
+  check(ungrantedCreate.status === 403, 'Without the grant, creating is refused', ungrantedCreate.status);
+  const ungrantedEdit = await request(baseUrl, 'PATCH', `/api/projects/${keeperId}`, {
+    token: alice.token, json: { name: 'nope' },
+  });
+  check(ungrantedEdit.status === 403, 'And so is editing', ungrantedEdit.status);
+  const ungrantedCancel = await request(baseUrl, 'DELETE', `/api/projects/${keeperId}`, { token: alice.token });
+  check(ungrantedCancel.status === 403, 'And cancelling', ungrantedCancel.status);
+
+  const stillReads = await request(baseUrl, 'GET', '/api/projects', { token: alice.token });
+  check(stillReads.status === 200, 'Reading stays open to an active member', stillReads.status);
+  const stillReadsOne = await request(baseUrl, 'GET', `/api/projects/${keeperId}`, { token: alice.token });
+  check(stillReadsOne.status === 200, 'Including one project by id', stillReadsOne.status);
+
+  const untouched = await ProjectModel.findById(keeperId).lean().exec();
+  check(untouched?.name === 'grant test', 'And nothing was changed by the refused calls');
+
+  await CompanyMembershipModel.updateOne(
+    { user: alice.userId, company: alice.companyId },
+    { $addToSet: { permissions: 'project.create' } },
+  ).exec();
+  const regranted = await request(baseUrl, 'PATCH', `/api/projects/${keeperId}`, {
+    token: alice.token, json: { name: 'grant restored' },
+  });
+  check(regranted.status === 200, 'Restoring the grant restores the ability', regranted.status);
+
   section('Cancellation — pre-start only, and it leaves no record');
   const cancelled = await request(baseUrl, 'DELETE', `/api/projects/${project.id}`, { token: alice.token });
   check(cancelled.status === 204, 'A project that has not started is cancelled', cancelled.status);
