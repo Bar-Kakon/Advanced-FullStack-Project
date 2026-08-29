@@ -1,10 +1,14 @@
+import { Link } from 'react-router-dom';
+
 import { useLanguage } from '../../i18n/useLanguage';
 import { RegisterForm } from './RegisterForm';
 import { useRegisterForm } from './useRegisterForm';
-import { BrandPanel } from './components/BrandPanel';
-import { LanguageSwitch } from './components/LanguageSwitch';
+import { BrandPanel } from '../../components/BrandPanel';
+import { LanguageSwitch } from '../../components/LanguageSwitch';
+import { useDocumentTitle } from '../../routes/useDocumentTitle';
+import { useScreenStylesheet } from '../../styles/useScreenStylesheet';
 import { RegisterSuccess } from './components/RegisterSuccess';
-import './register.css';
+import registerCss from './register.css?inline';
 
 /**
  * The Register screen: the brand panel, the card, and whichever stage of the flow is current.
@@ -16,13 +20,15 @@ import './register.css';
 export const RegisterPage = () => {
   const { t } = useLanguage();
   const form = useRegisterForm();
+  useScreenStylesheet({ id: 'register.css', css: registerCss });
+  useDocumentTitle('יצירת חשבון / Create account — FieldSync');
 
   return (
     <>
       <LanguageSwitch />
 
       <div className="auth-layout">
-        <BrandPanel />
+        <BrandPanel content={t.brand} />
 
         <main className="form-panel">
           <div className="form-card">
@@ -69,7 +75,10 @@ export const RegisterPage = () => {
 
                 <p className="form-footer">
                   {t.form.haveAccount}{' '}
-                  <a href="login.html" className="form-link form-link--strong">{t.form.signIn}</a>
+                  {/* The prototype pointed at a filename; in the app Login is a route. Where a
+                      *successful* registration goes is D30's `Register -> Login`, and that
+                      navigation is still owed — see the migration report. */}
+                  <Link to="/login" className="form-link form-link--strong">{t.form.signIn}</Link>
                 </p>
               </>
             )}

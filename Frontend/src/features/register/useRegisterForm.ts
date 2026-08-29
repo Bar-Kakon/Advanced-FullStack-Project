@@ -3,12 +3,10 @@ import { useCallback, useMemo, useState } from 'react';
 import { classifyRegisterError, registerAccount, type RegisterFailure } from '../../api/auth.api';
 import type { RegisterResponse } from '../../api/types';
 import { setAccessToken } from '../../auth/tokenStorage';
+import { EMAIL_PATTERN } from '../../shared/validation';
 import { buildRegisterPayload, emptyRegisterForm, type RegisterFormValues } from './buildRegisterPayload';
 
 export const MIN_PASSWORD_LENGTH = 8;
-
-/** Matches the `pattern` the static screen used, so neither side accepts what the other refuses. */
-const EMAIL_PATTERN = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
 
 export type FieldName = keyof RegisterFormValues;
 

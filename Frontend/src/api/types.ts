@@ -47,6 +47,18 @@ export interface RegisterPayload {
   readonly acceptedTerms: true;
 }
 
+/**
+ * The Login wire contract, mirrored from `loginBodySchema` in the same backend file.
+ *
+ * It checks that a credential was *submitted*, never that it is well-formed enough to be a
+ * plausible password — Register owns the password policy, and applying it here would tell an
+ * attacker which passwords could never belong to an account.
+ */
+export interface LoginPayload {
+  readonly email: string;
+  readonly password: string;
+}
+
 /** The only user shape the API puts on the wire. It carries no password hash by construction. */
 export interface AuthenticatedUser {
   readonly id: string;
@@ -62,6 +74,16 @@ export interface AuthenticatedUser {
  * the Refresh Token is deliberately absent from this type — it is never visible to this code.
  */
 export interface RegisterResponse {
+  readonly accessToken: string;
+  readonly user: AuthenticatedUser;
+}
+
+/**
+ * A 200 from Login carries the Access Token in the body and rotates the Refresh Token in a
+ * `Set-Cookie` header, so the Refresh Token is deliberately absent from this type — it is
+ * HttpOnly and never visible to this code at all.
+ */
+export interface LoginResponse {
   readonly accessToken: string;
   readonly user: AuthenticatedUser;
 }

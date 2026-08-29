@@ -1,13 +1,13 @@
 import { REGIONS, TRADES, type Region, type Trade } from '../../api/types';
 import { useLanguage } from '../../i18n/useLanguage';
 import { MIN_PASSWORD_LENGTH, useRegisterForm } from './useRegisterForm';
+import { FieldLabel } from '../../components/FieldLabel';
+import { FormAlert } from '../../components/FormAlert';
+import { PasswordField } from '../../components/PasswordField';
+import { SelectField } from '../../components/SelectField';
+import { TextField } from '../../components/TextField';
 import { AvailabilityChoice } from './components/AvailabilityChoice';
-import { FieldLabel } from './components/FieldLabel';
-import { FormAlert } from './components/FormAlert';
-import { PasswordField } from './components/PasswordField';
-import { SelectField } from './components/SelectField';
 import { TermsCheckbox } from './components/TermsCheckbox';
-import { TextField } from './components/TextField';
 
 /** Bounds copied from the endpoint's schema, so the box refuses what the server would reject. */
 const MAX = {
@@ -129,6 +129,7 @@ export const RegisterForm = ({ form }: { form: ReturnType<typeof useRegisterForm
         />
 
         <PasswordField
+          className="col--half"
           id="password" name="password" label={t.form.password.label} placeholder={t.form.password.placeholder}
           hint={t.form.password.hint} toggleLabel={t.form.togglePassword}
           minLength={MIN_PASSWORD_LENGTH} maxLength={MAX.password}
@@ -137,6 +138,7 @@ export const RegisterForm = ({ form }: { form: ReturnType<typeof useRegisterForm
           {...(errors.password ? { error: t.form.password.error } : {})}
         />
         <PasswordField
+          className="col--half"
           id="password-confirm" name="confirmPassword" label={t.form.confirmPassword.label}
           placeholder={t.form.confirmPassword.placeholder} toggleLabel={t.form.togglePassword}
           maxLength={MAX.password}

@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 
 import { FieldLabel } from './FieldLabel';
+import { InputWarning } from './InputWarning';
 
 /**
  * A password box with the show/hide eye. The prototype drew the button and left it inert with a
@@ -11,7 +12,8 @@ import { FieldLabel } from './FieldLabel';
  * body — has any business knowing.
  */
 export const PasswordField = ({
-  id, name, label, value, onChange, onBlur, placeholder, hint, error, touched = false, toggleLabel, minLength, maxLength,
+  id, name, label, value, onChange, onBlur, placeholder, hint, error, touched = false, toggleLabel,
+  minLength, maxLength, className = '', autoComplete = 'new-password', withWarning = false, children,
 }: {
   id: string;
   /** The wire field name, which is not always the element id — `confirmPassword` vs the
@@ -28,11 +30,18 @@ export const PasswordField = ({
   toggleLabel: string;
   minLength?: number;
   maxLength?: number;
+  /** The grid placement the screen wants for this field; Register's form is a column grid. */
+  className?: string;
+  autoComplete?: 'new-password' | 'current-password';
+  /** Renders the in-field hard-hat the auth screens position beside the reveal toggle. */
+  withWarning?: boolean;
+  /** Anything that belongs under the field, such as login's forgot-password link. */
+  children?: ReactNode;
 }) => {
   const [revealed, setRevealed] = useState(false);
 
   return (
-    <div className="form-group col--half">
+    <div className={`form-group ${className}`.trim()}>
       <FieldLabel htmlFor={id} text={label} />
       <div className="input-wrapper">
         <input
@@ -44,12 +53,13 @@ export const PasswordField = ({
           onChange={(e) => onChange(e.target.value)}
           {...(onBlur ? { onBlur } : {})}
           placeholder={placeholder}
-          autoComplete="new-password"
+          autoComplete={autoComplete}
           dir="ltr"
           required
           {...(minLength ? { minLength } : {})}
           {...(maxLength ? { maxLength } : {})}
         />
+        {withWarning ? <InputWarning /> : null}
         {/* Both icons are rendered and the stylesheet shows one, which is the arrangement it
             already had — swapping which element exists instead would mean rewriting rules that
             work. `is-revealed` is the only thing React adds. */}
@@ -77,6 +87,7 @@ export const PasswordField = ({
       {error && touched ? (
         <p className="field-error field-error--visible" aria-live="polite">{error}</p>
       ) : null}
+      {children}
     </div>
   );
 };
