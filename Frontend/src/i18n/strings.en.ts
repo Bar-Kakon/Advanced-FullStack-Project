@@ -378,8 +378,71 @@ export const en: Strings = {
   dashboard: {
     title: 'Personal dashboard',
     welcome: 'Hello, {name}.',
-    notMigrated:
-      'The Personal dashboard is the approved destination after signing in, and the screen itself has not been migrated to React yet.',
+    loading: 'Loading your dashboard…',
+    retry: 'Try again',
+    errors: {
+      network: 'We could not reach the server. Check your connection and try again.',
+      unknown: 'We could not load your dashboard just now.',
+    },
+
+    company: {
+      title: 'Business',
+      position: 'Position',
+      standing: { owner: 'Business owner', employee: 'Company employee' },
+      none: 'You are not linked to a company at the moment.',
+    },
+
+    network: {
+      title: 'My network',
+      lede: 'Where your professional connections stand right now.',
+      connected: 'Active connections',
+      incoming: 'Requests received',
+      outgoing: 'Requests sent',
+      blocked: 'Blocks you created',
+      browse: 'Browse contractors',
+    },
+
+    team: {
+      title: 'Team',
+      lede: 'Where company membership stands right now.',
+      active: 'Active team members',
+      pendingApproval: 'Waiting for approval',
+      openInvitations: 'Seats opened',
+      manage: 'Employee management',
+    },
+
+    reputation: {
+      title: 'Reputation',
+      rating: 'Average rating',
+      ratingCount: 'from {count} ratings',
+      notRated: 'Not rated yet',
+      notRatedNote: 'A rating can only be given after shared work is completed.',
+      completedWork: 'Completed work',
+      viewProfile: 'My profile',
+    },
+
+    reminder: {
+      title: 'Complete your profile',
+      lede: 'These details are still missing. You can add them at any time, and the screen works without them.',
+      required: 'Required',
+      suggested: 'Suggested',
+      dismiss: 'Dismiss',
+      edit: 'Edit profile',
+      items: {
+        contactRoute: 'At least one way to be contacted',
+        specialties: 'Specialty',
+        region: 'Working region',
+        structuredPlace: 'Exact location on the map',
+        travelRadius: 'Maximum travel distance',
+        bio: 'Professional description',
+        avatar: 'Profile picture',
+        businessPhone: 'Business phone',
+        officePhone: 'Office phone',
+        schedulingPrefs: 'Scheduling preferences',
+        completedWork: 'Completed work',
+      },
+    },
+
     management: {
       title: 'Management',
       employees: { name: 'Employee management', lede: 'Invite employees and approve their company membership.' },

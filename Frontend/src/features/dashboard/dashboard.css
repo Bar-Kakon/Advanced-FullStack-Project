@@ -1,0 +1,181 @@
+/* FieldSync — Personal dashboard */
+/* Loaded on top of profile.css, which owns the palette, .panel and .btn. */
+/* Approved palette only; no new hues. */
+
+.stat-group {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 14px;
+  margin-block-end: 24px;
+  list-style: none;
+  padding: 0;
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 16px 18px;
+  border: 1px solid var(--secondary-45);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  min-width: 0;
+}
+
+.stat__value {
+  font-family: var(--font-serif);
+  font-size: 34px;
+  font-weight: 700;
+  line-height: 1.05;
+  color: var(--primary);
+}
+
+.stat__label {
+  font-size: 15px;
+  line-height: 1.45;
+  color: var(--text-soft);
+  overflow-wrap: anywhere;
+}
+
+/* ═══ Business line ═══ */
+
+.company-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-block-end: 4px;
+}
+
+.company-line__name {
+  font-family: var(--font-serif);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--primary);
+  overflow-wrap: anywhere;
+}
+
+.company-line__chip {
+  padding: 5px 12px;
+  border: 1px solid var(--secondary-55);
+  border-radius: 999px;
+  background: var(--secondary-15);
+  font-size: 14px;
+  line-height: 1.4;
+  color: var(--text);
+}
+
+/* ═══ Reputation ═══ */
+
+.reputation {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 22px;
+}
+
+.reputation__rating {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 16px 18px;
+  border: 1px solid var(--secondary-45);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  min-width: 200px;
+  flex: 1 1 200px;
+}
+
+.reputation__score {
+  font-family: var(--font-serif);
+  font-size: 34px;
+  font-weight: 700;
+  line-height: 1.05;
+  color: var(--primary);
+}
+
+/* No score exists, so this states that in words rather than showing a zero. */
+.reputation__none {
+  font-family: var(--font-serif);
+  font-size: 22px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--primary);
+}
+
+.reputation__note {
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--text-soft);
+}
+
+.reputation .stat-group {
+  flex: 2 1 260px;
+  margin-block-end: 0;
+}
+
+/* ═══ Profile reminder ═══ */
+
+.reminder__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.reminder__head-text { min-width: 0; flex: 1 1 260px; }
+.reminder__head .panel__lede { margin-bottom: 18px; }
+
+.reminder__list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 0 0 14px;
+  padding: 0;
+  list-style: none;
+}
+
+.reminder__item {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+  border: 1px solid var(--secondary-45);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  font-size: 15px;
+  line-height: 1.4;
+  color: var(--text);
+  max-width: 100%;
+}
+
+.reminder__item-name { overflow-wrap: anywhere; }
+
+.reminder__badge {
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+
+.reminder__badge--required {
+  background: var(--primary);
+  color: var(--surface);
+}
+
+.reminder__badge--suggested {
+  background: var(--secondary-30);
+  color: var(--text);
+}
+
+.reminder__cta { margin-block-start: 4px; }
+
+@media (max-width: 640px) {
+  .stat-group { grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); }
+  .stat__value,
+  .reputation__score { font-size: 30px; }
+  .reminder__head { flex-direction: column; align-items: stretch; }
+}
