@@ -1722,6 +1722,156 @@ notificationSchema.index({ recipient: 1, readAt: 1, createdAt: -1 });
 module.exports = mongoose.model('Notification', notificationSchema);`
 },
 
+/* ─────────── companies ─────────── */
+{
+  id: 'companies', model: 'Company', domain: 'identity', stage: 2,
+  tag: 'the business, not the person',
+  pos: { x: 1070, y: 580 },
+  purpose: 'One document per contractor business. It holds what belongs to the **organization** — its name, its office number, whether it is taking new work, and whether it has been through employee setup. A person is a [[users]] document; the business they operate through is this one; and the relationship between them is a [[companymemberships]] row.',
+  callout: 'There is **no owner field here on purpose.** Ownership is a *relationship*, so it lives on [[companymemberships]] as `standing: "owner"`. An owner field would be a second answer to the same question, and the two would eventually disagree — the same reasoning that keeps `role` off [[users]].',
+  fields: [
+    { name: '_id', type: 'ObjectId', note: 'Auto-generated. Referenced by every [[companymemberships]] row.' },
+    { name: 'name', type: 'String', req: true, note: 'Trimmed. **Deliberately NOT unique** — two real businesses may share a name, and refusing the second one would be wrong. That is why an employee registration matches on name **plus** `invitedFullName` **plus** `companyPosition`, and why every company of that name is searched and an ambiguous result is refused rather than guessed at.' },
+    { name: 'officePhone', type: 'String', note: 'The **business\'s** number, written at owner registration. It is not `users.businessPhone` (the person\'s own) and not `users.phone` (personal/login) — three separate concepts, and none is a fallback for another. An employee registration is **refused** this field: it writes no company, so the value would have nowhere to go.' },
+    { name: 'availability', type: "'open' | 'limited' | 'closed'", req: true, note: 'Default `open`. The **organization\'s** work availability and the single source of truth for it — it is **never** duplicated onto users and there is no per-user override. It must never be reinterpreted as the personal availability of each employee (**D14**); an employee registration is refused it for exactly that reason.' },
+    { name: 'employeeSetupCompletedAt', type: 'Date', note: '**Added 2026-08-29 with Employee Management onboarding.** Absent means this business has not yet completed *or skipped* the optional first-time Employee Management step; a timestamp means it has. **Skip and Finish write the same value** — both mean the business was offered the step and dealt with it, and a separate `skipped` state would be a distinction nothing downstream asks about. The write is **idempotent and keeps the first stamp**, so a later call cannot rewrite the day it happened. A **date rather than a boolean** because it also answers *when*. No default and no backfill: absent is correct for every company created before the field existed.' },
+    { name: 'createdAt / updatedAt', type: 'Date', note: '`{ timestamps: true }`.' }
+  ],
+  indexes: [
+    { def: '{ _id: 1 }', opts: 'implicit', serves: 'Resolving the company on every session read', why: 'The company context attached to a session is fetched by id, so no extra index is needed for the hot path.' },
+    { def: '{ name: 1 }', opts: 'not unique, not declared', serves: 'Matching an employee registration to a company', why: '**Deliberately absent as a declared index today.** `findIdsByName` is a `distinct` over `name` and runs once per employee registration — a rare write path, not a read hot spot. It is recorded here so the decision is visible: add it when a company directory or a company search exists, not before.' }
+  ],
+  why: [
+    '**A company is not a field on a person.** Ten employees under one contractor must not each carry their own copy of the business name or its availability. The moment the business has its own facts, it is a document.',
+    '**`availability` lives here and not on [[users]].** D14 settled it: it is the organization that decides whether it is taking new work. A per-user copy would let ten employees disagree about one business.',
+    '**`name` is not unique, and that shapes the whole invitation flow.** Because a name proves nothing on its own, it can only ever *narrow* a search — the seat is matched on the name plus who it was opened for plus their position, and more than one match is refused rather than guessed at.',
+    '**`employeeSetupCompletedAt` is on the company because the company is what was set up.** On the person it would be a fact about whoever signed up first, and a second manager joining later would be walked through the step again for a business that already has staff.'
+  ],
+  relations: [
+    { to: 'companymemberships', via: '_id', store: 'ref', card: '1:N', why: 'Every person in the business — owner or employee, claimed or still an open seat — is one row over there.' }
+  ],
+  sample: `{
+  _id:  ObjectId("6a929dd2ce16ec4150f1aefe"),
+  name: "לוי עבודות חשמל בע\\"מ",           // NOT unique
+  officePhone:  "04-8123456",              // the BUSINESS's number
+  availability: "limited",                 // the ORGANIZATION's, never per-employee
+
+  // Absent until the owner finishes OR skips the Employee Management step.
+  // Both write this same field — they are the same business fact.
+  employeeSetupCompletedAt: ISODate("2026-08-29T09:00:00Z"),
+
+  createdAt: ISODate("2026-08-29T08:59:00Z"),
+  updatedAt: ISODate("2026-08-29T09:00:00Z")
+}`,
+  schema: `const companySchema = new Schema({
+  name:         { type: String, required: true, trim: true },
+  officePhone:  { type: String, trim: true },
+  availability: { type: String, enum: ['open','limited','closed'],
+                  default: 'open', required: true },
+
+  // On the COMPANY, because that is what was set up. No default and no
+  // backfill: absent means it has not happened.
+  employeeSetupCompletedAt: { type: Date }
+}, { timestamps: true });
+
+module.exports = mongoose.model('Company', companySchema);`
+},
+
+/* ─────────── companymemberships ─────────── */
+{
+  id: 'companymemberships', model: 'CompanyMembership', domain: 'identity', stage: 2,
+  tag: 'person × company, and what they may do',
+  pos: { x: 810, y: 580 },
+  purpose: 'One document per person per company. It carries the **organizational standing**, the **job title**, the **capabilities**, and the invitation lifecycle — and it is the only place any of those live. A [[users]] document is a person; it is never an "owner account" or an "employee account".',
+  callout: 'This collection exists because **an invitation has no user.** An owner opens a seat with a name and a position *before any account exists*, so the relationship cannot be fields on a person — there is no person yet. `user` stays `null` until a registration claims it.',
+  calloutKind: '',
+  fields: [
+    { name: '_id', type: 'ObjectId', note: 'The id the approval endpoint takes: `POST /api/companies/employees/:membershipId/approve`.' },
+    { name: 'company', type: 'ObjectId', ref: 'companies', req: true, idx: true, note: 'Which business. Half of the junction, and it is in the filter of every approval so an owner can only ever approve their own company\'s rows.' },
+    { name: 'user', type: 'ObjectId', ref: 'users', note: '**`null` while the seat is unclaimed**, which is the whole reason this collection can exist before an account does. Set once, by the registration that matches and claims the seat.' },
+    { name: 'invitedFullName', type: 'String', note: 'What the owner typed when opening the seat, and one of the three values a later self-registration is matched on. It is **not** a user reference and does not become one — after the claim the person\'s real name lives on [[users]].' },
+    { name: 'standing', type: "'owner' | 'employee'", req: true, note: 'Where the person sits in the business. **Not a permission and not a job title.** It lives on the relationship, never on the user: a person is not an "employee account", they hold an employee relationship with one particular company.' },
+    { name: 'status', type: "'invited' | 'pending_company_approval' | 'active' | 'inactive'", req: true, idx: true, note: 'The lifecycle, in order: `invited` (a seat, **no user**) → `pending_company_approval` (somebody claimed it by registering) → `active` (the company approved them) → `inactive` (they left, or were deactivated). **`pending_company_approval` and `active` are the two "live" states** — see the `user_current_unique` index below. **`inactive` is history and is never reported as a current company.**' },
+    { name: 'companyPosition', type: "'main_contractor' | 'construction_manager' | 'regional_construction_manager' | 'site_manager' | 'contractor' | 'employee'", note: 'The organizational **job**, and one of the three values an invitation is matched on. **Deliberately never consulted when deciding what somebody may do** — being a Site Manager grants nothing. The codes are stable identifiers and are never renamed to follow a label: `main_contractor`\'s Hebrew moved to `קבלן ביצוע ראשי` on 2026-08-29 and the code did not move, exactly as `site_manager` stayed put through two rewordings.' },
+    { name: 'permissions', type: '[CompanyPermission]', note: 'The **canonical capability list**, and the only thing any authorization check reads. Four codes exactly — `project.create`, `task.create`, `company.manage`, `company.invite_employees` — and the list is closed, so a fifth is a compile error until the capability it names is approved and built. **An owner gets all four at signup; an employee gets none**, and approval grants nothing. **When a membership becomes `inactive` this array is preserved for history and audit and is deliberately NOT cleared** — stored historically is not the same as currently authorized, and the read is what enforces that.' },
+    { name: 'createdAt / updatedAt', type: 'Date', note: '`{ timestamps: true }`. `createdAt` is when the seat was opened, not when it was claimed.' }
+  ],
+  indexes: [
+    { def: '{ company: 1 }', serves: 'Every row belonging to one business', why: 'Declared on the field. The employee-management list reads this direction.' },
+    { def: '{ company: 1, status: 1 }', serves: 'This company\'s pending activations, and the invitation lookup a self-registration must match', why: 'Both hot queries of the employee-management screen are answered from the index alone: who is waiting for approval, and which open seats exist.' },
+    { def: "{ user: 1 } — name: 'user_current_unique', unique, partialFilterExpression: { status: { $in: ['pending_company_approval','active'] } }", opts: 'unique, partial', serves: 'One company per person, enforced by the database', why: '**Replaced the old `user_1` index on 2026-08-29.** That one constrained `active` alone, so *active at company A + pending at company B* was still writable — a state this model does not have. This covers **both live states**, so two active rows, two pending rows, and one of each are all refused with `E11000`. **Unclaimed `invited` seats carry no user and `inactive` rows are history, so both sit outside the filter**: a company may hold any number of open seats, and somebody who genuinely left may later join elsewhere. The two indexes share the `{ user: 1 }` key, so `autoIndex` raises `IndexOptionsConflict` and silently skips the new one — `npm run migrate:membership-uniqueness` drops the old one, syncs this, and refuses to run if any user already holds two live rows rather than guessing how to merge them.' }
+  ],
+  why: [
+    '**An invitation has no user, so the relationship cannot be a field on a person.** This is the single fact that forces a collection: the owner opens a seat before the employee has an account, and `user: null` is what makes that expressible.',
+    '**`standing`, `companyPosition` and `permissions` are three separate things and none is derived from another.** Where somebody sits in the business, what their job is called, and what they are authorized to do are different questions. Collapsing any two of them is how a job title silently becomes a permission.',
+    '**The pending list is the invited row itself, which makes the invitation rule structural rather than a filter.** Somebody who merely types a company name has no row to claim, so they can never appear in the approval list — there is nothing to filter out, and a filter can be forgotten.',
+    '**One company per person is a database guarantee, not a convention.** `user_current_unique` is the only thing that survives two requests arriving at the same moment, and it is why `findCurrentByUser` can be a single `findOne` with no ordering rule to get wrong.',
+    '**`inactive` instead of deleting the row.** History has to remain resolvable, which is also why the permission list is kept on it — an audit trail that erases what somebody was allowed to do cannot answer what they were allowed to do.'
+  ],
+  relations: [
+    { to: 'companies', via: 'company', store: 'ref', card: 'N:1', why: 'Half of the junction: which business.' },
+    { to: 'users', via: 'user', store: 'ref', card: 'N:1', why: 'The other half — and **nullable**, which is what lets a seat exist before an account does.' }
+  ],
+  sample: `// 1. The owner opens a seat. No user exists for it yet.
+{
+  _id:     ObjectId("6a929f9492112921c3a8a873"),
+  company: ObjectId("6a929dd2ce16ec4150f1aefe"),
+  user:    null,                            // ← the reason this collection exists
+  invitedFullName: "Erez Employee",         // matched against a later registration
+  standing: "employee",
+  status:   "invited",
+  companyPosition: "site_manager",
+  permissions: []                           // an employee gets none by default
+}
+
+// 2. Their registration matches name + company name + position and claims it:
+//    status → "pending_company_approval", user → their new _id.
+// 3. The owner approves:  status → "active".  permissions stay [] —
+//    approval grants NOTHING. That is Permissions, a separate future feature.
+
+// The owner's own row, written by Register in the same transaction:
+{
+  company: ObjectId("6a929dd2ce16ec4150f1aefe"),
+  user:    ObjectId("6650a0b0c2b9e30012af0b10"),
+  standing: "owner",
+  status:   "active",
+  permissions: ["project.create","task.create",
+                "company.manage","company.invite_employees"]
+  // no invitedFullName and no companyPosition: Register asks for neither
+}`,
+  schema: `const COMPANY_MEMBERSHIP_STATUSES =
+  ['invited','pending_company_approval','active','inactive'];
+
+// The states that mean a person is IN a company: waiting to be let in, or in.
+const CURRENT_MEMBERSHIP_STATUSES = ['pending_company_approval','active'];
+
+const companyMembershipSchema = new Schema({
+  company: { type: Schema.Types.ObjectId, ref: 'Company', required: true, index: true },
+  user:    { type: Schema.Types.ObjectId, ref: 'User', default: null },
+  invitedFullName: { type: String, trim: true },
+  standing: { type: String, enum: ['owner','employee'], required: true },
+  status:   { type: String, enum: COMPANY_MEMBERSHIP_STATUSES, required: true },
+  companyPosition: { type: String, enum: COMPANY_POSITIONS },
+  permissions: [{ type: String, enum: COMPANY_PERMISSIONS }]
+}, { timestamps: true });
+
+companyMembershipSchema.index({ company: 1, status: 1 });
+
+// One company per person. Invited seats carry no user and inactive rows are
+// history, so neither is in the filter. Supersedes the old active-only index —
+// run: npm run migrate:membership-uniqueness
+companyMembershipSchema.index(
+  { user: 1 },
+  {
+    name: 'user_current_unique',
+    unique: true,
+    partialFilterExpression: { status: { $in: CURRENT_MEMBERSHIP_STATUSES } }
+  }
+);
+
+module.exports = mongoose.model('CompanyMembership', companyMembershipSchema);`
+},
+
 /* ─────────── refreshtokens ─────────── */
 {
   id: 'refreshtokens', model: 'RefreshToken', domain: 'identity', stage: 1,
