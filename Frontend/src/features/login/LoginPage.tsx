@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 
 import type { LoginResponse } from '../../api/types';
 import { AuthShell } from '../../components/AuthShell';
+import { destinationFor } from '../../auth/destination';
 import { useAuth } from '../../auth/useAuth';
 import { useLanguage } from '../../i18n/useLanguage';
 import { useDocumentTitle } from '../../routes/useDocumentTitle';
@@ -10,9 +11,6 @@ import { useScreenStylesheet } from '../../styles/useScreenStylesheet';
 import { LoginForm } from './LoginForm';
 import { useLoginForm } from './useLoginForm';
 import loginCss from './login.css?inline';
-
-/** Where a sign-in lands when the person came straight to Login: the approved D30 destination. */
-const AFTER_LOGIN = '/dashboard';
 
 /**
  * The Login screen — the authentication boundary. Register creates an account; this is the only
@@ -37,7 +35,7 @@ export const LoginPage = () => {
       // here — otherwise a contractor who chose English on the site-office desktop is back in
       // Hebrew on their phone, which is the case that rule exists for.
       setLang(response.user.language);
-      navigate(from ?? AFTER_LOGIN, { replace: true });
+      navigate(from ?? destinationFor(response.user), { replace: true });
     },
     [signIn, setLang, navigate, from],
   );

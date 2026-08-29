@@ -1,4 +1,4 @@
-import type { AuthenticatedUser } from '../api/types';
+import type { SessionUser } from '../api/types';
 
 /**
  * Where the signed-in person's identity is kept between page loads.
@@ -13,15 +13,17 @@ import type { AuthenticatedUser } from '../api/types';
 /** Exported for the same reason as `ACCESS_TOKEN_KEY`. */
 export const USER_KEY = 'fieldsync-user';
 
-export const readStoredUser = (): AuthenticatedUser | null => {
+export const readStoredUser = (): SessionUser | null => {
   try {
     const raw = localStorage.getItem(USER_KEY);
     if (raw === null) return null;
 
-    const parsed = JSON.parse(raw) as Partial<AuthenticatedUser>;
-    // A stored shape from an older build is discarded rather than half-rendered.
+    const parsed = JSON.parse(raw) as Partial<SessionUser>;
+    // A stored shape from an older build is discarded rather than half-rendered. `company` is
+    // checked for presence rather than truth, because `null` is one of its real answers.
     if (typeof parsed.id !== 'string' || typeof parsed.email !== 'string') return null;
-    return parsed as AuthenticatedUser;
+    if (!('company' in parsed)) return null;
+    return parsed as SessionUser;
   } catch {
     // Private windows throw on access, and a hand-edited value throws on parse. Both mean
     // "nobody is signed in as far as this device can tell", which is the safe answer.
@@ -29,7 +31,7 @@ export const readStoredUser = (): AuthenticatedUser | null => {
   }
 };
 
-export const storeUser = (user: AuthenticatedUser): void => {
+export const storeUser = (user: SessionUser): void => {
   try {
     localStorage.setItem(USER_KEY, JSON.stringify(user));
   } catch {

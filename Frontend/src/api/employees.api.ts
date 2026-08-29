@@ -10,10 +10,7 @@ import type {
   EmployeeMembership,
 } from './types';
 
-/**
- * The four employee-management calls, mirrored from `companies.module.ts`. Every path is one the
- * backend actually mounts, and nothing here loops one endpoint to imitate another.
- */
+/** Mirrored from `companies.module.ts`. Nothing here loops one endpoint to imitate another. */
 export const listEmployees = async (): Promise<readonly EmployeeMembership[]> => {
   const { data } = await api.get<EmployeeListResponse>('/companies/employees');
   return data.memberships;
@@ -33,23 +30,20 @@ export const approveEmployee = async (membershipId: string): Promise<number> => 
   return data.approved;
 };
 
-/**
- * Every waiting relationship at once. It is one request because the server answers one, and
- * approving twelve people from this screen must not be twelve chances for the eighth to fail.
- */
+/** One request, because the server answers one. Twelve calls would be twelve chances to fail. */
 export const approveAllPendingEmployees = async (): Promise<number> => {
   const { data } = await api.post<ApprovalResponse>('/companies/employees/approve-all');
   return data.approved;
 };
 
+/** Skip and Finish record the same fact, so both end here. Idempotent. */
+export const completeEmployeeSetup = async (): Promise<void> => {
+  await api.post('/companies/employee-setup/complete');
+};
+
 /**
- * The failures this feature renders individually, each naming a code the API raises on purpose.
- * The server's own `message` is English and unlocalised, so the screen answers the code and writes
- * its own sentence — putting that prose on a Hebrew screen would be a language bug on top of a
- * failure.
- *
- * `NOT_PERMITTED` and `NO_COMPANY` stay apart because they call for different sentences: one
- * person may be granted the capability, the other holds no company relationship at all.
+ * The failures this feature renders individually. The screen answers the code and writes its own
+ * sentence, because the server's `message` is English and unlocalised.
  */
 export type EmployeeFailure =
   | 'NOT_PERMITTED'
@@ -60,11 +54,7 @@ export type EmployeeFailure =
   | 'NETWORK'
   | 'UNKNOWN';
 
-/**
- * A request that never reached the server carries no `response` at all, so reading a code off one
- * would itself throw. That check comes first: telling somebody they are not permitted to manage
- * employees when the API is simply not running is the mistake the ordering exists to prevent.
- */
+/** The no-response check comes first: an unreachable API must not read as "not permitted". */
 export const classifyEmployeeError = (error: unknown): EmployeeFailure => {
   if (!isAxiosError(error)) return 'UNKNOWN';
   if (!error.response) return 'NETWORK';
@@ -77,8 +67,7 @@ export const classifyEmployeeError = (error: unknown): EmployeeFailure => {
       return 'NO_COMPANY';
     case 'UNAUTHENTICATED':
       return 'UNAUTHENTICATED';
-    // Somebody else approved this person between the list being drawn and the button being
-    // pressed. The screen is stale, which is not the same thing as the action having failed.
+    // Somebody else approved them first: the screen is stale, the action did not fail.
     case 'PENDING_ACTIVATION_NOT_FOUND':
       return 'NOTHING_TO_APPROVE';
     case 'REQUEST_VALIDATION_FAILED':

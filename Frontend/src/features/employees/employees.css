@@ -1,10 +1,10 @@
-/* FieldSync — Employee management */
-/* Loaded on top of profile.css (app shell, panels, buttons) and edit-profile.css (form fields). */
-/* It adds only what those two do not already draw: the alert, the in-button spinner and the list. */
-/* Approved palette only — no new hues, and no colour carries meaning on its own. */
+/* FieldSync — Employee management, onboarding and the waiting screen */
+/* Loaded on top of profile.css (app shell, panels, buttons) and, where a form is drawn, */
+/* edit-profile.css (fields). It adds only what neither of those already draws. */
+/* Approved palette only. No colour here carries meaning on its own. */
 
 /* ═══ Alert ═══ */
-/* profile.css has no banner of its own, so the declarations are the auth screens', unchanged. */
+/* profile.css has no banner, so these declarations are the auth screens', unchanged. */
 .alert {
   display: none;
   align-items: flex-start;
@@ -21,7 +21,6 @@
 .alert--error   { color: var(--error); background: var(--error-bg); border-color: var(--error-border); }
 .alert__icon    { flex-shrink: 0; margin-top: 1px; }
 
-/* An error sidenote, so a failed action reads the same as the notices around it but is not quiet. */
 .notice--error {
   color: var(--error);
   background: var(--error-bg);
@@ -30,7 +29,7 @@
 }
 
 /* ═══ In-button loading indicator ═══ */
-/* Absolutely positioned so the label neither moves nor is replaced while a request is running. */
+/* Absolute, so the label neither moves nor is replaced while a request is running. */
 .btn__spinner {
   position: absolute;
   inset-inline-end: 14px;
@@ -38,15 +37,12 @@
   align-items: center;
   pointer-events: none;
 }
-/* The label keeps clear of the spinner, so a long translated label cannot run underneath it. */
 .btn[aria-busy='true'] { padding-inline-end: 44px; }
 
-.btn:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
+.btn:disabled { opacity: 0.55; cursor: not-allowed; }
 .btn:disabled:hover { transform: none; }
 
 /* ═══ Invitation form ═══ */
-/* Two fields side by side where there is room, stacked where there is not. `1fr` on both keeps a
-   long Hebrew label and a long English one from sizing their columns differently. */
 .invite-form__fields {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
@@ -54,7 +50,7 @@
   margin-block-end: 20px;
 }
 
-/* ═══ List ═══ */
+/* ═══ Employee list ═══ */
 .employee-list__head {
   display: flex;
   align-items: flex-start;
@@ -63,13 +59,11 @@
   gap: 14px;
   margin-block-end: 18px;
 }
-/* The bulk action is a header control, so it must not stretch to the header's own width. */
 .employee-list__bulk { flex-shrink: 0; }
 
 .employee-list { list-style: none; display: flex; flex-direction: column; gap: 10px; }
 
-/* Name and position, then the status, then the action — and the action holds its width so a row
-   with one and a row without one still line up. */
+/* The action column holds its width, so a row with a button and a row without still line up. */
 .employee-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto auto;
@@ -82,8 +76,8 @@
   border-radius: var(--r-sm);
 }
 
-/* The one row state worth marking, and it is marked with an approved palette colour rather than a
-   traffic light: waiting for approval is a step in a sequence, not a warning. */
+/* Waiting for approval is a step in a sequence, not a warning, so it takes a palette colour
+   rather than the availability traffic-light. */
 .employee-row--pending { border-inline-start-color: var(--secondary); }
 
 .employee-row__text { min-width: 0; }
@@ -91,32 +85,58 @@
   font-size: 17px;
   font-weight: 600;
   color: var(--text);
-  /* Long single-token names are broken rather than allowed to widen the row past the panel. */
   overflow-wrap: anywhere;
 }
 .employee-row__position { font-size: 15px; color: var(--text-soft); overflow-wrap: anywhere; }
 
-/* The status label is translated, so it wraps to two lines rather than being cut or squeezed. */
+/* The status label is translated, so it wraps rather than being cut. */
 .employee-row__status { white-space: normal; text-align: center; }
 
 .employee-row__action { flex-shrink: 0; }
 
+/* ═══ Onboarding ═══ */
+.onboarding-actions__row { display: flex; flex-wrap: wrap; gap: 12px; }
+
+/* ═══ Waiting for approval ═══ */
+.waiting { max-width: var(--prose-max); }
+.waiting__body { font-size: 17px; line-height: 1.7; color: var(--text-soft); margin-block: 14px 10px; }
+.waiting__secondary { font-size: 16px; color: var(--text-soft); margin-block-end: 22px; }
+.waiting__actions { display: flex; flex-wrap: wrap; gap: 12px; }
+
+/* ═══ Dashboard management tools ═══ */
+/* A list, not a grid: one entry looks finished, and a second is one more row. */
+.tool-list { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+.tool-list__item {
+  padding: 14px 16px;
+  background: var(--surface);
+  border: 1px solid var(--secondary-30);
+  border-inline-start: 4px solid var(--secondary-45);
+  border-radius: var(--r-sm);
+}
+.tool-list__name {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--primary);
+  text-decoration: none;
+}
+.tool-list__name:hover { text-decoration: underline; }
+.tool-list__lede { font-size: 15px; color: var(--text-soft); margin-block-start: 2px; }
+
 /* ═══ Responsive ═══ */
 
-/* Tablet: the action drops to its own line and stretches, so it is still a comfortable target
-   once the row is too narrow to hold three columns. */
+/* Tablet: the row action drops to its own line and stretches to stay a comfortable target. */
 @media (max-width: 860px) {
-  .employee-row {
-    grid-template-columns: minmax(0, 1fr) auto;
-  }
+  .employee-row { grid-template-columns: minmax(0, 1fr) auto; }
   .employee-row__action { grid-column: 1 / -1; width: 100%; }
 }
 
-/* Phone: one column throughout, and the status sits under the name it describes. */
+/* Phone: one column throughout, and every action is full width. */
 @media (max-width: 560px) {
   .employee-row { grid-template-columns: minmax(0, 1fr); }
   .employee-row__status { justify-self: start; text-align: start; }
   .employee-list__head { flex-direction: column; align-items: stretch; }
   .employee-list__bulk { width: 100%; }
   .invite-form .btn { width: 100%; }
+  .onboarding-actions__row .btn,
+  .waiting__actions .btn { width: 100%; }
 }

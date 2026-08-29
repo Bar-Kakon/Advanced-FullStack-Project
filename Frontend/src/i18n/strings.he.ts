@@ -144,6 +144,7 @@ export const he = {
     myTasks: 'המשימות שלי',
     notifications: 'התראות',
     accountMenu: 'תפריט חשבון',
+    employees: 'ניהול עובדים',
   },
 
   login: {
@@ -260,7 +261,10 @@ export const he = {
     title: 'לוח הבקרה האישי',
     welcome: 'שלום, {name}.',
     notMigrated: 'לוח הבקרה האישי הוא היעד המאושר אחרי כניסה, והמסך עצמו עדיין לא הועבר ל-React.',
-    employees: 'ניהול עובדים',
+    management: {
+      title: 'ניהול',
+      employees: { name: 'ניהול עובדים', lede: 'הזמנת עובדים ואישור הצטרפות לחברה.' },
+    },
   },
 
   /**
@@ -322,6 +326,15 @@ export const he = {
 
     loading: 'טוען את רשימת העובדים…',
 
+    onboarding: {
+      title: 'הוספת העובדים שלכם',
+      lede: 'אפשר לפתוח עכשיו מקומות לעובדים, ואפשר לדלג ולחזור לזה מתי שתרצו.',
+      skip: 'דילוג לעת עתה',
+      finish: 'סיום והמשך',
+      /** Says the step will not come back, so Skip is not a decision anyone has to weigh. */
+      note: 'ניהול העובדים יישאר זמין מלוח הבקרה גם אם תדלגו.',
+    },
+
     errors: {
       notPermitted: 'אין לכם הרשאה לנהל את העובדים של החברה הזו. פנו לבעל/ת החברה.',
       noCompany: 'החשבון שלכם אינו משויך לחברה פעילה, ולכן אין עובדים לנהל.',
@@ -329,6 +342,20 @@ export const he = {
       // A stale screen rather than a failed action: somebody else already approved this person.
       nothingToApprove: 'ההצטרפות הזו כבר אושרה או שאינה ממתינה לאישור. רעננו את הרשימה.',
       validation: 'חלק מהפרטים אינם תקינים. בדקו את השדות המסומנים ונסו שוב.',
+      network: 'לא הצלחנו להגיע לשרת. בדקו את החיבור ונסו שוב.',
+      generic: 'משהו השתבש. אנא נסו שוב.',
+    },
+  },
+
+  /** Copy approved verbatim. It names no internal state and no internal vocabulary. */
+  waitingForApproval: {
+    heading: 'ההרשמה הושלמה',
+    body: 'החשבון שלכם פעיל, וההצטרפות לחברה ממתינה לאישור. לאחר שהחברה תאשר את ההצטרפות תוכלו להמשיך להשתמש במערכת כרגיל.',
+    secondary: 'אין צורך להירשם מחדש.',
+    checkStatus: 'בדיקת סטטוס',
+    signOut: 'התנתקות',
+    stillWaiting: 'ההצטרפות עדיין ממתינה לאישור החברה.',
+    errors: {
       network: 'לא הצלחנו להגיע לשרת. בדקו את החיבור ונסו שוב.',
       generic: 'משהו השתבש. אנא נסו שוב.',
     },

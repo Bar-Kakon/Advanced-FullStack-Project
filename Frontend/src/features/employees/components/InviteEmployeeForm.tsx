@@ -11,12 +11,9 @@ import type { EmployeeManagementState } from '../useEmployeeManagement';
 const MAX_FULL_NAME_LENGTH = 200;
 
 /**
- * The form that opens a seat, and the two fields it is allowed to ask for.
- *
- * There is no email box, no password box and no phone box, and their absence is the approved
- * model rather than an omission: a seat is matched against a self-registration by name, company
- * and position, so the person supplies their own credentials when they register. Asking for an
- * address here would create a second, unused idea of who the employee is.
+ * Two fields, and the absence of the rest is the model: a seat is matched to a self-registration
+ * by name, company and position, and the person supplies their own credentials when they register.
+ * The company comes from the caller's own session, so it is never asked for here.
  */
 export const InviteEmployeeForm = ({ state }: { state: EmployeeManagementState }) => {
   const { t } = useLanguage();
@@ -42,8 +39,7 @@ export const InviteEmployeeForm = ({ state }: { state: EmployeeManagementState }
 
   const submit = async (): Promise<void> => {
     setTouched(true);
-    // `isComplete` carries the `companyPosition !== ''` test, so this also narrows the placeholder
-    // away and the payload below cannot be built with an empty position.
+    // Also narrows the placeholder away, so the payload cannot carry an empty position.
     if (!isComplete) return;
 
     const opened = await state.invite({ fullName, companyPosition });
@@ -62,7 +58,6 @@ export const InviteEmployeeForm = ({ state }: { state: EmployeeManagementState }
 
       {alertMessage ? <FormAlert message={alertMessage} /> : null}
 
-      {/* Announced when it appears, so the confirmation is not something only a sighted user gets. */}
       {state.invited && !alertMessage ? (
         <p className="notice" role="status" aria-live="polite">
           <span>{t.employees.invite.created}</span>
@@ -84,8 +79,6 @@ export const InviteEmployeeForm = ({ state }: { state: EmployeeManagementState }
             label={t.employees.invite.fullName.label}
             placeholder={t.employees.invite.fullName.placeholder}
             hint={t.employees.invite.fullName.hint}
-            // A person's name follows the name, not the interface: a Latin name typed into the
-            // Hebrew screen still reads left to right.
             dir="auto"
             maxLength={MAX_FULL_NAME_LENGTH}
             required

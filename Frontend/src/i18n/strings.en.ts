@@ -134,6 +134,7 @@ export const en: Strings = {
     myTasks: 'My Tasks',
     notifications: 'Notifications',
     accountMenu: 'Account menu',
+    employees: 'Employee management',
   },
 
   login: {
@@ -240,7 +241,10 @@ export const en: Strings = {
     welcome: 'Hello, {name}.',
     notMigrated:
       'The Personal dashboard is the approved destination after signing in, and the screen itself has not been migrated to React yet.',
-    employees: 'Employee management',
+    management: {
+      title: 'Management',
+      employees: { name: 'Employee management', lede: 'Invite employees and approve their company membership.' },
+    },
   },
 
   employees: {
@@ -290,12 +294,33 @@ export const en: Strings = {
 
     loading: 'Loading the employee list…',
 
+    onboarding: {
+      title: 'Add your employees',
+      lede: 'You can open seats for employees now, or skip and come back to this whenever you like.',
+      skip: 'Skip for now',
+      finish: 'Finish and continue',
+      note: 'Employee management stays available from the dashboard even if you skip.',
+    },
+
     errors: {
       notPermitted: 'You are not permitted to manage this company’s employees. Ask the company owner.',
       noCompany: 'Your account does not belong to an active company, so there are no employees to manage.',
       unauthenticated: 'Your session has expired. Sign in again to continue.',
       nothingToApprove: 'This membership has already been approved, or it is not waiting for approval. Refresh the list.',
       validation: 'Some of the details are not valid. Check the marked fields and try again.',
+      network: 'We could not reach the server. Check your connection and try again.',
+      generic: 'Something went wrong. Please try again.',
+    },
+  },
+
+  waitingForApproval: {
+    heading: 'Registration complete',
+    body: 'Your account is active, and your company membership is waiting for approval. Once the company approves it, you can continue using the platform normally.',
+    secondary: 'You do not need to register again.',
+    checkStatus: 'Check status',
+    signOut: 'Sign out',
+    stillWaiting: 'The membership is still waiting for the company to approve it.',
+    errors: {
       network: 'We could not reach the server. Check your connection and try again.',
       generic: 'Something went wrong. Please try again.',
     },

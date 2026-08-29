@@ -3,6 +3,7 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { AuthProvider } from './auth/AuthContext';
 import { LanguageProvider } from './i18n/LanguageContext';
 import { PrivateRoute } from './routes/PrivateRoute';
+import { MembershipRoute } from './routes/MembershipRoute';
 import { LoginPage } from './features/login/LoginPage';
 import { ForgotPasswordPage } from './features/password-reset/ForgotPasswordPage';
 import { ResetPasswordPage } from './features/password-reset/ResetPasswordPage';
@@ -11,6 +12,8 @@ import { PersonalDashboardPage } from './features/dashboard/PersonalDashboardPag
 import { MyProfilePage } from './features/profile/MyProfilePage';
 import { EditProfilePage } from './features/profile/EditProfilePage';
 import { EmployeeManagementPage } from './features/employees/EmployeeManagementPage';
+import { EmployeeOnboardingPage } from './features/employees/EmployeeOnboardingPage';
+import { WaitingForApprovalPage } from './features/employees/WaitingForApprovalPage';
 
 /**
  * The app root.
@@ -37,12 +40,16 @@ export const App = () => (
           <Route path="/reset-password" element={<ResetPasswordPage />} />
 
           <Route element={<PrivateRoute />}>
-            <Route path="/dashboard" element={<PersonalDashboardPage />} />
+            {/* A profile belongs to the person, so it stays reachable while a company decides. */}
             <Route path="/profile" element={<MyProfilePage />} />
             <Route path="/profile/edit" element={<EditProfilePage />} />
-            {/* Reachable whenever the owner wants it, and the server decides whether they may.
-                No guard here reads a standing or a job title to open the door. */}
-            <Route path="/employees" element={<EmployeeManagementPage />} />
+            <Route path="/waiting-for-approval" element={<WaitingForApprovalPage />} />
+
+            <Route element={<MembershipRoute />}>
+              <Route path="/dashboard" element={<PersonalDashboardPage />} />
+              <Route path="/onboarding/employees" element={<EmployeeOnboardingPage />} />
+              <Route path="/employees" element={<EmployeeManagementPage />} />
+            </Route>
           </Route>
 
           {/* No 404 screen is migrated yet — approved screen #28 exists as a static prototype

@@ -3,12 +3,14 @@ import { isAxiosError } from 'axios';
 import { api } from './client';
 import type {
   ApiErrorBody,
+  CurrentUserResponse,
   ForgotPasswordPayload,
   LoginPayload,
   LoginResponse,
   RegisterPayload,
   RegisterResponse,
   ResetPasswordPayload,
+  SessionUser,
   StatusResponse,
 } from './types';
 
@@ -75,6 +77,12 @@ export const classifyLoginError = (error: unknown): LoginFailure => {
     return 'INVALID_CREDENTIALS';
   }
   return 'UNKNOWN';
+};
+
+/** Re-reads who the caller is now. A stateless token cannot learn that somebody approved them. */
+export const fetchCurrentUser = async (): Promise<SessionUser> => {
+  const { data } = await api.get<CurrentUserResponse>('/auth/me');
+  return data.user;
 };
 
 /**

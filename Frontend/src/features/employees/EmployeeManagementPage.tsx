@@ -10,15 +10,8 @@ import editProfileCss from '../profile/edit-profile.css?inline';
 import employeesCss from './employees.css?inline';
 
 /**
- * Employee management reached the ordinary way, from inside the authenticated application.
- *
- * This file is the *surroundings* and nothing else: the navbar, the page heading and the screen's
- * stylesheets. The feature itself is `EmployeeManagement`, unchanged from the copy first-time
- * onboarding mounts — which is what keeps skipping onboarding from ever meaning the owner has lost
- * the feature. They come back here and invite somebody whenever they like.
- *
- * Three sheets, in the order the cascade needs them: the app shell, then the form fields the shell
- * does not draw, then the list and the two controls neither of them has.
+ * The surroundings only: navbar, heading and stylesheets. The feature is `EmployeeManagement`,
+ * unchanged from the copy onboarding mounts, so skipping onboarding never loses it.
  */
 export const EmployeeManagementPage = () => {
   const { t } = useLanguage();

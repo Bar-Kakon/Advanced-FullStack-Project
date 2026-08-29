@@ -1,3 +1,6 @@
+import { Link } from 'react-router-dom';
+
+import { useAuth } from '../auth/useAuth';
 import { useLanguage } from '../i18n/useLanguage';
 import { LanguageSwitch } from './LanguageSwitch';
 
@@ -16,6 +19,12 @@ import { LanguageSwitch } from './LanguageSwitch';
  */
 export const AppNav = ({ name, initials }: { name: string; initials: string }) => {
   const { t } = useLanguage();
+  const { user } = useAuth();
+
+  // Hiding is a courtesy; the API refuses either way.
+  const showEmployees =
+    user?.company?.standing !== 'employee' &&
+    (user?.company?.permissions.includes('company.invite_employees') ?? false);
 
   return (
     <header className="app-nav">
@@ -39,6 +48,9 @@ export const AppNav = ({ name, initials }: { name: string; initials: string }) =
           <a href="#" className="app-nav__link">{t.nav.network}</a>
           <a href="#" className="app-nav__link">{t.nav.projects}</a>
           <a href="#" className="app-nav__link">{t.nav.myTasks}</a>
+          {showEmployees ? (
+            <Link to="/employees" className="app-nav__link">{t.nav.employees}</Link>
+          ) : null}
         </nav>
 
         <div className="app-nav__actions">

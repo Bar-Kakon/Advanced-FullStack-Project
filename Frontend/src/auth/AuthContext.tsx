@@ -1,6 +1,6 @@
 import { createContext, useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 
-import type { AuthenticatedUser, LoginResponse } from '../api/types';
+import type { LoginResponse, SessionUser } from '../api/types';
 import { ACCESS_TOKEN_KEY, clearAccessToken, getAccessToken, setAccessToken } from './tokenStorage';
 import { USER_KEY, clearStoredUser, readStoredUser, storeUser } from './session';
 
@@ -24,9 +24,11 @@ import { USER_KEY, clearStoredUser, readStoredUser, storeUser } from './session'
  * the check that protects the data.
  */
 export interface AuthValue {
-  readonly user: AuthenticatedUser | null;
+  readonly user: SessionUser | null;
   readonly isAuthenticated: boolean;
   signIn(response: LoginResponse): void;
+  /** Replaces the cached identity with a fresher read of the same thing. No token is touched. */
+  setUser(user: SessionUser): void;
   signOut(): void;
 }
 
@@ -56,6 +58,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     [reread],
   );
 
+  // Where a fresh `/auth/me` read lands, for a relationship that changed elsewhere.
+  const setUser = useCallback(
+    (user: SessionUser): void => {
+      storeUser(user);
+      reread();
+    },
+    [reread],
+  );
+
   const signOut = useCallback((): void => {
     clearAccessToken();
     clearStoredUser();
@@ -67,11 +78,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       user: readStoredUser(),
       isAuthenticated: getAccessToken() !== null,
       signIn,
+      setUser,
       signOut,
     }),
     // `revision` is the dependency doing the work: it changes when storage does, and nothing else
     // here is derived from React state.
-    [revision, signIn, signOut],
+    [revision, signIn, setUser, signOut],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

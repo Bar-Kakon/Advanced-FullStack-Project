@@ -4,11 +4,8 @@ import { useLanguage } from '../../../i18n/useLanguage';
 import type { EmployeeManagementState } from '../useEmployeeManagement';
 
 /**
- * One row, drawn from the fields the server actually holds for that stage of the relationship.
- *
- * An `invited` row is a seat, not a person: nobody has registered against it, so there is no email
- * address, no phone number and no profile to show, and this renders none of them. Inventing a
- * placeholder for any of the three would make an unclaimed seat look like an account.
+ * An `invited` row is a seat, not a person: nobody has registered against it, so it has no email,
+ * no phone and no profile, and none is drawn.
  */
 const EmployeeRow = ({
   row,
@@ -37,11 +34,7 @@ const EmployeeRow = ({
 
       <span className="tag employee-row__status">{t.employees.status[row.status]}</span>
 
-      {/*
-       * Approve appears only where the server says a relationship is waiting for it. The project's
-       * rule is absence over a disabled fake action, and a greyed-out Approve on somebody already
-       * active would be exactly that — a control that can never do anything, on every row.
-       */}
+      {/* Absence over a disabled fake action: a greyed-out Approve could never do anything. */}
       {isPending ? (
         <button
           type="button"
@@ -58,18 +51,11 @@ const EmployeeRow = ({
   );
 };
 
-/**
- * The list, its bulk action and the states that stand in for it.
- *
- * Every state here is one the server can genuinely be in. A company with no seats yet and a
- * company with nobody waiting are both correct answers, so each gets a sentence rather than a
- * screen padded with rows nobody created.
- */
+/** No seats yet and nobody waiting are both correct server answers, so each gets a sentence. */
 export const EmployeeList = ({ state }: { state: EmployeeManagementState }) => {
   const { t } = useLanguage();
 
-  // Only the two the feature does not turn away at the door reach this component; the rest are
-  // answered once, for the whole screen, by `EmployeeManagement`.
+  // The rest are answered once, for the whole screen, by `EmployeeManagement`.
   const listMessage =
     state.listFailure === 'NETWORK' ? t.employees.errors.network
     : state.listFailure ? t.employees.errors.generic
@@ -96,11 +82,7 @@ export const EmployeeList = ({ state }: { state: EmployeeManagementState }) => {
           ) : null}
         </div>
 
-        {/*
-         * One request for everybody waiting, and it is offered only while somebody is. The server
-         * answers this endpoint itself, so approving twelve people is one call rather than twelve
-         * that could each land differently.
-         */}
+        {/* Offered only while somebody is waiting, and it is one request, not one per row. */}
         {state.pendingCount > 0 ? (
           <button
             type="button"
@@ -122,8 +104,7 @@ export const EmployeeList = ({ state }: { state: EmployeeManagementState }) => {
       {state.loading && !state.loaded ? (
         <p className="panel__lede" role="status" aria-live="polite">{t.employees.loading}</p>
       ) : listMessage ? (
-        // A list that could not be read is not an empty list. Saying "no seats opened yet" here
-        // would report a fact about the company from a failure to reach the server.
+        // A list that could not be read is not an empty list.
         <>
           <p className="notice notice--error" role="alert">{listMessage}</p>
           <button type="button" className="btn btn--ghost btn--sm" onClick={state.refresh}>

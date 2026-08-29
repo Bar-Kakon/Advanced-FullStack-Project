@@ -97,13 +97,39 @@ export interface AuthenticatedUser {
  * What the client reads back from a successful registration: the account that now exists, and
  * nothing else.
  *
- * `accessToken` is deliberately absent. Register creates an account; Login is the authentication
- * boundary, and signing up must not leave the client holding a session. The server has not caught
- * up — its 201 still carries an `accessToken` and still sets a Refresh cookie — but this type is
- * what the client will read, so no code here can consume a credential it must not have.
+ * `accessToken` is deliberately absent, and the server agrees: Register creates an account, and
+ * Login is the authentication boundary.
  */
 export interface RegisterResponse {
   readonly user: AuthenticatedUser;
+}
+
+/** The four capability codes, mirrored from `COMPANY_PERMISSIONS`. The list is closed on purpose. */
+export const COMPANY_PERMISSIONS = [
+  'project.create', 'task.create', 'company.manage', 'company.invite_employees',
+] as const;
+export type CompanyPermission = (typeof COMPANY_PERMISSIONS)[number];
+
+/**
+ * The caller's own company relationship, mirrored from `companyContext.service.ts`.
+ * `membershipStatus` stays a code because no boolean separates waiting from having left, and
+ * `permissions` is the only thing this client asks before drawing a control.
+ */
+export interface CompanyContext {
+  readonly id: string;
+  readonly standing: CompanyStanding;
+  readonly membershipStatus: CompanyMembershipStatus;
+  readonly permissions: readonly CompanyPermission[];
+  /** Whether the business has been through employee setup, by inviting somebody or by skipping. */
+  readonly employeeSetupComplete: boolean;
+}
+
+/**
+ * The person plus their company relationship. Only a session has the second half, which is why
+ * Register's 201 answers the plain `AuthenticatedUser`. `null` means no relationship at all.
+ */
+export interface SessionUser extends AuthenticatedUser {
+  readonly company: CompanyContext | null;
 }
 
 /**
@@ -113,7 +139,12 @@ export interface RegisterResponse {
  */
 export interface LoginResponse {
   readonly accessToken: string;
-  readonly user: AuthenticatedUser;
+  readonly user: SessionUser;
+}
+
+/** `GET /api/auth/me`. A read: it issues no token and leaves the Refresh cookie untouched. */
+export interface CurrentUserResponse {
+  readonly user: SessionUser;
 }
 
 /** `POST /api/auth/forgot-password`. The answer never differs by whether the address exists. */
@@ -159,13 +190,8 @@ export const COMPANY_MEMBERSHIP_STATUSES = [
 export type CompanyMembershipStatus = (typeof COMPANY_MEMBERSHIP_STATUSES)[number];
 
 /**
- * One row of `GET /companies/employees`, mirrored from `employeeManagement.controller.ts`.
- *
- * `invitedFullName` and `companyPosition` are nullable because the controller answers `null` for a
- * row that never carried one — the owner's own membership is written by Register, which asks for
- * neither. `userId` is `null` until a seat is claimed, and that absence is the point: an
- * invitation exists before an account does, so there is no person here whose email or phone the
- * screen could reach for. The type gives it nothing to invent them from.
+ * One row of `GET /companies/employees`. The nulls are the point: an invitation exists before an
+ * account does, so the type gives the screen no email or phone it could invent.
  */
 export interface EmployeeMembership {
   readonly id: string;
@@ -182,9 +208,8 @@ export interface EmployeeListResponse {
 }
 
 /**
- * `POST /companies/employees/invitations`, mirrored from `createInvitationBodySchema`. Two fields,
- * and deliberately only two: opening a seat asks nothing about the person's account, because the
- * person supplies all of that themselves when they register against it.
+ * `POST /companies/employees/invitations`. Two fields only: the person supplies their own account
+ * details when they register, and the company comes from the caller's session.
  */
 export interface CreateInvitationPayload {
   readonly fullName: string;

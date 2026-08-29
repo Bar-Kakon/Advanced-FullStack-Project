@@ -16,13 +16,8 @@ export interface InviteInput {
 }
 
 /**
- * The whole state of the employee-management feature, in one hook, so that both places the screen
- * is used are the same behaviour rather than two implementations that will drift.
- *
- * Nothing here writes a membership status of its own. Every action that changes one re-reads the
- * list afterwards and renders what the server says, because the server is the only thing that
- * knows what actually moved — a bulk approval may have caught rows this client had not seen yet,
- * and a single approval may have raced with one.
+ * One hook for both places the feature is mounted. Nothing here writes a membership status of its
+ * own: every action re-reads the list and renders what the server says.
  */
 export const useEmployeeManagement = () => {
   const [rows, setRows] = useState<readonly EmployeeMembership[] | null>(null);
@@ -37,12 +32,7 @@ export const useEmployeeManagement = () => {
   const [approvingAll, setApprovingAll] = useState(false);
   const [actionFailure, setActionFailure] = useState<EmployeeFailure | null>(null);
 
-  /*
-   * The list request is fired by an effect and again by every action, so a screen left open while
-   * an approval resolves can outlive its own mount. Writing state into an unmounted component is
-   * the warning this ref exists to prevent, and it is a ref rather than state because changing it
-   * must not itself cause a render.
-   */
+  // A request can outlive the screen that started it; this keeps its result out of a dead render.
   const mounted = useRef(true);
   useEffect(() => {
     mounted.current = true;
@@ -51,10 +41,7 @@ export const useEmployeeManagement = () => {
     };
   }, []);
 
-  /**
-   * Reads the canonical list. `quiet` keeps the rows already on screen while a refresh runs, so
-   * approving somebody does not blank the table underneath the button that was just pressed.
-   */
+  /** `quiet` keeps the rows on screen while a refresh runs, so the table does not blank. */
   const load = useCallback(async (quiet = false): Promise<void> => {
     if (!quiet) setLoading(true);
     try {
@@ -74,10 +61,7 @@ export const useEmployeeManagement = () => {
     void load();
   }, [load]);
 
-  /**
-   * Opens a seat. The 201 names the new row and this deliberately ignores it: the list is re-read
-   * instead, so what appears on screen is a row the server holds rather than one assembled here.
-   */
+  /** The 201 is ignored on purpose: the list is re-read, so the row shown is the server's. */
   const invite = useCallback(
     async (input: InviteInput): Promise<boolean> => {
       if (inviting) return false;
@@ -111,8 +95,7 @@ export const useEmployeeManagement = () => {
       } catch (error) {
         if (!mounted.current) return;
         setActionFailure(classifyEmployeeError(error));
-        // A stale row is the likeliest cause, so the list is re-read even though the call failed:
-        // leaving an Approve button on somebody who is already active would invite the same failure.
+        // Re-read even on failure: a stale row is the likeliest cause.
         await load(true);
       } finally {
         if (mounted.current) setApprovingId(null);
@@ -121,10 +104,7 @@ export const useEmployeeManagement = () => {
     [approvingId, approvingAll, load],
   );
 
-  /**
-   * Every waiting relationship, in the one request the server answers. Looping `approve` from here
-   * would be the same work split into failures that can each land differently.
-   */
+  /** One request, because the server answers one. Looping `approve` would split it into many. */
   const approveAll = useCallback(async (): Promise<void> => {
     if (approvingAll || approvingId !== null) return;
     setApprovingAll(true);
@@ -140,10 +120,8 @@ export const useEmployeeManagement = () => {
   }, [approvingAll, approvingId, load]);
 
   /**
-   * The rows this screen is about. The owner's own membership is filtered out on `standing`, which
-   * the server puts on every row for exactly this distinction — it is not an authorization test,
-   * and nothing here reads `standing` to decide what anybody may do. Register writes that row with
-   * no name and no position, so it is not a row that could be drawn.
+   * The owner's own row is filtered out on `standing`: Register writes it with no name and no
+   * position, so it cannot be drawn. It is a display filter, never an authorization test.
    */
   const employees = useMemo(
     () => (rows ?? []).filter((row) => row.standing === 'employee'),
