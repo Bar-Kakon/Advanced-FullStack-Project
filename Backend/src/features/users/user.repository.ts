@@ -7,6 +7,8 @@ import {
   type TermsAcceptance,
   type Trade,
   type UserProfileRecord,
+  type StoredApprovedTravelLocation,
+  type StoredPlace,
   type UserRecord,
   type UserStatus,
   type UserWithPasswordHash,
@@ -62,6 +64,12 @@ export interface CredentialState {
   readonly passwordChangedAt: Date | null;
 }
 
+export interface TravelPreferencesUpdate {
+  readonly travelRadiusKm?: number;
+  readonly place?: StoredPlace;
+  readonly approvedTravelLocations: readonly StoredApprovedTravelLocation[];
+}
+
 export interface PasswordUpdate {
   readonly passwordHash: string;
   readonly passwordChangedAt: Date;
@@ -75,6 +83,8 @@ export interface UserRepository {
   findProfileById(id: string): Promise<UserProfileRecord | null>;
   updateProfile(id: Types.ObjectId, update: ProfileUpdate): Promise<void>;
   setAvatarFile(id: Types.ObjectId, fileId: Types.ObjectId | null): Promise<void>;
+  /** Writes the structured base place and the explicit approved list together. */
+  saveTravelPreferences(id: Types.ObjectId, update: TravelPreferencesUpdate): Promise<void>;
   /** The narrowest read the auth middleware can make: `null` when no such user exists. */
   findCredentialState(id: string): Promise<CredentialState | null>;
   /** The hash and the change stamp move together, so one call writes both. */
@@ -174,6 +184,14 @@ export const userRepository: UserRepository = {
       { _id: id },
       fileId === null ? { $unset: { 'avatar.fileId': '' } } : { $set: { 'avatar.fileId': fileId } },
     ).exec();
+  },
+
+  async saveTravelPreferences(id, { travelRadiusKm, place, approvedTravelLocations }) {
+    const $set: Record<string, unknown> = { approvedTravelLocations: [...approvedTravelLocations] };
+    if (travelRadiusKm !== undefined) $set['location.travelRadiusKm'] = travelRadiusKm;
+    if (place !== undefined) $set['location.place'] = place;
+
+    await UserModel.updateOne({ _id: id }, { $set }).exec();
   },
 
   /** A courtesy check only. The unique index on `email` is what actually guarantees uniqueness. */

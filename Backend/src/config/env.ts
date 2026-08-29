@@ -34,6 +34,15 @@ export type MailConfig =
     }
   | { readonly mode: 'log' };
 
+/**
+ * Server-side Google credential. Absent is a supported state: the location endpoints answer
+ * LOCATION_SERVICE_NOT_CONFIGURED rather than the process refusing to start.
+ */
+export interface GoogleMapsConfig {
+  readonly apiKey: string | undefined;
+  readonly timeoutMs: number;
+}
+
 export interface AppConfig {
   readonly nodeEnv: NodeEnv;
   readonly port: number;
@@ -44,6 +53,7 @@ export interface AppConfig {
   readonly mail: MailConfig;
   /** Base URL of the React client. The reset link is built against it. */
   readonly frontendUrl: string;
+  readonly googleMaps: GoogleMapsConfig;
 }
 
 interface RawEnv {
@@ -62,6 +72,8 @@ interface RawEnv {
   readonly SMTP_USER?: string;
   readonly SMTP_PASS?: string;
   readonly MAIL_FROM?: string;
+  readonly GOOGLE_MAPS_API_KEY?: string;
+  readonly GOOGLE_MAPS_TIMEOUT_MS: number;
 }
 
 const MIN_SECRET_LENGTH = 32;
@@ -95,6 +107,9 @@ const rawEnvSchema: Joi.ObjectSchema<RawEnv> = Joi.object({
   SMTP_USER: Joi.string().optional(),
   SMTP_PASS: Joi.string().optional(),
   MAIL_FROM: Joi.string().trim().min(1).optional(),
+
+  GOOGLE_MAPS_API_KEY: Joi.string().trim().min(1).optional(),
+  GOOGLE_MAPS_TIMEOUT_MS: Joi.number().integer().min(1000).max(30000).default(8000),
 }).unknown(true);
 
 /**
@@ -178,5 +193,6 @@ export const loadConfig = (source: NodeJS.ProcessEnv = process.env): AppConfig =
     terms: { version: value.TERMS_VERSION },
     mail: buildMailConfig(value),
     frontendUrl: normaliseBaseUrl(value.FRONTEND_URL),
+    googleMaps: { apiKey: value.GOOGLE_MAPS_API_KEY, timeoutMs: value.GOOGLE_MAPS_TIMEOUT_MS },
   };
 };

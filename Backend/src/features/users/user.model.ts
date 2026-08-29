@@ -61,9 +61,30 @@ export interface UserProfileFields {
   readonly specialties: readonly Trade[];
   readonly specialtyOther?: string;
   readonly businessPhone?: string;
-  readonly location?: { readonly city?: string; readonly region?: Region; readonly travelRadiusKm?: number };
+  readonly location?: {
+    readonly city?: string;
+    readonly region?: Region;
+    readonly travelRadiusKm?: number;
+    readonly place?: StoredPlace;
+  };
+  readonly approvedTravelLocations?: readonly StoredApprovedTravelLocation[];
   readonly schedulingPrefs?: { readonly delayToleranceDays?: number; readonly noticeRequiredDays?: number };
   readonly avatar?: { readonly fileId?: Types.ObjectId };
+}
+
+export interface StoredPlace {
+  readonly placeId: string;
+  readonly displayName: string;
+  readonly city?: string;
+  readonly adminArea?: string;
+  readonly latitude: number;
+  readonly longitude: number;
+}
+
+export interface StoredApprovedTravelLocation extends StoredPlace {
+  readonly source: 'suggested' | 'manual';
+  readonly approvedAt: Date;
+  readonly drivingDistanceMeters?: number;
 }
 
 export interface UserRecord {
@@ -85,6 +106,33 @@ export interface UserWithPasswordHash extends UserRecord {
 }
 
 export const USER_STATUSES: readonly UserStatus[] = ['active', 'deactivated', 'banned', 'deleted'];
+
+const placeSchema = new Schema(
+  {
+    placeId: { type: String, required: true, trim: true },
+    displayName: { type: String, required: true, trim: true },
+    city: { type: String, trim: true },
+    adminArea: { type: String, trim: true },
+    latitude: { type: Number, required: true, min: -90, max: 90 },
+    longitude: { type: Number, required: true, min: -180, max: 180 },
+  },
+  { _id: false },
+);
+
+const approvedTravelLocationSchema = new Schema(
+  {
+    placeId: { type: String, required: true, trim: true },
+    displayName: { type: String, required: true, trim: true },
+    city: { type: String, trim: true },
+    adminArea: { type: String, trim: true },
+    latitude: { type: Number, required: true, min: -90, max: 90 },
+    longitude: { type: Number, required: true, min: -180, max: 180 },
+    source: { type: String, enum: ['suggested', 'manual'], required: true },
+    approvedAt: { type: Date, required: true },
+    drivingDistanceMeters: { type: Number, min: 0 },
+  },
+  { _id: false },
+);
 
 const userSchema = new Schema(
   {
@@ -112,9 +160,15 @@ const userSchema = new Schema(
     location: {
       city: { type: String, trim: true },
       region: { type: String, enum: REGIONS },
-      // How far this contractor will travel. Meaningless when the region is `nationwide`.
+      // Preferred maximum DRIVING distance, not an aerial radius.
       travelRadiusKm: { type: Number, min: 0, max: 500 },
+      // Absent on every account created before structured selection existed.
+      place: { type: placeSchema, required: false },
     },
+
+    // The explicit list the contractor confirmed. Authoritative for place willingness: a place
+    // removed here is not approved even if it sits inside the radius.
+    approvedTravelLocations: { type: [approvedTravelLocationSchema], default: undefined },
 
     // Not binding. They tell the other side what timing suits before a date is proposed, and both
     // numbers are public on the profile. The bounds are provisional.
@@ -148,5 +202,11 @@ const userSchema = new Schema(
   },
   { timestamps: true },
 );
+
+// Browse filters on an explicitly approved place, which is a multikey lookup on one field.
+userSchema.index({ 'approvedTravelLocations.placeId': 1 });
+
+// Browse's discovery sort and its cursor tiebreaker.
+userSchema.index({ status: 1, createdAt: -1, _id: -1 });
 
 export const UserModel = model('User', userSchema);
