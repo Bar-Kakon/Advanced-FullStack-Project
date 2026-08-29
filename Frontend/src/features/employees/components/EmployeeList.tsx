@@ -16,7 +16,9 @@ const EmployeeRow = ({
 }) => {
   const { t } = useLanguage();
   const isPending = row.status === 'pending_company_approval';
+  const isInvited = row.status === 'invited';
   const approving = state.approvingId === row.id;
+  const cancelling = state.cancellingId === row.id;
 
   return (
     <li className={`employee-row${isPending ? ' employee-row--pending' : ''}`}>
@@ -47,6 +49,20 @@ const EmployeeRow = ({
           {approving ? <ButtonSpinner /> : null}
         </button>
       ) : null}
+
+      {/* Only an unclaimed seat may be withdrawn, which is the same rule the server enforces. */}
+      {isInvited ? (
+        <button
+          type="button"
+          className="btn btn--quiet btn--sm employee-row__action"
+          onClick={() => void state.cancel(row.id)}
+          disabled={cancelling}
+          aria-busy={cancelling}
+        >
+          {cancelling ? t.employees.actions.cancelling : t.employees.actions.cancelInvitation}
+          {cancelling ? <ButtonSpinner /> : null}
+        </button>
+      ) : null}
     </li>
   );
 };
@@ -63,6 +79,7 @@ export const EmployeeList = ({ state }: { state: EmployeeManagementState }) => {
 
   const actionMessage =
     state.actionFailure === 'NOTHING_TO_APPROVE' ? t.employees.errors.nothingToApprove
+    : state.actionFailure === 'NOTHING_TO_CANCEL' ? t.employees.errors.nothingToCancel
     : state.actionFailure === 'NOT_PERMITTED' ? t.employees.errors.notPermitted
     : state.actionFailure === 'NO_COMPANY' ? t.employees.errors.noCompany
     : state.actionFailure === 'UNAUTHENTICATED' ? t.employees.errors.unauthenticated

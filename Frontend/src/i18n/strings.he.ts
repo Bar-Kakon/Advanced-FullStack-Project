@@ -438,6 +438,8 @@ export const he = {
 
     actions: {
       approve: 'אישור ההצטרפות',
+      cancelInvitation: 'ביטול ההזמנה',
+      cancelling: 'מבטל…',
       approveAll: 'אישור כל הממתינים ({count})',
       refresh: 'רענון הרשימה',
     },
@@ -465,6 +467,8 @@ export const he = {
       unauthenticated: 'ההתחברות פגה. התחברו שוב כדי להמשיך.',
       // A stale screen rather than a failed action: somebody else already approved this person.
       nothingToApprove: 'ההצטרפות הזו כבר אושרה או שאינה ממתינה לאישור. רעננו את הרשימה.',
+      nothingToCancel: 'ההזמנה כבר אינה ממתינה. רועננה הרשימה.',
+      mainContractorTaken: 'לחברה כבר יש קבלן ביצוע ראשי, ולכן אי אפשר לפתוח תפקיד נוסף.',
       validation: 'חלק מהפרטים אינם תקינים. בדקו את השדות המסומנים ונסו שוב.',
       network: 'לא הצלחנו להגיע לשרת. בדקו את החיבור ונסו שוב.',
       generic: 'משהו השתבש. אנא נסו שוב.',

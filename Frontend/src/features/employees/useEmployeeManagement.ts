@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   approveAllPendingEmployees,
   approveEmployee,
+  cancelInvitation,
   classifyEmployeeError,
   inviteEmployee,
   listEmployees,
@@ -29,6 +30,7 @@ export const useEmployeeManagement = () => {
   const [invited, setInvited] = useState(false);
 
   const [approvingId, setApprovingId] = useState<string | null>(null);
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
   const [approvingAll, setApprovingAll] = useState(false);
   const [actionFailure, setActionFailure] = useState<EmployeeFailure | null>(null);
 
@@ -104,6 +106,24 @@ export const useEmployeeManagement = () => {
     [approvingId, approvingAll, load],
   );
 
+  const cancel = useCallback(
+    async (membershipId: string): Promise<void> => {
+      if (cancellingId !== null) return;
+      setCancellingId(membershipId);
+      setActionFailure(null);
+      try {
+        await cancelInvitation(membershipId);
+      } catch (error) {
+        if (mounted.current) setActionFailure(classifyEmployeeError(error));
+      } finally {
+        // The row leaves only because the server's own list no longer carries it.
+        await load(true);
+        if (mounted.current) setCancellingId(null);
+      }
+    },
+    [cancellingId, load],
+  );
+
   /** One request, because the server answers one. Looping `approve` would split it into many. */
   const approveAll = useCallback(async (): Promise<void> => {
     if (approvingAll || approvingId !== null) return;
@@ -124,7 +144,23 @@ export const useEmployeeManagement = () => {
    * position, so it cannot be drawn. It is a display filter, never an authorization test.
    */
   const employees = useMemo(
-    () => (rows ?? []).filter((row) => row.standing === 'employee'),
+    () => (rows ?? []).filter(
+      (row) => row.standing === 'employee'
+        // A withdrawn seat nobody ever claimed is not a member, so it leaves the list.
+        && !(row.status === 'inactive' && row.userId === null),
+    ),
+    [rows],
+  );
+
+  /**
+   * The Main Contractor job is the owner's, and a company has one. A seat already open for it
+   * counts too, so the option disappears rather than being offered and refused.
+   */
+  const mainContractorTaken = useMemo(
+    () => (rows ?? []).some(
+      (row) => row.standing === 'owner'
+        || (row.companyPosition === 'main_contractor' && row.status !== 'inactive'),
+    ),
     [rows],
   );
 
@@ -143,11 +179,14 @@ export const useEmployeeManagement = () => {
     inviteFailure,
     invited,
     approvingId,
+    cancellingId,
     approvingAll,
+    mainContractorTaken,
     actionFailure,
     invite,
     approve,
     approveAll,
+    cancel,
     refresh: useCallback(() => void load(true), [load]),
   };
 };

@@ -21,7 +21,12 @@ export const InviteEmployeeForm = ({ state }: { state: EmployeeManagementState }
   const [companyPosition, setCompanyPosition] = useState<CompanyPosition | ''>('');
   const [touched, setTouched] = useState(false);
 
-  const positionOptions = COMPANY_POSITIONS.map((code) => ({
+  /* The company already has a Main Contractor, so the option is not offered at all. */
+  const offered = state.mainContractorTaken
+    ? COMPANY_POSITIONS.filter((code) => code !== 'main_contractor')
+    : COMPANY_POSITIONS;
+
+  const positionOptions = offered.map((code) => ({
     value: code,
     label: t.companyPositions[code],
   }));
@@ -29,7 +34,8 @@ export const InviteEmployeeForm = ({ state }: { state: EmployeeManagementState }
   const isComplete = fullName.trim().length > 0 && companyPosition !== '';
 
   const alertMessage =
-    state.inviteFailure === 'NOT_PERMITTED' ? t.employees.errors.notPermitted
+    state.inviteFailure === 'MAIN_CONTRACTOR_TAKEN' ? t.employees.errors.mainContractorTaken
+    : state.inviteFailure === 'NOT_PERMITTED' ? t.employees.errors.notPermitted
     : state.inviteFailure === 'NO_COMPANY' ? t.employees.errors.noCompany
     : state.inviteFailure === 'UNAUTHENTICATED' ? t.employees.errors.unauthenticated
     : state.inviteFailure === 'VALIDATION' ? t.employees.errors.validation
