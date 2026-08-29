@@ -1,14 +1,25 @@
 import { Schema, model, type Types } from 'mongoose';
 
 /**
- * The life of one connection edge. `blocked` is deliberately absent: blocking is its own domain
- * (D19, closed 2026-08-29), because a block may exist where no connection ever did.
+ * The life of one connection edge, per D17 (closed 2026-08-29):
  *
- * There is no `removed` and no `withdrawn` — how an edge is torn down is D17, still open, so this
- * model does not invent one.
+ *   pending     a request is waiting for the recipient.
+ *   accepted    both sides are connected.
+ *   declined    the recipient refused. Its own state, never a generic teardown.
+ *   removed     an accepted connection was ended.
+ *   withdrawn   the requester cancelled their own pending request.
+ *
+ * `blocked` is deliberately absent: blocking is its own domain (D19), because a block may exist
+ * where no connection ever did.
  */
-export const CONNECTION_STATUSES = ['pending', 'accepted', 'declined'] as const;
+export const CONNECTION_STATUSES = ['pending', 'accepted', 'declined', 'removed', 'withdrawn'] as const;
 export type ConnectionStatus = (typeof CONNECTION_STATUSES)[number];
+
+/** The teardown states. History is kept, so an active check must exclude them explicitly. */
+export const INACTIVE_CONNECTION_STATUSES: readonly ConnectionStatus[] = ['removed', 'withdrawn'];
+
+/** The states a fresh request may reactivate. `declined` is excluded — see D17/D19 notes. */
+export const REACTIVATABLE_CONNECTION_STATUSES: readonly ConnectionStatus[] = ['removed', 'withdrawn'];
 
 export interface ConnectionRecord {
   readonly _id: Types.ObjectId;

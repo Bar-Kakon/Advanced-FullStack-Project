@@ -19,3 +19,7 @@ export const connectionBlocked = (): AppError =>
 /** Nothing pending for this caller to answer. */
 export const noPendingRequest = (): AppError =>
   new AppError('No pending request to answer', 404, 'CONNECTION_REQUEST_NOT_FOUND');
+
+/** There is no live connection between these two to end. */
+export const notConnected = (): AppError =>
+  new AppError('You are not connected to that person', 404, 'NOT_CONNECTED');

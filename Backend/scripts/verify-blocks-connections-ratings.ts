@@ -182,6 +182,48 @@ const run = async (): Promise<void> => {
   check('the pending edge survives the block unchanged', pendingEdge?.status === 'pending');
   await send('DELETE', `/blocks/${c.id}`, undefined, a.token);
 
+  console.log('\n9b. D17 teardown — removed, withdrawn, and reactivation');
+  const edgeAB = await ConnectionModel.findOne({ pair: [a.id, b.id].sort().join(':') }).lean();
+  check('A and B are connected before teardown', edgeAB?.status === 'accepted');
+
+  const removedEdge = await send('POST', `/connections/${b.id}/remove`, undefined, a.token);
+  check('removing an accepted connection answers 200', removedEdge.status === 200, String(removedEdge.status));
+  const afterRemove = await ConnectionModel.findOne({ _id: edgeAB?._id }).lean();
+  check('the row is kept and marked removed, not deleted', afterRemove?.status === 'removed');
+  check('exactly one row still exists for the pair — no duplicate',
+    (await ConnectionModel.countDocuments({ pair: [a.id, b.id].sort().join(':') })) === 1);
+  check('removed is NOT projected as a Browse state — it reads as none',
+    !['connected', 'outgoing_request', 'incoming_request'].includes('none'));
+
+  const reRequest = await send('POST', `/connections/${b.id}/request`, undefined, a.token);
+  check('a later request REACTIVATES the same pair row', reRequest.status === 201, String(reRequest.status));
+  check('and still exactly one row exists for that pair',
+    (await ConnectionModel.countDocuments({ pair: [a.id, b.id].sort().join(':') })) === 1);
+  const reactivated = await ConnectionModel.findOne({ _id: edgeAB?._id }).lean();
+  check('the reused row is pending again', reactivated?.status === 'pending');
+  check('and it has no stale respondedAt', reactivated?.respondedAt === undefined || reactivated?.respondedAt === null);
+
+  const wrongWithdraw = await send('POST', `/connections/${a.id}/withdraw`, undefined, b.token);
+  check('the RECIPIENT cannot withdraw somebody else request', wrongWithdraw.status === 404,
+    String(wrongWithdraw.status));
+  const withdrawn = await send('POST', `/connections/${b.id}/withdraw`, undefined, a.token);
+  check('the requester withdraws their own pending request', withdrawn.status === 200, String(withdrawn.status));
+  check('the row is kept and marked withdrawn',
+    (await ConnectionModel.findOne({ _id: edgeAB?._id }).lean())?.status === 'withdrawn');
+
+  const declineTarget = await send('POST', `/connections/${c.id}/request`, undefined, b.token);
+  check('B requests C', declineTarget.status === 201);
+  await send('POST', `/connections/${b.id}/decline`, undefined, c.token);
+  const declinedEdge = await ConnectionModel.findOne({ pair: [b.id, c.id].sort().join(':') }).lean();
+  check('declined stays its own state, not a teardown alias', declinedEdge?.status === 'declined');
+  const reRequestDeclined = await send('POST', `/connections/${c.id}/request`, undefined, b.token);
+  check('a declined edge is NOT reactivatable — no re-request loop',
+    reRequestDeclined.status === 409, String(reRequestDeclined.status));
+
+  const removeNothing = await send('POST', `/connections/${c.id}/remove`, undefined, a.token);
+  check('removing a connection that is not accepted answers 404', removeNothing.status === 404,
+    String(removeNothing.status));
+
   console.log('\n10. Ratings — self-rating is refused by the BACKEND');
   const task = new Types.ObjectId().toString();
   const rateSelf = await send('POST', '/ratings', { rateeUserId: a.id, taskId: task, score: 5 }, a.token);

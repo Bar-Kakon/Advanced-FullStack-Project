@@ -9,6 +9,8 @@ export interface ConnectionsController {
   readonly handleRequest: RequestHandler;
   readonly handleAccept: RequestHandler;
   readonly handleDecline: RequestHandler;
+  readonly handleRemove: RequestHandler;
+  readonly handleWithdraw: RequestHandler;
 }
 
 export const createConnectionsController = (service: ConnectionsService): ConnectionsController => ({
@@ -29,6 +31,20 @@ export const createConnectionsController = (service: ConnectionsService): Connec
   handleDecline: async (req: Request, res: Response) => {
     const { userId } = getValidated<ConnectionUserParams>(res, 'params');
     await service.decline(getAuthenticatedUserId(res), userId);
+
+    res.json({ state: 'none' });
+  },
+
+  handleRemove: async (req: Request, res: Response) => {
+    const { userId } = getValidated<ConnectionUserParams>(res, 'params');
+    await service.remove(getAuthenticatedUserId(res), userId);
+
+    res.json({ state: 'none' });
+  },
+
+  handleWithdraw: async (req: Request, res: Response) => {
+    const { userId } = getValidated<ConnectionUserParams>(res, 'params');
+    await service.withdraw(getAuthenticatedUserId(res), userId);
 
     res.json({ state: 'none' });
   },

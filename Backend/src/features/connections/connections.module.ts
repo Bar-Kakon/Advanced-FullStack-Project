@@ -33,6 +33,8 @@ export const createConnectionsModule = (
   router.post('/:userId/request', params, controller.handleRequest);
   router.post('/:userId/accept', params, controller.handleAccept);
   router.post('/:userId/decline', params, controller.handleDecline);
+  router.post('/:userId/remove', params, controller.handleRemove);
+  router.post('/:userId/withdraw', params, controller.handleWithdraw);
 
   return { router, relationships: createRelationshipService({ connections: connectionRepository }) };
 };

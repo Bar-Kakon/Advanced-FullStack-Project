@@ -34,7 +34,7 @@ export const createRelationshipService = ({
       else if (edge.status === 'pending') {
         states.set(other, viewerIsRequester ? 'outgoing_request' : 'incoming_request');
       }
-      // A declined edge leaves no state on a Browse card: it reads as no relationship.
+      // declined, removed and withdrawn are history: a Browse card reads them as no relationship.
     }
 
     return states;

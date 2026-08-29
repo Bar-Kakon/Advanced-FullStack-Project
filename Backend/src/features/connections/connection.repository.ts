@@ -1,14 +1,25 @@
 import { Types } from 'mongoose';
 
-import { ConnectionModel, pairKey, type ConnectionRecord } from './connection.model.js';
+import {
+  ConnectionModel,
+  REACTIVATABLE_CONNECTION_STATUSES,
+  pairKey,
+  type ConnectionRecord,
+} from './connection.model.js';
 
 export interface ConnectionRepository {
   create(requester: string, recipient: string): Promise<Types.ObjectId | null>;
+  /** Reuses a torn-down edge rather than inserting a second row for the same unique pair. */
+  reactivate(id: Types.ObjectId, requester: Types.ObjectId, recipient: Types.ObjectId): Promise<boolean>;
   findByPair(a: string, b: string): Promise<ConnectionRecord | null>;
   /** Every edge this viewer is on, which is what Browse projects relationship state from. */
   listForUser(userId: string): Promise<ConnectionRecord[]>;
   accept(id: Types.ObjectId, recipient: Types.ObjectId): Promise<boolean>;
   decline(id: Types.ObjectId, recipient: Types.ObjectId): Promise<boolean>;
+  /** `accepted` → `removed`. Either side may end a live connection. */
+  remove(id: Types.ObjectId, actor: Types.ObjectId): Promise<boolean>;
+  /** `pending` → `withdrawn`, and only by the person who sent it. */
+  withdraw(id: Types.ObjectId, requester: Types.ObjectId): Promise<boolean>;
 }
 
 const DUPLICATE_KEY_CODE = 11000;
@@ -64,6 +75,38 @@ export const connectionRepository: ConnectionRepository = {
     const result = await ConnectionModel.updateOne(
       { _id: id, recipient, status: 'pending' },
       { $set: { status: 'declined', respondedAt: new Date() } },
+    ).exec();
+
+    return result.modifiedCount === 1;
+  },
+
+  /** Either party may end a live connection, so the actor is matched against both sides. */
+  async remove(id, actor) {
+    const result = await ConnectionModel.updateOne(
+      { _id: id, status: 'accepted', $or: [{ requester: actor }, { recipient: actor }] },
+      { $set: { status: 'removed', respondedAt: new Date() } },
+    ).exec();
+
+    return result.modifiedCount === 1;
+  },
+
+  async withdraw(id, requester) {
+    const result = await ConnectionModel.updateOne(
+      { _id: id, requester, status: 'pending' },
+      { $set: { status: 'withdrawn', respondedAt: new Date() } },
+    ).exec();
+
+    return result.modifiedCount === 1;
+  },
+
+  /** The direction is rewritten, so whoever asks this time becomes the requester. */
+  async reactivate(id, requester, recipient) {
+    const result = await ConnectionModel.updateOne(
+      { _id: id, status: { $in: [...REACTIVATABLE_CONNECTION_STATUSES] } },
+      {
+        $set: { requester, recipient, status: 'pending', requestedAt: new Date() },
+        $unset: { respondedAt: '' },
+      },
     ).exec();
 
     return result.modifiedCount === 1;
