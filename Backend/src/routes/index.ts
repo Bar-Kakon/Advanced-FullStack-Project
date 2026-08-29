@@ -3,6 +3,7 @@ import { Router } from 'express';
 import type { AppConfig } from '../config/env.js';
 import { createAuthModule } from '../features/auth/auth.module.js';
 import { createCompaniesModule } from '../features/companies/companies.module.js';
+import { createUsersModule } from '../features/users/users.module.js';
 import { createHealthRouter } from './health.routes.js';
 import { createHealthAuthRouter } from './healthAuth.routes.js';
 
@@ -13,11 +14,13 @@ import { createHealthAuthRouter } from './healthAuth.routes.js';
 export const createApiRouter = (config: AppConfig): Router => {
   const router = Router();
   const auth = createAuthModule(config);
+  const users = createUsersModule(auth.requireAccessToken);
 
   router.use('/health', createHealthRouter());
   router.use('/health-auth', createHealthAuthRouter(auth.requireAccessToken));
   router.use('/auth', auth.router);
-  router.use('/companies', createCompaniesModule(auth.requireAccessToken));
+  router.use('/users', users.router);
+  router.use('/companies', createCompaniesModule(auth.requireAccessToken, users.companyProfileRoutes));
 
   return router;
 };

@@ -56,6 +56,16 @@ export interface TermsAcceptance {
 }
 
 /** The authentication identity. `passwordHash` is absent by default — see `UserWithPasswordHash`. */
+export interface UserProfileFields {
+  readonly bio?: string;
+  readonly specialties: readonly Trade[];
+  readonly specialtyOther?: string;
+  readonly businessPhone?: string;
+  readonly location?: { readonly city?: string; readonly region?: Region; readonly travelRadiusKm?: number };
+  readonly schedulingPrefs?: { readonly delayToleranceDays?: number; readonly noticeRequiredDays?: number };
+  readonly avatar?: { readonly fileId?: Types.ObjectId };
+}
+
 export interface UserRecord {
   readonly _id: Types.ObjectId;
   readonly email: string;
@@ -66,6 +76,9 @@ export interface UserRecord {
   readonly profileComplete: boolean;
   readonly security?: { readonly passwordChangedAt?: Date };
 }
+
+/** The identity fields plus everything the profile screens read. */
+export interface UserProfileRecord extends UserRecord, UserProfileFields {}
 
 export interface UserWithPasswordHash extends UserRecord {
   readonly passwordHash: string;
@@ -94,9 +107,26 @@ const userSchema = new Schema(
     // lives on a different document entirely, and never the personal/login `phone`.
     businessPhone: { type: String, trim: true },
 
+    bio: { type: String, trim: true, maxlength: 600 },
+
     location: {
       city: { type: String, trim: true },
       region: { type: String, enum: REGIONS },
+      // How far this contractor will travel. Meaningless when the region is `nationwide`.
+      travelRadiusKm: { type: Number, min: 0, max: 500 },
+    },
+
+    // Not binding. They tell the other side what timing suits before a date is proposed, and both
+    // numbers are public on the profile. The bounds are provisional.
+    schedulingPrefs: {
+      delayToleranceDays: { type: Number, min: 0, max: 30 },
+      noticeRequiredDays: { type: Number, min: 0, max: 14 },
+    },
+
+    // A pointer to a fileassets row, never the bytes. No denormalised URL: the client builds one
+    // from the id against this API, so there is nothing to keep in step.
+    avatar: {
+      fileId: { type: Schema.Types.ObjectId, ref: 'FileAsset' },
     },
 
     // Appended to, never overwritten: a new entry per acceptance, so agreeing to a later version

@@ -8,10 +8,14 @@ import { createEmployeeManagementService } from './employeeManagement.service.js
 import { createInvitationBodySchema } from './employeeManagement.validation.js';
 
 /**
- * Employee management. Every route is authenticated first and then checked against the caller's
- * own recorded permission, so the middleware answers *who* and the service answers *may they*.
+ * Everything served under `/companies`, composed in one place. Every route is authenticated first
+ * and then checked against the caller's own recorded permission, so the middleware answers *who*
+ * and the service answers *may they*.
  */
-export const createCompaniesModule = (requireAccessToken: RequestHandler): Router => {
+export const createCompaniesModule = (
+  requireAccessToken: RequestHandler,
+  companyProfileRoutes: Router,
+): Router => {
   const controller = createEmployeeManagementController(
     createEmployeeManagementService({
       memberships: companyMembershipRepository,
@@ -29,6 +33,9 @@ export const createCompaniesModule = (requireAccessToken: RequestHandler): Route
 
   // Not under `/employees`: it is recorded whether or not anybody was ever invited.
   router.post('/employee-setup/complete', controller.handleCompleteSetup);
+
+  // The company's own editable fields. Last, so a named route above always wins the match.
+  router.use(companyProfileRoutes);
 
   return router;
 };
