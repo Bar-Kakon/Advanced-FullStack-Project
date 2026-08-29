@@ -26,7 +26,7 @@ const MAX = {
 
 export const RegisterForm = ({ form }: { form: ReturnType<typeof useRegisterForm> }) => {
   const { t } = useLanguage();
-  const { values, setValue, touched, markTouched, errors, isComplete, submitting, failure } = form;
+  const { values, setValue, setStanding, touched, markTouched, errors, isComplete, submitting, failure } = form;
 
   const alertMessage =
     failure === 'EMAIL_ALREADY_REGISTERED' ? t.errors.emailTaken
@@ -79,7 +79,7 @@ export const RegisterForm = ({ form }: { form: ReturnType<typeof useRegisterForm
           className="col--full" id="standing" label={t.form.standing.label}
           placeholder={t.form.standing.placeholder} options={standingOptions} required
           {...(isEmployee ? { hint: t.form.standing.employeeHint } : {})}
-          value={values.standing} onChange={(v) => setValue('standing', (v || 'owner') as CompanyStanding)}
+          value={values.standing} onChange={(v) => { if (v) setStanding(v); }}
         />
 
         <TextField

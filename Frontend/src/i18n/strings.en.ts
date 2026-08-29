@@ -90,9 +90,10 @@ export const en: Strings = {
   },
 
   companyPositions: {
-    main_contractor: 'Main contractor',
-    construction_manager: 'Construction manager',
-    site_manager: 'Site manager',
+    main_contractor: 'Main Contractor',
+    construction_manager: 'Construction Manager',
+    regional_construction_manager: 'Regional Construction Manager',
+    site_manager: 'Site Manager',
     contractor: 'Contractor',
     employee: 'Employee',
   },

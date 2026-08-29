@@ -32,7 +32,8 @@ export type CompanyStanding = (typeof COMPANY_STANDINGS)[number];
 /** The organizational job. Descriptive: it is one of the values an invitation is matched on, and
  *  it grants nothing — capabilities come only from the permission model. */
 export const COMPANY_POSITIONS = [
-  'main_contractor', 'construction_manager', 'site_manager', 'contractor', 'employee',
+  'main_contractor', 'construction_manager', 'regional_construction_manager',
+  'site_manager', 'contractor', 'employee',
 ] as const;
 export type CompanyPosition = (typeof COMPANY_POSITIONS)[number];
 

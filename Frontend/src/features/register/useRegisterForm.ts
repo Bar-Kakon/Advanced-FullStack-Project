@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useState } from 'react';
 
 import { classifyRegisterError, registerAccount, type RegisterFailure } from '../../api/auth.api';
+import type { CompanyStanding } from '../../api/types';
 import { EMAIL_PATTERN } from '../../shared/validation';
 import { buildRegisterPayload, emptyRegisterForm, type RegisterFormValues } from './buildRegisterPayload';
 
@@ -33,6 +34,23 @@ export const useRegisterForm = (onSuccess: () => void) => {
     setValues((prev) => (prev[field] === value ? prev : { ...prev, [field]: value }));
     // Any edit invalidates the previous server answer; leaving it up would let "email already
     // registered" sit above an email the user has since corrected.
+    setFailure(null);
+  }, []);
+
+  /**
+   * Changing standing changes which fields the form has, so the values belonging to the path being
+   * left are cleared with it. Without this an owner could fill in an office phone, switch to
+   * employee, and carry a value the employee form never shows — the payload builder already omits
+   * it, but a form holding data its own UI does not display is one edit away from sending it.
+   */
+  const setStanding = useCallback((next: CompanyStanding): void => {
+    setValues((prev) =>
+      prev.standing === next
+        ? prev
+        : next === 'employee'
+          ? { ...prev, standing: next, officePhone: '', availability: emptyRegisterForm.availability }
+          : { ...prev, standing: next, companyPosition: '' },
+    );
     setFailure(null);
   }, []);
 
@@ -77,5 +95,5 @@ export const useRegisterForm = (onSuccess: () => void) => {
     }
   }, [isComplete, submitting, values, onSuccess]);
 
-  return { values, setValue, touched, markTouched, errors, isComplete, submitting, failure, submit };
+  return { values, setValue, setStanding, touched, markTouched, errors, isComplete, submitting, failure, submit };
 };

@@ -91,14 +91,16 @@ export const he = {
   },
 
   /**
-   * The project's established terminology, not shortened: `מנהל אתרים` is a Construction Manager
-   * and `מנהל עבודה / מנהל אתר` is a Site Manager, which is the distinction the source-of-truth
-   * document draws wherever these two roles appear together.
+   * One canonical label per code, and this is the only place they are written. `מנהל אתר` is a
+   * synonym of `מנהל עבודה` and is deliberately NOT a second primary label — a product that calls
+   * the same role two things on two screens is a product with two roles as far as a reader is
+   * concerned. Keep it for a glossary or a search alias if one is ever needed, never here.
    */
   companyPositions: {
     main_contractor: 'קבלן ראשי',
     construction_manager: 'מנהל אתרים',
-    site_manager: 'מנהל עבודה / מנהל אתר',
+    regional_construction_manager: 'מנהל אתרים אזורי',
+    site_manager: 'מנהל עבודה',
     contractor: 'קבלן',
     employee: 'עובד',
   },
