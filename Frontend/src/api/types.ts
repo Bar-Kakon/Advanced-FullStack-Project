@@ -70,11 +70,15 @@ export interface AuthenticatedUser {
 }
 
 /**
- * A 201 carries the Access Token in the body and the Refresh Token in a `Set-Cookie` header, so
- * the Refresh Token is deliberately absent from this type — it is never visible to this code.
+ * What the client reads back from a successful registration: the account that now exists, and
+ * nothing else.
+ *
+ * `accessToken` is deliberately absent. Register creates an account; Login is the authentication
+ * boundary, and signing up must not leave the client holding a session. The server has not caught
+ * up — its 201 still carries an `accessToken` and still sets a Refresh cookie — but this type is
+ * what the client will read, so no code here can consume a credential it must not have.
  */
 export interface RegisterResponse {
-  readonly accessToken: string;
   readonly user: AuthenticatedUser;
 }
 

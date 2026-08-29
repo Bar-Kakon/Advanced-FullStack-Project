@@ -1,8 +1,6 @@
 import { useCallback, useMemo, useState } from 'react';
 
 import { classifyRegisterError, registerAccount, type RegisterFailure } from '../../api/auth.api';
-import type { RegisterResponse } from '../../api/types';
-import { setAccessToken } from '../../auth/tokenStorage';
 import { EMAIL_PATTERN } from '../../shared/validation';
 import { buildRegisterPayload, emptyRegisterForm, type RegisterFormValues } from './buildRegisterPayload';
 
@@ -19,14 +17,17 @@ const REQUIRED: readonly FieldName[] = [
   'firstName', 'lastName', 'companyName', 'email', 'specialty', 'city', 'region', 'password', 'confirmPassword',
 ];
 
-export const useRegisterForm = () => {
+/**
+ * `onSuccess` rather than a success state of its own: registration ends by going to Login, and
+ * where a screen navigates is the page's business, not this hook's.
+ */
+export const useRegisterForm = (onSuccess: () => void) => {
   const [values, setValues] = useState<RegisterFormValues>(emptyRegisterForm);
   // Which fields the user has actually finished with. Errors stay hidden until then, so a pristine
   // form is never scolded for being empty — the same rule the static screen's `.touched` class had.
   const [touched, setTouched] = useState<Partial<Record<FieldName, boolean>>>({});
   const [submitting, setSubmitting] = useState(false);
   const [failure, setFailure] = useState<RegisterFailure | null>(null);
-  const [result, setResult] = useState<RegisterResponse | null>(null);
 
   const setValue = useCallback(<K extends FieldName>(field: K, value: RegisterFormValues[K]): void => {
     setValues((prev) => (prev[field] === value ? prev : { ...prev, [field]: value }));
@@ -63,16 +64,16 @@ export const useRegisterForm = () => {
     setSubmitting(true);
     setFailure(null);
     try {
-      const response = await registerAccount(buildRegisterPayload(values));
-      // Stored before the screen advances, so the very next request is already authenticated.
-      setAccessToken(response.accessToken);
-      setResult(response);
+      await registerAccount(buildRegisterPayload(values));
+      // Nothing is stored. Creating an account does not sign anyone in; Login does that, and it
+      // is seconds away. A credential kept here would be one the flow guarantees nobody uses.
+      onSuccess();
     } catch (error) {
       setFailure(classifyRegisterError(error));
     } finally {
       setSubmitting(false);
     }
-  }, [isComplete, submitting, values]);
+  }, [isComplete, submitting, values, onSuccess]);
 
-  return { values, setValue, touched, markTouched, errors, isComplete, submitting, failure, result, submit };
+  return { values, setValue, touched, markTouched, errors, isComplete, submitting, failure, submit };
 };

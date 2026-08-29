@@ -23,13 +23,28 @@ export const EQUIPMENT_CODES = [
 
 export type EquipmentCode = (typeof EQUIPMENT_CODES)[number];
 
+/**
+ * One completed-work entry.
+ *
+ * **Two entry types are legitimate, and neither field below is required** (closed 2026-08-29):
+ *
+ * - a **FieldSync-linked** entry, which references work coordinated on the platform;
+ * - a **free-standing** entry for work done anywhere else, including before the contractor
+ *   joined. It is a valid professional portfolio entry in its own right.
+ *
+ * So nothing here requires a project or task reference, and the type carries none — a link is a
+ * property some entries have, never a precondition for existing. `onFieldSync` is the
+ * verification indicator and is **only ever true for a linked entry the server has proved
+ * complete**; a free-standing entry must never be presented as FieldSync-verified, because that
+ * would be the platform vouching for work it has no record of.
+ */
 export interface CompletedWorkEntry {
   readonly id: string;
   readonly title: string;
-  /** Absent on a free-standing entry — D13 allows an entry that links to nothing. */
+  /** What the entry covers. Absent where the entry stands free of any platform work. */
   readonly scope?: string;
   readonly meta: string;
-  /** Only an entry whose linked work is itself complete carries the badge (D13, 2026-08-19). */
+  /** The `Completed on FieldSync` badge. Never set from the client, and never for a free entry. */
   readonly onFieldSync: boolean;
 }
 
@@ -86,6 +101,7 @@ const REPRESENTATIVE: Record<Language, {
     work: [
       { id: 'w1', title: 'מגדלי הצפון', scope: 'ניהול הפרויקט', meta: 'חיפה · יולי 2026', onFieldSync: true },
       { id: 'w2', title: 'יציקת שלד', scope: 'משימה בפרויקט מגדלי הצפון', meta: 'חיפה · מאי 2026', onFieldSync: true },
+      // Free-standing: no platform link, and therefore no verification badge.
       { id: 'w3', title: 'ממ״ד פרטי', meta: 'חיפה · 2024', onFieldSync: false },
     ],
     ratings: [
@@ -102,6 +118,7 @@ const REPRESENTATIVE: Record<Language, {
     work: [
       { id: 'w1', title: 'Northern Towers', scope: 'Project lead', meta: 'Haifa · July 2026', onFieldSync: true },
       { id: 'w2', title: 'Shell pour', scope: 'Task in Northern Towers', meta: 'Haifa · May 2026', onFieldSync: true },
+      // Free-standing: no platform link, and therefore no verification badge.
       { id: 'w3', title: 'Private safe room', meta: 'Haifa · 2024', onFieldSync: false },
     ],
     ratings: [

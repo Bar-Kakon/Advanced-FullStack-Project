@@ -158,6 +158,66 @@ export const he = {
     },
   },
 
+  /**
+   * Copy lifted verbatim from `screens/forgot-password.html`. The non-committal wording is the
+   * point of the screen: the same answer is shown whether or not an account exists, so the form
+   * cannot be used to discover who is registered.
+   */
+  forgotPassword: {
+    brand: {
+      beta: 'בטא',
+      headline: 'הפרויקטים שלכם ממתינים — בואו נחזיר לכם גישה.',
+      sub: 'איפוס סיסמה מאובטח. נשלח קישור חד-פעמי לאימייל שבחשבון, והוא יפוג בתוך 30 דקות.',
+      featuresLabel: 'עיקרי האיפוס',
+      features: [
+        'קישור חד-פעמי עם תוקף מוגבל',
+        'מטעמי אבטחה, תוצג אותה הודעה בין אם קיים חשבון לכתובת האימייל ובין אם לא.',
+        'כל הסשנים הפעילים יינותקו לאחר האיפוס',
+      ],
+      footerNote: 'מטעמי פרטיות אותה הודעה מוצגת בכל מקרה, כדי שלא ניתן יהיה ללמוד מי רשום למערכת.',
+    },
+    backToSignIn: 'חזרה להתחברות',
+    title: 'שכחת סיסמה?',
+    subtitle: 'הזינו את האימייל המשויך לחשבון ונשלח אליכם קישור לאיפוס.',
+    email: { label: 'כתובת אימייל', placeholder: 'you@example.com', error: 'יש להזין כתובת אימייל תקינה' },
+    submit: 'שליחת קישור לאיפוס',
+    remembered: 'נזכרתם בסיסמה?',
+    signIn: 'להתחברות',
+    sentTitle: 'בדקו את תיבת הדואר',
+    sentSubtitle: 'אם קיים חשבון לכתובת שהזנתם, קישור לאיפוס בדרך אליכם. הקישור יפוג בתוך 30 דקות.',
+    backButton: 'חזרה להתחברות',
+    noMail: 'לא הגיע כלום?',
+    resend: 'שליחה מחדש',
+    /** The honest build state, in the same voice the other screens use for an absent endpoint. */
+    noEndpoint: 'שליחת אימייל לאיפוס סיסמה עדיין לא נבנתה בשרת, ולכן לא נשלחה כאן שום הודעה.',
+  },
+
+  resetPassword: {
+    brand: {
+      beta: 'בטא',
+      headline: 'סיסמה חדשה, ואתם שוב בפנים.',
+      sub: 'בחרו סיסמה חזקה שלא השתמשתם בה בעבר. לאחר האיפוס כל הסשנים הפעילים יינותקו.',
+      featuresLabel: 'הנחיות לסיסמה',
+      features: [
+        'לפחות 8 תווים',
+        'שילוב של אותיות, מספרים וסימנים מחזק את הסיסמה',
+        'אל תשתמשו בסיסמה מאתר אחר',
+      ],
+      footerNote: 'הקישור לאיפוס הוא חד-פעמי ומאבד תוקף לאחר השימוש או בתום 30 דקות.',
+    },
+    backToSignIn: 'חזרה להתחברות',
+    title: 'בחירת סיסמה חדשה',
+    subtitle: 'בחרו סיסמה חזקה שלא השתמשתם בה בעבר.',
+    newPassword: { label: 'סיסמה חדשה', placeholder: '••••••••', error: 'הסיסמה חייבת לכלול לפחות 8 תווים' },
+    confirmPassword: { label: 'אימות סיסמה', placeholder: '••••••••', hint: 'יש להזין את אותה הסיסמה שוב לאימות.', error: 'הסיסמאות אינן תואמות' },
+    togglePassword: 'הצגת סיסמה',
+    submit: 'איפוס סיסמה',
+    doneTitle: 'הסיסמה עודכנה',
+    doneSubtitle: 'הסיסמה שלכם שונתה בהצלחה. אפשר להתחבר עם הסיסמה החדשה.',
+    continue: 'המשך להתחברות',
+    noEndpoint: 'איפוס סיסמה עדיין לא נבנה בשרת — אין נקודת קצה ואין מנגנון אסימון — ולכן שום סיסמה לא שונתה כאן.',
+  },
+
   dashboard: {
     title: 'לוח הבקרה האישי',
     welcome: 'שלום, {name}.',
@@ -305,11 +365,5 @@ export const he = {
       // The same honest note the Register success state uses for a step that is not built.
       noEndpoint: 'שמירת פרופיל עדיין לא נבנתה בשרת, ולכן השינויים לא נשמרו.',
     },
-  },
-
-  success: {
-    title: 'החשבון נוצר',
-    body: 'ברוך הבא, {name}. החשבון של {company} מוכן ואתם כבר מחוברים.',
-    next: 'השלב הבא בהרשמה — השלמת הפרופיל — עדיין לא נבנה.',
   },
 } as const;

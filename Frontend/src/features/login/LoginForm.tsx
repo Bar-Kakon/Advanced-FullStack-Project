@@ -1,3 +1,5 @@
+import { Link } from 'react-router-dom';
+
 import { useLanguage } from '../../i18n/useLanguage';
 import { FormAlert } from '../../components/FormAlert';
 import { PasswordField } from '../../components/PasswordField';
@@ -50,10 +52,9 @@ export const LoginForm = ({ form }: { form: ReturnType<typeof useLoginForm> }) =
           value={values.password} onChange={(v) => setValue('password', v)}
           onBlur={() => markTouched('password')} touched={!!touched.password}
         >
-          {/* Forgot password is still `#`: those two screens exist as static prototypes only and
-              have no route in this application yet. Same treatment the Register screen gives the
-              Terms and Privacy links, for the same reason — the destination does not exist. */}
-          <a href="#" className="form-link form-link--small forgot-link">{t.login.forgot}</a>
+          <Link to="/forgot-password" className="form-link form-link--small forgot-link">
+            {t.login.forgot}
+          </Link>
         </PasswordField>
 
         <button type="submit" className="btn btn--primary btn--full" disabled={!isComplete || submitting}>

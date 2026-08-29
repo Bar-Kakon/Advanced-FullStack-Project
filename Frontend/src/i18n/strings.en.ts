@@ -154,6 +154,60 @@ export const en: Strings = {
     },
   },
 
+  forgotPassword: {
+    brand: {
+      beta: 'Beta',
+      headline: "Your projects are waiting — let's get you back in.",
+      sub: 'Secure password reset. We email a single-use link to the address on file — it expires in 30 minutes.',
+      featuresLabel: 'Reset highlights',
+      features: [
+        'Single-use link with a short expiry',
+        'For security, the same message is shown whether or not an account exists for that email address.',
+        'Active sessions are signed out after a reset',
+      ],
+      footerNote: 'For privacy the same message is shown either way, so no one can learn who is registered.',
+    },
+    backToSignIn: 'Back to sign in',
+    title: 'Forgot your password?',
+    subtitle: "Enter the email linked to your account and we'll send you a reset link.",
+    email: { label: 'Email address', placeholder: 'you@example.com', error: 'Please enter a valid email address' },
+    submit: 'Send reset link',
+    remembered: 'Remembered it?',
+    signIn: 'Sign in',
+    sentTitle: 'Check your inbox',
+    sentSubtitle: 'If an account exists for that address, a reset link is on its way. It expires in 30 minutes.',
+    backButton: 'Back to sign in',
+    noMail: "Didn't get it?",
+    resend: 'Resend link',
+    noEndpoint: 'Password-reset email is not built on the server yet, so no message was sent from here.',
+  },
+
+  resetPassword: {
+    brand: {
+      beta: 'Beta',
+      headline: "One new password and you're back in.",
+      sub: "Choose a strong password you haven't used before. Every active session is signed out after the reset.",
+      featuresLabel: 'Password guidance',
+      features: [
+        'At least 8 characters',
+        'Mixing letters, numbers, and symbols makes it stronger',
+        "Don't reuse a password from another site",
+      ],
+      footerNote: "The reset link is single-use and expires after it's used or after 30 minutes.",
+    },
+    backToSignIn: 'Back to sign in',
+    title: 'Set a new password',
+    subtitle: "Choose a strong password you haven't used before.",
+    newPassword: { label: 'New password', placeholder: '••••••••', error: 'Password must be at least 8 characters' },
+    confirmPassword: { label: 'Confirm password', placeholder: '••••••••', hint: 'Re-enter the same password to confirm.', error: "Passwords don't match" },
+    togglePassword: 'Toggle password visibility',
+    submit: 'Reset password',
+    doneTitle: 'Password updated',
+    doneSubtitle: 'Your password has been changed. You can now sign in with your new password.',
+    continue: 'Continue to sign in',
+    noEndpoint: 'Password reset is not built on the server yet — there is no endpoint and no token mechanism — so no password was changed here.',
+  },
+
   dashboard: {
     title: 'Personal dashboard',
     welcome: 'Hello, {name}.',
@@ -300,11 +354,5 @@ export const en: Strings = {
       aside: 'To change your email or password, go to Settings.',
       noEndpoint: 'Saving a profile is not built on the server yet, so nothing was saved.',
     },
-  },
-
-  success: {
-    title: 'Account created',
-    body: "Welcome, {name}. {company} is set up and you're already signed in.",
-    next: 'The next step of registration — completing your profile — is not built yet.',
   },
 };
