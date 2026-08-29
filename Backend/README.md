@@ -50,6 +50,10 @@ node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"
 | `npm run verify:password-reset` | Walks Register → Login → forgot → reset → Login against the running server and the real database. **Needs a freshly started server** — it spends much of the auth rate-limit budget |
 | `npm run verify:rate-limit` | Proves each auth limiter fires, at its configured budget, through the project error contract. **Needs a freshly started server** |
 | `npm run verify:employee-lifecycle` | Walks invite → employee registers → `pending_company_approval` → owner approves → `active`, including the bulk approval. **Needs a freshly started server** |
+| `npm run verify:profile` | `GET`/`PATCH /api/users/me` and `PATCH /api/companies/me`, including the field allowlist and the `company.manage` refusal |
+| `npm run verify:media` | Avatar and work-entry images end to end: Multer validation, GridFS bytes, and deletion cleaning both up |
+| `npm run verify:completed-work` | Completed Work CRUD, ownership filtering, and the server-derived FieldSync badge |
+| `npm run migrate:membership-uniqueness` | Replaces the obsolete `user_1` index with `user_current_unique`. **Run once per environment** |
 
 Verify it is up:
 
@@ -296,6 +300,26 @@ approved somebody — the Access Token they already hold keeps working, and `/au
 holder learns the membership changed. There is **no real-time infrastructure**: no WebSockets, no
 SSE, no polling and no short-interval timers. The manual check plus ordinary session revalidation is
 the whole mechanism.
+
+### Profile and company endpoints
+
+`/companies` is mounted **once**, by `createCompaniesModule`, which composes the employee-management
+routes below and the profile feature's company route. Two top-level mounts of one prefix would make
+behaviour depend on registration order, so there is only one.
+
+| Route | Does | Needs |
+|---|---|---|
+| `GET /api/users/me` | the caller's full profile | a session |
+| `PATCH /api/users/me` | edits their own profile fields | a session |
+| `POST /api/users/me/work-entries` | adds a Completed Work entry, optional image | a session |
+| `DELETE /api/users/me/work-entries/:id` | removes one of their own | a session |
+| `PUT /api/users/me/avatar` | sets the avatar | a session |
+| `DELETE /api/users/me/avatar` | removes it | a session |
+| `GET /api/users/me/assets/:id` | serves their own stored bytes | a session |
+| `PATCH /api/companies/me` | edits the company's name, office phone and availability | `company.manage` |
+
+Uploads are Multer multipart; the bytes live in **GridFS** with `fileassets` as the metadata and
+ownership record. Every asset lookup filters by id **and** owner, so knowing an id grants nothing.
 
 ### Employee management endpoints
 
@@ -592,16 +616,20 @@ const p: readonly CompanyPermission[] = ['project.delete'];
 //   '"company.invite_employees" | "company.manage" | "project.create" | "task.create"'.
 ```
 
-### The future authorization layer
+### The authorization layer
 
-**Nothing reads `permissions` yet** — no endpoint checks them, because none of the four capabilities
-is implemented. They are written at signup anyway, so the rule holds for accounts created before the
-check exists: no backfill, and no owner who silently has no authority.
+`permissions` is read, and it is the only thing any authorization check reads:
 
-Whatever authorization layer is built **must honour this as-is and must not restate the product
-rule**: an owner holds all four, an employee holds none by default, and neither set may be derived
-from `companyPosition`. Grants beyond the defaults are an explicit act by an owner or an authorized
-manager.
+| Capability | Checked by |
+|---|---|
+| `company.invite_employees` | every employee-management route, and `POST /companies/employee-setup/complete` |
+| `company.manage` | `PATCH /companies/me` |
+| `project.create`, `task.create` | nothing yet — neither feature is built |
+
+Each check reads the caller's own recorded permission on an **active** membership. Authority is
+**never** derived from `standing` or from `companyPosition`: an owner holds all four because signup
+granted them explicitly, an employee holds none by default, and approval grants nothing. Grants
+beyond the defaults are an explicit act by an owner or an authorized manager.
 
 Two indexes carry the rules: `{ company, status }` serves "this company's pending activations", and
 `user_current_unique` enforces one company per person — see the next section.
