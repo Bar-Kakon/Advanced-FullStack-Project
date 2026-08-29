@@ -10,6 +10,7 @@ export interface EmployeeManagementController {
   readonly handleList: RequestHandler;
   readonly handleApprove: RequestHandler;
   readonly handleApproveAll: RequestHandler;
+  readonly handleCancelInvitation: RequestHandler;
   readonly handleCompleteSetup: RequestHandler;
 }
 
@@ -48,6 +49,16 @@ export const createEmployeeManagementController = (
     );
 
     res.json({ approved });
+  },
+
+  handleCancelInvitation: async (req: Request, res: Response) => {
+    const membershipId = req.params['membershipId'];
+    await service.cancelInvitation(
+      getAuthenticatedUserId(res),
+      typeof membershipId === 'string' ? membershipId : '',
+    );
+
+    res.json({ cancelled: true });
   },
 
   handleApproveAll: async (req: Request, res: Response) => {

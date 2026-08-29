@@ -1,9 +1,19 @@
 import type { Types } from 'mongoose';
 
-import { EMPLOYEE_DEFAULT_PERMISSIONS, type CompanyMembershipRecord } from './companyMembership.model.js';
+import {
+  EMPLOYEE_DEFAULT_PERMISSIONS,
+  OWNER_COMPANY_POSITION,
+  type CompanyMembershipRecord,
+} from './companyMembership.model.js';
 import type { CompanyMembershipRepository } from './companyMembership.repository.js';
 import type { CompanyRepository } from './company.repository.js';
-import { noActiveCompany, notPermittedToManageEmployees, nothingToApprove } from './company.errors.js';
+import {
+  mainContractorSeatTaken,
+  noActiveCompany,
+  notPermittedToManageEmployees,
+  nothingToApprove,
+  nothingToCancel,
+} from './company.errors.js';
 import type { CreateInvitationBody } from './employeeManagement.validation.js';
 
 /** The capability that names this whole surface: add and invite employees. */
@@ -14,6 +24,8 @@ export interface EmployeeManagementService {
   list(actorId: string): Promise<CompanyMembershipRecord[]>;
   approve(actorId: string, membershipId: string): Promise<number>;
   approveAllPending(actorId: string): Promise<number>;
+  /** Withdraws a seat nobody has claimed. Never touches a membership someone already holds. */
+  cancelInvitation(actorId: string, membershipId: string): Promise<void>;
   /** Records that this business has been through employee setup, by inviting or by skipping. */
   completeEmployeeSetup(actorId: string): Promise<void>;
 }
@@ -45,6 +57,11 @@ export const createEmployeeManagementService = ({
     async invite(actorId, { fullName, companyPosition }) {
       const company = await requireManager(actorId);
 
+      if (companyPosition === OWNER_COMPANY_POSITION) {
+        const held = await memberships.findMainContractorSeat(company);
+        if (held !== null) throw mainContractorSeatTaken();
+      }
+
       return memberships.create({
         company,
         user: null,
@@ -66,6 +83,12 @@ export const createEmployeeManagementService = ({
       if (moved === 0) throw nothingToApprove();
 
       return moved;
+    },
+
+    async cancelInvitation(actorId, membershipId) {
+      const company = await requireManager(actorId);
+      const moved = await memberships.cancelInvitation(company, membershipId);
+      if (moved === 0) throw nothingToCancel();
     },
 
     /** Approving every waiting activation at once, which the employee-management flow requires. */

@@ -30,6 +30,7 @@ export const createCompaniesModule = (
   router.get('/employees', controller.handleList);
   router.post('/employees/approve-all', controller.handleApproveAll);
   router.post('/employees/:membershipId/approve', controller.handleApprove);
+  router.delete('/employees/invitations/:membershipId', controller.handleCancelInvitation);
 
   // Not under `/employees`: it is recorded whether or not anybody was ever invited.
   router.post('/employee-setup/complete', controller.handleCompleteSetup);
