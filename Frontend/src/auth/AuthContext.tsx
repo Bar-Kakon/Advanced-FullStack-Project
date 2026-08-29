@@ -1,8 +1,8 @@
-import { createContext, useCallback, useMemo, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 
 import type { AuthenticatedUser, LoginResponse } from '../api/types';
-import { clearAccessToken, getAccessToken, setAccessToken } from './tokenStorage';
-import { clearStoredUser, readStoredUser, storeUser } from './session';
+import { ACCESS_TOKEN_KEY, clearAccessToken, getAccessToken, setAccessToken } from './tokenStorage';
+import { USER_KEY, clearStoredUser, readStoredUser, storeUser } from './session';
 
 /**
  * The one place the app decides whether somebody is signed in, and who.
@@ -11,6 +11,12 @@ import { clearStoredUser, readStoredUser, storeUser } from './session';
  * Access Token, and the Refresh Token is still an HttpOnly cookie this code cannot see. What this
  * adds is the identity Login returns alongside the token, so the navbar and the profile screens
  * can render a name without a request of their own — there is no endpoint that would serve one.
+ *
+ * **It keeps no copy of either value.** `user` and `isAuthenticated` are read from storage on
+ * demand, and the only React state here is a counter saying "storage moved, read it again". An
+ * earlier version cached a `hasToken` boolean alongside the store, which is a second answer to a
+ * question that already had one — and it went stale the moment anything cleared the token without
+ * going through this provider.
  *
  * `isAuthenticated` is deliberately "there is a token on this device", not "the server agrees".
  * Only the server can answer the second question, and it does, on every protected request. A
@@ -27,27 +33,45 @@ export interface AuthValue {
 export const AuthContext = createContext<AuthValue | null>(null);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState<AuthenticatedUser | null>(readStoredUser);
-  const [hasToken, setHasToken] = useState<boolean>(() => getAccessToken() !== null);
+  const [revision, setRevision] = useState(0);
+  const reread = useCallback(() => setRevision((current) => current + 1), []);
 
-  const signIn = useCallback((response: LoginResponse): void => {
-    // Stored before the screen advances, so the very next request is already authenticated.
-    setAccessToken(response.accessToken);
-    storeUser(response.user);
-    setUser(response.user);
-    setHasToken(true);
-  }, []);
+  // Another tab signing in or out writes the same storage. Without this, one tab would keep
+  // rendering a session the other has already ended.
+  useEffect(() => {
+    const onStorage = (event: StorageEvent): void => {
+      if (event.key === null || event.key === ACCESS_TOKEN_KEY || event.key === USER_KEY) reread();
+    };
+    window.addEventListener('storage', onStorage);
+    return () => window.removeEventListener('storage', onStorage);
+  }, [reread]);
+
+  const signIn = useCallback(
+    (response: LoginResponse): void => {
+      // Stored before the screen advances, so the very next request is already authenticated.
+      setAccessToken(response.accessToken);
+      storeUser(response.user);
+      reread();
+    },
+    [reread],
+  );
 
   const signOut = useCallback((): void => {
     clearAccessToken();
     clearStoredUser();
-    setUser(null);
-    setHasToken(false);
-  }, []);
+    reread();
+  }, [reread]);
 
   const value = useMemo<AuthValue>(
-    () => ({ user, isAuthenticated: hasToken, signIn, signOut }),
-    [user, hasToken, signIn, signOut],
+    () => ({
+      user: readStoredUser(),
+      isAuthenticated: getAccessToken() !== null,
+      signIn,
+      signOut,
+    }),
+    // `revision` is the dependency doing the work: it changes when storage does, and nothing else
+    // here is derived from React state.
+    [revision, signIn, signOut],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

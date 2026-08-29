@@ -7,7 +7,8 @@
  * cannot reach and put it somewhere script can.
  */
 
-const ACCESS_TOKEN_KEY = 'fieldsync-access-token';
+/** Exported so the session provider knows which storage changes concern it. */
+export const ACCESS_TOKEN_KEY = 'fieldsync-access-token';
 
 export const getAccessToken = (): string | null => {
   try {

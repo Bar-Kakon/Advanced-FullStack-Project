@@ -10,7 +10,8 @@ import type { AuthenticatedUser } from '../api/types';
  * so a reload does not blank the navbar while the first request is in flight.
  */
 
-const USER_KEY = 'fieldsync-user';
+/** Exported for the same reason as `ACCESS_TOKEN_KEY`. */
+export const USER_KEY = 'fieldsync-user';
 
 export const readStoredUser = (): AuthenticatedUser | null => {
   try {
