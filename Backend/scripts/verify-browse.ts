@@ -86,9 +86,11 @@ const run = async (): Promise<void> => {
   console.log('\n1. Discovery basics');
   const all = await send('GET', '/browse/contractors?limit=48', undefined, viewer.token);
   check('an authenticated viewer gets a page', all.status === 200, String(all.status));
-  check('the four seeded contractors are discoverable',
-    [viewer.id, alpha.id, beta.id, gamma.id].every((id) => ids(all).includes(id)),
+  check('the three other seeded contractors are discoverable',
+    [alpha.id, beta.id, gamma.id].every((id) => ids(all).includes(id)),
     `${ids(all).length} rows`);
+  // Browse is where a person finds somebody else, so the viewer is never one of its answers.
+  check('and the viewer is not among their own results', !ids(all).includes(viewer.id));
   check('an unauthenticated call is refused', (await send('GET', '/browse/contractors')).status === 401);
 
   console.log('\n2. No private field reaches a Browse card');
@@ -146,8 +148,9 @@ const run = async (): Promise<void> => {
     `/browse/contractors?limit=2&cursor=${encodeURIComponent(first.body['nextCursor'])}`, undefined, viewer.token);
   check('the second page returns different rows',
     !ids(second).some((id) => ids(first).includes(id)), `${ids(first)} then ${ids(second)}`);
-  check('the two pages together cover the four seeded accounts',
-    new Set([...ids(first), ...ids(second)]).size === 4);
+  check('the two pages together cover the three other seeded accounts',
+    [alpha.id, beta.id, gamma.id].every((id) => [...ids(first), ...ids(second)].includes(id)),
+    `${[...ids(first), ...ids(second)].length} rows`);
   const seen: string[] = [];
   let cursor: string | null = first.body['nextCursor'];
   let pages = 1;
@@ -162,8 +165,10 @@ const run = async (): Promise<void> => {
   check('paging to the end terminates with nextCursor null', cursor === null, `${pages} pages`);
   check('and never returns the same contractor twice', new Set(seen).size === seen.length,
     `${seen.length} rows, ${new Set(seen).size} unique`);
-  check('every seeded contractor appeared exactly once across the pages',
-    [viewer.id, alpha.id, beta.id, gamma.id].every((id) => seen.filter((s) => s === id).length === 1));
+  check('every other seeded contractor appeared exactly once across the pages',
+    [alpha.id, beta.id, gamma.id].every((id) => seen.filter((s) => s === id).length === 1));
+  check('and the viewer appeared on no page at all',
+    !seen.includes(viewer.id), `${seen.length} rows walked`);
   const emptyCursor = await send('GET', '/browse/contractors?limit=2&cursor=', undefined, viewer.token);
   check('an empty cursor is refused by validation rather than guessed at',
     emptyCursor.status === 400, String(emptyCursor.status));

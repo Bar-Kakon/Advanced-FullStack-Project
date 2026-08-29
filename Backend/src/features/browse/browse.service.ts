@@ -55,7 +55,9 @@ export const createBrowseService = ({
   async search(viewerId, filters) {
     // One indexed read resolves every person hidden from this viewer, in either direction.
     const hidden = await blocks.hiddenUserIdsFor(viewerId);
-    const excludeUserIds = [new Types.ObjectId(viewerId), ...hidden];
+    const excludeUserIds = Types.ObjectId.isValid(viewerId)
+      ? [new Types.ObjectId(viewerId), ...hidden]
+      : [...hidden];
 
     const wantsDistance = Boolean(filters.originPlaceId && filters.maxDrivingKm);
     const wantsRating = filters.minRating !== undefined;
