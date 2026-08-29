@@ -155,6 +155,10 @@ export const en: Strings = {
       maxKmLabel: 'Maximum driving distance',
       km: 'km',
       degraded: 'Some distances could not be calculated right now, so contractors may be missing. That is a temporary maps-service problem, not a sign they are too far away.',
+      ratingTitle: 'Filter by rating',
+      ratingLede: 'Show contractors whose average rating is at least the number of stars you choose.',
+      ratingHint: 'Choose the minimum number of stars. A contractor nobody has rated yet does not meet this filter.',
+      ratingClear: 'Clear the rating filter',
     },
 
     card: {

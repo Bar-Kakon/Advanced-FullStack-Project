@@ -91,6 +91,8 @@ export interface BrowseFilters {
   readonly approvedPlace: StructuredPlace | null;
   readonly origin: StructuredPlace | null;
   readonly maxDrivingKm: number | null;
+  /** A floor on the average a contractor has been given. `null` means no minimum at all. */
+  readonly minRating: number | null;
 }
 
 export const emptyBrowseFilters: BrowseFilters = {
@@ -101,6 +103,7 @@ export const emptyBrowseFilters: BrowseFilters = {
   approvedPlace: null,
   origin: null,
   maxDrivingKm: null,
+  minRating: null,
 };
 
 export interface TravelCandidate extends StructuredPlace {

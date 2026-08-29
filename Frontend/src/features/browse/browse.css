@@ -79,6 +79,34 @@
 .adv-group__title { font-size: 15px; font-weight: 600; color: var(--text); }
 .adv-group__lede { font-size: 14px; color: var(--text-soft); margin-block: 2px 8px; }
 
+.star-select {
+  direction: ltr;
+  display: flex;
+  flex-direction: row-reverse;
+  justify-content: flex-end;
+  gap: 4px;
+  border: 0;
+  padding: 0;
+  margin-block-end: 6px;
+}
+.star-select__pair { display: contents; }
+.star-select input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.star-select label {
+  font-size: 24px;
+  line-height: 1;
+  color: var(--secondary-30);
+  cursor: pointer;
+  transition: color 0.12s, transform 0.12s;
+}
+.star-select label:hover { transform: scale(1.12); }
+.star-select label:hover,
+.star-select__pair:hover ~ .star-select__pair label,
+.star-select input:checked ~ label,
+.star-select__pair:has(input:checked) ~ .star-select__pair label { color: var(--secondary); }
+.star-select input:focus-visible + label {
+  outline: 2px solid var(--primary); outline-offset: 3px; border-radius: 3px;
+}
+
 /* ═══ Results ═══ */
 .results__count { font-size: 14px; color: var(--text-mute); margin-block-end: 12px; }
 .card-grid {

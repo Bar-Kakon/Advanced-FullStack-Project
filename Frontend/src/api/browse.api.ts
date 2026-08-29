@@ -25,6 +25,7 @@ const toParams = (filters: BrowseFilters, cursor: string | null, limit: number):
     params.set('originPlaceId', filters.origin.placeId);
     params.set('maxDrivingKm', String(filters.maxDrivingKm));
   }
+  if (filters.minRating) params.set('minRating', String(filters.minRating));
   if (cursor) params.set('cursor', cursor);
 
   return params;
