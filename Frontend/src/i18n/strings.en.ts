@@ -134,6 +134,12 @@ export const en: Strings = {
     empty: 'No contractors match these filters. Try clearing some of them.',
     clear: 'Clear filters',
 
+    sort: {
+      label: 'Sort',
+      relevance: 'Relevance',
+      rating_desc: 'Rating — high to low',
+    },
+
     filters: {
       title: 'Filters',
       search: { label: 'Search', placeholder: 'Professional or company name' },

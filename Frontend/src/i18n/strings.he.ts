@@ -148,6 +148,12 @@ export const he = {
     empty: 'לא נמצאו קבלנים התואמים לסינון. אפשר לנקות חלק מהמסננים ולנסות שוב.',
     clear: 'ניקוי המסננים',
 
+    sort: {
+      label: 'מיון',
+      relevance: 'רלוונטיות',
+      rating_desc: 'דירוג — מהגבוה לנמוך',
+    },
+
     filters: {
       title: 'סינון',
       search: { label: 'חיפוש', placeholder: 'שם בעל מקצוע או שם חברה' },

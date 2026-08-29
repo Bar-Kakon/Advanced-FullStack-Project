@@ -79,6 +79,9 @@
 .adv-group__title { font-size: 15px; font-weight: 600; color: var(--text); }
 .adv-group__lede { font-size: 14px; color: var(--text-soft); margin-block: 2px 8px; }
 
+.browse__head-actions { display: flex; align-items: flex-end; gap: 12px; flex-wrap: wrap; }
+.browse__sort { display: flex; flex-direction: column; gap: 6px; min-width: 210px; }
+
 /* Three availability states, multi-select. */
 .avail-filter { display: flex; flex-direction: column; gap: 6px; }
 .avail-filter > .field-label { margin-block-end: 2px; }
