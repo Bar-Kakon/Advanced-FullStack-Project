@@ -562,20 +562,32 @@ not move when its Hebrew did, exactly as `site_manager` did not when its Hebrew 
 truth for anything. Where a static screen and the integrated React screen disagree, **the React screen is current** and the
 static file is stale — it predates decisions that superseded it.
 
-They are kept for exactly one reason: the owner is comparing them against the migrated screens during manual QA. **After
-that approval they are scheduled for deletion in a dedicated cleanup pass** (2026-08-29). Nothing in them should be treated
-as a product rule, and three concrete traps are already recorded:
+**They serve a migration process, not only a side-by-side comparison.** For each screen the process is: audit the
+prototype for what it actually requires, reconcile that against the newer approved decisions, build the React screen,
+integrate it into `develop`, check that nothing approved was left behind only in the static file, and *then* let the
+owner compare the two during manual QA. A prototype is retired when that whole process has run for it — not when it
+merely looks similar to a React screen. Nothing in them is a product rule, and three concrete traps are recorded:
 
 - they **hard-code a person's name in two languages** (`בר כאכון` / `Bar Kakon`) and swap them with the language, which is
   the opposite of the rule that a person's name is user data ([§10](#10-bug--issue-log));
 - they carry a **Minimum flexibility** control for a number the product cannot compute ([D6](#7-open-decisions));
 - they use **free-text city boxes**, superseded by the shared structured-location module.
 
-**Currently superseded by an integrated React screen, and therefore in scope for that cleanup pass:**
-`register.html` · `login.html` · `forgot-password.html` · `reset-password.html` · `my-profile.html` ·
-`edit-profile.html` · `browse-contractors.html` · `employee-management.html` (plus each one's `.css`).
-**Not yet superseded, so out of scope for now:** the landing page, personal dashboard, my-network, my-projects, my-tasks,
-create/edit-project, subscriptions and the error screens — all still awaiting migration.
+**Deleted 2026-08-29, by owner approval, each one only after that process had run for it** — React replacement
+integrated in `develop`, reachable on a real route, and checked for stranded requirements: `register.html` + `.css` ·
+`login.html` + `.css` · `forgot-password.html` · `reset-password.html` · `my-profile.html` + `.css` ·
+`edit-profile.html` + `.css` · `browse-contractors.html` + `.css` · `profile.css` (the sheet only the two profile
+prototypes loaded) · `validation.ts` / `validation.js` (loaded by five of the deleted screens and by nothing else).
+`employee-management.html` was listed here in error and **never existed**. Each file remains in git history and on its
+own feature branch, so deleting it removes a stale copy, not a record. **The check did find one stranded requirement —
+Browse's unmigrated Sort control — and it is written up in [§8](#8-known-issues--risks) and being restored rather than
+lost with the file.**
+
+**Retained, because no React replacement exists in `develop`:** `my-network.html` + `my-network.css`, and the shared
+`lang.ts` / `lang.js` that screen still loads. Its navbar link to the deleted `browse-contractors.html` became `#`,
+which is what the two links beside it — to a `personal-dashboard.html` and an `inbox.html` that were only ever
+reserved filenames — have always effectively been. **Still awaiting migration and never written as static here:** the
+landing page, personal dashboard, my-projects, my-tasks, create/edit-project, subscriptions and the error screens.
 
 #### Google Maps Platform keys — two credentials, never one
 
@@ -751,6 +763,17 @@ _Later stages live in the [Roadmap](#4-roadmap-stages); we'll expand the next on
     `/auth/me` return — carries no `avatarUrl`. Cosmetic, and the fix is a payload field rather than a screen change.
   - **Minimum flexibility cannot be built** until [D6](#7-open-decisions)'s arithmetic exists. The approved static Browse
     screen has the control; React deliberately does not. **This one is a genuine open decision, not just a dependency.**
+  - **Browse's Sort control was approved on the prototype and had not been migrated.** Found on 2026-08-29 while
+    checking that nothing unique was stranded in the static files before deleting them, and recorded here **before**
+    `browse-contractors.html` was removed. The prototype offered four options — `רלוונטיות` / *Relevance*,
+    `דירוג — מהגבוה לנמוך` / *Rating — high to low*, `גמישות — מהגבוה לנמוך` / *Flexibility — high to low*, and
+    `הכי קרוב אליי` / *Nearest to me* — and its own comment called them *visual; real sorting wired in React Stage 2*.
+    **Three are being restored** on `fix/owner-qa-corrections.*`: Relevance is the order Browse already returns, Rating
+    becomes a real aggregation sort over [[ratings]] (there is no `ratingSummary` field to read, so the average is
+    computed in the pipeline), and Nearest is offered **only while a driving-distance origin is set**, because the
+    distances that answer it are already computed for that page and sorting them costs no extra Google call.
+    **Flexibility sort is not built** — it is [D6](#7-open-decisions), the same block as the filter, and inventing an
+    order would be inventing the score.
   - **Heavy-equipment selection still does not persist** — [D14](#7-open-decisions) has no schema for it. The picker is
     kept, with an honest note that a choice there is not stored, rather than silently discarding it.
   - **`RatingEligibilityPort` has no real implementation**, so every viewer is `no_shared_completed_task`. It needs the
