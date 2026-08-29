@@ -123,8 +123,8 @@ const run = async (): Promise<void> => {
   check('the owner relationship is active and holds the four approved defaults',
     ownerMembership?.status === 'active' && (ownerMembership?.permissions ?? []).length === 4,
     `${ownerMembership?.status} · ${(ownerMembership?.permissions ?? []).join(',')}`);
-  check('no companyPosition was invented from the registration',
-    ownerMembership?.companyPosition === undefined, String(ownerMembership?.companyPosition));
+  check('the owner is recorded as the company Main Contractor',
+    ownerMembership?.companyPosition === 'main_contractor', String(ownerMembership?.companyPosition));
 
   // The employee lifecycle itself is verified by `verify:employee-lifecycle`; what matters here is
   // that a registration naming a real company with no seat waiting for it creates nothing.

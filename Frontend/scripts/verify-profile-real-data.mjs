@@ -54,7 +54,12 @@ const run = async () => {
   await page.fill('#password', ENTERED.password);
   await page.fill('#password-confirm', ENTERED.password);
   await page.selectOption('#specialty', ENTERED.specialty).catch(() => {});
-  await page.fill('#city', ENTERED.city);
+  // The city box is the shared structured place field now, so a place is chosen rather than typed.
+  const cityBox = page.locator('.place-field input[role="combobox"]');
+  await cityBox.fill(ENTERED.city);
+  await page.waitForTimeout(2200);
+  const cityOptions = page.locator('.place-field__list [role="option"]');
+  if ((await cityOptions.count()) > 0) await cityOptions.first().click();
   await page.selectOption('#region', ENTERED.region).catch(() => {});
   await page.fill('#officePhone', ENTERED.officePhone).catch(() => {});
   await page.fill('#businessPhone', ENTERED.businessPhone).catch(() => {});
@@ -86,7 +91,7 @@ const run = async () => {
   check('it shows the company name that was typed', shown.includes(ENTERED.companyName));
   check('it shows the office phone that was typed', shown.includes(ENTERED.officePhone));
   check('it shows the business phone that was typed', shown.includes(ENTERED.businessPhone));
-  check('it shows the city that was typed', shown.includes(ENTERED.city));
+  check('it shows the place that was chosen', shown.includes(ENTERED.city));
   check('it shows the name that was typed', shown.includes(ENTERED.lastName));
 
   const leaked = NEVER.filter((value) => shown.includes(value));
@@ -100,7 +105,9 @@ const run = async () => {
   check('company name is in the box', (await page.inputValue('#companyName')) === ENTERED.companyName);
   check('office phone is in the box', (await page.inputValue('#officePhone')) === ENTERED.officePhone);
   check('business phone is in the box', (await page.inputValue('#businessPhone')) === ENTERED.businessPhone);
-  check('city is in the box', (await page.inputValue('#city')) === ENTERED.city);
+  const chosenCity = await page.locator('.place-field__name').first().textContent().catch(() => null);
+  check('the chosen place is shown on the edit screen',
+    (chosenCity ?? '').includes(ENTERED.city), chosenCity ?? 'none');
   check('region is selected', (await page.inputValue('#region')) === ENTERED.region);
   const editShown = await page.evaluate(() => document.body.innerText);
   check('no prototype value on the edit screen',

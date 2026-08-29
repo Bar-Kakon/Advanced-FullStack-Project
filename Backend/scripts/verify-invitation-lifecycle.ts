@@ -132,10 +132,15 @@ const run = async (): Promise<never> => {
   const otherPosition = await invite(owner.token, 'Site Person', 'site_manager');
   check(otherPosition.status === 201, 'every other position may still be invited', otherPosition.status);
 
-  const seats = await CompanyMembershipModel
+  const invitedSeats = await CompanyMembershipModel
+    .countDocuments({ company: owner.companyId, companyPosition: 'main_contractor',
+      standing: 'employee' }).exec();
+  check(invitedSeats === 0, 'no Main Contractor seat was opened by the refused attempts', invitedSeats);
+
+  const holders = await CompanyMembershipModel
     .countDocuments({ company: owner.companyId, companyPosition: 'main_contractor',
       status: { $in: ['invited', 'pending_company_approval', 'active'] } }).exec();
-  check(seats === 0, 'no Main Contractor seat was created by the refused attempts', seats);
+  check(holders === 1, 'and the company still has exactly one Main Contractor: its owner', holders);
 
   await cleanUp(MARKER);
   return finish(harness);
