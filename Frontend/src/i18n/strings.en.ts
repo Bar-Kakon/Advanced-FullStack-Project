@@ -283,6 +283,8 @@ export const en: Strings = {
 
     actions: {
       approve: 'Approve membership',
+      cancelInvitation: 'Cancel invitation',
+      cancelling: 'Cancelling…',
       approveAll: 'Approve all waiting ({count})',
       refresh: 'Refresh list',
     },
@@ -307,6 +309,8 @@ export const en: Strings = {
       noCompany: 'Your account does not belong to an active company, so there are no employees to manage.',
       unauthenticated: 'Your session has expired. Sign in again to continue.',
       nothingToApprove: 'This membership has already been approved, or it is not waiting for approval. Refresh the list.',
+      nothingToCancel: 'That invitation is no longer pending. The list has been refreshed.',
+      mainContractorTaken: 'This company already has a Main Contractor, so a second seat cannot be opened.',
       validation: 'Some of the details are not valid. Check the marked fields and try again.',
       network: 'We could not reach the server. Check your connection and try again.',
       generic: 'Something went wrong. Please try again.',

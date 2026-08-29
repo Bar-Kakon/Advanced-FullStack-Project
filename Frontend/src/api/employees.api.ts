@@ -36,6 +36,11 @@ export const approveAllPendingEmployees = async (): Promise<number> => {
   return data.approved;
 };
 
+/** Withdraws a seat nobody has claimed. The list is re-read afterwards, never patched locally. */
+export const cancelInvitation = async (membershipId: string): Promise<void> => {
+  await api.delete(`/companies/employees/invitations/${membershipId}`);
+};
+
 /** Skip and Finish record the same fact, so both end here. Idempotent. */
 export const completeEmployeeSetup = async (): Promise<void> => {
   await api.post('/companies/employee-setup/complete');
@@ -50,6 +55,8 @@ export type EmployeeFailure =
   | 'NO_COMPANY'
   | 'UNAUTHENTICATED'
   | 'NOTHING_TO_APPROVE'
+  | 'NOTHING_TO_CANCEL'
+  | 'MAIN_CONTRACTOR_TAKEN'
   | 'VALIDATION'
   | 'NETWORK'
   | 'UNKNOWN';
@@ -70,6 +77,11 @@ export const classifyEmployeeError = (error: unknown): EmployeeFailure => {
     // Somebody else approved them first: the screen is stale, the action did not fail.
     case 'PENDING_ACTIVATION_NOT_FOUND':
       return 'NOTHING_TO_APPROVE';
+    // Somebody else withdrew it first: the screen is stale, the action did not fail.
+    case 'PENDING_INVITATION_NOT_FOUND':
+      return 'NOTHING_TO_CANCEL';
+    case 'MAIN_CONTRACTOR_SEAT_TAKEN':
+      return 'MAIN_CONTRACTOR_TAKEN';
     case 'REQUEST_VALIDATION_FAILED':
       return 'VALIDATION';
     default:
