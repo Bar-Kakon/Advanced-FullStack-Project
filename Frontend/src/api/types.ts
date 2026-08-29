@@ -92,6 +92,26 @@ export interface LoginResponse {
   readonly user: AuthenticatedUser;
 }
 
+/** `POST /api/auth/forgot-password`. The answer never differs by whether the address exists. */
+export interface ForgotPasswordPayload {
+  readonly email: string;
+}
+
+/**
+ * `POST /api/auth/reset-password`. `token` is the raw value from the emailed link; the server
+ * holds only its hash. No `confirmPassword` — the match is a courtesy to the person typing, and
+ * the server applies the password rules itself either way.
+ */
+export interface ResetPasswordPayload {
+  readonly token: string;
+  readonly password: string;
+}
+
+/** Both password-reset endpoints answer the same generic shape on success. */
+export interface StatusResponse {
+  readonly status: string;
+}
+
 /** Every deliberate failure the API raises answers this shape. */
 export interface ApiErrorBody {
   readonly code: string;

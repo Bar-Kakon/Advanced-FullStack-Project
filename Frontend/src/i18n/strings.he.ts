@@ -189,7 +189,11 @@ export const he = {
     noMail: 'לא הגיע כלום?',
     resend: 'שליחה מחדש',
     /** The honest build state, in the same voice the other screens use for an absent endpoint. */
-    noEndpoint: 'שליחת אימייל לאיפוס סיסמה עדיין לא נבנתה בשרת, ולכן לא נשלחה כאן שום הודעה.',
+    submitting: 'שולח…',
+    errors: {
+      network: 'לא הצלחנו להגיע לשרת. בדקו את החיבור ונסו שוב.',
+      generic: 'משהו השתבש. אנא נסו שוב.',
+    },
   },
 
   resetPassword: {
@@ -215,7 +219,16 @@ export const he = {
     doneTitle: 'הסיסמה עודכנה',
     doneSubtitle: 'הסיסמה שלכם שונתה בהצלחה. אפשר להתחבר עם הסיסמה החדשה.',
     continue: 'המשך להתחברות',
-    noEndpoint: 'איפוס סיסמה עדיין לא נבנה בשרת — אין נקודת קצה ואין מנגנון אסימון — ולכן שום סיסמה לא שונתה כאן.',
+    submitting: 'מאפס…',
+    errors: {
+      // The server answers one code for unknown, expired, superseded and already-used alike.
+      invalidToken: 'הקישור לאיפוס אינו תקף יותר. ייתכן שפג תוקפו, שכבר נעשה בו שימוש, או שנשלח קישור חדש. אפשר לבקש קישור חדש.',
+      weakPassword: 'הסיסמה חייבת לכלול לפחות 8 תווים.',
+      network: 'לא הצלחנו להגיע לשרת. בדקו את החיבור ונסו שוב.',
+      generic: 'משהו השתבש. אנא נסו שוב.',
+      missingToken: 'הכתובת הזו אינה כוללת קישור לאיפוס. פתחו את הקישור מההודעה שנשלחה אליכם, או בקשו קישור חדש.',
+    },
+    requestNewLink: 'בקשת קישור חדש',
   },
 
   dashboard: {

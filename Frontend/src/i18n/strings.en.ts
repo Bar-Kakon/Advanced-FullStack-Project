@@ -179,7 +179,11 @@ export const en: Strings = {
     backButton: 'Back to sign in',
     noMail: "Didn't get it?",
     resend: 'Resend link',
-    noEndpoint: 'Password-reset email is not built on the server yet, so no message was sent from here.',
+    submitting: 'Sending…',
+    errors: {
+      network: 'We could not reach the server. Check your connection and try again.',
+      generic: 'Something went wrong. Please try again.',
+    },
   },
 
   resetPassword: {
@@ -205,7 +209,15 @@ export const en: Strings = {
     doneTitle: 'Password updated',
     doneSubtitle: 'Your password has been changed. You can now sign in with your new password.',
     continue: 'Continue to sign in',
-    noEndpoint: 'Password reset is not built on the server yet — there is no endpoint and no token mechanism — so no password was changed here.',
+    submitting: 'Resetting…',
+    errors: {
+      invalidToken: 'This reset link is no longer valid. It may have expired, already been used, or been replaced by a newer one. You can request a new link.',
+      weakPassword: 'Password must be at least 8 characters.',
+      network: 'We could not reach the server. Check your connection and try again.',
+      generic: 'Something went wrong. Please try again.',
+      missingToken: 'This address does not carry a reset link. Open the link from the email you were sent, or request a new one.',
+    },
+    requestNewLink: 'Request a new link',
   },
 
   dashboard: {

@@ -3,10 +3,13 @@ import { isAxiosError } from 'axios';
 import { api } from './client';
 import type {
   ApiErrorBody,
+  ForgotPasswordPayload,
   LoginPayload,
   LoginResponse,
   RegisterPayload,
   RegisterResponse,
+  ResetPasswordPayload,
+  StatusResponse,
 } from './types';
 
 /** The API error codes this screen answers individually. Anything else falls back to generic. */
@@ -61,5 +64,41 @@ export const classifyLoginError = (error: unknown): LoginFailure => {
   if (body?.code === 'INVALID_CREDENTIALS' || body?.code === 'REQUEST_VALIDATION_FAILED') {
     return 'INVALID_CREDENTIALS';
   }
+  return 'UNKNOWN';
+};
+
+/**
+ * Requesting a reset link. There is deliberately no success/failure distinction to classify: the
+ * server answers the same way for a known address, an unknown one and a suspended account, so the
+ * only thing that can go wrong here is not reaching the server at all.
+ */
+export type ForgotPasswordFailure = 'NETWORK' | 'UNKNOWN';
+
+export const requestPasswordReset = async (payload: ForgotPasswordPayload): Promise<void> => {
+  await api.post<StatusResponse>('/auth/forgot-password', payload);
+};
+
+export const classifyForgotPasswordError = (error: unknown): ForgotPasswordFailure => {
+  if (!isAxiosError(error)) return 'UNKNOWN';
+  return error.response ? 'UNKNOWN' : 'NETWORK';
+};
+
+/**
+ * Setting the new password. `INVALID_RESET_TOKEN` is the server's single answer for a link that is
+ * unknown, expired, superseded by a later request, or already used — nothing here re-splits it.
+ */
+export type ResetPasswordFailure = 'INVALID_RESET_TOKEN' | 'WEAK_PASSWORD' | 'NETWORK' | 'UNKNOWN';
+
+export const resetPassword = async (payload: ResetPasswordPayload): Promise<void> => {
+  await api.post<StatusResponse>('/auth/reset-password', payload);
+};
+
+export const classifyResetPasswordError = (error: unknown): ResetPasswordFailure => {
+  if (!isAxiosError(error)) return 'UNKNOWN';
+  if (!error.response) return 'NETWORK';
+
+  const body = error.response.data as ApiErrorBody | undefined;
+  if (body?.code === 'INVALID_RESET_TOKEN') return 'INVALID_RESET_TOKEN';
+  if (body?.code === 'REQUEST_VALIDATION_FAILED') return 'WEAK_PASSWORD';
   return 'UNKNOWN';
 };

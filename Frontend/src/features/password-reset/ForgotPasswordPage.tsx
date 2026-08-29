@@ -1,7 +1,13 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { Link } from 'react-router-dom';
 
+import {
+  classifyForgotPasswordError,
+  requestPasswordReset,
+  type ForgotPasswordFailure,
+} from '../../api/auth.api';
 import { AuthShell } from '../../components/AuthShell';
+import { FormAlert } from '../../components/FormAlert';
 import { TextField } from '../../components/TextField';
 import { useLanguage } from '../../i18n/useLanguage';
 import { useDocumentTitle } from '../../routes/useDocumentTitle';
@@ -14,16 +20,12 @@ import resetCss from './password-reset.css?inline';
  * Forgot password — the request step and the confirmation that follows it.
  *
  * The confirmation is the screen's whole security posture and it is unchanged: it says *if* an
- * account exists, never that one does, so the form cannot be used to find out who is registered.
- * The brand panel states the same rule twice on purpose, because a person who sees the identical
- * answer for a typo and for their real address should be told why.
+ * account exists, never that one does. That is not a client-side politeness — the server answers
+ * `200 { status: 'ok' }` for a known address, an unknown one and a suspended account alike, so
+ * there is nothing here to leak even if this screen wanted to.
  *
- * **No request is sent, because there is nothing to send it to.** The API mounts `/auth/register`,
- * `/auth/login` and `/auth/refresh` and nothing else: there is no forgot-password endpoint, no
- * reset token, and no mail transport or provider anywhere in the backend. Rather than post to an
- * address that does not exist — which would mean inventing the contract — the screen advances to
- * the same confirmation the prototype advanced to, and says plainly that no message was sent. The
- * step it advances to, and the copy on it, are exactly the approved ones.
+ * The only failure it can report is not reaching the server at all. A person who is told a link is
+ * coming when the request never left the browser would wait for an email that was never asked for.
  */
 const BackLink = ({ label }: { label: string }) => (
   <Link to="/login" className="back-link">
@@ -47,9 +49,30 @@ export const ForgotPasswordPage = () => {
   const [email, setEmail] = useState('');
   const [touched, setTouched] = useState(false);
   const [sent, setSent] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [failure, setFailure] = useState<ForgotPasswordFailure | null>(null);
 
   const invalid = email.length > 0 && !EMAIL_PATTERN.test(email.trim());
   const canSubmit = EMAIL_PATTERN.test(email.trim());
+
+  const send = useCallback(async (): Promise<void> => {
+    if (!canSubmit || submitting) return;
+    setSubmitting(true);
+    setFailure(null);
+    try {
+      await requestPasswordReset({ email: email.trim() });
+      setSent(true);
+    } catch (error) {
+      setFailure(classifyForgotPasswordError(error));
+    } finally {
+      setSubmitting(false);
+    }
+  }, [canSubmit, submitting, email]);
+
+  const alertMessage =
+    failure === 'NETWORK' ? t.forgotPassword.errors.network
+    : failure ? t.forgotPassword.errors.generic
+    : null;
 
   return (
     <AuthShell brand={t.forgotPassword.brand}>
@@ -68,17 +91,22 @@ export const ForgotPasswordPage = () => {
             <p className="form-subtitle">{t.forgotPassword.sentSubtitle}</p>
           </header>
 
+          {alertMessage ? <FormAlert message={alertMessage} /> : null}
+
           <Link to="/login" className="btn btn--primary btn--full">{t.forgotPassword.backButton}</Link>
 
           <p className="form-footer">
             {t.forgotPassword.noMail}{' '}
-            {/* Resend has the same nowhere to go as the request itself. */}
-            <button type="button" className="form-link form-link--strong" onClick={() => setSent(true)}>
-              {t.forgotPassword.resend}
+            {/* Asking again is a real second request, and it retires the first link server-side. */}
+            <button
+              type="button"
+              className="form-link form-link--strong"
+              disabled={submitting}
+              onClick={() => void send()}
+            >
+              {submitting ? t.forgotPassword.submitting : t.forgotPassword.resend}
             </button>
           </p>
-
-          <p className="form-hint" role="status">{t.forgotPassword.noEndpoint}</p>
         </section>
       ) : (
         <section className="auth-step auth-step--current" aria-label={t.forgotPassword.title}>
@@ -89,12 +117,14 @@ export const ForgotPasswordPage = () => {
             <p className="form-subtitle">{t.forgotPassword.subtitle}</p>
           </header>
 
+          {alertMessage ? <FormAlert message={alertMessage} /> : null}
+
           <form
             className="reset-form"
             noValidate
             onSubmit={(e) => {
               e.preventDefault();
-              if (canSubmit) setSent(true);
+              void send();
             }}
           >
             <TextField
@@ -104,8 +134,12 @@ export const ForgotPasswordPage = () => {
               {...(invalid ? { error: t.forgotPassword.email.error } : {})}
             />
 
-            <button type="submit" className="btn btn--primary btn--full btn--advance" disabled={!canSubmit}>
-              {t.forgotPassword.submit}
+            <button
+              type="submit"
+              className="btn btn--primary btn--full btn--advance"
+              disabled={!canSubmit || submitting}
+            >
+              {submitting ? t.forgotPassword.submitting : t.forgotPassword.submit}
             </button>
           </form>
 
