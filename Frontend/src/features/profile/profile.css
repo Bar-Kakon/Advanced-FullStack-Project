@@ -885,3 +885,5 @@ html[data-lang="en"] {
   --font-sans:  'Inter', system-ui, -apple-system, sans-serif;
   --font-serif: 'Fraunces', 'Georgia', serif;
 }
+
+.avatar--image { object-fit: cover; padding: 0; }

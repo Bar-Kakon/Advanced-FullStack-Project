@@ -367,6 +367,12 @@ export const he = {
 
   profile: {
     title: 'הפרופיל שלי',
+    loading: 'טוען את הפרופיל…',
+    errors: {
+      network: 'אין חיבור לשרת. בדקו את החיבור ונסו שוב.',
+      generic: 'לא הצלחנו לטעון את הפרופיל.',
+      retry: 'נסו שוב',
+    },
     lede: 'כך נראה הפרופיל שלכם. הדירוג וציון הגמישות מחושבים לבד — אי אפשר לערוך אותם.',
     edit: 'עריכת הפרופיל',
     summary: 'סיכום הפרופיל',
@@ -428,8 +434,13 @@ export const he = {
     },
     avatar: {
       upload: 'העלאת תמונה',
+      uploading: 'מעלה…',
       remove: 'הסרה',
-      hint: 'JPG או PNG, עד 5 מ״ב.',
+      removing: 'מסיר…',
+      hint: 'JPG, PNG או WebP, עד 5 מ״ב.',
+      tooLarge: 'הקובץ גדול מ־5 מ״ב.',
+      badType: 'אפשר להעלות JPG, PNG או WebP בלבד.',
+      failed: 'העלאת התמונה נכשלה. נסו שוב.',
     },
     availabilityLegend: 'זמינות לעבודות חדשות',
     firstName: 'שם פרטי',
@@ -451,6 +462,7 @@ export const he = {
       otherPlaceholder: 'למשל: מסגרות בניין',
     },
     equipment: {
+      notStored: 'רשימת הציוד הכבד עדיין אינה נשמרת בשרת — אין לה מבנה נתונים — ולכן הבחירה כאן לא תישמר.',
       trigger: 'בחירת הכלים שברשותכם',
       title: 'כלי צמ״ה',
       lede: 'סמנו רק את הכלים שברשותכם או שאתם מפעילים.',
@@ -493,18 +505,28 @@ export const he = {
     },
     work: {
       lede: 'תמונות מעבודות שהשלמתם, כולל עבודות מלפני ההצטרפות. קישור לעבודה שנוהלה בפלטפורמה הוא רשות.',
-      add: 'הוספת תמונה',
-      remove: 'הסרת התמונה',
-      // The same honest note Save carries, for the half of the screen that has even less behind it.
-      notStored: 'עבודות שהושלמו עדיין אינן נשמרות בשרת — אין להן מבנה נתונים ואין העלאת קבצים — ולכן השינוי הזה לא נשמר.',
+      add: 'הוספת עבודה',
+      remove: 'הסרת העבודה',
+      confirmAdd: 'הוספה',
+      adding: 'מוסיף…',
+      titleLabel: 'שם העבודה',
+      metaLabel: 'מקום ותאריך',
+      metaPlaceholder: 'חיפה · מאי 2026',
+      scopeLabel: 'תיאור',
+      imageLabel: 'תמונה',
+      addFailed: 'הוספת העבודה נכשלה. נסו שוב.',
+      removeFailed: 'הסרת העבודה נכשלה. נסו שוב.',
     },
     ratingsLede: '{count} דירוגים מקבלנים שעבדתם איתם על עבודה משותפת שהושלמה. אי אפשר לערוך אותם.',
     actions: {
       save: 'שמירת שינויים',
+      saving: 'שומר…',
+      saved: 'השינויים נשמרו.',
       cancel: 'ביטול',
       aside: 'לשינוי כתובת המייל או הסיסמה, עברו להגדרות.',
-      // The same honest note the Register success state uses for a step that is not built.
-      noEndpoint: 'שמירת פרופיל עדיין לא נבנתה בשרת, ולכן השינויים לא נשמרו.',
+      saveFailed: 'השמירה נכשלה. נסו שוב.',
+      invalid: 'חלק מהערכים אינם תקינים, ולכן לא נשמרו.',
+      notPermitted: 'אין לכם הרשאה לערוך את פרטי החברה.',
     },
   },
 } as const;

@@ -382,3 +382,15 @@ label.field-label { cursor: pointer; }
   .form-group--narrow { max-width: none; }
 }
 
+
+.field-error { font-size: 14px; color: var(--danger, #b23c17); margin-block-start: 6px; }
+.field-label__optional { margin-inline-start: 6px; font-weight: 400; color: var(--text-mute); }
+
+.work-add {
+  display: flex; flex-direction: column; gap: 10px;
+  margin-block-start: 14px; padding: 14px;
+  background: var(--background);
+  border: 1px solid var(--secondary-30);
+  border-radius: var(--r-sm);
+}
+.work-add__actions { display: flex; flex-wrap: wrap; gap: 10px; }

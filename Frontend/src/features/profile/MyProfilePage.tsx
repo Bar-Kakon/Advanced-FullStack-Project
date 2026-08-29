@@ -2,14 +2,14 @@ import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 
 import { AppNav } from '../../components/AppNav';
-import { useAuth } from '../../auth/useAuth';
 import { useLanguage } from '../../i18n/useLanguage';
 import { useDocumentTitle } from '../../routes/useDocumentTitle';
 import { useScreenStylesheet } from '../../styles/useScreenStylesheet';
 import { CompletedWorkPanel } from './components/CompletedWorkPanel';
 import { RatingsPanel } from './components/RatingsPanel';
 import { TrustPanel } from './components/TrustPanel';
-import { initialsOf, representativeProfile } from './profileModel';
+import { initialsOf } from './profileModel';
+import { useMyProfile } from './useMyProfile';
 import profileCss from './profile.css?inline';
 import myProfileCss from './my-profile.css?inline';
 
@@ -28,31 +28,59 @@ const Fact = ({ label, value, dir }: { label: string; value: ReactNode; dir?: 'l
   );
 };
 
+/** A number with its unit, or nothing at all. A missing value is never rendered as a zero. */
+const Measure = ({ value, unit }: { value: number | null; unit: string }): ReactNode =>
+  value === null ? null : (
+    <>
+      <bdi>{value}</bdi>
+      <span className="fact__unit">{unit}</span>
+    </>
+  );
+
 /**
  * My profile — the read view. No inputs, no form, no validation, no Save: every change goes
  * through the one global Edit control, which is what keeps a single editing surface rather than a
  * per-field pencil on every row.
  *
  * **Phone display follows D15 as closed.** The personal / login number is never shown, anywhere —
- * it is not even in the view model this screen reads. What a profile shows is the email plus the
- * office phone and the business phone, each of which may be absent on its own: they live on two
- * different documents (`companies.officePhone` and `users.businessPhone`) and neither is a
- * fallback for the other, so a missing one is reported as missing rather than filled in from the
- * other. This screen is the owner's own view; D15's gated states for *other* viewers belong to the
- * public profile and to a viewer-aware serializer that does not exist yet.
+ * it is not in the shape this screen reads. What a profile shows is the email plus the office
+ * phone and the business phone, each of which may be absent on its own: they live on two different
+ * documents (`companies.officePhone` and `users.businessPhone`) and neither is a fallback for the
+ * other, so a missing one is reported as missing rather than filled in from the other.
  */
 export const MyProfilePage = () => {
-  const { t, lang } = useLanguage();
-  const { user } = useAuth();
+  const { t } = useLanguage();
+  const { profile, loading, failure, reload } = useMyProfile();
   useScreenStylesheet(
     { id: 'profile.css', css: profileCss },
     { id: 'my-profile.css', css: myProfileCss },
   );
   useDocumentTitle('הפרופיל שלי / My profile — FieldSync');
 
-  const profile = representativeProfile(user, lang);
-  const fullName = `${profile.firstName} ${profile.lastName}`.trim();
-  const initials = initialsOf(profile.firstName, profile.lastName);
+  const fullName = profile ? `${profile.firstName} ${profile.lastName}`.trim() : '';
+  const initials = profile ? initialsOf(profile.firstName, profile.lastName) : '';
+
+  if (loading || profile === null) {
+    return (
+      <div className="app">
+        <AppNav name={fullName} initials={initials} />
+        <main className="profile">
+          {failure ? (
+            <div className="notice notice--warn" role="alert">
+              <span>
+                {failure === 'NETWORK' ? t.profile.errors.network : t.profile.errors.generic}
+              </span>
+              <button type="button" className="btn btn--ghost btn--sm" onClick={reload}>
+                {t.profile.errors.retry}
+              </button>
+            </div>
+          ) : (
+            <p className="panel__lede">{t.profile.loading}</p>
+          )}
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="app">
@@ -79,7 +107,7 @@ export const MyProfilePage = () => {
         <TrustPanel
           profile={profile}
           initials={initials}
-          availabilityLabel={t.availability[profile.availability]}
+          availabilityLabel={profile.availability === null ? null : t.availability[profile.availability]}
           explain={
             <details className="explain trust__explain">
               <summary className="explain__q">{t.profile.explain.question}</summary>
@@ -96,7 +124,11 @@ export const MyProfilePage = () => {
           <div className="profile-grid__col">
             <section className="panel" aria-labelledby="about-title">
               <h2 id="about-title" className="panel__title">{t.profile.about}</h2>
-              <p className="bio-text" dir="auto">{profile.bio}</p>
+              {profile.bio ? (
+                <p className="bio-text" dir="auto">{profile.bio}</p>
+              ) : (
+                <p className="panel__lede">{t.profile.details.notProvided}</p>
+              )}
             </section>
 
             <CompletedWorkPanel entries={profile.work} lede={t.profile.work.lede} />
@@ -113,16 +145,14 @@ export const MyProfilePage = () => {
                     them in either direction. Each is reported empty on its own terms. */}
                 <Fact label={t.profile.details.officePhone} value={profile.officePhone || null} dir="ltr" />
                 <Fact label={t.profile.details.businessPhone} value={profile.businessPhone || null} dir="ltr" />
-                <Fact label={t.profile.details.city} value={profile.city} dir="auto" />
-                <Fact label={t.profile.details.region} value={t.regions[profile.region]} />
+                <Fact label={t.profile.details.city} value={profile.city || null} dir="auto" />
+                <Fact
+                  label={t.profile.details.region}
+                  value={profile.region === null ? null : t.regions[profile.region]}
+                />
                 <Fact
                   label={t.profile.details.travel}
-                  value={
-                    <>
-                      <bdi>{profile.travelRadiusKm}</bdi>
-                      <span className="fact__unit">{t.profile.details.km}</span>
-                    </>
-                  }
+                  value={<Measure value={profile.travelRadiusKm} unit={t.profile.details.km} />}
                 />
               </dl>
             </section>
@@ -134,21 +164,11 @@ export const MyProfilePage = () => {
               <dl className="facts">
                 <Fact
                   label={t.profile.scheduling.delay}
-                  value={
-                    <>
-                      <bdi>{profile.delayToleranceDays}</bdi>
-                      <span className="fact__unit">{t.profile.scheduling.days}</span>
-                    </>
-                  }
+                  value={<Measure value={profile.delayToleranceDays} unit={t.profile.scheduling.days} />}
                 />
                 <Fact
                   label={t.profile.scheduling.notice}
-                  value={
-                    <>
-                      <bdi>{profile.noticeRequiredDays}</bdi>
-                      <span className="fact__unit">{t.profile.scheduling.days}</span>
-                    </>
-                  }
+                  value={<Measure value={profile.noticeRequiredDays} unit={t.profile.scheduling.days} />}
                 />
               </dl>
             </section>

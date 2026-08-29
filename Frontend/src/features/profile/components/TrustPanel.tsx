@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 
 import { useLanguage } from '../../../i18n/useLanguage';
 import type { ProfileView } from '../profileModel';
+import { ProfileAvatar } from './ProfileAvatar';
 
 /**
  * The computed signals: rating and flexibility, beside the identity. Read-only on **both**
@@ -44,19 +45,22 @@ export const TrustPanel = ({
 }) => {
   const { t } = useLanguage();
   const fullName = `${profile.firstName} ${profile.lastName}`.trim();
-  const regionLabel = t.regions[profile.region];
+  const regionLabel = profile.region === null ? null : t.regions[profile.region];
+  const place = [profile.city, regionLabel].filter(Boolean).join(' · ');
 
   return (
     <section className="trust" aria-labelledby="trust-title">
       <h2 id="trust-title" className="sr-only">{t.profile.summary}</h2>
 
       <div className="trust__identity">
-        <span className="avatar avatar--lg" aria-hidden="true">{initials}</span>
+        <ProfileAvatar avatarUrl={profile.avatarUrl} initials={initials} large />
         <div className="trust__id-text">
           <p className="trust__name" dir="auto">{fullName}</p>
           {/* Company name is the professional identity a contractor is found by: required at
               registration, public and searchable (D28, closed 2026-08-28). */}
-          <p className="meta-row" dir="auto">{profile.companyName}</p>
+          {profile.companyName ? (
+            <p className="meta-row" dir="auto">{profile.companyName}</p>
+          ) : null}
           <ul className="tags">
             {profile.specialties.map((code) => (
               <li className="tag" key={code}>{t.trades[code]}</li>
@@ -68,9 +72,9 @@ export const TrustPanel = ({
               <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
               <circle cx="12" cy="10" r="3" />
             </svg>
-            <span dir="auto">{profile.city} · {regionLabel}</span>
+            <span dir="auto">{place || t.profile.details.notProvided}</span>
           </p>
-          {availabilityLabel !== null ? (
+          {availabilityLabel !== null && profile.availability !== null ? (
             <p className={`avail avail--${profile.availability}`}>
               <span className="avail__dot" aria-hidden="true" />
               {availabilityLabel}
