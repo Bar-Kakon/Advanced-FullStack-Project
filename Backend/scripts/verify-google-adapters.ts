@@ -65,7 +65,7 @@ const run = async (): Promise<void> => {
       ];
     },
   };
-  const proposal = await createTravelService({ places: stubPlaces(nearby), routes }).propose('origin', 50);
+  const proposal = await createTravelService({ places: stubPlaces(nearby), routes }).propose('origin', 50, []);
   check('a place inside the driving radius is suggested',
     proposal.suggested.map((p) => p.placeId).includes('near'));
   check('a place beyond it is excluded, with its distance recorded',
@@ -81,7 +81,7 @@ const run = async (): Promise<void> => {
       ];
     },
   };
-  const partial = await createTravelService({ places: stubPlaces(nearby), routes: failing }).propose('origin', 50);
+  const partial = await createTravelService({ places: stubPlaces(nearby), routes: failing }).propose('origin', 50, []);
   check('the failed candidate is not suggested', !partial.suggested.some((p) => p.placeId === 'near'));
   check('it is reported with routeStatus failed, not a distance',
     partial.excluded.some((p) => p.placeId === 'near' && p.routeStatus === 'failed'));
@@ -98,12 +98,12 @@ const run = async (): Promise<void> => {
       ];
     },
   };
-  const unreachable = await createTravelService({ places: stubPlaces(nearby), routes: noRoute }).propose('origin', 50);
+  const unreachable = await createTravelService({ places: stubPlaces(nearby), routes: noRoute }).propose('origin', 50, []);
   check('nothing is suggested when no route exists', unreachable.suggested.length === 0);
   check('and it is NOT flagged partial — Google answered', unreachable.partial === false);
 
   console.log('\n4. Places returns nothing useful');
-  const empty = await createTravelService({ places: stubPlaces([]), routes }).propose('origin', 50);
+  const empty = await createTravelService({ places: stubPlaces([]), routes }).propose('origin', 50, []);
   check('an empty candidate list is an empty proposal, not a crash',
     empty.suggested.length === 0 && empty.excluded.length === 0);
   check('and it is not flagged partial', empty.partial === false);
@@ -114,7 +114,7 @@ const run = async (): Promise<void> => {
     await createTravelService({
       places: stubPlaces([], () => { throw new Error('INVALID_PLACE_ID'); }),
       routes,
-    }).propose('bad-place', 50);
+    }).propose('bad-place', 50, []);
   } catch {
     threw = true;
   }

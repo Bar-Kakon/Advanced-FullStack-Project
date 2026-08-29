@@ -18,6 +18,7 @@
     "verify:employee-lifecycle": "tsx scripts/verify-employee-lifecycle.ts",
     "verify:blocks-connections-ratings": "tsx scripts/verify-blocks-connections-ratings.ts",
     "verify:browse": "tsx scripts/verify-browse.ts",
+    "verify:travel-exclusions": "tsx scripts/verify-travel-exclusions.ts",
     "verify:google-adapters": "tsx scripts/verify-google-adapters.ts",
     "verify:google-live": "tsx scripts/verify-google-live.ts",
     "verify:profile": "tsx scripts/verify-profile.ts",

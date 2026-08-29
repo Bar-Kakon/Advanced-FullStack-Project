@@ -68,6 +68,7 @@ export interface UserProfileFields {
     readonly place?: StoredPlace;
   };
   readonly approvedTravelLocations?: readonly StoredApprovedTravelLocation[];
+  readonly excludedTravelLocations?: readonly StoredExcludedTravelLocation[];
   readonly schedulingPrefs?: { readonly delayToleranceDays?: number; readonly noticeRequiredDays?: number };
   readonly avatar?: { readonly fileId?: Types.ObjectId };
 }
@@ -85,6 +86,13 @@ export interface StoredApprovedTravelLocation extends StoredPlace {
   readonly source: 'suggested' | 'manual';
   readonly approvedAt: Date;
   readonly drivingDistanceMeters?: number;
+}
+
+/** A place the person took out of a proposal. The radius proposal never suggests these again. */
+export interface StoredExcludedTravelLocation {
+  readonly placeId: string;
+  readonly displayName: string;
+  readonly excludedAt: Date;
 }
 
 export interface UserRecord {
@@ -134,6 +142,15 @@ const approvedTravelLocationSchema = new Schema(
   { _id: false },
 );
 
+const excludedTravelLocationSchema = new Schema(
+  {
+    placeId: { type: String, required: true, trim: true },
+    displayName: { type: String, required: true, trim: true },
+    excludedAt: { type: Date, required: true },
+  },
+  { _id: false },
+);
+
 const userSchema = new Schema(
   {
     email: { type: String, required: true, unique: true, lowercase: true, trim: true },
@@ -169,6 +186,9 @@ const userSchema = new Schema(
     // The explicit list the contractor confirmed. Authoritative for place willingness: a place
     // removed here is not approved even if it sits inside the radius.
     approvedTravelLocations: { type: [approvedTravelLocationSchema], default: undefined },
+
+    // Private to the person: a place removed here is never suggested by a later radius proposal.
+    excludedTravelLocations: { type: [excludedTravelLocationSchema], default: undefined },
 
     // Not binding. They tell the other side what timing suits before a date is proposed, and both
     // numbers are public on the profile. The bounds are provisional.

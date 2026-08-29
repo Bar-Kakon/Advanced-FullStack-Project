@@ -23,6 +23,7 @@ export const createLocationModule = (
   const router = Router();
   router.use(requireAccessToken);
 
+  router.get('/travel', controller.handleMine);
   router.post('/travel/proposal', validateRequest({ body: proposeTravelBodySchema }), controller.handlePropose);
   router.put('/travel', validateRequest({ body: saveTravelBodySchema }), controller.handleSave);
 

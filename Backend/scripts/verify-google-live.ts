@@ -19,6 +19,21 @@ const check = (label: string, passed: boolean, detail = ''): void => {
 
 const AUTOCOMPLETE_URL = 'https://places.googleapis.com/v1/places:autocomplete';
 
+const EARTH_RADIUS_METERS = 6_371_000;
+
+/** The straight line between two points, used only to prove a routed distance is not one. */
+const aerialMeters = (
+  a: { latitude: number; longitude: number },
+  b: { latitude: number; longitude: number },
+): number => {
+  const toRad = (degrees: number): number => (degrees * Math.PI) / 180;
+  const dLat = toRad(b.latitude - a.latitude);
+  const dLon = toRad(b.longitude - a.longitude);
+  const h = Math.sin(dLat / 2) ** 2
+    + Math.cos(toRad(a.latitude)) * Math.cos(toRad(b.latitude)) * Math.sin(dLon / 2) ** 2;
+  return 2 * EARTH_RADIUS_METERS * Math.asin(Math.sqrt(h));
+};
+
 const run = async (): Promise<void> => {
   loadEnvFile({ quiet: true });
   const { googleMaps } = loadConfig();
@@ -85,8 +100,24 @@ const run = async (): Promise<void> => {
   check('road distance is never a straight line of zero',
     ok.every((r) => (r.distanceMeters ?? 0) > 0));
 
+  console.log('\n5b. The number is road distance, not the straight line');
+  const measured = destinations
+    .map((place) => ({ place, route: matrix.find((r) => r.destinationPlaceId === place.placeId) }))
+    .filter((row) => row.route?.status === 'ok' && row.route.distanceMeters !== null);
+  check('every routed destination is at least as far by road as by air',
+    measured.every((row) => row.route!.distanceMeters! >= Math.round(aerialMeters(origin, row.place))),
+    `${measured.length} compared`);
+  const detour = measured.find(
+    (row) => row.route!.distanceMeters! > aerialMeters(origin, row.place) * 1.05,
+  );
+  check('and at least one is strictly longer, which an aerial number could never be',
+    detour !== undefined,
+    detour
+      ? `${Math.round(detour.route!.distanceMeters! / 1000)} km by road vs ${Math.round(aerialMeters(origin, detour.place) / 1000)} km by air`
+      : 'none');
+
   console.log('\n6. The whole proposal flow, end to end against Google');
-  const proposal = await createTravelService({ places, routes }).propose(origin.placeId, 40);
+  const proposal = await createTravelService({ places, routes }).propose(origin.placeId, 40, []);
   check('a proposal is produced', proposal.origin.placeId === origin.placeId);
   check('it suggests places inside the driving radius', proposal.suggested.length > 0,
     `${proposal.suggested.length} suggested, ${proposal.excluded.length} excluded`);
@@ -96,10 +127,23 @@ const run = async (): Promise<void> => {
     !proposal.suggested.some((p) => (p.drivingDistanceMeters ?? 0) > 40_000));
 
   console.log('\n7. An unroutable destination does not become "too far"');
-  const overseas = await routes.computeRouteMatrix(origin.placeId, ['ChIJdd4hrwug2EcRmSrV3Vo6llI']);
-  check('an unreachable destination answers no_route or failed, never a distance',
-    overseas.every((r) => r.status !== 'ok' || r.distanceMeters === null),
-    overseas.map((r) => r.status).join(','));
+  const island = await fetch(AUTOCOMPLETE_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-Goog-Api-Key': googleMaps.apiKey },
+    body: JSON.stringify({ input: 'Honolulu, Hawaii' }),
+  });
+  const islandBody = (await island.json()) as {
+    suggestions?: { placePrediction?: { placeId?: string } }[];
+  };
+  const islandId = (islandBody.suggestions ?? [])[0]?.placePrediction?.placeId;
+  check('a destination with no land connection was resolved', typeof islandId === 'string');
+
+  if (islandId) {
+    const overseas = await routes.computeRouteMatrix(origin.placeId, [islandId]);
+    check('an unreachable destination answers no_route or failed, never a distance',
+      overseas.every((r) => r.status !== 'ok' || r.distanceMeters === null),
+      overseas.map((r) => r.status).join(','));
+  }
 
   console.log(`\n${failures === 0 ? 'All live checks passed.' : `${failures} live check(s) FAILED.`}\n`);
   process.exit(failures === 0 ? 0 : 1);

@@ -8,6 +8,7 @@ import {
   type Trade,
   type UserProfileRecord,
   type StoredApprovedTravelLocation,
+  type StoredExcludedTravelLocation,
   type StoredPlace,
   type UserRecord,
   type UserStatus,
@@ -21,7 +22,7 @@ const IDENTITY_FIELDS = 'email status firstName lastName language profileComplet
  * absent from this list anyway; `termsAcceptances` and `security` are deliberately not here,
  * because no profile screen shows them and a projection is the cheapest place to keep it that way.
  */
-const PROFILE_FIELDS = `${IDENTITY_FIELDS} bio specialties specialtyOther businessPhone location schedulingPrefs avatar`;
+const PROFILE_FIELDS = `${IDENTITY_FIELDS} bio specialties specialtyOther businessPhone location approvedTravelLocations schedulingPrefs avatar`;
 
 /**
  * The write shape, deliberately separate from `UserRecord`. A caller can only supply what it lists,
@@ -68,6 +69,15 @@ export interface TravelPreferencesUpdate {
   readonly travelRadiusKm?: number;
   readonly place?: StoredPlace;
   readonly approvedTravelLocations: readonly StoredApprovedTravelLocation[];
+  readonly excludedTravelLocations: readonly StoredExcludedTravelLocation[];
+}
+
+/** The person's own travel answers. `excludedTravelLocations` is private and never reaches a viewer. */
+export interface TravelPreferencesRecord {
+  readonly travelRadiusKm: number | null;
+  readonly basePlace: StoredPlace | null;
+  readonly approvedTravelLocations: readonly StoredApprovedTravelLocation[];
+  readonly excludedTravelLocations: readonly StoredExcludedTravelLocation[];
 }
 
 export interface PasswordUpdate {
@@ -83,8 +93,9 @@ export interface UserRepository {
   findProfileById(id: string): Promise<UserProfileRecord | null>;
   updateProfile(id: Types.ObjectId, update: ProfileUpdate): Promise<void>;
   setAvatarFile(id: Types.ObjectId, fileId: Types.ObjectId | null): Promise<void>;
-  /** Writes the structured base place and the explicit approved list together. */
+  /** Writes the structured base place, the explicit approved list and the exclusions together. */
   saveTravelPreferences(id: Types.ObjectId, update: TravelPreferencesUpdate): Promise<void>;
+  findTravelPreferences(id: string): Promise<TravelPreferencesRecord | null>;
   /** The narrowest read the auth middleware can make: `null` when no such user exists. */
   findCredentialState(id: string): Promise<CredentialState | null>;
   /** The hash and the change stamp move together, so one call writes both. */
@@ -186,12 +197,39 @@ export const userRepository: UserRepository = {
     ).exec();
   },
 
-  async saveTravelPreferences(id, { travelRadiusKm, place, approvedTravelLocations }) {
-    const $set: Record<string, unknown> = { approvedTravelLocations: [...approvedTravelLocations] };
+  async saveTravelPreferences(
+    id,
+    { travelRadiusKm, place, approvedTravelLocations, excludedTravelLocations },
+  ) {
+    const $set: Record<string, unknown> = {
+      approvedTravelLocations: [...approvedTravelLocations],
+      excludedTravelLocations: [...excludedTravelLocations],
+    };
     if (travelRadiusKm !== undefined) $set['location.travelRadiusKm'] = travelRadiusKm;
     if (place !== undefined) $set['location.place'] = place;
 
     await UserModel.updateOne({ _id: id }, { $set }).exec();
+  },
+
+  async findTravelPreferences(id) {
+    if (!Types.ObjectId.isValid(id)) return null;
+
+    const found = await UserModel.findById(id)
+      .select('location.travelRadiusKm location.place approvedTravelLocations excludedTravelLocations')
+      .lean<{
+        location?: { travelRadiusKm?: number; place?: StoredPlace };
+        approvedTravelLocations?: readonly StoredApprovedTravelLocation[];
+        excludedTravelLocations?: readonly StoredExcludedTravelLocation[];
+      }>()
+      .exec();
+    if (found === null) return null;
+
+    return {
+      travelRadiusKm: found.location?.travelRadiusKm ?? null,
+      basePlace: found.location?.place ?? null,
+      approvedTravelLocations: found.approvedTravelLocations ?? [],
+      excludedTravelLocations: found.excludedTravelLocations ?? [],
+    };
   },
 
   /** A courtesy check only. The unique index on `email` is what actually guarantees uniqueness. */
