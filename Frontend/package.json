@@ -15,7 +15,8 @@
     "verify:profile-data": "node scripts/verify-profile-real-data.mjs",
     "verify:invitation-ui": "node scripts/verify-invitation-ui.mjs",
     "verify:account-menu": "node scripts/verify-account-menu.mjs",
-    "verify:integrated": "node scripts/verify-integrated-flow.mjs"
+    "verify:integrated": "node scripts/verify-integrated-flow.mjs",
+    "verify:owner-qa": "node scripts/verify-owner-qa.mjs"
   },
   "devDependencies": {
     "@types/react": "^19.2.18",
