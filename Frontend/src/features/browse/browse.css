@@ -79,6 +79,25 @@
 .adv-group__title { font-size: 15px; font-weight: 600; color: var(--text); }
 .adv-group__lede { font-size: 14px; color: var(--text-soft); margin-block: 2px 8px; }
 
+/* Three availability states, multi-select. */
+.avail-filter { display: flex; flex-direction: column; gap: 6px; }
+.avail-filter > .field-label { margin-block-end: 2px; }
+.avail-option {
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 10px;
+  border: 1px solid var(--secondary-30);
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  font-size: 14.5px;
+}
+.avail-option:hover { border-color: var(--secondary-55); background: var(--background); }
+.avail-option:has(.avail-option__input:checked) {
+  border-color: var(--primary-30);
+  background: var(--secondary-15);
+}
+.avail-option__input { accent-color: var(--primary); width: 16px; height: 16px; flex: 0 0 16px; }
+.avail-option__input:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+
 .star-select {
   direction: ltr;
   display: flex;
@@ -167,21 +186,55 @@
 }
 .profile-panel__head {
   display: flex; align-items: flex-start; justify-content: space-between;
-  gap: 10px; margin-block-end: 10px;
+  gap: 10px;
+  padding-block-end: 12px;
+  margin-block-end: 12px;
+  border-block-end: 1px solid var(--secondary-30);
 }
-.profile-panel__title { font-size: 20px; font-weight: 600; color: var(--primary); overflow-wrap: anywhere; }
-.profile-panel__company { font-size: 15px; color: var(--text-soft); overflow-wrap: anywhere; }
-.profile-panel__body { display: flex; flex-direction: column; gap: 16px; }
+.pp-identity { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.pp-identity__text { min-width: 0; }
+.pp-identity__position { font-size: 13.5px; color: var(--text-mute); }
+.profile-panel__title { font-size: 19px; font-weight: 600; color: var(--primary); overflow-wrap: anywhere; }
+.profile-panel__company { font-size: 14.5px; color: var(--text-soft); overflow-wrap: anywhere; }
+.profile-panel__body { display: flex; flex-direction: column; gap: 14px; }
 
-.pp-block__title { font-size: 15px; font-weight: 600; color: var(--text); margin-block-end: 6px; }
+.pp-signals {
+  display: flex; align-items: center; flex-wrap: wrap; gap: 8px 14px;
+  font-size: 14px;
+}
+.pp-signals__rating { color: var(--text-soft); }
+
+.pp-block__title {
+  font-size: 12.5px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase;
+  color: var(--text-mute);
+  margin-block-end: 6px;
+}
 .pp-block__text { font-size: 14.5px; line-height: 1.6; color: var(--text-soft); overflow-wrap: anywhere; }
-.pp-facts { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 12px; font-size: 14.5px; }
+.pp-facts { display: flex; flex-direction: column; gap: 4px; font-size: 14.5px; }
+.pp-facts__row { display: grid; grid-template-columns: minmax(0, 8rem) minmax(0, 1fr); gap: 12px; }
 .pp-facts dt { color: var(--text-mute); }
 .pp-facts dd { color: var(--text); overflow-wrap: anywhere; }
+
 .pp-work { list-style: none; display: flex; flex-direction: column; gap: 10px; }
-.pp-work__item { padding-inline-start: 10px; border-inline-start: 3px solid var(--secondary-30); }
-.pp-work__title { font-size: 15px; font-weight: 600; overflow-wrap: anywhere; }
+.pp-work__item { display: flex; align-items: flex-start; gap: 10px; }
+.pp-work__text { min-width: 0; }
+.pp-work__title { font-size: 14.5px; font-weight: 600; overflow-wrap: anywhere; }
 .pp-work__meta { font-size: 13.5px; color: var(--text-soft); overflow-wrap: anywhere; }
+.pp-foot { font-size: 13.5px; color: var(--text-mute); }
+
+/* Shared with Edit profile: one thumbnail treatment for a completed-work photo. */
+.work-thumb {
+  flex: 0 0 auto;
+  width: 56px; height: 56px;
+  border-radius: var(--r-sm);
+  object-fit: cover;
+}
+.work-thumb--empty {
+  display: flex; align-items: center; justify-content: center;
+  background: var(--background);
+  border: 1px solid var(--secondary-30);
+  color: var(--text-mute);
+}
 
 .notice--warn {
   display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;

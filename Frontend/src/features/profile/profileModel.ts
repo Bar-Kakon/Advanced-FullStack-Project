@@ -8,13 +8,8 @@ export type ProfileView = Profile;
 
 export type CompletedWorkEntry = WorkEntry;
 
-/** D14's heavy-equipment half has no schema anywhere. These are the prototype's ten codes. */
-export const EQUIPMENT_CODES = [
-  'excavator', 'backhoe', 'drill_rig', 'mini_excavator', 'crawler',
-  'jcb', 'wheel_loader', 'bobcat', 'bulldozer', 'hooklift_truck',
-] as const;
-
-export type EquipmentCode = (typeof EQUIPMENT_CODES)[number];
+export { EQUIPMENT_CODES } from '../../api/types';
+export type { EquipmentCode } from '../../api/types';
 
 /** Month and year only. The exact date and the task context are withheld deliberately. */
 export type ReceivedRating = ReceivedRatingDto;

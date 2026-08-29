@@ -35,6 +35,14 @@ export const buildProfilePatch = (values: EditProfileValues, saved: Profile): Pr
   if (orNull(values.specialtyOther) !== (saved.specialtyOther || null)) {
     patch.specialtyOther = orNull(values.specialtyOther);
   }
+
+  const equipmentChanged =
+    values.equipment.length !== saved.heavyEquipment.length
+    || values.equipment.some((code) => !saved.heavyEquipment.includes(code));
+  if (equipmentChanged && values.specialties.includes('heavy_equipment')) {
+    patch.heavyEquipment = values.equipment;
+  }
+
   if (orNull(values.businessPhone) !== (saved.businessPhone || null)) {
     patch.businessPhone = orNull(values.businessPhone);
   }

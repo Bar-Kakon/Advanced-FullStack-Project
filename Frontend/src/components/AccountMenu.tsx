@@ -77,17 +77,8 @@ export const AccountMenu = ({ name, initials }: { name: string; initials: string
           <ListItemText>{t.nav.account.myProfile}</ListItemText>
         </MenuItem>
 
-        {/*
-          Settings has no route yet. It is shown because it is part of the approved menu, and it is
-          disabled rather than pointed somewhere else — a wrong destination is worse than none.
-        */}
         <MenuItem disabled aria-disabled="true">
-          <ListItemText
-            secondary={t.nav.account.settingsUnavailable}
-            slotProps={{ secondary: { className: 'account-menu__note' } }}
-          >
-            {t.nav.account.settings}
-          </ListItemText>
+          <ListItemText>{t.nav.account.settings}</ListItemText>
         </MenuItem>
 
         <Divider />

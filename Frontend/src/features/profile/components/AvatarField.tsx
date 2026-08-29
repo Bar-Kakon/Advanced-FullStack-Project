@@ -92,7 +92,7 @@ export const AvatarField = ({
           onChange={(event) => void choose(event.target.files?.[0])}
         />
         <label className="btn btn--ghost btn--sm" htmlFor="avatar" aria-busy={busy === 'upload'}>
-          {busy === 'upload' ? t.editProfile.avatar.uploading : t.editProfile.avatar.upload}
+          {t.editProfile.avatar.upload}
           {busy === 'upload' ? <ButtonSpinner /> : null}
         </label>
 
@@ -104,7 +104,7 @@ export const AvatarField = ({
             disabled={busy !== null}
             aria-busy={busy === 'remove'}
           >
-            {busy === 'remove' ? t.editProfile.avatar.removing : t.editProfile.avatar.remove}
+            {t.editProfile.avatar.remove}
             {busy === 'remove' ? <ButtonSpinner /> : null}
           </button>
         ) : null}

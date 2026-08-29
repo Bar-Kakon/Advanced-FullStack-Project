@@ -7,7 +7,12 @@ import { ButtonSpinner } from '../../components/ButtonSpinner';
 import { useLanguage } from '../../i18n/useLanguage';
 import { useDocumentTitle } from '../../routes/useDocumentTitle';
 import { useScreenStylesheet } from '../../styles/useScreenStylesheet';
-import { addWorkEntry, classifyProfileError, removeWorkEntry } from '../../api/profile.api';
+import {
+  addWorkEntry,
+  classifyProfileError,
+  removeWorkEntry,
+  updateWorkEntry,
+} from '../../api/profile.api';
 import { AvatarField } from './components/AvatarField';
 import { Choice } from './components/Choice';
 import { CompletedWorkPanel } from './components/CompletedWorkPanel';
@@ -17,7 +22,8 @@ import { RatingsPanel } from './components/RatingsPanel';
 import { TrustPanel } from './components/TrustPanel';
 import { WorkEntryForm } from './components/WorkEntryForm';
 import { LocationField } from '../../location/LocationField';
-import { initialsOf } from './profileModel';
+import { initialsOf, type CompletedWorkEntry } from './profileModel';
+import type { WorkEntryValues } from './components/WorkEntryForm';
 import { fromProfile, useEditProfileForm } from './useEditProfileForm';
 import { useMyProfile } from './useMyProfile';
 import { useProfileSave } from './useProfileSave';
@@ -30,7 +36,7 @@ const MAX = { name: 100, companyName: 120, city: 80, phone: 30, specialtyOther: 
 
 const EMPTY_FORM = fromProfile({
   firstName: '', lastName: '', email: '', language: 'he', profileComplete: false,
-  bio: '', specialties: [], specialtyOther: '', businessPhone: '', city: '',
+  bio: '', specialties: [], specialtyOther: '', heavyEquipment: [], businessPhone: '', city: '',
   region: null, place: null, travelRadiusKm: null, delayToleranceDays: null, noticeRequiredDays: null,
   avatarUrl: null, companyName: null, officePhone: null, availability: null,
   standing: null, companyPosition: null, companyMembershipActive: false,
@@ -52,7 +58,10 @@ export const EditProfilePage = () => {
   const navigate = useNavigate();
   const { profile, loading, failure: loadFailure, setProfile, reload } = useMyProfile();
   const form = useEditProfileForm(EMPTY_FORM);
-  const { values, setValue, touched, markTouched, toggleSpecialty, toggleEquipment, setWork, reset, flags } = form;
+  const {
+    values, setValue, touched, markTouched, markAllTouched, toggleSpecialty, toggleEquipment,
+    setWork, reset, flags, missing, isValid,
+  } = form;
   const { save, saving, saved, failure: saveFailure, clearSaved } = useProfileSave();
 
   useScreenStylesheet(
@@ -63,9 +72,11 @@ export const EditProfilePage = () => {
   useDocumentTitle('עריכת הפרופיל / Edit profile — FieldSync');
 
   const [equipmentOpen, setEquipmentOpen] = useState(false);
-  const [addingWork, setAddingWork] = useState(false);
+  /** `null` = closed, `'new'` = the add form, an entry = that entry being edited. */
+  const [workForm, setWorkForm] = useState<'new' | CompletedWorkEntry | null>(null);
   const [workBusy, setWorkBusy] = useState(false);
   const [workError, setWorkError] = useState<string | null>(null);
+  const [blocked, setBlocked] = useState(false);
 
   // The form is filled once the server has answered, and again after a save returns a fresher read.
   useEffect(() => {
@@ -76,29 +87,47 @@ export const EditProfilePage = () => {
   const initials = initialsOf(values.firstName, values.lastName);
   const regionOptions = REGIONS.map((code) => ({ value: code, label: t.regions[code] }));
 
+  /* A required field left empty blocks the request, so a stale value can never read as saved. */
   const submit = useCallback(async (): Promise<void> => {
     if (!profile) return;
+    if (!isValid) {
+      markAllTouched();
+      setBlocked(true);
+      return;
+    }
+
+    setBlocked(false);
     const next = await save(values, profile);
     if (next) setProfile(next);
-  }, [profile, save, setProfile, values]);
+  }, [profile, isValid, markAllTouched, save, setProfile, values]);
 
-  const addWork = useCallback(async (
-    entry: { title: string; scope?: string; meta: string },
+  const saveWork = useCallback(async (
+    target: 'new' | CompletedWorkEntry,
+    fields: WorkEntryValues,
     image: File | null,
   ): Promise<void> => {
     setWorkBusy(true);
     setWorkError(null);
     try {
-      const created = await addWorkEntry(entry, image);
-      setWork([...values.work, created]);
-      setAddingWork(false);
+      if (target === 'new') {
+        const created = await addWorkEntry(
+          { title: fields.title, meta: fields.meta, ...(fields.scope ? { scope: fields.scope } : {}) },
+          image,
+        );
+        setWork([...values.work, created]);
+      } else {
+        const updated = await updateWorkEntry(target.id, fields, image);
+        setWork(values.work.map((entry) => (entry.id === updated.id ? updated : entry)));
+      }
+      setWorkForm(null);
     } catch (error) {
       const code = classifyProfileError(error);
       setWorkError(
         code === 'UNSUPPORTED_FILE_TYPE' ? t.editProfile.avatar.badType
         : code === 'FILE_TOO_LARGE' ? t.editProfile.avatar.tooLarge
         : code === 'NETWORK' ? t.profile.errors.network
-        : t.editProfile.work.addFailed,
+        : target === 'new' ? t.editProfile.work.addFailed
+        : t.editProfile.work.editFailed,
       );
     } finally {
       setWorkBusy(false);
@@ -136,7 +165,8 @@ export const EditProfilePage = () => {
   }
 
   const saveMessage =
-    saveFailure === 'NOT_PERMITTED' ? t.editProfile.actions.notPermitted
+    blocked ? t.editProfile.actions.blocked
+    : saveFailure === 'NOT_PERMITTED' ? t.editProfile.actions.notPermitted
     : saveFailure === 'NETWORK' ? t.profile.errors.network
     : saveFailure === 'VALIDATION' ? t.editProfile.actions.invalid
     : saveFailure ? t.editProfile.actions.saveFailed
@@ -312,7 +342,16 @@ export const EditProfilePage = () => {
                         </svg>
                         {t.editProfile.equipment.trigger}
                       </button>
-                      <p className="field-hint">{t.editProfile.equipment.notStored}</p>
+                      <p className="field-label field-label--sub">{t.editProfile.equipment.selected}</p>
+                      {values.equipment.length === 0 ? (
+                        <p className="field-hint">{t.editProfile.equipment.none}</p>
+                      ) : (
+                        <ul className="tags">
+                          {values.equipment.map((code) => (
+                            <li key={code} className="tag">{t.editProfile.equipment.items[code]}</li>
+                          ))}
+                        </ul>
+                      )}
                     </>
                   ) : null}
                 </fieldset>
@@ -330,22 +369,27 @@ export const EditProfilePage = () => {
                   placeholder={t.editProfile.location.cityPlaceholder}
                   place={values.place}
                   city={values.city}
-                  onPlace={(place) => setValue('place', place)}
-                  onCity={(city) => setValue('city', city)}
+                  onPlace={(place) => { setValue('place', place); markTouched('place'); }}
+                  onCity={(city) => { setValue('city', city); markTouched('city'); }}
                   required
+                  invalid={!!touched.city && missing.location}
+                  error={t.editProfile.location.cityRequired}
                 />
 
                 <EditSelect<Region | ''>
                   id="region" label={t.editProfile.location.region}
                   placeholder={t.editProfile.location.regionPlaceholder}
                   options={regionOptions} required
-                  value={values.region} onChange={(v) => setValue('region', v)}
+                  touched={!!touched.region}
+                  {...(missing.region ? { error: t.editProfile.location.regionRequired } : {})}
+                  value={values.region}
+                  onChange={(v) => { setValue('region', v); markTouched('region'); }}
                 />
 
                 <EditNumber
                   id="travelRadiusKm" label={t.editProfile.location.travel}
                   className={`form-group--travel${flags.nationwide ? ' is-nationwide' : ''}`}
-                  unit={t.editProfile.location.km} min={0} max={500} step={5}
+                  unit={t.editProfile.location.km} min={0} max={500} step={1}
                   value={values.travelRadiusKm} onChange={(v) => setValue('travelRadiusKm', v)}
                   hints={
                     <>
@@ -393,22 +437,26 @@ export const EditProfilePage = () => {
             lede={t.editProfile.work.lede}
             manage={{
               addLabel: t.editProfile.work.add,
+              editLabel: t.editProfile.work.edit,
               removeLabel: t.editProfile.work.remove,
-              onAdd: () => { setAddingWork(true); setWorkError(null); },
+              onAdd: () => { setWorkForm('new'); setWorkError(null); },
+              onEdit: (entry) => { setWorkForm(entry); setWorkError(null); },
               onRemove: (id) => void dropWork(id),
             }}
             notice={
               <>
-                {addingWork ? (
+                {workForm ? (
                   <WorkEntryForm
-                    onSubmit={(entry, image) => void addWork(entry, image)}
-                    onCancel={() => setAddingWork(false)}
+                    key={workForm === 'new' ? 'new' : workForm.id}
+                    entry={workForm === 'new' ? null : workForm}
+                    onSubmit={(fields, image) => void saveWork(workForm, fields, image)}
+                    onCancel={() => setWorkForm(null)}
                     busy={workBusy}
                     error={workError}
                   />
                 ) : null}
-                {!addingWork && workError ? (
-                  <p className="field-error" role="alert">{workError}</p>
+                {!workForm && workError ? (
+                  <p className="field-error field-error--visible" role="alert">{workError}</p>
                 ) : null}
               </>
             }
@@ -421,7 +469,7 @@ export const EditProfilePage = () => {
 
           <div className="form-actions">
             <button type="submit" className="btn btn--primary" disabled={saving} aria-busy={saving}>
-              {saving ? t.editProfile.actions.saving : t.editProfile.actions.save}
+              {t.editProfile.actions.save}
               {saving ? <ButtonSpinner /> : null}
             </button>
             <button
@@ -430,7 +478,12 @@ export const EditProfilePage = () => {
             >
               {t.editProfile.actions.cancel}
             </button>
-            <p className="form-actions__aside" role={saveFailure ? 'alert' : 'status'}>{saveMessage}</p>
+            <p
+              className={`form-actions__aside${blocked || saveFailure ? ' form-actions__aside--error' : ''}`}
+              role={blocked || saveFailure ? 'alert' : 'status'}
+            >
+              {saveMessage}
+            </p>
           </div>
         </form>
 

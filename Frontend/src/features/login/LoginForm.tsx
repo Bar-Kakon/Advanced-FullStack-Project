@@ -12,7 +12,13 @@ const MAX = { email: 254, password: 200 } as const;
 
 export const LoginForm = ({ form }: { form: ReturnType<typeof useLoginForm> }) => {
   const { t } = useLanguage();
-  const { values, setValue, touched, markTouched, isComplete, submitting, failure } = form;
+  const { values, setValue, touched, markTouched, errors, isComplete, submitting, failure } = form;
+
+  /* The same message component Register uses, so neither screen invents a second error language. */
+  const emailError =
+    errors.emailMissing ? t.login.errors.emailRequired
+    : errors.email ? t.login.errors.emailInvalid
+    : undefined;
 
   /**
    * One message for every way a sign-in can fail against a real account. `INVALID_CREDENTIALS`
@@ -44,6 +50,7 @@ export const LoginForm = ({ form }: { form: ReturnType<typeof useLoginForm> }) =
           placeholder={t.login.email.placeholder} autoComplete="email" maxLength={MAX.email} required
           value={values.email} onChange={(v) => setValue('email', v)}
           onBlur={() => markTouched('email')} touched={!!touched.email}
+          {...(emailError ? { error: emailError } : {})}
         />
 
         <PasswordField
@@ -52,6 +59,7 @@ export const LoginForm = ({ form }: { form: ReturnType<typeof useLoginForm> }) =
           autoComplete="current-password" maxLength={MAX.password} withWarning
           value={values.password} onChange={(v) => setValue('password', v)}
           onBlur={() => markTouched('password')} touched={!!touched.password}
+          {...(errors.passwordMissing ? { error: t.login.errors.passwordRequired } : {})}
         >
           <Link to="/forgot-password" className="form-link form-link--small forgot-link">
             {t.login.forgot}

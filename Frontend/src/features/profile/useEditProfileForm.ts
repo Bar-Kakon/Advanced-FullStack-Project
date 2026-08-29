@@ -52,7 +52,7 @@ export const fromProfile = (profile: ProfileView): EditProfileValues => ({
   bio: profile.bio,
   specialties: profile.specialties,
   specialtyOther: profile.specialtyOther,
-  equipment: [],
+  equipment: profile.heavyEquipment,
   availability: profile.availability ?? '',
   city: profile.city,
   place: profile.place,
@@ -99,6 +99,26 @@ export const useEditProfileForm = (initial: EditProfileValues) => {
     setTouched({});
   }, []);
 
+  /** The required fields, checked here so Save can be blocked before any request is built. */
+  const missing = useMemo(
+    () => ({
+      firstName: values.firstName.trim() === '',
+      lastName: values.lastName.trim() === '',
+      companyName: values.companyName.trim() === '',
+      location: values.place === null && values.city.trim() === '',
+      region: values.region === '',
+    }),
+    [values.firstName, values.lastName, values.companyName, values.place, values.city, values.region],
+  );
+
+  const isValid = !Object.values(missing).some(Boolean);
+
+  const markAllTouched = useCallback((): void => {
+    setTouched({
+      firstName: true, lastName: true, companyName: true, city: true, place: true, region: true,
+    });
+  }, []);
+
   const flags = useMemo(
     () => ({
       // The free-text box and the equipment picker are revealed by the value the form already
@@ -112,7 +132,7 @@ export const useEditProfileForm = (initial: EditProfileValues) => {
   );
 
   return {
-    values, setValue, touched, markTouched, toggleSpecialty, toggleEquipment,
-    removeWork, setWork, reset, flags,
+    values, setValue, touched, markTouched, markAllTouched, toggleSpecialty, toggleEquipment,
+    removeWork, setWork, reset, flags, missing, isValid,
   };
 };

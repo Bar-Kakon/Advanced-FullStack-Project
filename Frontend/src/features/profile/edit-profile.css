@@ -292,26 +292,21 @@ label.field-label { cursor: pointer; }
 .equip-modal__lede { margin-top: 8px; margin-bottom: 20px; font-size: 16px; color: var(--text-soft); }
 .equip-modal__done { margin-top: 22px; }
 
-/* ═══ Completed work — add and remove ═══ */
-.work-item__remove {
+/* ═══ Completed work — edit and remove ═══ */
+.work-item__tools {
   position: absolute;
-  top: 8px;
-  inset-inline-end: 8px;
-  display: inline-grid;
-  place-items: center;
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  color: var(--primary);
+  top: 6px;
+  inset-inline-end: 6px;
+  z-index: 1;
+  display: flex;
+  gap: 2px;
+  padding: 2px;
+  border-radius: var(--r-sm);
   background: var(--surface-96);
   border: 1px solid var(--secondary-45);
-  transition: color 0.15s, border-color 0.15s, background 0.15s;
 }
-.work-item__remove:hover {
-  color: var(--error);
-  border-color: var(--error-border);
-  background: var(--surface);
-}
+.work-item__tools .MuiIconButton-root { color: var(--primary); }
+.work-item__tools .MuiIconButton-root:hover { background: var(--secondary-15); }
 
 .work-add {
   display: flex;
@@ -349,6 +344,7 @@ label.field-label { cursor: pointer; }
   color: var(--surface-75);
   margin-inline-start: auto;
 }
+.form-actions__aside--error { color: var(--surface); font-weight: 600; }
 .form-actions__aside a {
   color: var(--secondary);
   font-weight: 500;
@@ -383,8 +379,23 @@ label.field-label { cursor: pointer; }
 }
 
 
-.field-error { font-size: 14px; color: var(--danger, #b23c17); margin-block-start: 6px; }
+/* The same error block the register and login screens draw. */
+.field-error {
+  display: none;
+  font-size: 14.5px;
+  color: var(--error);
+  margin-block-start: 4px;
+  padding: 8px 10px;
+  line-height: 1.4;
+  background: var(--error-bg);
+  border: 1px solid var(--error-border);
+  border-inline-start: 4px solid var(--error);
+  border-radius: var(--r-sm);
+  box-shadow: 3px 3px 0 rgba(166, 50, 50, 0.08);
+}
+.field-error--visible { display: block; }
 .field-label__optional { margin-inline-start: 6px; font-weight: 400; color: var(--text-mute); }
+.field-label--sub { margin-block-start: 12px; }
 
 .work-add {
   display: flex; flex-direction: column; gap: 10px;
@@ -393,4 +404,5 @@ label.field-label { cursor: pointer; }
   border: 1px solid var(--secondary-30);
   border-radius: var(--r-sm);
 }
+.work-add__title { font-size: 16px; font-weight: 600; color: var(--primary); }
 .work-add__actions { display: flex; flex-wrap: wrap; gap: 10px; }

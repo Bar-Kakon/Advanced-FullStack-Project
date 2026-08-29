@@ -91,7 +91,7 @@ export const EditTextarea = ({
 );
 
 export const EditSelect = <T extends string>({
-  id, label, value, onChange, placeholder, options, required = false,
+  id, label, value, onChange, placeholder, options, required = false, touched = false, error,
 }: {
   id: string;
   label: string;
@@ -100,6 +100,8 @@ export const EditSelect = <T extends string>({
   placeholder: string;
   options: readonly { readonly value: T; readonly label: string }[];
   required?: boolean;
+  touched?: boolean;
+  error?: string;
 }) => (
   <div className="form-group">
     <label className="field-label" htmlFor={id}>{label}</label>
@@ -107,7 +109,7 @@ export const EditSelect = <T extends string>({
       {/* One control, its options rendered from the string resource. The prototype had to carry a
           whole second select per language, because option text is not a span it could hide. */}
       <select
-        className="form-select"
+        className={`form-select${touched ? ' touched' : ''}`}
         id={id}
         name={id}
         value={value}
@@ -124,6 +126,9 @@ export const EditSelect = <T extends string>({
              strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9l6 6 6-6" /></svg>
       </span>
     </div>
+    {touched && error ? (
+      <p className="field-error field-error--visible" aria-live="polite">{error}</p>
+    ) : null}
   </div>
 );
 

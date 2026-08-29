@@ -13,10 +13,8 @@ import { LanguageSwitch } from './LanguageSwitch';
  * those notes said the drift collapses into, so the fixes that had landed on only some copies —
  * the 800px link wrap and the logical chip padding — are simply what the component does.
  *
- * The four destinations are `#` because none of those screens exists in this application yet.
- * That is the same state the prototype was in for three of the four, and it is recorded rather
- * than papered over: a link that points at a filename a single-page build does not serve would be
- * worse, because it would look like it worked.
+ * Three destinations have no screen yet. They keep their place in the approved navigation and are
+ * disabled rather than linked, which is the same treatment Settings has in the account menu.
  */
 export const AppNav = ({ name, initials }: { name: string; initials: string }) => {
   const { t } = useLanguage();
@@ -30,7 +28,7 @@ export const AppNav = ({ name, initials }: { name: string; initials: string }) =
   return (
     <header className="app-nav">
       <div className="app-nav__inner">
-        <a href="#" className="app-nav__brand" aria-label={t.nav.home}>
+        <Link to="/dashboard" className="app-nav__brand" aria-label={t.nav.home}>
           <span className="app-nav__mark" aria-hidden="true">
             <svg width="26" height="26" viewBox="0 0 40 40" fill="none">
               <circle cx="8" cy="20" r="6" fill="rgba(199,184,157,0.30)" stroke="rgba(255,253,248,0.92)" strokeWidth="2" />
@@ -42,20 +40,20 @@ export const AppNav = ({ name, initials }: { name: string; initials: string }) =
             </svg>
           </span>
           <span className="app-nav__name">FieldSync</span>
-        </a>
+        </Link>
 
         <nav className="app-nav__links" aria-label={t.nav.label}>
           <Link to="/browse" className="app-nav__link">{t.nav.browse}</Link>
-          <a href="#" className="app-nav__link">{t.nav.network}</a>
-          <a href="#" className="app-nav__link">{t.nav.projects}</a>
-          <a href="#" className="app-nav__link">{t.nav.myTasks}</a>
+          <span className="app-nav__link is-disabled" aria-disabled="true">{t.nav.network}</span>
+          <span className="app-nav__link is-disabled" aria-disabled="true">{t.nav.projects}</span>
+          <span className="app-nav__link is-disabled" aria-disabled="true">{t.nav.myTasks}</span>
           {showEmployees ? (
             <Link to="/employees" className="app-nav__link">{t.nav.employees}</Link>
           ) : null}
         </nav>
 
         <div className="app-nav__actions">
-          <button type="button" className="nav-icon-btn has-dot" aria-label={t.nav.notifications}>
+          <button type="button" className="nav-icon-btn" aria-label={t.nav.notifications} disabled>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                  strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" />

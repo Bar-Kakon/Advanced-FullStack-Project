@@ -1,3 +1,4 @@
+import { InputWarning } from '../components/InputWarning';
 import { useLanguage } from '../i18n/useLanguage';
 import { PlaceAutocomplete } from './PlaceAutocomplete';
 import { placesConfigured } from './usePlacesAutocomplete';
@@ -19,6 +20,8 @@ export const LocationField = ({
   onPlace,
   onCity,
   required = false,
+  invalid = false,
+  error,
 }: {
   label: string;
   placeholder?: string;
@@ -27,6 +30,8 @@ export const LocationField = ({
   onPlace: (place: StructuredPlace | null) => void;
   onCity: (city: string) => void;
   required?: boolean;
+  invalid?: boolean;
+  error?: string;
 }) => {
   const { t } = useLanguage();
 
@@ -34,17 +39,24 @@ export const LocationField = ({
     return (
       <div className="form-group">
         <label className="field-label" htmlFor="city">{label}</label>
-        <input
-          className="form-input"
-          id="city"
-          name="city"
-          type="text"
-          dir="auto"
-          value={city}
-          placeholder={placeholder ?? ''}
-          onChange={(event) => onCity(event.target.value)}
-          {...(required ? { 'aria-required': true } : {})}
-        />
+        <div className="input-wrapper">
+          <input
+            className={`form-input${invalid ? ' touched' : ''}`}
+            id="city"
+            name="city"
+            type="text"
+            dir="auto"
+            value={city}
+            placeholder={placeholder ?? ''}
+            onChange={(event) => onCity(event.target.value)}
+            required={required}
+            aria-invalid={invalid}
+          />
+          {required ? <InputWarning /> : null}
+        </div>
+        {invalid && error ? (
+          <p className="field-error field-error--visible" aria-live="polite">{error}</p>
+        ) : null}
         <p className="field-hint">{t.location.unavailableFallback}</p>
       </div>
     );
@@ -57,8 +69,11 @@ export const LocationField = ({
         value={place}
         onChange={(chosen) => {
           onPlace(chosen);
-          if (chosen) onCity(chosen.city ?? chosen.displayName);
+          onCity(chosen === null ? '' : chosen.city ?? chosen.displayName);
         }}
+        required={required}
+        invalid={invalid}
+        {...(error === undefined ? {} : { error })}
         {...(placeholder === undefined ? {} : { placeholder })}
       />
       {place === null && city.trim() !== '' ? (
