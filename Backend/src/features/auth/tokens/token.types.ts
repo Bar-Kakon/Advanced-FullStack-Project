@@ -8,6 +8,8 @@ export const REFRESH_TOKEN_PURPOSE = 'refresh';
 export interface AccessTokenClaims {
   readonly sub: string;
   readonly typ: typeof ACCESS_TOKEN_PURPOSE;
+  /** Issued-at, in whole seconds. Read to reject tokens minted before a credential change. */
+  readonly iat: number;
 }
 
 export interface RefreshTokenClaims {

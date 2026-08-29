@@ -22,10 +22,17 @@ export const COMPANY_MEMBERSHIP_STATUSES = [
   'inactive',
 ] as const;
 
-/** The organizational job. Deliberately never consulted when deciding what someone may do. */
+/**
+ * The organizational job. Deliberately never consulted when deciding what someone may do.
+ *
+ * `regional_construction_manager` was added 2026-08-29 on owner instruction, naming a role the
+ * vocabulary already distinguished in words but had no code for. The codes are stable identifiers:
+ * a display label may be reworded without touching one.
+ */
 export const COMPANY_POSITIONS = [
   'main_contractor',
   'construction_manager',
+  'regional_construction_manager',
   'site_manager',
   'contractor',
   'employee',
@@ -51,6 +58,9 @@ export type CompanyStanding = (typeof COMPANY_STANDINGS)[number];
 export type CompanyMembershipStatus = (typeof COMPANY_MEMBERSHIP_STATUSES)[number];
 export type CompanyPosition = (typeof COMPANY_POSITIONS)[number];
 export type CompanyPermission = (typeof COMPANY_PERMISSIONS)[number];
+
+/** The states that mean a person is in a company: waiting to be let in, or in. */
+export const CURRENT_MEMBERSHIP_STATUSES = ['pending_company_approval', 'active'] as const;
 
 /**
  * An owner runs the business, so public Register grants all four at signup. Writing them now rather
@@ -96,12 +106,15 @@ const companyMembershipSchema = new Schema(
 // invitation lookup a self-registration has to match against.
 companyMembershipSchema.index({ company: 1, status: 1 });
 
-// One active relationship per person at a time. Partial, so the invited and pending rows a person
-// may hold against several companies are untouched — only activation is exclusive. Same technique
-// `subscriptions` uses for one active row per user.
+// One company per person. Invited seats carry no user and inactive rows are history, so neither
+// is in the filter. Supersedes `user_1` — `npm run migrate:membership-uniqueness` drops it.
 companyMembershipSchema.index(
   { user: 1 },
-  { unique: true, partialFilterExpression: { status: 'active' } },
+  {
+    name: 'user_current_unique',
+    unique: true,
+    partialFilterExpression: { status: { $in: [...CURRENT_MEMBERSHIP_STATUSES] } },
+  },
 );
 
 export const CompanyMembershipModel = model('CompanyMembership', companyMembershipSchema);

@@ -8,13 +8,15 @@
 @password = CorrectHorse42!
 @newEmail = nina@ninaworks.co.il
 
-### Register — 201 + accessToken + safe user + Set-Cookie. Creates a company and its owner.
+### Register — 201 + { user }. NO accessToken and NO Set-Cookie: Register creates an account,
+### it does not open a session. `standing` is REQUIRED: "owner" creates a company and its owner
+### membership in one transaction, "employee" claims a seat. Rate limited: 10 per hour per IP.
 # @name register
 POST {{host}}/auth/register
 Content-Type: application/json
 
 {
-  "firstName": "נינה", "lastName": "לוי",
+  "firstName": "נינה", "lastName": "לוי", "standing": "owner",
   "companyName": "לוי עבודות חשמל בע\"מ",
   "email": "{{newEmail}}",
   "password": "CorrectHorse42!", "confirmPassword": "CorrectHorse42!",
@@ -25,11 +27,10 @@ Content-Type: application/json
   "acceptedTerms": true
 }
 
-### The Register Access Token opens a protected route — 200
+### Register issued nothing, so a protected route still refuses — 401 UNAUTHENTICATED
 GET {{host}}/health-auth
-Authorization: Bearer {{register.response.body.accessToken}}
 
-### The account Register created can then log in normally — 200
+### The account Register created signs in at Login, which is where a session starts — 200
 POST {{host}}/auth/login
 Content-Type: application/json
 
@@ -40,7 +41,7 @@ POST {{host}}/auth/register
 Content-Type: application/json
 
 {
-  "firstName": "Someone", "lastName": "Else", "companyName": "Different Ltd",
+  "firstName": "Someone", "lastName": "Else", "standing": "owner", "companyName": "Different Ltd",
   "email": "{{newEmail}}",
   "password": "CorrectHorse42!", "confirmPassword": "CorrectHorse42!",
   "specialty": "plumbing", "city": "חיפה", "region": "haifa", "acceptedTerms": true
@@ -51,7 +52,7 @@ POST {{host}}/auth/register
 Content-Type: application/json
 
 {
-  "firstName": "No", "lastName": "Phones", "companyName": "Quiet Ltd",
+  "firstName": "No", "lastName": "Phones", "standing": "owner", "companyName": "Quiet Ltd",
   "email": "quiet@example.com",
   "password": "CorrectHorse42!", "confirmPassword": "CorrectHorse42!",
   "specialty": "concrete", "city": "אשדוד", "region": "south", "acceptedTerms": true
@@ -62,7 +63,7 @@ POST {{host}}/auth/register
 Content-Type: application/json
 
 {
-  "firstName": "Office", "lastName": "Only", "companyName": "Office Ltd",
+  "firstName": "Office", "lastName": "Only", "standing": "owner", "companyName": "Office Ltd",
   "email": "office-only@example.com",
   "password": "CorrectHorse42!", "confirmPassword": "CorrectHorse42!",
   "specialty": "tiling", "city": "רמלה", "region": "lowlands",
@@ -74,7 +75,7 @@ POST {{host}}/auth/register
 Content-Type: application/json
 
 {
-  "firstName": "Business", "lastName": "Only", "companyName": "Business Ltd",
+  "firstName": "Business", "lastName": "Only", "standing": "owner", "companyName": "Business Ltd",
   "email": "business-only@example.com",
   "password": "CorrectHorse42!", "confirmPassword": "CorrectHorse42!",
   "specialty": "painting", "city": "נתניה", "region": "sharon",
@@ -86,7 +87,7 @@ POST {{host}}/auth/register
 Content-Type: application/json
 
 {
-  "firstName": "Other", "lastName": "Trade", "companyName": "Scaffold Ltd",
+  "firstName": "Other", "lastName": "Trade", "standing": "owner", "companyName": "Scaffold Ltd",
   "email": "other-trade@example.com",
   "password": "CorrectHorse42!", "confirmPassword": "CorrectHorse42!",
   "specialty": "other", "specialtyOther": "פיגומים",
@@ -98,7 +99,7 @@ POST {{host}}/auth/register
 Content-Type: application/json
 
 {
-  "firstName": "A", "lastName": "B", "companyName": "C", "email": "v1@example.com",
+  "firstName": "A", "lastName": "B", "standing": "owner", "companyName": "C", "email": "v1@example.com",
   "password": "CorrectHorse42!", "confirmPassword": "CorrectHorse42!",
   "specialty": "drilling", "specialtyOther": "scaffolding",
   "city": "חיפה", "region": "haifa", "acceptedTerms": true
@@ -109,7 +110,7 @@ POST {{host}}/auth/register
 Content-Type: application/json
 
 {
-  "firstName": "A", "lastName": "B", "companyName": "C", "email": "v2@example.com",
+  "firstName": "A", "lastName": "B", "standing": "owner", "companyName": "C", "email": "v2@example.com",
   "password": "CorrectHorse42!", "confirmPassword": "CorrectHorse42!",
   "specialty": "other", "city": "חיפה", "region": "haifa", "acceptedTerms": true
 }
@@ -119,7 +120,7 @@ POST {{host}}/auth/register
 Content-Type: application/json
 
 {
-  "firstName": "A", "lastName": "B", "companyName": "C", "email": "v3@example.com",
+  "firstName": "A", "lastName": "B", "standing": "owner", "companyName": "C", "email": "v3@example.com",
   "password": "CorrectHorse42!", "confirmPassword": "Different99!",
   "specialty": "drilling", "city": "חיפה", "region": "haifa", "acceptedTerms": true
 }
@@ -129,7 +130,7 @@ POST {{host}}/auth/register
 Content-Type: application/json
 
 {
-  "firstName": "A", "lastName": "B", "companyName": "C", "email": "v4@example.com",
+  "firstName": "A", "lastName": "B", "standing": "owner", "companyName": "C", "email": "v4@example.com",
   "password": "short", "confirmPassword": "short",
   "specialty": "drilling", "city": "חיפה", "region": "haifa", "acceptedTerms": true
 }
@@ -139,7 +140,7 @@ POST {{host}}/auth/register
 Content-Type: application/json
 
 {
-  "firstName": "A", "lastName": "B", "companyName": "C", "email": "v5@example.com",
+  "firstName": "A", "lastName": "B", "standing": "owner", "companyName": "C", "email": "v5@example.com",
   "password": "CorrectHorse42!", "confirmPassword": "CorrectHorse42!",
   "specialty": "drilling", "city": "חיפה", "region": "haifa",
   "availability": "vacation", "acceptedTerms": true
@@ -150,7 +151,7 @@ POST {{host}}/auth/register
 Content-Type: application/json
 
 {
-  "firstName": "A", "lastName": "B", "companyName": "C", "email": "v6@example.com",
+  "firstName": "A", "lastName": "B", "standing": "owner", "companyName": "C", "email": "v6@example.com",
   "password": "CorrectHorse42!", "confirmPassword": "CorrectHorse42!",
   "specialty": "drilling", "city": "חיפה", "region": "מרכז", "acceptedTerms": true
 }
@@ -160,7 +161,7 @@ POST {{host}}/auth/register
 Content-Type: application/json
 
 {
-  "firstName": "A", "lastName": "B", "companyName": "C", "email": "v7@example.com",
+  "firstName": "A", "lastName": "B", "standing": "owner", "companyName": "C", "email": "v7@example.com",
   "password": "CorrectHorse42!", "confirmPassword": "CorrectHorse42!",
   "specialty": "drilling", "city": "חיפה", "region": "haifa", "acceptedTerms": false
 }
@@ -170,7 +171,7 @@ POST {{host}}/auth/register
 Content-Type: application/json
 
 {
-  "firstName": "Mal", "lastName": "Icious", "companyName": "EvilCo",
+  "firstName": "Mal", "lastName": "Icious", "standing": "owner", "companyName": "EvilCo",
   "email": "inject@example.com",
   "password": "CorrectHorse42!", "confirmPassword": "CorrectHorse42!",
   "specialty": "general", "city": "אשדוד", "region": "south", "acceptedTerms": true,
@@ -178,7 +179,89 @@ Content-Type: application/json
   "passwordHash": "$2b$12$attackerControlledHash", "companyStanding": "member"
 }
 
-### Login — 200 + accessToken + safe user + Set-Cookie
+### ── Employee lifecycle: invite → register → approve ────────────────────────
+### Run `npm run verify:employee-lifecycle` for the whole thing asserted end to end.
+
+### 1. The owner opens a seat — 201 { invitationId }. Needs company.invite_employees.
+# @name invitation
+POST {{host}}/companies/employees/invitations
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.accessToken}}
+
+{ "fullName": "Erez Employee", "companyPosition": "site_manager" }
+
+### 2. The invited employee registers — 201 { user }. The seat becomes pending_company_approval.
+### The company name only narrows the search; the seat is matched on name + position as well.
+POST {{host}}/auth/register
+Content-Type: application/json
+
+{
+  "firstName": "Erez", "lastName": "Employee", "standing": "employee",
+  "companyName": "לוי עבודות חשמל בע\"מ", "companyPosition": "site_manager",
+  "email": "erez@example.com",
+  "password": "CorrectHorse42!", "confirmPassword": "CorrectHorse42!",
+  "specialty": "electrical", "city": "חיפה", "region": "haifa", "acceptedTerms": true
+}
+
+### No seat waiting — 409 INVITATION_NOT_FOUND, and NOTHING is written.
+### Typing a real company name is not proof of employment.
+POST {{host}}/auth/register
+Content-Type: application/json
+
+{
+  "firstName": "Sneak", "lastName": "In", "standing": "employee",
+  "companyName": "לוי עבודות חשמל בע\"מ", "companyPosition": "contractor",
+  "email": "sneak@example.com",
+  "password": "CorrectHorse42!", "confirmPassword": "CorrectHorse42!",
+  "specialty": "electrical", "city": "חיפה", "region": "haifa", "acceptedTerms": true
+}
+
+### 3. The owner sees who is waiting — 200
+GET {{host}}/companies/employees
+Authorization: Bearer {{login.response.body.accessToken}}
+
+### 4a. Approve one — 200 { approved: 1 }
+POST {{host}}/companies/employees/{{invitation.response.body.invitationId}}/approve
+Authorization: Bearer {{login.response.body.accessToken}}
+
+### 4b. Or approve every waiting activation at once — 200 { approved: n }
+POST {{host}}/companies/employees/approve-all
+Authorization: Bearer {{login.response.body.accessToken}}
+
+### An employee approving themselves — 403 NO_ACTIVE_COMPANY (they are not active yet)
+POST {{host}}/companies/employees/approve-all
+Authorization: Bearer PASTE_THE_PENDING_EMPLOYEE_ACCESS_TOKEN
+
+### 5. The company has been through employee setup — 200 { employeeSetupComplete: true }.
+### Inviting somebody and deciding not to are the same fact, so both end here. Idempotent, and
+### the first stamp is the one kept. Afterwards `GET /auth/me` reports it and the step is not
+### offered again. Needs the same company.invite_employees capability.
+POST {{host}}/companies/employee-setup/complete
+Authorization: Bearer {{login.response.body.accessToken}}
+
+### standing omitted entirely — 400 REQUEST_VALIDATION_FAILED. There is no silent default.
+POST {{host}}/auth/register
+Content-Type: application/json
+
+{
+  "firstName": "No", "lastName": "Standing", "companyName": "C",
+  "email": "nostanding@example.com",
+  "password": "CorrectHorse42!", "confirmPassword": "CorrectHorse42!",
+  "specialty": "drilling", "city": "חיפה", "region": "haifa", "acceptedTerms": true
+}
+
+### Unknown standing — 400 REQUEST_VALIDATION_FAILED
+POST {{host}}/auth/register
+Content-Type: application/json
+
+{
+  "firstName": "A", "lastName": "B", "standing": "admin", "companyName": "C",
+  "email": "badstanding@example.com",
+  "password": "CorrectHorse42!", "confirmPassword": "CorrectHorse42!",
+  "specialty": "drilling", "city": "חיפה", "region": "haifa", "acceptedTerms": true
+}
+
+### Login — 200 + accessToken + safe user + Set-Cookie. Rate limited: 10 per 15 minutes per IP.
 # @name login
 POST {{host}}/auth/login
 Content-Type: application/json
@@ -242,6 +325,16 @@ Authorization: Bearer not.a.real.token
 GET {{host}}/health-auth
 Authorization: {{login.response.body.accessToken}}
 
+### Who the caller is now — 200 + { user }, the same shape Login answered.
+### `user.company` carries membershipStatus, permissions and employeeSetupComplete. An Access Token
+### is stateless, so an employer approving a membership cannot reach the copy the client holds —
+### this is how the client asks. It issues nothing and leaves the Refresh cookie alone.
+GET {{host}}/auth/me
+Authorization: Bearer {{login.response.body.accessToken}}
+
+### No token — 401 UNAUTHENTICATED
+GET {{host}}/auth/me
+
 ### Refresh — 200 + new accessToken + new Set-Cookie (old one retired)
 # @name refresh
 POST {{host}}/auth/refresh
@@ -276,6 +369,81 @@ Cookie: refreshToken=PASTE_THE_RETIRED_REFRESH_TOKEN
 POST {{host}}/auth/refresh
 
 ### Expired tokens: set ACCESS_TOKEN_TTL_SECONDS=1 / REFRESH_TOKEN_TTL_SECONDS=2, restart, wait, retry.
+
+### ── Password reset ──────────────────────────────────────────────────────────
+
+### Forgot password, known address — 200 { status: 'ok' }
+POST {{host}}/auth/forgot-password
+Content-Type: application/json
+
+{ "email": "{{email}}" }
+
+### Forgot password, unknown address — 200 { status: 'ok' }, byte-identical to the answer above
+POST {{host}}/auth/forgot-password
+Content-Type: application/json
+
+{ "email": "definitely-nobody@example.com" }
+
+### Malformed address — 400 REQUEST_VALIDATION_FAILED
+POST {{host}}/auth/forgot-password
+Content-Type: application/json
+
+{ "email": "not-an-email" }
+
+### Reset with the raw token from the email — 200 { status: 'ok' }
+### No SMTP configured? The server logs the link in log mode; copy the token out of it.
+### Success issues nothing: the person signs in with the new password.
+POST {{host}}/auth/reset-password
+Content-Type: application/json
+
+{ "token": "PASTE_THE_RAW_TOKEN_FROM_THE_EMAIL", "password": "BrandNewHorse99!" }
+
+### The same token a second time — 401 INVALID_RESET_TOKEN. One use only.
+POST {{host}}/auth/reset-password
+Content-Type: application/json
+
+{ "token": "PASTE_THE_SAME_RAW_TOKEN", "password": "AnotherHorse77!" }
+
+### Unknown token — 401 INVALID_RESET_TOKEN, the same answer as expired and superseded
+POST {{host}}/auth/reset-password
+Content-Type: application/json
+
+{ "token": "0000000000000000000000000000000000000000000000000000000000000000", "password": "BrandNewHorse99!" }
+
+### New password under 8 characters — 400 REQUEST_VALIDATION_FAILED, and the token is NOT spent
+POST {{host}}/auth/reset-password
+Content-Type: application/json
+
+{ "token": "PASTE_A_LIVE_RAW_TOKEN", "password": "short" }
+
+### After a successful reset the pre-reset Refresh cookie is dead — 401 INVALID_REFRESH_TOKEN
+POST {{host}}/auth/refresh
+
+### And the pre-reset Access Token is dead too — 401 UNAUTHENTICATED.
+### It is a stateless JWT, so it is not revoked: the reset stamped users.security.passwordChangedAt
+### and this token's `iat` predates it. Use the token from the Login BEFORE the reset.
+GET {{host}}/health-auth
+Authorization: Bearer {{login.response.body.accessToken}}
+
+### A token from a Login AFTER the reset works normally — 200
+# @name loginAfterReset
+POST {{host}}/auth/login
+Content-Type: application/json
+
+{ "email": "{{email}}", "password": "BrandNewHorse99!" }
+
+###
+GET {{host}}/health-auth
+Authorization: Bearer {{loginAfterReset.response.body.accessToken}}
+
+### Rate limiting — send any of these faster than its budget and the next one is
+### 429 { "code": "TOO_MANY_REQUESTS", … }. Counters are per IP and in memory, so
+### restarting the server clears them. `npm run verify:rate-limit` proves all four.
+
+### A banned account: a live Access Token stops working immediately, not at expiry.
+### Set status directly (no admin endpoint exists yet), then retry a protected route — 401.
+GET {{host}}/health-auth
+Authorization: Bearer {{login.response.body.accessToken}}
 
 ### Health — 200
 GET {{host}}/health

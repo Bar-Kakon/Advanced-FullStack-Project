@@ -17,7 +17,8 @@ const hasAccessClaims = (payload: unknown): payload is AccessTokenClaims =>
   typeof payload === 'object' &&
   payload !== null &&
   typeof (payload as AccessTokenClaims).sub === 'string' &&
-  (payload as AccessTokenClaims).typ === ACCESS_TOKEN_PURPOSE;
+  (payload as AccessTokenClaims).typ === ACCESS_TOKEN_PURPOSE &&
+  typeof (payload as AccessTokenClaims).iat === 'number';
 
 /**
  * Owns Access Token cryptography and nothing else. It reports failure as `null` rather than an
@@ -25,8 +26,8 @@ const hasAccessClaims = (payload: unknown): payload is AccessTokenClaims =>
  */
 export const createAccessTokenService = ({ secret, ttlSeconds }: AccessTokenSettings): AccessTokenService => ({
   issue(userId) {
-    const claims: AccessTokenClaims = { sub: userId, typ: ACCESS_TOKEN_PURPOSE };
-    return jwt.sign(claims, secret, { expiresIn: ttlSeconds });
+    // `iat` is added by `sign`; it is claimed back on the way in, not set on the way out.
+    return jwt.sign({ sub: userId, typ: ACCESS_TOKEN_PURPOSE }, secret, { expiresIn: ttlSeconds });
   },
 
   verify(token) {

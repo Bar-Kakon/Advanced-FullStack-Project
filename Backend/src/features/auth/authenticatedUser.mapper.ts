@@ -1,3 +1,4 @@
+import type { CompanyContext } from '../companies/companyContext.service.js';
 import type { UserLanguage, UserRecord } from '../users/user.model.js';
 
 export interface AuthenticatedUser {
@@ -25,4 +26,17 @@ export const toAuthenticatedUser = (user: UserRecord): AuthenticatedUser => ({
   lastName: user.lastName,
   language: user.language,
   profileComplete: user.profileComplete,
+});
+
+/**
+ * The person plus their company relationship. Separate from `AuthenticatedUser` because only a
+ * session has the second half: Register opens none, so its 201 keeps the plain identity.
+ */
+export interface SessionUser extends AuthenticatedUser {
+  readonly company: CompanyContext | null;
+}
+
+export const toSessionUser = (user: UserRecord, company: CompanyContext | null): SessionUser => ({
+  ...toAuthenticatedUser(user),
+  company,
 });

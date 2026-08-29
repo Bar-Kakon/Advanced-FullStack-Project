@@ -16,6 +16,8 @@ export interface CompanyRecord {
   readonly name: string;
   readonly officePhone?: string;
   readonly availability: Availability;
+  /** When the business finished employee setup. Absent means it has not happened. */
+  readonly employeeSetupCompletedAt?: Date;
 }
 
 const companySchema = new Schema(
@@ -28,6 +30,10 @@ const companySchema = new Schema(
       default: 'open',
       required: true,
     },
+
+    // On the COMPANY, because that is what was set up: a second manager joining later must not be
+    // walked through the step again. No default and no backfill — absent means it has not happened.
+    employeeSetupCompletedAt: { type: Date },
   },
   { timestamps: true },
 );

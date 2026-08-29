@@ -1,8 +1,15 @@
 import type { Request, RequestHandler, Response } from 'express';
 
 import { getValidated } from '../../middleware/validateRequest.js';
+import { getAuthenticatedUserId } from './requireAccessToken.middleware.js';
 import type { AuthService } from './auth.service.js';
-import type { LoginBody, RegisterBody } from './auth.validation.js';
+import type {
+  ForgotPasswordBody,
+  LoginBody,
+  RegisterBody,
+  ResetPasswordBody,
+} from './auth.validation.js';
+import type { PasswordResetService } from './passwordReset.service.js';
 import type { RegistrationService } from './registration.service.js';
 import { REFRESH_TOKEN_COOKIE, type RefreshTokenCookie } from './refreshTokenCookie.js';
 
@@ -10,11 +17,15 @@ export interface AuthController {
   readonly handleRegister: RequestHandler;
   readonly handleLogin: RequestHandler;
   readonly handleRefresh: RequestHandler;
+  readonly handleMe: RequestHandler;
+  readonly handleForgotPassword: RequestHandler;
+  readonly handleResetPassword: RequestHandler;
 }
 
 export interface AuthControllerDependencies {
   readonly authService: AuthService;
   readonly registrationService: RegistrationService;
+  readonly passwordResetService: PasswordResetService;
   readonly cookie: RefreshTokenCookie;
 }
 
@@ -28,6 +39,7 @@ export interface AuthControllerDependencies {
 export const createAuthController = ({
   authService,
   registrationService,
+  passwordResetService,
   cookie,
 }: AuthControllerDependencies): AuthController => {
   const sendRefreshToken = (res: Response, refreshToken: string): void => {
@@ -35,13 +47,12 @@ export const createAuthController = ({
   };
 
   return {
-    /** 201: an account was created. It arrives authenticated, so the client goes straight on. */
+    /** 201: an account exists. No session — Login is the only thing that authenticates. */
     handleRegister: async (req: Request, res: Response) => {
       const input = getValidated<RegisterBody>(res, 'body');
-      const { accessToken, refreshToken, user } = await registrationService.register(input);
+      const { user } = await registrationService.register(input);
 
-      sendRefreshToken(res, refreshToken);
-      res.status(201).json({ accessToken, user });
+      res.status(201).json({ user });
     },
 
     handleLogin: async (req: Request, res: Response) => {
@@ -57,6 +68,29 @@ export const createAuthController = ({
 
       sendRefreshToken(res, refreshToken);
       res.json({ accessToken });
+    },
+
+    /** A read: who the caller is now. Nothing is issued and the Refresh cookie is untouched. */
+    handleMe: async (req: Request, res: Response) => {
+      const user = await authService.currentUser(getAuthenticatedUserId(res));
+
+      res.json({ user });
+    },
+
+    /** Always 200, and always the same body. The answer carries no fact about the address. */
+    handleForgotPassword: async (req: Request, res: Response) => {
+      const input = getValidated<ForgotPasswordBody>(res, 'body');
+      await passwordResetService.requestReset(input);
+
+      res.json({ status: 'ok' });
+    },
+
+    /** 200 on success. Nothing is issued — the person signs in with the new password. */
+    handleResetPassword: async (req: Request, res: Response) => {
+      const input = getValidated<ResetPasswordBody>(res, 'body');
+      await passwordResetService.resetPassword(input);
+
+      res.json({ status: 'ok' });
     },
   };
 };

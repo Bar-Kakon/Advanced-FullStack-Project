@@ -1,7 +1,7 @@
 import type { Types } from 'mongoose';
 
 import type { DbSession } from '../../db/mongoose.js';
-import { CompanyModel, type Availability } from './company.model.js';
+import { CompanyModel, type Availability, type CompanyRecord } from './company.model.js';
 
 export interface NewCompany {
   readonly name: string;
@@ -11,6 +11,11 @@ export interface NewCompany {
 
 export interface CompanyRepository {
   create(company: NewCompany, session?: DbSession): Promise<Types.ObjectId>;
+  /** Every company holding this name. The name is not unique, so this returns a list. */
+  findIdsByName(name: string): Promise<Types.ObjectId[]>;
+  findById(id: Types.ObjectId): Promise<CompanyRecord | null>;
+  /** Stamps employee setup as done. Idempotent, and the first stamp is the one that survives. */
+  markEmployeeSetupComplete(id: Types.ObjectId, at: Date): Promise<void>;
 }
 
 /**
@@ -23,5 +28,21 @@ export const companyRepository: CompanyRepository = {
     if (created === undefined) throw new Error('Company insert returned no document.');
 
     return created._id;
+  },
+
+  async findIdsByName(name) {
+    return CompanyModel.find({ name }).distinct('_id');
+  },
+
+  async findById(id) {
+    return CompanyModel.findById(id).lean<CompanyRecord>().exec();
+  },
+
+  /** The filter keeps the original stamp: a later call must not rewrite the day it happened. */
+  async markEmployeeSetupComplete(id, at) {
+    await CompanyModel.updateOne(
+      { _id: id, employeeSetupCompletedAt: { $exists: false } },
+      { $set: { employeeSetupCompletedAt: at } },
+    ).exec();
   },
 };

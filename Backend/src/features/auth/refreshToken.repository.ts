@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 
 import { Types } from 'mongoose';
 
+import type { DbSession } from '../../db/mongoose.js';
 import { RefreshTokenModel, type RefreshTokenRecord } from './refreshToken.model.js';
 
 export interface StoredRefreshToken {
@@ -17,6 +18,8 @@ export interface RefreshTokenRepository {
   findByHash(tokenHash: string): Promise<RefreshTokenRecord | null>;
   markUsed(id: Types.ObjectId): Promise<void>;
   revokeFamily(family: string): Promise<void>;
+  /** Every family at once, for a credential change that invalidates all of a user's sessions. */
+  revokeAllForUser(userId: Types.ObjectId, session?: DbSession): Promise<void>;
 }
 
 /**
@@ -46,5 +49,14 @@ export const refreshTokenRepository: RefreshTokenRepository = {
       { family, revokedAt: null },
       { $set: { revokedAt: new Date() } },
     ).exec();
+  },
+
+  async revokeAllForUser(userId, session) {
+    const query = RefreshTokenModel.updateMany(
+      { user: userId, revokedAt: null },
+      { $set: { revokedAt: new Date() } },
+    );
+    if (session) query.session(session);
+    await query.exec();
   },
 };
