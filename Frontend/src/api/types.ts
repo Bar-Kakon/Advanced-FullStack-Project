@@ -25,9 +25,20 @@ export type Trade = (typeof TRADES)[number];
 export type Region = (typeof REGIONS)[number];
 export type Availability = (typeof AVAILABILITY_STATUSES)[number];
 
+/** Organizational standing only — not a permission, not a project role, not a job title. */
+export const COMPANY_STANDINGS = ['owner', 'employee'] as const;
+export type CompanyStanding = (typeof COMPANY_STANDINGS)[number];
+
 export interface RegisterPayload {
   readonly firstName: string;
   readonly lastName: string;
+  /**
+   * Sent explicitly rather than left to the server's default, so the field this screen means is
+   * the field the server records. Public Register has one control today and it creates an owner;
+   * the employee path exists on the endpoint but has no screen, because an employee has no company
+   * to be linked to until an invitation flow exists.
+   */
+  readonly standing: CompanyStanding;
   readonly companyName: string;
   readonly email: string;
   readonly password: string;

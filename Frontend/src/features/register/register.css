@@ -1234,3 +1234,16 @@ html[data-lang="en"] {
 .avail--open    .avail__dot { background: var(--avail-open); }
 .avail--limited .avail__dot { background: var(--avail-limited); }
 .avail--closed  .avail__dot { background: var(--avail-closed); }
+
+/* ═══ In-button loading indicator ═══ */
+/* Positioned absolutely so the label neither moves nor is replaced while a request is running —
+   the button keeps its exact size and the card does not reflow. The colour is inherited from the
+   button, so MUI's own palette never reaches this design. */
+.btn { position: relative; }
+.btn__spinner {
+  position: absolute;
+  inset-inline-end: 18px;
+  display: inline-flex;
+  align-items: center;
+  pointer-events: none;
+}

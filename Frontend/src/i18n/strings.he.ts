@@ -32,7 +32,6 @@ export const he = {
     subtitle: 'כמה פרטים ואפשר להתחיל לתאם',
     optional: 'אופציונלי',
     submit: 'יצירת חשבון',
-    submitting: 'יוצר חשבון…',
     dividerOr: 'או',
     google: 'הרשמה עם Google',
     haveAccount: 'כבר יש לך חשבון?',
@@ -142,7 +141,6 @@ export const he = {
     password: { label: 'סיסמה', placeholder: '••••••••' },
     forgot: 'שכחת סיסמה?',
     submit: 'כניסה',
-    submitting: 'מתחבר…',
     dividerOr: 'או',
     google: 'המשך עם Google',
     noAccount: 'אין לך חשבון?',
@@ -180,7 +178,7 @@ export const he = {
     title: 'שכחת סיסמה?',
     subtitle: 'הזינו את האימייל המשויך לחשבון ונשלח אליכם קישור לאיפוס.',
     email: { label: 'כתובת אימייל', placeholder: 'you@example.com', error: 'יש להזין כתובת אימייל תקינה' },
-    submit: 'שליחת קישור לאיפוס',
+    submit: 'שליחת קישור לאיפוס הסיסמה',
     remembered: 'נזכרתם בסיסמה?',
     signIn: 'להתחברות',
     sentTitle: 'בדקו את תיבת הדואר',
@@ -189,10 +187,9 @@ export const he = {
     noMail: 'לא הגיע כלום?',
     resend: 'שליחה מחדש',
     /** The honest build state, in the same voice the other screens use for an absent endpoint. */
-    submitting: 'שולח…',
     errors: {
-      network: 'לא הצלחנו להגיע לשרת. בדקו את החיבור ונסו שוב.',
-      generic: 'משהו השתבש. אנא נסו שוב.',
+      network: 'לא ניתן להתחבר לשרת. בדקו את החיבור לאינטרנט ונסו שוב.',
+      generic: 'אירעה שגיאה. נסו שוב.',
     },
   },
 
@@ -215,20 +212,20 @@ export const he = {
     newPassword: { label: 'סיסמה חדשה', placeholder: '••••••••', error: 'הסיסמה חייבת לכלול לפחות 8 תווים' },
     confirmPassword: { label: 'אימות סיסמה', placeholder: '••••••••', hint: 'יש להזין את אותה הסיסמה שוב לאימות.', error: 'הסיסמאות אינן תואמות' },
     togglePassword: 'הצגת סיסמה',
-    submit: 'איפוס סיסמה',
+    submit: 'שמירת הסיסמה החדשה',
     doneTitle: 'הסיסמה עודכנה',
     doneSubtitle: 'הסיסמה שלכם שונתה בהצלחה. אפשר להתחבר עם הסיסמה החדשה.',
     continue: 'המשך להתחברות',
-    submitting: 'מאפס…',
     errors: {
       // The server answers one code for unknown, expired, superseded and already-used alike.
-      invalidToken: 'הקישור לאיפוס אינו תקף יותר. ייתכן שפג תוקפו, שכבר נעשה בו שימוש, או שנשלח קישור חדש. אפשר לבקש קישור חדש.',
-      weakPassword: 'הסיסמה חייבת לכלול לפחות 8 תווים.',
-      network: 'לא הצלחנו להגיע לשרת. בדקו את החיבור ונסו שוב.',
-      generic: 'משהו השתבש. אנא נסו שוב.',
-      missingToken: 'הכתובת הזו אינה כוללת קישור לאיפוס. פתחו את הקישור מההודעה שנשלחה אליכם, או בקשו קישור חדש.',
+      invalidToken: 'הקישור לאיפוס הסיסמה אינו תקף או שפג תוקפו. ניתן לשלוח קישור חדש.',
+      weakPassword: 'הסיסמה חייבת להכיל לפחות 8 תווים.',
+      network: 'לא ניתן להתחבר לשרת. בדקו את החיבור לאינטרנט ונסו שוב.',
+      generic: 'אירעה שגיאה. נסו שוב.',
     },
-    requestNewLink: 'בקשת קישור חדש',
+    /** Shown beside the email field when the page was opened without a usable link. */
+    noLinkLede: 'הזינו את כתובת המייל כדי שנוכל לשלוח לכם קישור חדש לאיפוס הסיסמה.',
+    sendNewLink: 'שליחת קישור חדש',
   },
 
   dashboard: {

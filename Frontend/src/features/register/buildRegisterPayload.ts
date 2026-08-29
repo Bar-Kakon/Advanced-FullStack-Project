@@ -66,6 +66,7 @@ export const buildRegisterPayload = (values: RegisterFormValues): RegisterPayloa
   return {
     firstName: values.firstName.trim(),
     lastName: values.lastName.trim(),
+    standing: 'owner',
     companyName: values.companyName.trim(),
     email: values.email.trim(),
     password: values.password,

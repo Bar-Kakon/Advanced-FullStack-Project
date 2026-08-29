@@ -3,15 +3,19 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 
 import {
   classifyResetPasswordError,
+  requestPasswordReset,
   resetPassword,
   type ResetPasswordFailure,
 } from '../../api/auth.api';
 import { AuthShell } from '../../components/AuthShell';
+import { ButtonSpinner } from '../../components/ButtonSpinner';
 import { FormAlert } from '../../components/FormAlert';
 import { PasswordField } from '../../components/PasswordField';
 import { useLanguage } from '../../i18n/useLanguage';
 import { useDocumentTitle } from '../../routes/useDocumentTitle';
 import { useScreenStylesheet } from '../../styles/useScreenStylesheet';
+import { RequestResetForm } from './components/RequestResetForm';
+import { ResetLinkSent } from './components/ResetLinkSent';
 import loginCss from '../login/login.css?inline';
 import resetCss from './password-reset.css?inline';
 
@@ -20,15 +24,17 @@ const MIN_PASSWORD_LENGTH = 8;
 const MAX_PASSWORD_LENGTH = 200;
 
 /**
- * Reset password — set a new password, then the confirmation.
+ * Reset password. The token arrives in the query string, because that is where the emailed link
+ * puts it: `${FRONTEND_URL}/reset-password?token=<raw token>`.
  *
- * The token arrives in the query string, because that is where the emailed link puts it:
- * `${FRONTEND_URL}/reset-password?token=<raw token>`. The server holds only its hash, so this
- * value is the one secret the whole flow turns on and it is never stored or logged here.
+ * **A dead end is not an acceptable state for this screen.** Somebody who opens it without a link,
+ * or whose link has expired, is exactly the person who needs a new one — so both cases show the
+ * email field and go through the same forgot-password request the other screen uses. There is no
+ * second mechanism, and the confirmation they land on is the same one.
  *
- * Two checks that look alike do different jobs. The confirm-password match is a courtesy to the
- * person typing and never leaves the browser. The length rule is enforced again by the server,
- * which is what actually protects the account — this screen refusing early only saves a round trip.
+ * Two checks that look alike do different jobs: the confirm-password match is a courtesy to the
+ * person typing and never leaves the browser, while the length rule is enforced again by the
+ * server, which is what actually protects the account.
  */
 export const ResetPasswordPage = () => {
   const { t } = useLanguage();
@@ -48,6 +54,8 @@ export const ResetPasswordPage = () => {
   const [submitting, setSubmitting] = useState(false);
   const [failure, setFailure] = useState<ResetPasswordFailure | null>(null);
   const [done, setDone] = useState(false);
+  const [sentTo, setSentTo] = useState<string | null>(null);
+  const [resending, setResending] = useState(false);
 
   const errors = useMemo(
     () => ({
@@ -59,8 +67,9 @@ export const ResetPasswordPage = () => {
     [password, confirm],
   );
 
-  const canSubmit =
-    token.length > 0 && password.length >= MIN_PASSWORD_LENGTH && confirm === password;
+  /** A link that was never there and a link the server refused need the same way out. */
+  const linkUnusable = token.length === 0 || failure === 'INVALID_RESET_TOKEN';
+  const canSubmit = !linkUnusable && password.length >= MIN_PASSWORD_LENGTH && confirm === password;
 
   const submit = useCallback(async (): Promise<void> => {
     if (!canSubmit || submitting) return;
@@ -76,20 +85,33 @@ export const ResetPasswordPage = () => {
     }
   }, [canSubmit, submitting, token, password]);
 
+  const resend = useCallback((): void => {
+    if (sentTo === null || resending) return;
+    setResending(true);
+    void requestPasswordReset({ email: sentTo }).finally(() => setResending(false));
+  }, [sentTo, resending]);
+
   const alertMessage =
-    token.length === 0 ? t.resetPassword.errors.missingToken
-    : failure === 'INVALID_RESET_TOKEN' ? t.resetPassword.errors.invalidToken
+    failure === 'INVALID_RESET_TOKEN' ? t.resetPassword.errors.invalidToken
     : failure === 'WEAK_PASSWORD' ? t.resetPassword.errors.weakPassword
     : failure === 'NETWORK' ? t.resetPassword.errors.network
     : failure ? t.resetPassword.errors.generic
     : null;
 
-  /** A dead or absent link is only recoverable by asking for another one. */
-  const offerNewLink = token.length === 0 || failure === 'INVALID_RESET_TOKEN';
+  const backLink = (
+    <Link to="/login" className="back-link">
+      <svg className="back-link__chev" width="14" height="14" viewBox="0 0 24 24"
+           fill="none" stroke="currentColor" strokeWidth="2"
+           strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <path d="M15 6l-6 6 6 6" />
+      </svg>
+      {t.resetPassword.backToSignIn}
+    </Link>
+  );
 
-  return (
-    <AuthShell brand={t.resetPassword.brand}>
-      {done ? (
+  if (done) {
+    return (
+      <AuthShell brand={t.resetPassword.brand}>
         <section className="auth-step auth-step--current auth-step--center" aria-label={t.resetPassword.doneTitle}>
           <span className="status-badge status-badge--solid" aria-hidden="true">
             <svg width="28" height="28" viewBox="0 0 24 24" fill="none"
@@ -103,7 +125,7 @@ export const ResetPasswordPage = () => {
             <p className="form-subtitle">{t.resetPassword.doneSubtitle}</p>
           </header>
 
-          {/* Nothing was issued by the reset, so the person signs in with the new password. */}
+          {/* The reset issued nothing, so the person signs in with the new password. */}
           <button
             type="button"
             className="btn btn--primary btn--full"
@@ -112,72 +134,92 @@ export const ResetPasswordPage = () => {
             {t.resetPassword.continue}
           </button>
         </section>
-      ) : (
+      </AuthShell>
+    );
+  }
+
+  if (sentTo !== null) {
+    return (
+      <AuthShell brand={t.resetPassword.brand}>
+        <ResetLinkSent onResend={resend} resending={resending} />
+      </AuthShell>
+    );
+  }
+
+  if (linkUnusable) {
+    return (
+      <AuthShell brand={t.resetPassword.brand}>
         <section className="auth-step auth-step--current" aria-label={t.resetPassword.title}>
-          <Link to="/login" className="back-link">
-            <svg className="back-link__chev" width="14" height="14" viewBox="0 0 24 24"
-                 fill="none" stroke="currentColor" strokeWidth="2"
-                 strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <path d="M15 6l-6 6 6 6" />
-            </svg>
-            {t.resetPassword.backToSignIn}
-          </Link>
+          {backLink}
 
           <header className="form-header">
             <h2 className="form-title">{t.resetPassword.title}</h2>
-            <p className="form-subtitle">{t.resetPassword.subtitle}</p>
+            <p className="form-subtitle">{t.resetPassword.noLinkLede}</p>
           </header>
 
+          {/* Present only when the server actually refused a link; an address opened with no
+              token at all is not an error, it is somebody who needs one. */}
           {alertMessage ? <FormAlert message={alertMessage} /> : null}
 
-          <form
-            className="reset-form"
-            noValidate
-            onSubmit={(e) => {
-              e.preventDefault();
-              void submit();
-            }}
-          >
-            <PasswordField
-              id="new-password" name="newPassword" label={t.resetPassword.newPassword.label}
-              placeholder={t.resetPassword.newPassword.placeholder}
-              toggleLabel={t.resetPassword.togglePassword}
-              minLength={MIN_PASSWORD_LENGTH} maxLength={MAX_PASSWORD_LENGTH}
-              value={password} onChange={setPassword}
-              onBlur={() => setTouched((prev) => ({ ...prev, password: true }))}
-              touched={!!touched.password}
-              {...(errors.password ? { error: t.resetPassword.newPassword.error } : {})}
-            />
-
-            <PasswordField
-              id="confirm-password" name="confirmPassword" label={t.resetPassword.confirmPassword.label}
-              placeholder={t.resetPassword.confirmPassword.placeholder}
-              hint={t.resetPassword.confirmPassword.hint}
-              toggleLabel={t.resetPassword.togglePassword} maxLength={MAX_PASSWORD_LENGTH}
-              value={confirm} onChange={setConfirm}
-              onBlur={() => setTouched((prev) => ({ ...prev, confirm: true }))}
-              touched={!!touched.confirm}
-              {...(errors.confirm ? { error: t.resetPassword.confirmPassword.error } : {})}
-            />
-
-            <button
-              type="submit"
-              className="btn btn--primary btn--full btn--advance"
-              disabled={!canSubmit || submitting}
-            >
-              {submitting ? t.resetPassword.submitting : t.resetPassword.submit}
-            </button>
-          </form>
-
-          {offerNewLink ? (
-            <p className="form-footer">
-              <Link to="/forgot-password" className="form-link form-link--strong">
-                {t.resetPassword.requestNewLink}
-              </Link>
-            </p>
-          ) : null}
+          <RequestResetForm submitLabel={t.resetPassword.sendNewLink} onSent={setSentTo} />
         </section>
-      )}
+      </AuthShell>
+    );
+  }
+
+  return (
+    <AuthShell brand={t.resetPassword.brand}>
+      <section className="auth-step auth-step--current" aria-label={t.resetPassword.title}>
+        {backLink}
+
+        <header className="form-header">
+          <h2 className="form-title">{t.resetPassword.title}</h2>
+          <p className="form-subtitle">{t.resetPassword.subtitle}</p>
+        </header>
+
+        {alertMessage ? <FormAlert message={alertMessage} /> : null}
+
+        <form
+          className="reset-form"
+          noValidate
+          onSubmit={(e) => {
+            e.preventDefault();
+            void submit();
+          }}
+        >
+          <PasswordField
+            id="new-password" name="newPassword" label={t.resetPassword.newPassword.label}
+            placeholder={t.resetPassword.newPassword.placeholder}
+            toggleLabel={t.resetPassword.togglePassword}
+            minLength={MIN_PASSWORD_LENGTH} maxLength={MAX_PASSWORD_LENGTH}
+            value={password} onChange={setPassword}
+            onBlur={() => setTouched((prev) => ({ ...prev, password: true }))}
+            touched={!!touched.password}
+            {...(errors.password ? { error: t.resetPassword.newPassword.error } : {})}
+          />
+
+          <PasswordField
+            id="confirm-password" name="confirmPassword" label={t.resetPassword.confirmPassword.label}
+            placeholder={t.resetPassword.confirmPassword.placeholder}
+            hint={t.resetPassword.confirmPassword.hint}
+            toggleLabel={t.resetPassword.togglePassword} maxLength={MAX_PASSWORD_LENGTH}
+            value={confirm} onChange={setConfirm}
+            onBlur={() => setTouched((prev) => ({ ...prev, confirm: true }))}
+            touched={!!touched.confirm}
+            {...(errors.confirm ? { error: t.resetPassword.confirmPassword.error } : {})}
+          />
+
+          <button
+            type="submit"
+            className="btn btn--primary btn--full btn--advance"
+            disabled={!canSubmit || submitting}
+            aria-busy={submitting}
+          >
+            {t.resetPassword.submit}
+            {submitting ? <ButtonSpinner /> : null}
+          </button>
+        </form>
+      </section>
     </AuthShell>
   );
 };

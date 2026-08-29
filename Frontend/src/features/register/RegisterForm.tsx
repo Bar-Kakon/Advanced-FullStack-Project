@@ -1,6 +1,7 @@
 import { REGIONS, TRADES, type Region, type Trade } from '../../api/types';
 import { useLanguage } from '../../i18n/useLanguage';
 import { MIN_PASSWORD_LENGTH, useRegisterForm } from './useRegisterForm';
+import { ButtonSpinner } from '../../components/ButtonSpinner';
 import { FieldLabel } from '../../components/FieldLabel';
 import { FormAlert } from '../../components/FormAlert';
 import { PasswordField } from '../../components/PasswordField';
@@ -153,8 +154,14 @@ export const RegisterForm = ({ form }: { form: ReturnType<typeof useRegisterForm
           onBlur={() => markTouched('acceptedTerms')} touched={!!touched.acceptedTerms}
         />
 
-        <button type="submit" className="btn btn--primary btn--full col--full" disabled={!isComplete || submitting}>
-          {submitting ? t.form.submitting : t.form.submit}
+        <button
+          type="submit"
+          className="btn btn--primary btn--full col--full"
+          disabled={!isComplete || submitting}
+          aria-busy={submitting}
+        >
+          {t.form.submit}
+          {submitting ? <ButtonSpinner /> : null}
         </button>
       </form>
     </>

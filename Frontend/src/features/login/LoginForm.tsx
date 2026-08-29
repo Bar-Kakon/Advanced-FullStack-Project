@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 
+import { ButtonSpinner } from '../../components/ButtonSpinner';
 import { useLanguage } from '../../i18n/useLanguage';
 import { FormAlert } from '../../components/FormAlert';
 import { PasswordField } from '../../components/PasswordField';
@@ -57,8 +58,14 @@ export const LoginForm = ({ form }: { form: ReturnType<typeof useLoginForm> }) =
           </Link>
         </PasswordField>
 
-        <button type="submit" className="btn btn--primary btn--full" disabled={!isComplete || submitting}>
-          {submitting ? t.login.submitting : t.login.submit}
+        <button
+          type="submit"
+          className="btn btn--primary btn--full"
+          disabled={!isComplete || submitting}
+          aria-busy={submitting}
+        >
+          {t.login.submit}
+          {submitting ? <ButtonSpinner /> : null}
         </button>
       </form>
     </>
