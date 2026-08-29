@@ -17,6 +17,7 @@
     "verify:account-menu": "node scripts/verify-account-menu.mjs",
     "verify:dashboard-ui": "node scripts/verify-dashboard-ui.mjs",
     "verify:network-ui": "node scripts/verify-network-ui.mjs",
+    "verify:projects-ui": "node scripts/verify-projects-ui.mjs",
     "verify:integrated": "node scripts/verify-integrated-flow.mjs",
     "verify:owner-qa": "node scripts/verify-owner-qa.mjs",
     "verify:min-rating-ui": "node scripts/verify-min-rating-ui.mjs"
