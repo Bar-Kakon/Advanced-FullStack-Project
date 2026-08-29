@@ -30,7 +30,8 @@
     "migrate:membership-uniqueness": "tsx scripts/migrate-membership-uniqueness.ts",
     "migrate:owner-main-contractor": "tsx scripts/migrate-owner-main-contractor.ts",
     "verify:owner-qa": "tsx scripts/verify-owner-qa.ts",
-    "verify:min-rating": "tsx scripts/verify-min-rating.ts"
+    "verify:min-rating": "tsx scripts/verify-min-rating.ts",
+    "seed:min-rating": "tsx scripts/seed-min-rating.ts"
   },
   "dependencies": {
     "@types/nodemailer": "^8.0.1",
