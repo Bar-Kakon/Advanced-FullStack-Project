@@ -4,6 +4,7 @@ import { UserModel, type Region, type Trade } from '../users/user.model.js';
 import type { Availability } from '../companies/company.model.js';
 import { CompanyMembershipModel } from '../companies/companyMembership.model.js';
 import { CompanyModel } from '../companies/company.model.js';
+import { RatingModel } from '../ratings/rating.model.js';
 import type { BrowseCursor } from './browse.cursor.js';
 
 /** One discovered contractor, joined to the company facts Browse renders. */
@@ -28,7 +29,16 @@ export interface BrowseCandidate {
   readonly companyId: Types.ObjectId | null;
   readonly officePhone: string | null;
   readonly availability: Availability | null;
+  /** Present only on a rating-sorted page: the key the cursor for the next page is built from. */
+  readonly ratingSortKey?: number;
 }
+
+/** `relevance` is the discovery order Browse has always returned; `rating_desc` orders on the average. */
+export const BROWSE_SORTS = ['relevance', 'rating_desc'] as const;
+export type BrowseSort = (typeof BROWSE_SORTS)[number];
+
+/** An unrated contractor sorts below every rated one, and is never treated as a zero score. */
+const UNRATED_SORT_KEY = -1;
 
 export interface BrowseQuery {
   readonly excludeUserIds: readonly Types.ObjectId[];
@@ -37,6 +47,7 @@ export interface BrowseQuery {
   readonly regions?: readonly Region[];
   readonly availability?: readonly Availability[];
   readonly approvedPlaceId?: string;
+  readonly sort: BrowseSort;
   readonly cursor: BrowseCursor | null;
   readonly limit: number;
 }
@@ -53,7 +64,9 @@ export const browseRepository: BrowseRepository = {
    * One aggregation. The company facts are joined in the pipeline rather than fetched per card,
    * which is what keeps a page of results at a fixed number of round trips.
    */
-  async find({ excludeUserIds, text, specialties, regions, availability, approvedPlaceId, cursor, limit }) {
+  async find({
+    excludeUserIds, text, specialties, regions, availability, approvedPlaceId, sort, cursor, limit,
+  }) {
     const match: Record<string, unknown> = { status: 'active' };
 
     if (excludeUserIds.length > 0) match['_id'] = { $nin: [...excludeUserIds] };
@@ -67,7 +80,7 @@ export const browseRepository: BrowseRepository = {
       match['location.region'] = 'nationwide';
     }
 
-    if (cursor) {
+    if (cursor && cursor.kind === 'discovery') {
       match['$or'] = [
         { createdAt: { $lt: cursor.createdAt } },
         { createdAt: cursor.createdAt, _id: { $lt: cursor.id } },
@@ -123,13 +136,56 @@ export const browseRepository: BrowseRepository = {
       });
     }
 
+    /*
+     * There is no denormalised rating on the user, so ordering by it means computing the average
+     * in the pipeline. An unrated contractor keeps a distinct key rather than a zero score.
+     */
+    if (sort === 'rating_desc') {
+      pipeline.push(
+        {
+          $lookup: {
+            from: RatingModel.collection.name,
+            localField: '_id',
+            foreignField: 'ratee',
+            as: 'receivedRatings',
+          },
+        },
+        {
+          $addFields: {
+            ratingSortKey: {
+              $cond: [
+                { $gt: [{ $size: '$receivedRatings' }, 0] },
+                { $avg: '$receivedRatings.score' },
+                UNRATED_SORT_KEY,
+              ],
+            },
+          },
+        },
+      );
+
+      if (cursor && cursor.kind === 'rating') {
+        pipeline.push({
+          $match: {
+            $or: [
+              { ratingSortKey: { $lt: cursor.score } },
+              { ratingSortKey: cursor.score, _id: { $lt: cursor.id } },
+            ],
+          },
+        });
+      }
+
+      pipeline.push({ $sort: { ratingSortKey: -1, _id: -1 } });
+    } else {
+      pipeline.push({ $sort: { createdAt: -1, _id: -1 } });
+    }
+
     pipeline.push(
-      { $sort: { createdAt: -1, _id: -1 } },
       { $limit: limit },
       {
         $project: {
           firstName: 1, lastName: 1, bio: 1, specialties: 1, specialtyOther: 1,
           businessPhone: 1, avatar: 1, location: 1, approvedTravelLocations: 1, createdAt: 1,
+          ratingSortKey: 1,
           companyName: '$company.name',
           companyId: '$company._id',
           officePhone: '$company.officePhone',

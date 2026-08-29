@@ -148,7 +148,7 @@ const run = async (): Promise<void> => {
     browse: stubBrowseRepo(rows), blocks: noBlocks, relationships: noRelationships,
     ratings: noRatings, routes: countingRoutes,
   });
-  const page = await browse.search('viewer', { limit: 10, originPlaceId: 'origin', maxDrivingKm: 50 });
+  const page = await browse.search('viewer', { sort: 'relevance', limit: 10, originPlaceId: 'origin', maxDrivingKm: 50 });
   check('only the contractor within the driving radius is returned',
     page.contractors.length === 1 && page.contractors[0]?.userId === 'aaaaaaaaaaaaaaaaaaaaaaa1',
     `${page.contractors.length} rows`);
@@ -165,7 +165,7 @@ const run = async (): Promise<void> => {
   const mixedPage = await createBrowseService({
     browse: stubBrowseRepo(mixed), blocks: noBlocks, relationships: noRelationships,
     ratings: noRatings, routes: countingRoutes,
-  }).search('viewer', { limit: 10, originPlaceId: 'origin', maxDrivingKm: 50 });
+  }).search('viewer', { sort: 'relevance', limit: 10, originPlaceId: 'origin', maxDrivingKm: 50 });
   check('the unmeasurable contractor is dropped from a distance filter',
     !mixedPage.contractors.some((c) => c.userId === 'aaaaaaaaaaaaaaaaaaaaaaa3'));
   check('and the page says so through degraded, rather than pretending',
@@ -182,7 +182,7 @@ const run = async (): Promise<void> => {
   const degradedPage = await createBrowseService({
     browse: stubBrowseRepo(rows), blocks: noBlocks, relationships: noRelationships,
     ratings: noRatings, routes: brokenRoutes,
-  }).search('viewer', { limit: 10, originPlaceId: 'origin', maxDrivingKm: 50 });
+  }).search('viewer', { sort: 'relevance', limit: 10, originPlaceId: 'origin', maxDrivingKm: 50 });
   check('no contractor is silently declared out of range', degradedPage.contractors.length === 0);
   check('the response is flagged degraded so a client can say so',
     degradedPage.distanceFilterDegraded === true);
@@ -192,7 +192,7 @@ const run = async (): Promise<void> => {
   const plain = await createBrowseService({
     browse: stubBrowseRepo(rows), blocks: noBlocks, relationships: noRelationships,
     ratings: noRatings, routes: countingRoutes,
-  }).search('viewer', { limit: 10 });
+  }).search('viewer', { sort: 'relevance', limit: 10 });
   check('an ordinary Browse query makes zero Route Matrix calls', matrixCalls === 0, `${matrixCalls}`);
   check('and returns every contractor', plain.contractors.length === 2);
 
@@ -210,7 +210,7 @@ const run = async (): Promise<void> => {
     createBrowseService({
       browse: stubBrowseRepo(rated), blocks: noBlocks, relationships: noRelationships,
       ratings: stubRatings(ratingsById), routes: countingRoutes,
-    }).search('viewer', { limit: 10, ...(minRating === undefined ? {} : { minRating }) });
+    }).search('viewer', { sort: 'relevance', limit: 10, ...(minRating === undefined ? {} : { minRating }) });
 
   const unfiltered = await withRatings();
   check('with no minimum, everybody is returned', unfiltered.contractors.length === 3,

@@ -1,5 +1,8 @@
 /** Work-entry editing, work-entry photos, heavy-equipment storage and Browse self-exclusion. */
+import { Types } from 'mongoose';
+
 import { FileAssetModel } from '../src/features/files/fileAsset.model.js';
+import { RatingModel } from '../src/features/ratings/rating.model.js';
 import { UserModel } from '../src/features/users/user.model.js';
 import { WorkEntryModel } from '../src/features/workentries/workEntry.model.js';
 import { cleanUp, createAccount } from './support/accounts.js';
@@ -310,6 +313,68 @@ const run = async (): Promise<never> => {
   check(blockedAvatar.status === 404, 'a blocked profile serves no picture either', blockedAvatar.status);
   await request(baseUrl, 'DELETE', `/api/blocks/${ownerId}`, { token: stranger.token });
 
+  section('16. Browse can be sorted, and only in orders that exist');
+  const rated = await createAccount(baseUrl, MARKER, 3);
+  const alsoRated = await createAccount(baseUrl, MARKER, 4);
+
+  const rate = (ratee: typeof rated, score: number) =>
+    RatingModel.create({
+      rater: stranger.userId, ratee: ratee.userId, score, task: new Types.ObjectId(),
+    });
+  await rate(rated, 5);
+  await rate(alsoRated, 3);
+
+  const byRating = await request(baseUrl, 'GET', '/api/browse/contractors?sort=rating_desc&q=Verify', {
+    token: stranger.token,
+  });
+  check(byRating.status === 200, 'a rating-sorted page answers 200', byRating.body);
+  const order = ((byRating.body['contractors'] ?? []) as { userId: string }[]).map((r) => r.userId);
+  const highest = order.indexOf(rated.userId.toString());
+  const middle = order.indexOf(alsoRated.userId.toString());
+  const unrated = order.indexOf(owner.userId.toString());
+
+  check(highest === 0, 'the five-star contractor comes first', { order, highest });
+  check(middle === 1, 'the three-star contractor comes second', { middle });
+  check(unrated > middle, 'an unrated contractor sorts below both, never as a zero', { unrated });
+
+  section('17. A rating-sorted page still pages without repeating or skipping');
+  let ratingCursor: string | null = null;
+  const walked: string[] = [];
+  let steps = 0;
+  do {
+    const page: { body: Record<string, unknown> } = await request(
+      baseUrl,
+      'GET',
+      `/api/browse/contractors?sort=rating_desc&q=Verify&limit=1${ratingCursor === null ? '' : `&cursor=${encodeURIComponent(ratingCursor)}`}`,
+      { token: stranger.token },
+    );
+    for (const row of (page.body['contractors'] ?? []) as { userId: string }[]) walked.push(row.userId);
+    ratingCursor = (page.body['nextCursor'] ?? null) as string | null;
+    steps += 1;
+  } while (ratingCursor !== null && steps < 12);
+
+  check(new Set(walked).size === walked.length, 'no contractor appeared twice', walked);
+  check(walked[0] === rated.userId.toString(), 'and the order held across pages', walked[0]);
+
+  section('18. The default order is unchanged, and an invented order is refused');
+  const byDefault = await request(baseUrl, 'GET', '/api/browse/contractors?q=Verify', {
+    token: stranger.token,
+  });
+  const explicit = await request(baseUrl, 'GET', '/api/browse/contractors?sort=relevance&q=Verify', {
+    token: stranger.token,
+  });
+  check(
+    JSON.stringify(byDefault.body['contractors']) === JSON.stringify(explicit.body['contractors']),
+    'no sort and sort=relevance return the same page',
+  );
+
+  const inventedSort = await request(baseUrl, 'GET', '/api/browse/contractors?sort=flexibility_desc', {
+    token: stranger.token,
+  });
+  check(inventedSort.status === 400, 'a flexibility order is refused, not silently ignored',
+    inventedSort.status);
+
+  await RatingModel.deleteMany({ rater: stranger.userId }).exec();
   await cleanUp(MARKER);
   return finish(harness);
 };

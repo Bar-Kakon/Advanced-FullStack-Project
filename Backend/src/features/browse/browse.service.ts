@@ -7,7 +7,7 @@ import type { RoutesAdapter } from '../location/routes.adapter.js';
 import type { Availability } from '../companies/company.model.js';
 import type { Region, Trade } from '../users/user.model.js';
 import { decodeCursor, encodeCursor } from './browse.cursor.js';
-import type { BrowseCandidate, BrowseRepository } from './browse.repository.js';
+import type { BrowseCandidate, BrowseRepository, BrowseSort } from './browse.repository.js';
 import type { BrowsePageDto, ContractorSummaryDto } from './publicProfile.dto.js';
 
 export interface BrowseFilters {
@@ -22,6 +22,7 @@ export interface BrowseFilters {
   readonly maxDrivingKm?: number;
   /** A floor on the average a contractor has actually been given. Never a default or a guess. */
   readonly minRating?: number;
+  readonly sort: BrowseSort;
   readonly cursor?: string;
   readonly limit: number;
 }
@@ -40,6 +41,9 @@ export interface BrowseDependencies {
 
 /** Fetched a little wider than the page, so a distance filter can drop rows and still fill it. */
 const OVERFETCH_FACTOR = 3;
+
+/** Mirrors the repository's unrated key, so a rating cursor keeps the same order it paged in. */
+const UNRATED_CURSOR_SCORE = -1;
 
 export const createBrowseService = ({
   browse,
@@ -66,6 +70,7 @@ export const createBrowseService = ({
       ...(filters.regions === undefined ? {} : { regions: filters.regions }),
       ...(filters.availability === undefined ? {} : { availability: filters.availability }),
       ...(filters.approvedPlaceId === undefined ? {} : { approvedPlaceId: filters.approvedPlaceId }),
+      sort: filters.sort,
       cursor: decodeCursor(filters.cursor),
       limit: fetchLimit,
     });
@@ -123,14 +128,18 @@ export const createBrowseService = ({
       };
     });
 
-    return {
-      contractors,
-      nextCursor:
-        hasMore && cursorAnchor
-          ? encodeCursor({ createdAt: cursorAnchor.createdAt, id: cursorAnchor._id })
-          : null,
-      distanceFilterDegraded: degraded,
-    };
+    // The cursor names a position in whichever order the page was built in.
+    const nextCursor = hasMore && cursorAnchor
+      ? filters.sort === 'rating_desc'
+        ? encodeCursor({
+            kind: 'rating',
+            score: cursorAnchor.ratingSortKey ?? UNRATED_CURSOR_SCORE,
+            id: cursorAnchor._id,
+          })
+        : encodeCursor({ kind: 'discovery', createdAt: cursorAnchor.createdAt, id: cursorAnchor._id })
+      : null;
+
+    return { contractors, nextCursor, distanceFilterDegraded: degraded };
   },
 });
 
