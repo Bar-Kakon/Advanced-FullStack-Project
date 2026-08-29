@@ -6,11 +6,19 @@ import {
   type Region,
   type TermsAcceptance,
   type Trade,
+  type UserProfileRecord,
   type UserRecord,
   type UserWithPasswordHash,
 } from './user.model.js';
 
 const IDENTITY_FIELDS = 'email status firstName lastName language profileComplete';
+
+/**
+ * Everything the profile screens read, and nothing else. `passwordHash` is `select: false` and is
+ * absent from this list anyway; `termsAcceptances` and `security` are deliberately not here,
+ * because no profile screen shows them and a projection is the cheapest place to keep it that way.
+ */
+const PROFILE_FIELDS = `${IDENTITY_FIELDS} bio specialties specialtyOther businessPhone location schedulingPrefs avatar`;
 
 /**
  * The write shape, deliberately separate from `UserRecord`. A caller can only supply what it lists,
@@ -32,9 +40,27 @@ export interface NewUser {
   readonly termsAcceptances: readonly TermsAcceptance[];
 }
 
+/** An explicit allowlist: only these may be written by a profile update. */
+export interface ProfileUpdate {
+  readonly firstName?: string;
+  readonly lastName?: string;
+  readonly bio?: string;
+  readonly specialties?: readonly Trade[];
+  readonly specialtyOther?: string | null;
+  readonly businessPhone?: string | null;
+  readonly city?: string;
+  readonly region?: Region;
+  readonly travelRadiusKm?: number;
+  readonly delayToleranceDays?: number;
+  readonly noticeRequiredDays?: number;
+}
+
 export interface UserRepository {
   findByEmailWithPasswordHash(email: string): Promise<UserWithPasswordHash | null>;
   findById(id: string): Promise<UserRecord | null>;
+  findProfileById(id: string): Promise<UserProfileRecord | null>;
+  updateProfile(id: Types.ObjectId, update: ProfileUpdate): Promise<void>;
+  setAvatarFile(id: Types.ObjectId, fileId: Types.ObjectId | null): Promise<void>;
   existsByEmail(email: string): Promise<boolean>;
   create(user: NewUser, session?: DbSession): Promise<UserRecord>;
 }
@@ -55,6 +81,56 @@ export const userRepository: UserRepository = {
     if (!Types.ObjectId.isValid(id)) return null;
 
     return UserModel.findById(id).select(IDENTITY_FIELDS).lean<UserRecord>().exec();
+  },
+
+  async findProfileById(id) {
+    if (!Types.ObjectId.isValid(id)) return null;
+
+    return UserModel.findById(id).select(PROFILE_FIELDS).lean<UserProfileRecord>().exec();
+  },
+
+  /**
+   * Field by field, never a spread of the request body. The nested paths are written with dotted
+   * keys so one edit cannot replace a whole sub-document and silently drop its siblings.
+   *
+   * `null` means "clear this optional value" and produces an `$unset`; an absent key is left
+   * alone. That distinction is what stops an empty string being written where no value belongs.
+   */
+  async updateProfile(id, update) {
+    const $set: Record<string, unknown> = {};
+    const $unset: Record<string, ''> = {};
+
+    const put = (path: string, value: unknown): void => {
+      if (value === undefined) return;
+      if (value === null) $unset[path] = '';
+      else $set[path] = value;
+    };
+
+    put('firstName', update.firstName);
+    put('lastName', update.lastName);
+    put('bio', update.bio);
+    if (update.specialties !== undefined) $set['specialties'] = [...update.specialties];
+    put('specialtyOther', update.specialtyOther);
+    put('businessPhone', update.businessPhone);
+    put('location.city', update.city);
+    put('location.region', update.region);
+    put('location.travelRadiusKm', update.travelRadiusKm);
+    put('schedulingPrefs.delayToleranceDays', update.delayToleranceDays);
+    put('schedulingPrefs.noticeRequiredDays', update.noticeRequiredDays);
+
+    const ops: Record<string, unknown> = {};
+    if (Object.keys($set).length > 0) ops['$set'] = $set;
+    if (Object.keys($unset).length > 0) ops['$unset'] = $unset;
+    if (Object.keys(ops).length === 0) return;
+
+    await UserModel.updateOne({ _id: id }, ops).exec();
+  },
+
+  async setAvatarFile(id, fileId) {
+    await UserModel.updateOne(
+      { _id: id },
+      fileId === null ? { $unset: { 'avatar.fileId': '' } } : { $set: { 'avatar.fileId': fileId } },
+    ).exec();
   },
 
   /** A courtesy check only. The unique index on `email` is what actually guarantees uniqueness. */

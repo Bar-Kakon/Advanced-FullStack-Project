@@ -47,6 +47,12 @@ node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"
 | `npm start` | Runs the built `dist/server.js` |
 | `npm run typecheck` | Type-checks `src/` and `scripts/` without emitting |
 | `npm run verify:register-txn` | Proves the Register transaction is all-or-nothing (needs a database) |
+| `npm run verify:profile` | Proves the profile read, the write allowlist and the company permission |
+| `npm run verify:completed-work` | Proves Completed Work ownership and the server-derived badge |
+| `npm run verify:media` | Proves the upload rules, GridFS storage and owner-only serving |
+
+The three profile scripts boot the real application on an ephemeral port and drive it over real
+HTTP, so nothing is stubbed. They create their own accounts and delete everything they wrote.
 
 Verify it is up:
 
@@ -80,13 +86,35 @@ src/
 ├── features/
 │   ├── companies/
 │   │   ├── company.model.ts                Mongoose Company — the business + work availability
-│   │   ├── company.repository.ts           create
+│   │   ├── company.repository.ts           create / findById / update
+│   │   ├── companies.routes.ts             PATCH /companies/me — the company half of Edit Profile
 │   │   ├── companyMembership.model.ts      person × company: standing, status, position,
 │   │   │                                   permissions — and the enums for all four
-│   │   └── companyMembership.repository.ts create
+│   │   └── companyMembership.repository.ts create / findActiveByUser
+│   ├── files/
+│   │   ├── fileAsset.model.ts      Mongoose FileAsset — who owns a file, what it is, where it lives
+│   │   ├── fileAsset.repository.ts create / find by owner / delete / attach to a scope id
+│   │   ├── fileAsset.service.ts    record, remove, discard an orphan, open an owned stream
+│   │   ├── gridFs.service.ts       the only module that talks to GridFS
+│   │   ├── upload.middleware.ts    Multer + a storage engine that streams straight into GridFS
+│   │   └── file.errors.ts          UNSUPPORTED_FILE_TYPE / FILE_TOO_LARGE /
+│   │                               UNEXPECTED_FILE_FIELD / FILE_NOT_AVAILABLE
+│   ├── workentries/
+│   │   ├── workEntry.model.ts      Mongoose WorkEntry — one Completed Work item
+│   │   └── workEntry.repository.ts create / list / find / delete, always scoped by owner
 │   ├── users/
 │   │   ├── user.model.ts       Mongoose User — a PERSON: identity, trade, location. No company fields
-│   │   └── user.repository.ts  the only module that queries users for auth
+│   │   ├── user.repository.ts  the only module that queries users for auth and for the profile
+│   │   ├── users.module.ts     the profile feature's composition root
+│   │   ├── users.routes.ts     GET/PATCH /users/me, work entries, avatar, assets
+│   │   ├── profile.controller.ts  HTTP boundary for both profile screens
+│   │   ├── profile.service.ts     assembles the profile and owns every profile write
+│   │   ├── profile.dto.ts         the only user shape the profile routes put on the wire
+│   │   ├── profile.validation.ts  JOI allowlists for the profile, company and work-entry bodies
+│   │   ├── profile.errors.ts      PROFILE_NOT_FOUND / COMPANY_PERMISSION_DENIED /
+│   │   │                          NO_ACTIVE_COMPANY / WORK_ENTRY_NOT_FOUND /
+│   │   │                          WORK_LINK_NOT_VERIFIABLE
+│   │   └── workEntryVerification.service.ts  the only thing that may grant the FieldSync badge
 │   └── auth/
 │       ├── auth.module.ts              the feature's composition root; the only file given config
 │       ├── auth.routes.ts              POST /register, POST /login, POST /refresh
@@ -328,6 +356,78 @@ This is **work availability of the organization** and nothing else. It is not th
 availability of each employee: managing staff availability is a separate future concept that must
 not touch this field.
 
+## My Profile and Edit Profile
+
+Both screens are served by **one** payload from `GET /api/users/me`, so the view and the form can
+never disagree about what is stored. The caller is always the person their Access Token proves —
+no route in this feature names a user, so there is no id to tamper with.
+
+The payload is assembled key by key in `profile.service.ts` from three documents:
+
+```
+GET /api/users/me
+        │
+        ├── users            firstName, lastName, email, language, bio, specialties,
+        │                    businessPhone, location, schedulingPrefs, avatar
+        ├── companies        companyName, officePhone, availability   ← read, never copied onto the user
+        ├── companymemberships   standing, companyPosition            ← descriptive only
+        └── workentries      the Completed Work list
+```
+
+Nothing is mirrored. A company's name lives in one place, so renaming a company changes every
+profile that shows it and there is no second copy to go stale.
+
+### What may be written, and where
+
+| Value | Route | Guarded by |
+|---|---|---|
+| firstName, lastName, bio, specialties, specialtyOther, businessPhone, city, region, travelRadiusKm, delayToleranceDays, noticeRequiredDays | `PATCH /api/users/me` | the caller's own token |
+| companyName, officePhone, availability | `PATCH /api/companies/me` | an **active** membership holding `company.manage` |
+
+Both bodies are explicit JOI allowlists and `validateRequest` strips unknown keys, so a body that
+also carries `email`, `status`, `profileComplete`, `permissions` or `passwordHash` loses them at the
+boundary. The repository then writes field by field — there is no `$set: req.body` anywhere.
+
+A `null` clears an optional value; an absent key leaves it untouched. The two are different requests
+and mean different things.
+
+### Completed Work
+
+`POST /api/users/me/work-entries` and `DELETE /api/users/me/work-entries/:id`. The owner is part of
+every query, so another person's entry is not merely refused — it is not found.
+
+`projectId` and `taskId` are optional. A free-standing portfolio entry is a first-class kind, not a
+degraded one, because a contractor's history predates this platform.
+
+**The `Completed on FieldSync` badge is server-derived and has no field in the request contract.**
+It may only ever be granted by `workEntryVerification.service.ts`, from canonical project and task
+data. Those collections arrive in Stage 3, so today nothing can be proved: a linked entry is
+refused with `WORK_LINK_NOT_VERIFIABLE` rather than stored with a claim nothing backs. Refusing is
+also what protects confidential delegation (§3.3, sharpened by D13) — a wrong badge would publish
+the very relationship the visibility model exists to hide.
+
+### Images
+
+Uploads use **Multer**, with a storage engine that pipes the incoming file straight into **GridFS**.
+Neither of Multer's shipped engines is usable here: disk storage is ephemeral on Heroku, and memory
+storage would hold a whole upload in the process. Nothing is ever buffered whole, in either
+direction — serving pipes the download stream to the response.
+
+- JPEG, PNG and WebP only, checked on the declared MIME type rather than the filename.
+- 5 MB per file, enforced by Multer's own limit.
+- One file per request, under one named field (`avatar` or `image`).
+- A rejected or failed upload takes its bytes with it, so nothing is orphaned.
+- Replacing an avatar deletes the file it replaced; deleting a work entry deletes its photo.
+
+The client never sees a storage path. `avatarUrl` and `imageUrl` are paths to
+`GET /api/users/me/assets/:id`, which looks an asset up **by id and by owner together**: knowing an
+id is not authorization, and another person's asset answers exactly as a missing one does.
+
+### Ratings
+
+`rating`, `flexibility` and `ratings` are `null`, `null` and `[]`. There is no rating domain yet, and
+a cold start is reported honestly rather than filled with a placeholder number.
+
 ## API error contract
 
 Every deliberate failure answers with an HTTP status, a stable machine-readable `code`, and a
@@ -354,6 +454,15 @@ ahead of the conditions that need it. Everything this branch actually implements
 | `INVALID_CREDENTIALS` | 401 | Login failed — for **any** reason |
 | `UNAUTHENTICATED` | 401 | The Access Token was missing, malformed, expired, or was not an Access Token |
 | `INVALID_REFRESH_TOKEN` | 401 | The Refresh Token was missing, malformed, expired, unknown, already spent, revoked, or was not a Refresh Token |
+| `PROFILE_NOT_FOUND` | 404 | The token verified, but it identifies no account |
+| `COMPANY_PERMISSION_DENIED` | 403 | A company edit by a member without `company.manage` |
+| `NO_ACTIVE_COMPANY` | 403 | A company edit by someone with no active membership |
+| `WORK_ENTRY_NOT_FOUND` | 404 | The work entry does not exist, or is not the caller's |
+| `WORK_LINK_NOT_VERIFIABLE` | 422 | A work entry named a project or task the server cannot prove |
+| `UNSUPPORTED_FILE_TYPE` | 400 | The upload's MIME type is not JPEG, PNG or WebP |
+| `FILE_TOO_LARGE` | 413 | The upload exceeded 5 MB |
+| `UNEXPECTED_FILE_FIELD` | 400 | A file arrived under an unexpected field, or more than one did |
+| `FILE_NOT_AVAILABLE` | 404 | The asset does not exist, or is not the caller's |
 | `INTERNAL_SERVER_ERROR` | 500 | Anything unexpected |
 
 `INVALID_CREDENTIALS` cannot distinguish an unknown account from a wrong password from a suspended
@@ -369,6 +478,24 @@ an address to it. Login and password reset are unchanged and keep their unified 
 documented usage — a well-formed request rejected by a domain invariant.
 
 ## Deliberately not decided here
+
+**D1 — the file-storage decision — is open, and this branch does not close it.** GridFS was
+instructed for this task, and the code is built so that the choice can change without a migration
+of meaning: every asset row records `storage.driver`, `gridFs.service.ts` is the only module that
+knows GridFS exists, and the client is only ever given `/api/users/me/assets/:id` rather than a
+storage path.
+
+**D13's storage question is likewise still open.** Completed Work was named as either an embedded
+array on the user or its own collection; a separate `workentries` collection is what this branch
+implements, because entries are added and removed one at a time and will later link to projects.
+That is one of the two options already on the table, not a new one.
+
+**Heavy equipment (the second half of D14) is not implemented.** No approved schema exists for it
+anywhere, so there is nothing to store and it has not been invented.
+
+**`equipment`, ratings and delegation-aware serialization are not in this branch.** Ratings return
+an honest empty state; the viewer-aware serializer that would tell a delegate's work from anyone
+else's is Stage 5.
 
 **D16 — 403 vs 404 for a resource the viewer may not see — is open and this branch does not touch
 it.** `notFoundHandler` answers "no route matched" and nothing else; there is no reusable
