@@ -18,6 +18,7 @@ import { AdvancedFilters } from './components/AdvancedFilters';
 import { ContractorCard } from './components/ContractorCard';
 import { FilterRail } from './components/FilterRail';
 import { PublicProfilePanel } from './components/PublicProfilePanel';
+import { TravelPreferences } from './components/TravelPreferences';
 import { useBrowse } from './useBrowse';
 import profileCss from '../profile/profile.css?inline';
 import editProfileCss from '../profile/edit-profile.css?inline';
@@ -34,6 +35,7 @@ export const BrowsePage = () => {
   const [profileLoading, setProfileLoading] = useState(false);
   const [profileMissing, setProfileMissing] = useState(false);
   const [connecting, setConnecting] = useState<string | null>(null);
+  const [travelOpen, setTravelOpen] = useState(false);
 
   const profileRequest = useRef<AbortController | null>(null);
 
@@ -112,6 +114,9 @@ export const BrowsePage = () => {
             <h1 className="browse__title">{t.browse.title}</h1>
             <p className="browse__sub">{t.browse.lede}</p>
           </div>
+          <button type="button" className="btn btn--ghost btn--sm" onClick={() => setTravelOpen(true)}>
+            {t.browse.travel.openEditor}
+          </button>
         </header>
 
         <div className={bodyClass}>
@@ -188,6 +193,8 @@ export const BrowsePage = () => {
           ) : null}
         </div>
       </main>
+
+      {travelOpen ? <TravelPreferences onClose={() => setTravelOpen(false)} /> : null}
     </div>
   );
 };

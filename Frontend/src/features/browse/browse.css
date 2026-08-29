@@ -235,3 +235,53 @@
   .card-grid { grid-template-columns: minmax(0, 1fr); }
   .c-card__actions .btn { width: 100%; }
 }
+/* ═══ Travel preferences editor ═══ */
+/* A dialog, because it is a task the person finishes and leaves — not part of the Browse layout. */
+.travel-overlay {
+  position: fixed; inset: 0; z-index: 60;
+  display: flex; align-items: flex-start; justify-content: center;
+  padding: 5vh 16px;
+  background: rgba(31, 36, 40, 0.55);
+  overflow-y: auto;
+}
+.travel-dialog {
+  width: min(620px, 100%);
+  background: var(--surface);
+  border: 1px solid var(--secondary-45);
+  border-radius: var(--r-sm);
+  box-shadow: var(--shadow-card);
+  padding: 20px;
+}
+.travel-dialog__head {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: 10px; margin-block-end: 14px;
+}
+.travel-dialog__title { font-size: 20px; font-weight: 600; color: var(--primary); }
+.travel-dialog__body { display: flex; flex-direction: column; gap: 12px; }
+.travel-dialog__foot { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-block-start: 14px; }
+.travel-saved { font-size: 14.5px; color: var(--avail-open); }
+
+.travel-slider { width: 100%; accent-color: var(--primary); }
+
+.travel-review { margin-block-start: 6px; }
+.travel-review__question { font-size: 16px; font-weight: 600; color: var(--text); margin-block-end: 4px; }
+.travel-review__note { font-size: 14px; color: var(--text-soft); margin-block-end: 10px; }
+
+.travel-list { list-style: none; display: flex; flex-direction: column; gap: 8px; max-height: 320px; overflow-y: auto; }
+.travel-list__item {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 10px 12px;
+  background: var(--background);
+  border: 1px solid var(--secondary-30);
+  border-radius: var(--r-sm);
+}
+.travel-list__name { font-size: 14.5px; overflow-wrap: anywhere; }
+.travel-list__km { color: var(--text-mute); font-family: var(--font-mono); font-size: 13px; }
+.travel-list__outside { margin-inline-start: 8px; }
+.travel-add { margin-block-start: 14px; }
+
+@media (max-width: 560px) {
+  .travel-overlay { padding: 0; }
+  .travel-dialog { width: 100%; min-height: 100vh; border-radius: 0; }
+  .travel-dialog__foot .btn { width: 100%; }
+}

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 
 import type { StructuredPlace } from '../../api/browse.types';
 
-const BROWSER_KEY = import.meta.env['VITE_GOOGLE_MAPS_BROWSER_KEY'] as string | undefined;
+const PLACES_KEY = import.meta.env['VITE_GOOGLE_MAPS_API_KEY'] as string | undefined;
 const AUTOCOMPLETE_URL = 'https://places.googleapis.com/v1/places:autocomplete';
 const PLACE_DETAILS_URL = 'https://places.googleapis.com/v1/places';
 const DEBOUNCE_MS = 300;
@@ -21,11 +21,11 @@ interface Suggestion {
 export const usePlacesAutocomplete = (query: string) => {
   const [suggestions, setSuggestions] = useState<readonly StructuredPlace[]>([]);
   const [searching, setSearching] = useState(false);
-  const [unavailable, setUnavailable] = useState(!BROWSER_KEY);
+  const [unavailable, setUnavailable] = useState(!PLACES_KEY);
   const sequence = useRef(0);
 
   useEffect(() => {
-    if (!BROWSER_KEY) {
+    if (!PLACES_KEY) {
       setUnavailable(true);
       setSuggestions([]);
       return;
@@ -45,7 +45,7 @@ export const usePlacesAutocomplete = (query: string) => {
           const response = await fetch(AUTOCOMPLETE_URL, {
             method: 'POST',
             signal: controller.signal,
-            headers: { 'Content-Type': 'application/json', 'X-Goog-Api-Key': BROWSER_KEY },
+            headers: { 'Content-Type': 'application/json', 'X-Goog-Api-Key': PLACES_KEY },
             body: JSON.stringify({ input: query, includedRegionCodes: ['il'] }),
           });
           if (!response.ok) throw new Error(String(response.status));
@@ -62,7 +62,7 @@ export const usePlacesAutocomplete = (query: string) => {
                 {
                   signal: controller.signal,
                   headers: {
-                    'X-Goog-Api-Key': BROWSER_KEY,
+                    'X-Goog-Api-Key': PLACES_KEY,
                     'X-Goog-FieldMask': 'id,displayName,location,addressComponents',
                   },
                 },

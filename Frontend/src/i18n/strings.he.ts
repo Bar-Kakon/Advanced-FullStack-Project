@@ -227,6 +227,7 @@ export const he = {
       addManually: 'הוספת מקום ידנית',
       outsideRadius: 'מחוץ לרדיוס',
       confirm: 'אישור הרשימה',
+      openEditor: 'עריכת אזורי הנסיעה שלי',
       confirming: 'שומר…',
       saved: 'הרשימה נשמרה.',
       empty: 'לא נמצאו מקומות מוצעים.',

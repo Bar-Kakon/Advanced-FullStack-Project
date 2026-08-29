@@ -210,6 +210,7 @@ export const en: Strings = {
       addManually: 'Add a place manually',
       outsideRadius: 'Outside the radius',
       confirm: 'Confirm list',
+      openEditor: 'Edit my travel areas',
       confirming: 'Saving…',
       saved: 'Your list has been saved.',
       empty: 'No suggested locations were found.',
