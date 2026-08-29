@@ -138,6 +138,118 @@ export const he = {
     ambiguousInvitation: 'לא ניתן להשלים את ההרשמה עם הפרטים שהוזנו. פנו לחברה שהזמינה אתכם.',
   },
 
+  /** Browse Contractors and the Public Profile embedded in it. */
+  browse: {
+    title: 'עיון בקבלנים',
+    lede: 'חיפוש בעלי מקצוע לפי תחום, אזור, זמינות ומרחק נסיעה בפועל.',
+    resultsCount: '{count} תוצאות',
+    loading: 'טוען קבלנים…',
+    loadMore: 'טעינת תוצאות נוספות',
+    empty: 'לא נמצאו קבלנים התואמים לסינון. אפשר לנקות חלק מהמסננים ולנסות שוב.',
+    clear: 'ניקוי המסננים',
+
+    filters: {
+      title: 'סינון',
+      search: { label: 'חיפוש', placeholder: 'שם בעל מקצוע או שם חברה' },
+      specialty: { label: 'תחום', placeholder: 'כל התחומים' },
+      region: { label: 'אזור', placeholder: 'כל האזורים' },
+      availability: { label: 'זמינות', placeholder: 'כל מצבי הזמינות' },
+      advanced: 'סינון מתקדם',
+      advancedClose: 'סגירת הסינון המתקדם',
+    },
+
+    advanced: {
+      title: 'סינון מתקדם',
+      /** The two location filters are deliberately separate controls. */
+      placeTitle: 'סינון לפי מקום',
+      placeLede: 'הצגת קבלנים שאישרו במפורש נכונות לעבוד במקום שנבחר.',
+      placeLabel: 'מקום',
+      distanceTitle: 'סינון לפי מרחק נסיעה',
+      distanceLede: 'הצגת קבלנים שמרחק הנסיעה בכביש שלהם מנקודת המוצא קטן מהערך שנבחר.',
+      originLabel: 'נקודת מוצא',
+      maxKmLabel: 'מרחק נסיעה מרבי',
+      km: 'ק״מ',
+      degraded: 'חלק מהמרחקים לא חושבו כרגע, ולכן ייתכן שחסרים קבלנים ברשימה. זו תקלה זמנית בשירות המפות ולא אומר שהם רחוקים מדי.',
+    },
+
+    card: {
+      viewProfile: 'צפייה בפרופיל',
+      connect: 'התחברות',
+      connecting: 'שולח…',
+      message: 'שליחת הודעה',
+      messagingSoon: 'שליחת הודעות עדיין לא נבנתה במערכת.',
+      connected: 'מחוברים',
+      pendingOutgoing: 'בקשת ההתחברות נשלחה',
+      pendingIncoming: 'ממתין לתשובתכם',
+      manageInNetwork: 'ניהול ברשת שלי',
+      noRating: 'אין עדיין דירוג',
+      ratingCount: '{count} דירוגים',
+      drivingDistance: '{km} ק״מ נסיעה',
+      /** Never a number: no approved flexibility arithmetic exists. */
+      noFlexibility: 'אין עדיין ציון גמישות',
+    },
+
+    profile: {
+      close: 'סגירת הפרופיל',
+      about: 'על עצמי',
+      details: 'פרטים ואזור עבודה',
+      city: 'עיר',
+      region: 'אזור',
+      position: 'תפקיד בחברה',
+      travelRadius: 'מרחק נסיעה מועדף',
+      approvedPlaces: 'מקומות שאושרו לעבודה',
+      noApprovedPlaces: 'לא הוגדרו מקומות מאושרים.',
+      work: 'עבודות שהושלמו',
+      noWork: 'אין עדיין עבודות שהושלמו.',
+      badge: 'הושלם ב־FieldSync',
+      phones: 'פרטי קשר',
+      officePhone: 'טלפון משרד',
+      businessPhone: 'טלפון עסקי',
+      phonesHidden: 'פרטי הקשר אינם מוצגים. הם נחשפים רק בפרויקט משותף או מול התחייבות עבודה קיימת.',
+      rate: 'דירוג בעל המקצוע',
+      cannotRateSelf: 'אי אפשר לדרג את עצמכם.',
+      cannotRateYet: 'דירוג אפשרי רק לאחר עבודה משותפת שהושלמה במערכת.',
+      loading: 'טוען פרופיל…',
+      notFound: 'הפרופיל אינו זמין.',
+    },
+
+    travel: {
+      title: 'המקומות שאליהם אתם מוכנים להגיע',
+      radiusLabel: 'מרחק נסיעה מועדף',
+      baseLabel: 'נקודת המוצא שלכם',
+      propose: 'חישוב המקומות',
+      proposing: 'מחשב…',
+      /** Approved wording. It asks what to remove; it never claims completeness. */
+      reviewQuestion: 'אלו המקומות אליהם אישרת מוכנות להגעה, האם ישנם אזורים שברצונך להסיר?',
+      suggestedNote: 'הרשימה מבוססת על הצעות של Google ואינה בהכרח כוללת כל יישוב באזור.',
+      partialNote: 'חלק מהמסלולים לא חושבו, ולכן ייתכן שחסרים מקומות ברשימה.',
+      remove: 'הסרה',
+      addManually: 'הוספת מקום ידנית',
+      outsideRadius: 'מחוץ לרדיוס',
+      confirm: 'אישור הרשימה',
+      confirming: 'שומר…',
+      saved: 'הרשימה נשמרה.',
+      empty: 'לא נמצאו מקומות מוצעים.',
+    },
+
+    place: {
+      placeholder: 'התחילו להקליד שם מקום…',
+      searching: 'מחפש…',
+      noResults: 'לא נמצאו מקומות.',
+      clear: 'ניקוי',
+      unavailable: 'חיפוש המקומות אינו זמין כרגע.',
+    },
+
+    errors: {
+      network: 'לא הצלחנו להגיע לשרת. בדקו את החיבור ונסו שוב.',
+      locationUnavailable: 'שירות המיקומים אינו זמין כרגע. נסו שוב מאוחר יותר.',
+      locationNotConfigured: 'שירות המיקומים אינו מוגדר בשרת.',
+      invalidPlace: 'לא הצלחנו לזהות את המקום שנבחר.',
+      generic: 'משהו השתבש. אנא נסו שוב.',
+      retry: 'נסו שוב',
+    },
+  },
+
   /** The app navbar, shared by every authenticated screen. */
   nav: {
     home: 'FieldSync — דף הבית',

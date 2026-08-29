@@ -1,0 +1,237 @@
+/* FieldSync — Browse Contractors + embedded Public Profile */
+/* Loaded on top of profile.css (app shell, panels, buttons) and edit-profile.css (form fields). */
+/* Approved palette only. Logical properties throughout, so RTL and LTR mirror without extra rules. */
+
+.browse {
+  max-width: var(--content-max);
+  margin-inline: auto;
+  padding: 22px 24px 64px;
+}
+
+.browse__head { margin-block-end: 20px; }
+.browse__title { font-family: var(--font-serif); font-size: 30px; color: var(--primary); }
+.browse__sub { font-size: 16px; color: var(--text-soft); margin-block-start: 4px; }
+
+/* ═══ The approved grid ═══ */
+/* Rail + results by default; the advanced column and the profile each add a track. */
+.browse__body {
+  display: grid;
+  grid-template-columns: 268px minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.browse__body.has-advanced { grid-template-columns: 268px 268px minmax(0, 1fr); }
+.browse__body.has-profile  { grid-template-columns: 268px minmax(0, 1fr) 380px; }
+.browse__body.has-advanced.has-profile {
+  grid-template-columns: 268px 268px minmax(0, 1fr) 360px;
+}
+
+/* ═══ Filter rail — pinned, never a drawer ═══ */
+.filters { position: sticky; top: calc(var(--nav-h) + 16px); }
+.filters__card {
+  background: var(--surface);
+  border: 1px solid var(--secondary-30);
+  border-radius: var(--r-sm);
+  padding: 16px;
+  box-shadow: var(--shadow-lift);
+}
+.filters__head {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 10px; margin-block-end: 14px;
+}
+.filters__title { font-size: 18px; font-weight: 600; color: var(--primary); }
+.filters__clear {
+  background: none; border: 0; padding: 0; cursor: pointer;
+  font-size: 14px; color: var(--text-soft); text-decoration: underline;
+}
+.filters__clear:hover { color: var(--primary); }
+.filters__form { display: flex; flex-direction: column; gap: 4px; }
+.adv-trigger { width: 100%; margin-block-start: 10px; }
+
+/* ═══ Advanced filters — a real column ═══ */
+/* Never position: fixed/absolute, never a backdrop. It occupies a grid track and reflows the page. */
+.adv-panel {
+  position: sticky;
+  top: calc(var(--nav-h) + 16px);
+  background: var(--surface);
+  border: 1px solid var(--secondary-30);
+  border-inline-start: 4px solid var(--secondary-45);
+  border-radius: var(--r-sm);
+  padding: 16px;
+}
+.adv-panel__head {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 10px; margin-block-end: 12px;
+}
+.adv-panel__title { font-size: 17px; font-weight: 600; color: var(--primary); }
+.adv-panel__close {
+  background: none; border: 1px solid var(--secondary-30); border-radius: var(--r-sm);
+  padding: 4px 10px; font-size: 13px; color: var(--text-soft); cursor: pointer;
+}
+.adv-panel__close:hover { color: var(--primary); border-color: var(--secondary); background: var(--background); }
+.adv-panel__body { display: flex; flex-direction: column; gap: 18px; }
+.adv-group__title { font-size: 15px; font-weight: 600; color: var(--text); }
+.adv-group__lede { font-size: 14px; color: var(--text-soft); margin-block: 2px 8px; }
+
+/* ═══ Results ═══ */
+.results__count { font-size: 14px; color: var(--text-mute); margin-block-end: 12px; }
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(280px, 100%), 1fr));
+  gap: 14px;
+}
+.results__more { width: 100%; margin-block-start: 18px; }
+
+.c-card {
+  display: flex; flex-direction: column; gap: 10px;
+  padding: 16px;
+  background: var(--surface);
+  border: 1px solid var(--secondary-30);
+  border-inline-start: 4px solid transparent;
+  border-radius: var(--r-sm);
+}
+.c-card.is-selected { border-inline-start-color: var(--primary); }
+.c-card__head { display: flex; align-items: center; gap: 10px; }
+.c-card__id { min-width: 0; }
+.c-card__name { font-size: 17px; font-weight: 600; color: var(--text); overflow-wrap: anywhere; }
+.c-card__company { font-size: 14px; color: var(--text-soft); overflow-wrap: anywhere; }
+.c-card__meta {
+  display: flex; flex-wrap: wrap; gap: 4px 12px;
+  font-size: 14px; color: var(--text-soft);
+}
+.c-card__signals {
+  display: flex; flex-wrap: wrap; gap: 4px 12px;
+  font-size: 13.5px; color: var(--text-mute);
+}
+.c-card__actions { display: flex; flex-wrap: wrap; gap: 8px; margin-block-start: 2px; }
+
+/* One treatment for every relationship state. Wording and icon carry the difference, not colour. */
+.rel-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  align-self: flex-start;
+  padding: 4px 10px;
+  font-size: 13px;
+  color: var(--primary);
+  background: var(--secondary-15);
+  border: 1px solid var(--secondary-45);
+  border-radius: var(--r-sm);
+}
+.rel-badge__icon { font-family: var(--font-mono); }
+
+/* ═══ Embedded Public Profile ═══ */
+/* A grid track beside the results, never an overlay above them. */
+.profile-panel {
+  position: sticky;
+  top: calc(var(--nav-h) + 16px);
+  max-height: calc(100vh - var(--nav-h) - 40px);
+  overflow-y: auto;
+  background: var(--surface);
+  border: 1px solid var(--secondary-30);
+  border-radius: var(--r-sm);
+  padding: 18px;
+  box-shadow: var(--shadow-lift);
+}
+.profile-panel__head {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: 10px; margin-block-end: 10px;
+}
+.profile-panel__title { font-size: 20px; font-weight: 600; color: var(--primary); overflow-wrap: anywhere; }
+.profile-panel__company { font-size: 15px; color: var(--text-soft); overflow-wrap: anywhere; }
+.profile-panel__body { display: flex; flex-direction: column; gap: 16px; }
+
+.pp-block__title { font-size: 15px; font-weight: 600; color: var(--text); margin-block-end: 6px; }
+.pp-block__text { font-size: 14.5px; line-height: 1.6; color: var(--text-soft); overflow-wrap: anywhere; }
+.pp-facts { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 12px; font-size: 14.5px; }
+.pp-facts dt { color: var(--text-mute); }
+.pp-facts dd { color: var(--text); overflow-wrap: anywhere; }
+.pp-work { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+.pp-work__item { padding-inline-start: 10px; border-inline-start: 3px solid var(--secondary-30); }
+.pp-work__title { font-size: 15px; font-weight: 600; overflow-wrap: anywhere; }
+.pp-work__meta { font-size: 13.5px; color: var(--text-soft); overflow-wrap: anywhere; }
+
+/* ═══ Structured place field ═══ */
+.place-field { position: relative; }
+.place-field__chosen {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  padding: 8px 12px;
+  background: var(--background);
+  border: 1px solid var(--secondary-45);
+  border-radius: var(--r-sm);
+}
+.place-field__name { font-size: 14.5px; overflow-wrap: anywhere; }
+.place-field__list {
+  position: absolute; inset-inline: 0; z-index: 20;
+  margin-block-start: 4px; padding: 4px;
+  list-style: none;
+  max-height: 240px; overflow-y: auto;
+  background: var(--surface);
+  border: 1px solid var(--secondary-45);
+  border-radius: var(--r-sm);
+  box-shadow: var(--shadow-lift);
+}
+.place-field__note { padding: 8px 10px; font-size: 14px; color: var(--text-soft); }
+.place-field__option {
+  display: block; width: 100%; text-align: start;
+  padding: 8px 10px; font-size: 14.5px;
+  background: none; border: 0; border-radius: var(--r-sm); cursor: pointer;
+  color: var(--text);
+}
+.place-field__option:hover, .place-field__option.is-active { background: var(--background); }
+
+.notice--warn {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;
+  color: var(--text);
+  background: var(--background);
+  border: 1px solid var(--secondary-45);
+  border-inline-start: 4px solid var(--secondary);
+  border-radius: var(--r-sm);
+  padding: 12px 14px;
+  margin-block-end: 14px;
+  font-size: 14.5px;
+}
+
+/* ═══ Responsive ═══ */
+/* The priority is: basic controls, then cards, then advanced, then the profile moves below. */
+
+/* Not enough width for four tracks: the profile drops beneath the results and spans the row. */
+@media (max-width: 1400px) {
+  .browse__body.has-advanced.has-profile {
+    grid-template-columns: 268px 268px minmax(0, 1fr);
+  }
+  .browse__body.has-advanced.has-profile .profile-panel {
+    grid-column: 1 / -1;
+    position: static;
+    max-height: none;
+  }
+}
+
+/* Not enough width for three tracks: the profile goes below in the two-column case too. */
+@media (max-width: 1180px) {
+  .browse__body.has-profile { grid-template-columns: 268px minmax(0, 1fr); }
+  .browse__body.has-profile .profile-panel {
+    grid-column: 1 / -1;
+    position: static;
+    max-height: none;
+  }
+  .browse__body.has-advanced { grid-template-columns: 268px minmax(0, 1fr); }
+  .browse__body.has-advanced .adv-panel { grid-column: 1 / -1; position: static; }
+}
+
+/* Tablet: the rail stops being a column and sits above the results, still fully usable. */
+@media (max-width: 900px) {
+  .browse__body,
+  .browse__body.has-advanced,
+  .browse__body.has-profile,
+  .browse__body.has-advanced.has-profile {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .filters, .adv-panel, .profile-panel { position: static; max-height: none; }
+}
+
+@media (max-width: 560px) {
+  .browse { padding: 16px 14px 48px; }
+  .browse__title { font-size: 25px; }
+  .card-grid { grid-template-columns: minmax(0, 1fr); }
+  .c-card__actions .btn { width: 100%; }
+}
