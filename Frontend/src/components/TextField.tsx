@@ -22,7 +22,7 @@ export const TextField = ({
   onChange: (next: string) => void;
   onBlur?: () => void;
   placeholder?: string;
-  type?: 'text' | 'email' | 'tel';
+  type?: 'text' | 'email' | 'tel' | 'date' | 'number';
   autoComplete?: string;
   maxLength?: number;
   required?: boolean;

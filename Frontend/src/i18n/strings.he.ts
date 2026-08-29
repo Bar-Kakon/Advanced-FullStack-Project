@@ -405,6 +405,70 @@ export const he = {
     sendNewLink: 'שליחת קישור חדש',
   },
 
+  projects: {
+    title: 'הפרויקטים שלי',
+    lede: 'הפרויקטים של העסק, לפי סדר יצירה.',
+    loading: 'טעינת הפרויקטים…',
+    loadMore: 'הצגת עוד',
+    retry: 'ניסיון נוסף',
+    empty: 'עדיין אין פרויקטים. אפשר להתחיל בפרויקט הראשון.',
+    create: 'פרויקט חדש',
+    edit: 'עריכה',
+    backToList: 'חזרה לפרויקטים',
+
+    status: {
+      planned: 'טרם התחיל',
+      active: 'בביצוע',
+      paused: 'מוקפא',
+      completed: 'הושלם',
+    },
+
+    card: {
+      dates: 'מ-{start} עד {target}',
+      originalTarget: 'יעד מקורי: {date}',
+      overrun: 'חריגה בפועל: {days} ימים',
+      ceiling: 'תאריך חריגה מרבי: {date}',
+      noLocation: 'לא הוגדר מיקום',
+    },
+
+    form: {
+      createTitle: 'פרויקט חדש',
+      editTitle: 'עריכת פרויקט',
+      createLede: 'הזנת פרטי הפרויקט. אפשר לעדכן אותם בהמשך.',
+      editLede: 'עדכון פרטי הפרויקט.',
+      name: { label: 'שם הפרויקט', placeholder: 'מגדל הצפון' },
+      description: { label: 'תיאור', placeholder: 'תיאור קצר של היקף העבודה' },
+      location: { label: 'מיקום הפרויקט', placeholder: 'עיר או כתובת' },
+      address: { label: 'כתובת מדויקת', placeholder: 'הרצל 1' },
+      startDate: { label: 'תאריך התחלה' },
+      targetEndDate: { label: 'תאריך יעד לסיום' },
+      overrunAllowance: {
+        label: 'זמן חריגה מותר (בימים)',
+        hint: 'נקבע פעם אחת בעת יצירת הפרויקט ואינו ניתן לשינוי לאחר מכן.',
+        locked: 'זמן החריגה נקבע ביצירת הפרויקט: {days} ימים. תאריך היעד לא יכול לעבור את {date}.',
+      },
+      save: 'שמירה',
+      cancel: 'ביטול',
+      deleteProject: 'ביטול הפרויקט',
+      deleteConfirm: 'ביטול הפרויקט ימחק אותו לחלוטין ולא יישאר ממנו רישום. הפעולה אפשרית רק לפני תחילת העבודה.',
+      deleteConfirmAction: 'ביטול הפרויקט',
+      deleteDismiss: 'חזרה',
+    },
+
+    errors: {
+      required: 'שדה חובה',
+      targetBeforeStart: 'תאריך היעד לא יכול להקדים את תאריך ההתחלה',
+      overrunCeiling: 'תאריך היעד עובר את זמן החריגה שנקבע',
+      allowanceRange: 'יש להזין מספר ימים שלם בין 0 ל-3650',
+      notFound: 'הפרויקט לא נמצא.',
+      notPermitted: 'אין הרשאה ליצירת פרויקטים בחברה הזו.',
+      noCompany: 'החשבון אינו משויך לחברה פעילה.',
+      alreadyStarted: 'הפרויקט כבר התחיל ולכן לא ניתן לבטל אותו.',
+      network: 'לא הצלחנו להגיע לשרת. כדאי לבדוק את החיבור ולנסות שוב.',
+      unknown: 'לא הצלחנו להשלים את הפעולה כרגע.',
+    },
+  },
+
   network: {
     title: 'הרשת שלי',
     lede: 'הקשרים המקצועיים, הבקשות הפתוחות והחסימות שנוצרו — הכול במקום אחד.',

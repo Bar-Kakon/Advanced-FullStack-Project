@@ -375,6 +375,70 @@ export const en: Strings = {
     sendNewLink: 'Send a new link',
   },
 
+  projects: {
+    title: 'My projects',
+    lede: 'Your business\u2019s projects, newest first.',
+    loading: 'Loading your projects…',
+    loadMore: 'Show more',
+    retry: 'Try again',
+    empty: 'No projects yet. You can start with the first one.',
+    create: 'New project',
+    edit: 'Edit',
+    backToList: 'Back to projects',
+
+    status: {
+      planned: 'Not started',
+      active: 'In progress',
+      paused: 'Paused',
+      completed: 'Completed',
+    },
+
+    card: {
+      dates: '{start} to {target}',
+      originalTarget: 'Original target: {date}',
+      overrun: 'Actual overrun: {days} days',
+      ceiling: 'Latest permitted date: {date}',
+      noLocation: 'No location set',
+    },
+
+    form: {
+      createTitle: 'New project',
+      editTitle: 'Edit project',
+      createLede: 'Enter the project details. You can update them later.',
+      editLede: 'Update the project details.',
+      name: { label: 'Project name', placeholder: 'Northern Tower' },
+      description: { label: 'Description', placeholder: 'A short description of the scope' },
+      location: { label: 'Project location', placeholder: 'City or address' },
+      address: { label: 'Street address', placeholder: '1 Herzl' },
+      startDate: { label: 'Start date' },
+      targetEndDate: { label: 'Target end date' },
+      overrunAllowance: {
+        label: 'Permitted overrun (days)',
+        hint: 'Set once when the project is created, and cannot be changed afterwards.',
+        locked: 'The overrun was set at creation: {days} days. The target cannot pass {date}.',
+      },
+      save: 'Save',
+      cancel: 'Cancel',
+      deleteProject: 'Cancel project',
+      deleteConfirm: 'Cancelling deletes the project completely and leaves no record. This is only possible before work has started.',
+      deleteConfirmAction: 'Cancel project',
+      deleteDismiss: 'Back',
+    },
+
+    errors: {
+      required: 'This field is required',
+      targetBeforeStart: 'The target date cannot precede the start date',
+      overrunCeiling: 'The target date passes the permitted overrun',
+      allowanceRange: 'Enter a whole number of days between 0 and 3650',
+      notFound: 'Project not found.',
+      notPermitted: 'This account may not create projects for its company.',
+      noCompany: 'This account is not linked to an active company.',
+      alreadyStarted: 'The project has already started, so it cannot be cancelled.',
+      network: 'We could not reach the server. Check your connection and try again.',
+      unknown: 'We could not complete that just now.',
+    },
+  },
+
   network: {
     title: 'My network',
     lede: 'Professional connections, open requests and the blocks you created — all in one place.',
