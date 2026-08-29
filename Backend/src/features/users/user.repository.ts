@@ -34,7 +34,10 @@ export interface NewUser {
 
 export interface UserRepository {
   findByEmailWithPasswordHash(email: string): Promise<UserWithPasswordHash | null>;
+  /** Identity only. Password reset never needs the hash it is about to replace. */
+  findByEmail(email: string): Promise<UserRecord | null>;
   findById(id: string): Promise<UserRecord | null>;
+  updatePasswordHash(id: Types.ObjectId, passwordHash: string, session?: DbSession): Promise<void>;
   existsByEmail(email: string): Promise<boolean>;
   create(user: NewUser, session?: DbSession): Promise<UserRecord>;
 }
@@ -49,6 +52,16 @@ export const userRepository: UserRepository = {
       .select(`${IDENTITY_FIELDS} +passwordHash`)
       .lean<UserWithPasswordHash>()
       .exec();
+  },
+
+  async findByEmail(email) {
+    return UserModel.findOne({ email }).select(IDENTITY_FIELDS).lean<UserRecord>().exec();
+  },
+
+  async updatePasswordHash(id, passwordHash, session) {
+    const query = UserModel.updateOne({ _id: id }, { $set: { passwordHash } });
+    if (session) query.session(session);
+    await query.exec();
   },
 
   async findById(id) {

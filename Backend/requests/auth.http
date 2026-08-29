@@ -8,7 +8,8 @@
 @password = CorrectHorse42!
 @newEmail = nina@ninaworks.co.il
 
-### Register — 201 + accessToken + safe user + Set-Cookie. Creates a company and its owner.
+### Register — 201 + { user }. NO accessToken and NO Set-Cookie: Register creates an account,
+### it does not open a session. Creates a company and its owner in one transaction.
 # @name register
 POST {{host}}/auth/register
 Content-Type: application/json
@@ -25,11 +26,10 @@ Content-Type: application/json
   "acceptedTerms": true
 }
 
-### The Register Access Token opens a protected route — 200
+### Register issued nothing, so a protected route still refuses — 401 UNAUTHENTICATED
 GET {{host}}/health-auth
-Authorization: Bearer {{register.response.body.accessToken}}
 
-### The account Register created can then log in normally — 200
+### The account Register created signs in at Login, which is where a session starts — 200
 POST {{host}}/auth/login
 Content-Type: application/json
 
@@ -276,6 +276,55 @@ Cookie: refreshToken=PASTE_THE_RETIRED_REFRESH_TOKEN
 POST {{host}}/auth/refresh
 
 ### Expired tokens: set ACCESS_TOKEN_TTL_SECONDS=1 / REFRESH_TOKEN_TTL_SECONDS=2, restart, wait, retry.
+
+### ── Password reset ──────────────────────────────────────────────────────────
+
+### Forgot password, known address — 200 { status: 'ok' }
+POST {{host}}/auth/forgot-password
+Content-Type: application/json
+
+{ "email": "{{email}}" }
+
+### Forgot password, unknown address — 200 { status: 'ok' }, byte-identical to the answer above
+POST {{host}}/auth/forgot-password
+Content-Type: application/json
+
+{ "email": "definitely-nobody@example.com" }
+
+### Malformed address — 400 REQUEST_VALIDATION_FAILED
+POST {{host}}/auth/forgot-password
+Content-Type: application/json
+
+{ "email": "not-an-email" }
+
+### Reset with the raw token from the email — 200 { status: 'ok' }
+### No SMTP configured? The server logs the link in log mode; copy the token out of it.
+### Success issues nothing: the person signs in with the new password.
+POST {{host}}/auth/reset-password
+Content-Type: application/json
+
+{ "token": "PASTE_THE_RAW_TOKEN_FROM_THE_EMAIL", "password": "BrandNewHorse99!" }
+
+### The same token a second time — 401 INVALID_RESET_TOKEN. One use only.
+POST {{host}}/auth/reset-password
+Content-Type: application/json
+
+{ "token": "PASTE_THE_SAME_RAW_TOKEN", "password": "AnotherHorse77!" }
+
+### Unknown token — 401 INVALID_RESET_TOKEN, the same answer as expired and superseded
+POST {{host}}/auth/reset-password
+Content-Type: application/json
+
+{ "token": "0000000000000000000000000000000000000000000000000000000000000000", "password": "BrandNewHorse99!" }
+
+### New password under 8 characters — 400 REQUEST_VALIDATION_FAILED, and the token is NOT spent
+POST {{host}}/auth/reset-password
+Content-Type: application/json
+
+{ "token": "PASTE_A_LIVE_RAW_TOKEN", "password": "short" }
+
+### After a successful reset the pre-reset Refresh cookie is dead — 401 INVALID_REFRESH_TOKEN
+POST {{host}}/auth/refresh
 
 ### Health — 200
 GET {{host}}/health

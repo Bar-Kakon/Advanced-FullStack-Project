@@ -17,6 +17,10 @@ export const unauthenticated = (): AppError =>
 export const invalidRefreshToken = (): AppError =>
   new AppError('Refresh token is not usable', 401, 'INVALID_REFRESH_TOKEN');
 
+/** One answer for missing, unknown, expired, superseded and already-spent reset links alike. */
+export const invalidResetToken = (): AppError =>
+  new AppError('Reset link is not usable', 401, 'INVALID_RESET_TOKEN');
+
 /**
  * Register only. A signup form has to say which field to correct, and it is already an enumeration
  * surface by nature. Login and password reset keep their unified answers unchanged.

@@ -47,6 +47,7 @@ node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"
 | `npm start` | Runs the built `dist/server.js` |
 | `npm run typecheck` | Type-checks `src/` and `scripts/` without emitting |
 | `npm run verify:register-txn` | Proves the Register transaction is all-or-nothing (needs a database) |
+| `npm run verify:password-reset` | Walks Register → Login → forgot → reset → Login against the running server and the real database |
 
 Verify it is up:
 
@@ -89,12 +90,16 @@ src/
 │   │   └── user.repository.ts  the only module that queries users for auth
 │   └── auth/
 │       ├── auth.module.ts              the feature's composition root; the only file given config
-│       ├── auth.routes.ts              POST /register, POST /login, POST /refresh
+│       ├── auth.routes.ts              POST /register, /login, /refresh,
+│       │                               /forgot-password, /reset-password
 │       ├── auth.controller.ts          HTTP boundary: read validated input, call a use case, respond
 │       ├── auth.service.ts             the login and refresh use cases
 │       ├── registration.service.ts     the register use case
+│       ├── passwordReset.service.ts    the forgot-password and reset-password use cases
+│       ├── passwordResetToken.model.ts      one row per issued reset link (hash only)
+│       ├── passwordResetToken.repository.ts mint / look up / spend a reset link
 │       ├── auth.validation.ts          JOI schemas for the register and login bodies
-│       ├── auth.errors.ts              INVALID_CREDENTIALS / UNAUTHENTICATED /
+│       ├── auth.errors.ts              INVALID_CREDENTIALS / UNAUTHENTICATED / INVALID_RESET_TOKEN /
 │       │                               INVALID_REFRESH_TOKEN / EMAIL_ALREADY_REGISTERED
 │       ├── authenticatedUser.mapper.ts document → safe wire representation
 │       ├── password.service.ts         the only module that calls bcrypt
@@ -107,6 +112,9 @@ src/
 │           ├── accessToken.service.ts  issue + verify Access Tokens
 │           ├── refreshToken.service.ts issue + verify Refresh Tokens
 │           └── tokenPair.service.ts    sign a pair and record it — shared by Register and Login
+├── mail/
+│   ├── mailer.ts          Nodemailer over Brevo SMTP, or log mode when unconfigured
+│   └── passwordResetEmail.ts  the reset message, composed in one place
 └── shared/
     ├── errors.ts          AppError
     └── logger.ts          the single stdout/stderr boundary
@@ -137,9 +145,15 @@ Request collection for every case: [`requests/auth.http`](requests/auth.http).
 
 ## Register
 
-`POST /api/auth/register` — the only way to create an account. It **authenticates the new user
-immediately** (approved 2026-08-28), issuing the same Access + Refresh pair Login issues, through
-the same `tokenPair` service. There is no second token mechanism and no weaker signup session.
+`POST /api/auth/register` — the only way to create an account. It **does not authenticate anybody**.
+Creating an account and starting a session are two things, and Login is the one that starts a
+session: the approved flow is `Register → Login → Personal dashboard`. So Register issues no Access
+Token, issues no Refresh Token, writes no `refreshtokens` row and sets no cookie. It answers
+`201 { user }`, and the client goes to Login.
+
+> Until 2026-08-29 it did authenticate immediately, issuing the same pair Login issues. That was
+> removed rather than kept as an option — a credential the flow guarantees nobody uses is worth
+> removing, not tolerating.
 
 It is the onboarding flow for somebody who runs their own business — an independent contractor,
 a supplier, or a company owner. One signup writes **three** documents inside **one transaction**:
@@ -160,8 +174,7 @@ POST /api/auth/register
   │  ║    any throw, including a unique-index violation
   │  ║    ────────────────────────► ABORT ALL THREE
   │  ╚═════════════════════════════════════════════════════════╝
-  ├─ 7. issueTokenPair()            AFTER commit — a token is never issued
-  └─ 8. 201 { accessToken, user }     for a user that was rolled back
+  └─ 7. 201 { user }                no token, no cookie, no session
 ```
 
 **There is no partial Register state.** Either the company, the person and the owner relationship
@@ -191,6 +204,95 @@ service receives it as a dependency and never imports the database library itsel
 | `businessPhone` | ➖ | **`users.businessPhone`** — the person's number |
 | `availability` | ➖ (default `open`) | **`companies.availability`** |
 | `acceptedTerms` | ✅ must be `true` | **`users.termsAcceptances[]`** — the version + a timestamp. The boolean itself is not stored |
+
+## Password reset
+
+Two endpoints, and one rule that shapes both: **nothing either of them returns says whether an
+account exists.**
+
+```
+POST /api/auth/forgot-password        { email }
+  │
+  ├─ 1. JOI validates the body
+  ├─ 2. look the address up
+  │     ├─ no such account, or not active ──► stop here, quietly
+  │     └─ found
+  │        ├─ 3. invalidate every live reset token that user holds
+  │        ├─ 4. randomBytes(32) → the raw token, hex          goes in the email
+  │        ├─ 5. store SHA-256(raw) + expiresAt = now + 30min  goes in the database
+  │        └─ 6. hand the email to the mailer WITHOUT awaiting it
+  └─ 200 { status: 'ok' }            ← identical on every path above
+
+POST /api/auth/reset-password         { token, newPassword }
+  │
+  ├─ 1. JOI validates the body        password rules are Register's, applied here independently
+  ├─ 2. SHA-256 the supplied token and look the hash up
+  ├─ 3. refuse unless: found · not used · not superseded · not expired · account still active
+  ├─ 4. bcrypt the new password       OUTSIDE the transaction — ~250ms of CPU
+  │  ╔═ TRANSACTION ═══════════════════════════════════════════╗
+  ├──╢ 5. write the new passwordHash                           ║
+  │  ║ 6. mark the reset token used                            ║
+  │  ║ 7. revoke EVERY Refresh Token the user holds            ║
+  │  ╚═════════════════════════════════════════════════════════╝
+  └─ 200 { status: 'ok' }            no token, no cookie — the person signs in
+```
+
+**Why the email is not awaited.** Reaching an SMTP relay takes far longer than any database work on
+this path. Awaiting it would make a known address answer measurably slower than an unknown one,
+which is an account-enumeration oracle by stopwatch — the same class of leak the unified
+`INVALID_CREDENTIALS` answer exists to close.
+
+**Why a collection and not two fields on the user.** A reset token has a lifecycle: issued,
+superseded, spent, expired. `security.resetTokenHash` + `security.resetTokenExpiresAt` on the user
+document cannot tell a spent token from an absent one, cannot record that a newer request replaced
+an older link, and put security state in the permanent identity document. `passwordresettokens`
+mirrors `refreshtokens`, because it is the same kind of object.
+
+| | Refresh Token | Password-reset token |
+|---|---|---|
+| Stored | SHA-256 hash | SHA-256 hash |
+| Lifetime | 7 days | **30 minutes** |
+| Reuse | rotates — spend once, get a replacement | **spend once, then dead** |
+| Superseded by | rotation, within a family | a newer forgot-password request |
+| Swept by | TTL index on `expiresAt` | TTL index on `expiresAt` |
+
+**One usable link at a time.** A second forgot-password request invalidates the first link. Asking
+again says the earlier email is not the one being held, and two live links widen the window an
+intercepted email is useful in.
+
+**Every reset failure answers `401 INVALID_RESET_TOKEN`** — unknown, expired, superseded and
+already-spent alike. The person holding a dead link learns it is dead and nothing else.
+
+**After a reset, every Refresh Token that user holds is revoked**, through the same
+`refreshtokens` rows the rotation and replay-detection logic already uses. There is no second
+session mechanism. **The Access Token is a different matter and is not revoked** — it is a stateless
+JWT with no server-side record, so one issued before the reset stays valid until it expires
+(900s by default). Closing that window needs a `passwordChangedAt` check in the auth middleware,
+which is designed in `docs/database-design.html` and is **not built**.
+
+## Outgoing mail
+
+`src/mail/` — one service, so no controller ever constructs a transport.
+
+```
+src/mail/
+├── mailer.ts               createMailer(config.mail) → { send, mode }
+│                           smtp mode: Nodemailer over Brevo's SMTP relay
+│                           log  mode: writes a warning instead of sending
+└── passwordResetEmail.ts   composes subject + text + html from the reset URL
+```
+
+**Brevo is the email service; Nodemailer is the client that talks to it.** Ordinary authenticated
+SMTP, so there is no vendor SDK in the dependency tree and no API key in the application.
+
+`SMTP_HOST`, `SMTP_USER`, `SMTP_PASS` and `MAIL_FROM` are **all-or-nothing**: three of the four is a
+deployment that looks configured and fails on the first send, so the server refuses to start on a
+partial set. With none of them set it starts in **log mode** — nothing is sent, every attempt logs a
+warning, and the reset link is written to the log so the flow can still be walked locally. A
+configured server never logs a token.
+
+`FRONTEND_URL` is **required**. The reset link is `${FRONTEND_URL}/reset-password?token=<raw token>`,
+and an email carrying the wrong link is worse than a server that will not boot.
 
 ### Recording consent
 
@@ -354,6 +456,7 @@ ahead of the conditions that need it. Everything this branch actually implements
 | `INVALID_CREDENTIALS` | 401 | Login failed — for **any** reason |
 | `UNAUTHENTICATED` | 401 | The Access Token was missing, malformed, expired, or was not an Access Token |
 | `INVALID_REFRESH_TOKEN` | 401 | The Refresh Token was missing, malformed, expired, unknown, already spent, revoked, or was not a Refresh Token |
+| `INVALID_RESET_TOKEN` | 401 | The reset link was unknown, expired, superseded by a newer request, or already spent |
 | `INTERNAL_SERVER_ERROR` | 500 | Anything unexpected |
 
 `INVALID_CREDENTIALS` cannot distinguish an unknown account from a wrong password from a suspended

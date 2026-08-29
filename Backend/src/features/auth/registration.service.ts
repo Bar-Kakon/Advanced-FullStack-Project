@@ -13,9 +13,9 @@ import { emailAlreadyRegistered } from './auth.errors.js';
 import type { RegisterBody } from './auth.validation.js';
 import { toAuthenticatedUser, type AuthenticatedUser } from './authenticatedUser.mapper.js';
 import type { PasswordService } from './password.service.js';
-import type { TokenPair, TokenPairService } from './tokens/tokenPair.service.js';
 
-export interface RegistrationResult extends TokenPair {
+/** No tokens. Register creates an account; Login is the only thing that opens a session. */
+export interface RegistrationResult {
   readonly user: AuthenticatedUser;
 }
 
@@ -33,7 +33,6 @@ export interface RegistrationDependencies {
   readonly companies: CompanyRepository;
   readonly memberships: CompanyMembershipRepository;
   readonly passwords: PasswordService;
-  readonly tokenPair: TokenPairService;
   readonly transactions: TransactionRunner;
   /** The Terms version currently in force, from config — never taken from the request body. */
   readonly termsVersion: string;
@@ -106,7 +105,6 @@ export const createRegistrationService = ({
   companies,
   memberships,
   passwords,
-  tokenPair,
   transactions,
   termsVersion,
 }: RegistrationDependencies): RegistrationService => ({
@@ -117,8 +115,7 @@ export const createRegistrationService = ({
    *
    * The duplicate check and the bcrypt hash run *before* the transaction opens. Hashing is a
    * quarter-second of CPU, and holding a transaction open across it would widen the window for
-   * write conflicts to no purpose. Tokens are issued *after* it commits, so a session can never be
-   * handed out for a user that was rolled back.
+   * write conflicts to no purpose.
    */
   async register(input) {
     if (await users.existsByEmail(input.email)) throw emailAlreadyRegistered();
@@ -137,8 +134,7 @@ export const createRegistrationService = ({
         return created;
       });
 
-      const tokens = await tokenPair.issue(user._id.toString());
-      return { ...tokens, user: toAuthenticatedUser(user) };
+      return { user: toAuthenticatedUser(user) };
     } catch (error) {
       throw isDuplicateEmailError(error) ? emailAlreadyRegistered() : error;
     }

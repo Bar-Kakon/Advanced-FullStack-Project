@@ -49,15 +49,9 @@ const body: RegisterBody = {
   acceptedTerms: true,
 };
 
-/** Tokens are not what is under test here; the HTTP verification covers the real pair. */
-const stubTokenPair = {
-  issue: async () => ({ accessToken: 'stub', refreshToken: 'stub' }),
-};
-
 const baseDeps = (): Omit<RegistrationDependencies, 'memberships' | 'users'> => ({
   companies: companyRepository,
   passwords: passwordService,
-  tokenPair: stubTokenPair,
   transactions: { run: runInTransaction },
   termsVersion: TERMS_VERSION,
 });

@@ -8,6 +8,15 @@ export interface LoginBody {
   readonly password: string;
 }
 
+export interface ForgotPasswordBody {
+  readonly email: string;
+}
+
+export interface ResetPasswordBody {
+  readonly token: string;
+  readonly password: string;
+}
+
 export interface RegisterBody {
   readonly firstName: string;
   readonly lastName: string;
@@ -35,6 +44,8 @@ const MAX_CITY_LENGTH = 80;
 const MAX_SPECIALTY_OTHER_LENGTH = 60;
 /** A bound, not a format. What counts as a valid number here has never been approved — see D27. */
 const MAX_PHONE_LENGTH = 30;
+/** The issued token is 64 hex characters; the bound is slack, not a format check. */
+const MAX_RESET_TOKEN_LENGTH = 200;
 
 const email = Joi.string().trim().lowercase().email().max(MAX_EMAIL_LENGTH).required();
 
@@ -46,6 +57,19 @@ const email = Joi.string().trim().lowercase().email().max(MAX_EMAIL_LENGTH).requ
 export const loginBodySchema = Joi.object<LoginBody>({
   email,
   password: Joi.string().min(1).max(MAX_PASSWORD_LENGTH).required(),
+});
+
+export const forgotPasswordBodySchema = Joi.object<ForgotPasswordBody>({ email });
+
+/**
+ * `token` is bounded but not shape-checked. A malformed token and a wrong one are the same event
+ * to the person holding a dead link, so both take the INVALID_RESET_TOKEN path rather than one
+ * answering 400 and the other 401. The password rules are Register's, applied independently of
+ * anything the client checked.
+ */
+export const resetPasswordBodySchema = Joi.object<ResetPasswordBody>({
+  token: Joi.string().trim().min(1).max(MAX_RESET_TOKEN_LENGTH).required(),
+  password: Joi.string().min(MIN_PASSWORD_LENGTH).max(MAX_PASSWORD_LENGTH).required(),
 });
 
 /**

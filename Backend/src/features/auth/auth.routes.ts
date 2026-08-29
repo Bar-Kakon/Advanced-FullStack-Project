@@ -2,7 +2,12 @@ import { Router } from 'express';
 
 import { validateRequest } from '../../middleware/validateRequest.js';
 import type { AuthController } from './auth.controller.js';
-import { loginBodySchema, registerBodySchema } from './auth.validation.js';
+import {
+  forgotPasswordBodySchema,
+  loginBodySchema,
+  registerBodySchema,
+  resetPasswordBodySchema,
+} from './auth.validation.js';
 
 /**
  * `validateRequest` sits in front of the Register and Login handlers, so an ill-formed body is
@@ -18,6 +23,17 @@ export const createAuthRouter = (controller: AuthController): Router => {
   router.post('/register', validateRequest({ body: registerBodySchema }), controller.handleRegister);
   router.post('/login', validateRequest({ body: loginBodySchema }), controller.handleLogin);
   router.post('/refresh', controller.handleRefresh);
+
+  router.post(
+    '/forgot-password',
+    validateRequest({ body: forgotPasswordBodySchema }),
+    controller.handleForgotPassword,
+  );
+  router.post(
+    '/reset-password',
+    validateRequest({ body: resetPasswordBodySchema }),
+    controller.handleResetPassword,
+  );
 
   return router;
 };
