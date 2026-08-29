@@ -44,7 +44,7 @@ export const AppNav = ({ name, initials }: { name: string; initials: string }) =
         </a>
 
         <nav className="app-nav__links" aria-label={t.nav.label}>
-          <a href="#" className="app-nav__link">{t.nav.browse}</a>
+          <Link to="/browse" className="app-nav__link">{t.nav.browse}</Link>
           <a href="#" className="app-nav__link">{t.nav.network}</a>
           <a href="#" className="app-nav__link">{t.nav.projects}</a>
           <a href="#" className="app-nav__link">{t.nav.myTasks}</a>
