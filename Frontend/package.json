@@ -16,7 +16,8 @@
     "verify:invitation-ui": "node scripts/verify-invitation-ui.mjs",
     "verify:account-menu": "node scripts/verify-account-menu.mjs",
     "verify:integrated": "node scripts/verify-integrated-flow.mjs",
-    "verify:owner-qa": "node scripts/verify-owner-qa.mjs"
+    "verify:owner-qa": "node scripts/verify-owner-qa.mjs",
+    "verify:min-rating-ui": "node scripts/verify-min-rating-ui.mjs"
   },
   "devDependencies": {
     "@types/react": "^19.2.18",
