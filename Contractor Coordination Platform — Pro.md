@@ -628,13 +628,18 @@ _Later stages live in the [Roadmap](#4-roadmap-stages); we'll expand the next on
   employee lifecycle**. Those live on `feature/password-reset.backend`. `findActiveByUser` was written on the profile branch with the
   **identical signature** it has there, specifically so that merge is trivial, but the merge is real work and it is owed.
 
-- **`docs/database-design.html` silently hides two collections it documents** (found 2026-08-29 while adding [[workentries]]; the defect
-  is older). [[refreshtokens]] and [[passwordresettokens]] carry `domain: 'core'`, and `core` is not a key of the page's `DOMAINS` map.
-  Both the collections sidebar and the ERD iterate the map's keys, so neither collection is listed, neither node is drawn, and selecting
-  one by hand throws on `DOMAINS[c.domain].label`. Nothing warns; they are simply absent from a page whose whole job is completeness.
-  **Not fixed in the profile pass**, which was scoped to the profile model and would have been the wrong place to change what the ERD
-  draws. The fix is one entry in `DOMAINS` plus two node positions that do not collide — and while that file is open, note that
-  `passwordresettokens` and `usagecounters` overlap by 16px in the ERD as well.
+- ~~**`docs/database-design.html` silently hides two collections it documents**~~ ***(Resolved 2026-08-29, later the same day.)***
+  ✅ **Both collections now render.** They were moved from the non-existent `core` domain to **`identity`**, which is where they already
+  belonged: both hold credentials that prove who a user is, both reference [[users]] and nothing else, and `identity` is the domain
+  [[users]] itself lives in. **No new domain was invented**, and nothing but the grouping changed — no field, no index, no relationship,
+  and none of the auth semantics either collection documents. `passwordresettokens` also moved from `y: 470` to `y: 430`, which removes
+  the 16px collision with [[usagecounters]] noted below; that collision was always in the data and was only invisible because the node
+  was never drawn. The original report follows.
+  (Found 2026-08-29 while adding [[workentries]]; the defect is older.) [[refreshtokens]] and [[passwordresettokens]] carried
+  `domain: 'core'`, and `core` was not a key of the page's `DOMAINS` map. Both the collections sidebar and the ERD iterate the map's
+  keys, so neither collection was listed, neither node was drawn, and selecting one by hand threw on `DOMAINS[c.domain].label`. Nothing
+  warned; they were simply absent from a page whose whole job is completeness. **Not fixed in the profile pass**, which was scoped to the
+  profile model and would have been the wrong place to change what the ERD draws.
 
 - **The [D9](#7-open-decisions) reversal leaves user-visible copy stating a rule the product no longer has** (2026-08-29).
   ✅ **(a) is paid — the React Login carries the approved replacement (`0911948`); (b) `my-network.html` is untouched and still owed.**

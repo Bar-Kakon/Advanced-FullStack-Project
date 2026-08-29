@@ -619,7 +619,7 @@ footer.foot { margin-top: 56px; padding-top: 22px; border-top: 1px solid var(--p
    ══════════════════════════════════════════════════════ */
 
 const DOMAINS = {
-  identity: { label: 'Identity & trust', color: '#23384D', blurb: 'Who people are, how they connect, and the trust signals that are computed rather than claimed.' },
+  identity: { label: 'Identity & trust', color: '#23384D', blurb: 'Who people are, the credentials that prove it, how they connect, and the trust signals that are computed rather than claimed.' },
   work:     { label: 'Work',             color: '#4A5D6E', blurb: 'Projects, who is on them and in what role, the tasks themselves, and the files attached to them.' },
   coord:    { label: 'Coordination',     color: '#8A7C63', blurb: 'The negotiation layer: reschedule proposals and the append-only history of what was agreed.' },
   comm:     { label: 'Communication',    color: '#6E7F8C', blurb: 'Threads, messages, notifications and mutes — everything that reaches a user outside the work itself.' },
@@ -1724,7 +1724,7 @@ module.exports = mongoose.model('Notification', notificationSchema);`
 
 /* ─────────── refreshtokens ─────────── */
 {
-  id: 'refreshtokens', model: 'RefreshToken', domain: 'core', stage: 1,
+  id: 'refreshtokens', model: 'RefreshToken', domain: 'identity', stage: 1,
   tag: 'the only server-side session state',
   pos: { x: 30, y: 350 },
   purpose: 'One row per issued Refresh Token, so a long-lived credential can be revoked, rotated and detected in replay. Added 2026-08-27 with the two-token authentication model; it is the collection the old single-JWT design explicitly said would never exist.',
@@ -1779,9 +1779,9 @@ module.exports = mongoose.model('RefreshToken', refreshTokenSchema);`
 
 /* ─────────── passwordresettokens ─────────── */
 {
-  id: 'passwordresettokens', model: 'PasswordResetToken', domain: 'core', stage: 1,
+  id: 'passwordresettokens', model: 'PasswordResetToken', domain: 'identity', stage: 1,
   tag: 'one-time reset links, hashed',
-  pos: { x: 30, y: 470 },
+  pos: { x: 30, y: 430 },
   purpose: 'One row per issued password-reset link. Added 2026-08-29 with the reset flow, and it is where the design on this page changed: `users.security.resetTokenHash` + `resetTokenExpiresAt` were what this file specified, and the code uses a collection instead. See the why below — the pair of fields cannot express a lifecycle.',
   fields: [
     { name: '_id', type: 'ObjectId', note: '' },
