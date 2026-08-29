@@ -800,7 +800,13 @@ _Later stages live in the [Roadmap](#4-roadmap-stages); we'll expand the next on
     **Tasks / Completed Work** domain. Implementation dependency only — the rule is decided. **Consequence on the public
     profile, changed 2026-08-29:** the Rate control is now **absent unless the server says `canRate`**, rather than an
     explanation of why it is unavailable, which is the standing *absent, not disabled* rule applied to a control whose
-    domain does not exist.
+    domain does not exist. **Second consequence, and it is the larger one — the Minimum Rating filter cannot return
+    anybody.** `POST /api/ratings` answers **403 `RATING_NOT_ELIGIBLE`** to every attempt, measured against the running
+    API on 2026-08-29, so **no rating can be created through the product at all**; the working database held **zero
+    ratings across 81 active contractors**. An unrated contractor correctly fails every floor — that is the approved
+    rule, and it is the opposite of counting them as a zero — so **any minimum rating correctly returns an empty list,
+    every time, until the Tasks / Completed Work domain exists.** The filter is not broken; it is starved. See
+    [§10](#10-bug--issue-log) for the manual-QA report this produced.
   - **Terms of Service and Privacy Policy have no screen**, so Register names them in the consent line rather than
     linking to them. They were `href="#"` and are now plain text — a legal reference that opens nothing is worse than
     one that does not claim to. Whether those screens should exist at all is [D25](#7-open-decisions).
@@ -1254,6 +1260,12 @@ into a proper section or the logs below._
 > - Fix: what resolved it
 > - Notes: anything to remember / how to avoid it next time
 > ```
+
+### [2026-08-29] A filter that was working correctly was reported as broken, and both halves of that are true
+- Symptom: owner manual QA marked **Minimum Rating** as FAILED. Choosing any number of stars emptied the result list.
+- Cause: **not the filter.** Traced end to end — React control → query parameter → JOI → aggregation → `summaryForMany` → the `>= minRating` comparison → cursor → DTO → rendered cards — and proved on the **result set** with six controlled contractors at `unrated`, `2.5`, `3.0`, `3.5`, `4.0` and `5.0`. Every case behaves correctly, including exact-threshold equality, all four filter combinations, and pagination with no duplicate and nothing eligible skipped. **The real cause is upstream: no rating can exist.** `POST /api/ratings` answers `403 RATING_NOT_ELIGIBLE` to every caller because `RatingEligibilityPort` returns `false` for everybody until the Tasks / Completed Work domain is built — so the working database held **zero ratings across 81 active contractors**. Every contractor is unrated, an unrated contractor correctly fails every floor, and therefore the correct answer to *any* minimum rating is an empty list.
+- Fix: none to the filter — there was nothing to fix, and changing it would have meant counting an unrated contractor as a zero, which the approved rule forbids. What was fixed is the **silence**: the empty state now names the floor that emptied the list and says an unrated contractor is not in it, instead of the generic *no contractors match these filters*. Two regression suites were added that assert the **result set**, never the query parameter: `npm run verify:min-rating` (46 checks, API) and `npm run verify:min-rating-ui` (34 checks, real browser, read off the rendered cards).
+- Notes: **"the filter works" and "the filter is usable" are different claims, and only the first was ever true.** The previous pass reported `Minimum rating — kept`, which asserted neither and was the actual reporting failure. A correct empty result is indistinguishable from a broken one unless the screen says which filter emptied it — that is now the rule this screen follows. **This filter stays effectively unusable until Tasks / Completed Work lands**, however correct it is.
 
 ### [2026-08-29] A public profile advertised two picture URLs, and neither one could ever load
 - Symptom: an embedded Public Profile showed initials where an avatar should be, and a placeholder icon where a completed-work photo should be, for a contractor who had uploaded both.
