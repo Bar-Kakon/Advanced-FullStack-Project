@@ -29,6 +29,7 @@ export const createBrowseController = (
       ...(query.placeId === undefined ? {} : { approvedPlaceId: query.placeId }),
       ...(query.originPlaceId === undefined ? {} : { originPlaceId: query.originPlaceId }),
       ...(query.maxDrivingKm === undefined ? {} : { maxDrivingKm: query.maxDrivingKm }),
+      ...(query.minRating === undefined ? {} : { minRating: query.minRating }),
       ...(query.cursor === undefined ? {} : { cursor: query.cursor }),
     });
 

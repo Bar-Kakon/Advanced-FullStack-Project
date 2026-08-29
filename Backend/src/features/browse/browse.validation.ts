@@ -14,6 +14,7 @@ export interface BrowseSearchQuery {
   readonly placeId?: string;
   readonly originPlaceId?: string;
   readonly maxDrivingKm?: number;
+  readonly minRating?: number;
   readonly cursor?: string;
   readonly limit: number;
 }
@@ -30,6 +31,7 @@ export const browseSearchQuerySchema = Joi.object<BrowseSearchQuery>({
   placeId: Joi.string().trim().min(1).max(300).optional(),
   originPlaceId: Joi.string().trim().min(1).max(300).optional(),
   maxDrivingKm: Joi.number().min(1).max(500).optional(),
+  minRating: Joi.number().min(1).max(5).optional(),
   cursor: Joi.string().trim().max(200).optional(),
   limit: Joi.number().integer().min(1).max(BROWSE_MAX_LIMIT).default(BROWSE_DEFAULT_LIMIT),
 })

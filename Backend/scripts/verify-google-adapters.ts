@@ -54,6 +54,17 @@ const noRelationships = {
 } as never;
 const noRatings = { summaryForMany: async () => new Map(), summaryFor: async () => null } as never;
 
+/** Ratings keyed by user id, so a candidate with no entry is a contractor nobody has rated. */
+const stubRatings = (byId: Record<string, { average: number; count: number }>) => ({
+  async summaryForMany(ids: { toString(): string }[]) {
+    return new Map(
+      ids.map((id) => [id.toString(), byId[id.toString()]])
+        .filter(([, summary]) => summary !== undefined) as [string, { average: number; count: number }][],
+    );
+  },
+  async summaryFor() { return null; },
+}) as never;
+
 const run = async (): Promise<void> => {
   console.log('\n1. Travel proposal — the radius decides by ROAD distance');
   const nearby = [place('near', 'Near Town'), place('far', 'Far Town')];
@@ -184,6 +195,50 @@ const run = async (): Promise<void> => {
   }).search('viewer', { limit: 10 });
   check('an ordinary Browse query makes zero Route Matrix calls', matrixCalls === 0, `${matrixCalls}`);
   check('and returns every contractor', plain.contractors.length === 2);
+
+  console.log('\n10. Minimum rating filters on ratings that exist, never on invented ones');
+  const rated = [
+    candidate('aaaaaaaaaaaaaaaaaaaaaaa1', null),
+    candidate('aaaaaaaaaaaaaaaaaaaaaaa2', null),
+    candidate('aaaaaaaaaaaaaaaaaaaaaaa3', null),
+  ];
+  const ratingsById = {
+    aaaaaaaaaaaaaaaaaaaaaaa1: { average: 4.8, count: 12 },
+    aaaaaaaaaaaaaaaaaaaaaaa2: { average: 4.0, count: 5 },
+  };
+  const withRatings = (minRating?: number) =>
+    createBrowseService({
+      browse: stubBrowseRepo(rated), blocks: noBlocks, relationships: noRelationships,
+      ratings: stubRatings(ratingsById), routes: countingRoutes,
+    }).search('viewer', { limit: 10, ...(minRating === undefined ? {} : { minRating }) });
+
+  const unfiltered = await withRatings();
+  check('with no minimum, everybody is returned', unfiltered.contractors.length === 3,
+    `${unfiltered.contractors.length}`);
+  check('and an unrated contractor reports null, not zero',
+    unfiltered.contractors.find((c) => c.userId === 'aaaaaaaaaaaaaaaaaaaaaaa3')?.rating === null);
+
+  const atLeastFour = await withRatings(4);
+  check('a minimum of 4 keeps the 4.8 and the exact 4.0',
+    atLeastFour.contractors.map((c) => c.userId).sort().join() ===
+      ['aaaaaaaaaaaaaaaaaaaaaaa1', 'aaaaaaaaaaaaaaaaaaaaaaa2'].join(),
+    atLeastFour.contractors.map((c) => c.userId).join());
+  check('the exact threshold is included, not excluded',
+    atLeastFour.contractors.some((c) => c.rating?.average === 4.0));
+
+  const atLeastFourFive = await withRatings(4.5);
+  check('a higher minimum drops the one below it',
+    atLeastFourFive.contractors.map((c) => c.userId).join() === 'aaaaaaaaaaaaaaaaaaaaaaa1',
+    atLeastFourFive.contractors.map((c) => c.userId).join());
+
+  check('a contractor nobody has rated never satisfies a minimum',
+    !atLeastFour.contractors.some((c) => c.userId === 'aaaaaaaaaaaaaaaaaaaaaaa3'));
+
+  const impossible = await withRatings(5);
+  check('a minimum nobody meets returns an empty page, not everybody',
+    impossible.contractors.length === 0, `${impossible.contractors.length}`);
+  check('and it is not reported as a degraded distance search',
+    impossible.distanceFilterDegraded === false);
 
   console.log(`\n${failures === 0 ? 'All checks passed.' : `${failures} check(s) FAILED.`}\n`);
   process.exit(failures === 0 ? 0 : 1);

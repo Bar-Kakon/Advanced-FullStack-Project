@@ -20,6 +20,8 @@ export interface BrowseFilters {
   /** Driving distance: a road-distance question answered by the routing service. */
   readonly originPlaceId?: string;
   readonly maxDrivingKm?: number;
+  /** A floor on the average a contractor has actually been given. Never a default or a guess. */
+  readonly minRating?: number;
   readonly cursor?: string;
   readonly limit: number;
 }
@@ -52,7 +54,10 @@ export const createBrowseService = ({
     const excludeUserIds = [...hidden];
 
     const wantsDistance = Boolean(filters.originPlaceId && filters.maxDrivingKm);
-    const fetchLimit = wantsDistance ? filters.limit * OVERFETCH_FACTOR : filters.limit + 1;
+    const wantsRating = filters.minRating !== undefined;
+    const fetchLimit = wantsDistance || wantsRating
+      ? filters.limit * OVERFETCH_FACTOR
+      : filters.limit + 1;
 
     const candidates = await browse.find({
       excludeUserIds,
@@ -69,15 +74,31 @@ export const createBrowseService = ({
       ? await applyDrivingDistance(routes, candidates, filters.originPlaceId!, filters.maxDrivingKm!)
       : { kept: candidates, distances: new Map<string, number>(), degraded: false };
 
-    const page = kept.slice(0, filters.limit);
+    /*
+     * A minimum rating asks for standing a contractor has actually been given, so somebody with no
+     * ratings at all cannot meet one. They are excluded rather than counted as zero, which would
+     * be inventing a score for them.
+     */
+    const ratedSummaries = wantsRating
+      ? await ratings.summaryForMany(kept.map((candidate) => candidate._id))
+      : null;
+
+    const eligible = ratedSummaries === null
+      ? kept
+      : kept.filter((candidate) => {
+          const summary = ratedSummaries.get(candidate._id.toString());
+          return summary !== undefined && summary.average >= filters.minRating!;
+        });
+
+    const page = eligible.slice(0, filters.limit);
     const exhausted = candidates.length < fetchLimit;
     const cursorAnchor = page.length === filters.limit ? page.at(-1) : candidates.at(-1);
-    const hasMore = !exhausted || kept.length > filters.limit;
+    const hasMore = !exhausted || eligible.length > filters.limit;
 
     const ids = page.map((candidate) => candidate._id);
     const [relationshipStates, ratingSummaries] = await Promise.all([
       relationships.forCandidates(viewerId, ids),
-      ratings.summaryForMany(ids),
+      ratedSummaries ?? ratings.summaryForMany(ids),
     ]);
 
     const contractors: ContractorSummaryDto[] = page.map((candidate) => {
