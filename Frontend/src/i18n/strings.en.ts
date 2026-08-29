@@ -51,11 +51,11 @@ export const en: Strings = {
     businessPhone: { label: 'Business phone', placeholder: '050-1234567' },
     availability: { label: 'Availability', hint: 'You can change this at any time from your profile.' },
     standing: {
-      label: 'Registration type',
+      label: 'How are you joining FieldSync?',
       placeholder: 'Select…',
-      owner: 'I own the business — create a new company',
-      employee: 'I work for a company that invited me',
-      employeeHint: 'Your employer opens a place for you first. Registration is matched to the full name, company name and position they entered, and then waits for their approval.',
+      owner: 'Company owner',
+      employee: 'Company employee',
+      employeeHint: 'Your registration will be matched to the invitation created for you using your full name, company name, and position.',
     },
     companyPosition: { label: 'Position in the company', placeholder: 'Select a position…' },
     password: { label: 'Password', placeholder: '••••••••', hint: 'At least 8 characters', error: 'Password must be at least 8 characters' },
@@ -120,8 +120,8 @@ export const en: Strings = {
     emailTaken: 'That email address is already registered. You can sign in instead.',
     validation: 'Some details are not valid. Please check the highlighted fields and try again.',
     network: 'We could not reach the server. Check your connection and try again.',
-    noInvitation: 'No matching invitation was found. Ask your employer to add you with the same full name, company name and position, then try again.',
-    ambiguousInvitation: 'More than one invitation matches these details. Check with your employer which one is yours.',
+    noInvitation: 'No invitation matching these details was found. Check the details and try again, or contact the company that invited you.',
+    ambiguousInvitation: 'Registration cannot be completed with these details. Contact the company that invited you.',
   },
 
   nav: {

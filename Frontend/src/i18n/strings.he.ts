@@ -51,11 +51,12 @@ export const he = {
     businessPhone: { label: 'טלפון עסקי', placeholder: '050-1234567' },
     availability: { label: 'זמינות', hint: 'אפשר לשנות בכל שלב בפרופיל.' },
     standing: {
-      label: 'סוג ההרשמה',
+      label: 'איך אתם מצטרפים ל-FieldSync?',
       placeholder: 'בחירה…',
-      owner: 'בעל/ת העסק — פתיחת חברה חדשה',
-      employee: 'עובד/ת בחברה שהזמינה אותי',
-      employeeHint: 'המעסיק פותח עבורכם מקום מראש. ההרשמה מותאמת לשם המלא, לשם החברה ולתפקיד שהוזנו שם, ומחכה לאישור המעסיק.',
+      owner: 'בעלים של חברה',
+      employee: 'עובד/ת בחברה',
+      // Says what will happen to the registration, and names no internal state.
+      employeeHint: 'ההרשמה תותאם להזמנה שהחברה פתחה עבורכם לפי השם המלא, שם החברה והתפקיד.',
     },
     companyPosition: { label: 'תפקיד בחברה', placeholder: 'בחירת תפקיד…' },
     password: { label: 'סיסמה', placeholder: '••••••••', hint: 'לפחות 8 תווים', error: 'הסיסמה חייבת להכיל לפחות 8 תווים' },
@@ -89,10 +90,15 @@ export const he = {
     other: 'אחר',
   },
 
+  /**
+   * The project's established terminology, not shortened: `מנהל אתרים` is a Construction Manager
+   * and `מנהל עבודה / מנהל אתר` is a Site Manager, which is the distinction the source-of-truth
+   * document draws wherever these two roles appear together.
+   */
   companyPositions: {
     main_contractor: 'קבלן ראשי',
     construction_manager: 'מנהל אתרים',
-    site_manager: 'מנהל עבודה',
+    site_manager: 'מנהל עבודה / מנהל אתר',
     contractor: 'קבלן',
     employee: 'עובד',
   },
@@ -120,8 +126,10 @@ export const he = {
     emailTaken: 'כתובת האימייל הזו כבר רשומה. אפשר להתחבר במקום.',
     validation: 'חלק מהפרטים אינם תקינים. בדקו את השדות המסומנים ונסו שוב.',
     network: 'לא הצלחנו להגיע לשרת. בדקו את החיבור ונסו שוב.',
-    noInvitation: 'לא נמצאה הזמנה תואמת. בקשו מהמעסיק לפתוח לכם מקום עם אותו שם מלא, שם חברה ותפקיד, ואז נסו שוב.',
-    ambiguousInvitation: 'נמצאה יותר מהזמנה אחת שמתאימה לפרטים האלה. פנו למעסיק כדי לוודא איזו מהן שלכם.',
+    noInvitation: 'לא נמצאה הזמנה התואמת לפרטים שהוזנו. בדקו את הפרטים ונסו שוב, או פנו לחברה שהזמינה אתכם.',
+    // Neutral on purpose: the person cannot resolve which internal row is theirs, so they are not
+    // asked to. The server still distinguishes INVITATION_AMBIGUOUS in its own answer.
+    ambiguousInvitation: 'לא ניתן להשלים את ההרשמה עם הפרטים שהוזנו. פנו לחברה שהזמינה אתכם.',
   },
 
   /** The app navbar, shared by every authenticated screen. */
