@@ -4,6 +4,8 @@ import type { DbSession } from '../../db/mongoose.js';
 import {
   CompanyMembershipModel,
   CURRENT_MEMBERSHIP_STATUSES,
+  OCCUPIED_MEMBERSHIP_STATUSES,
+  OWNER_COMPANY_POSITION,
   type CompanyPermission,
   type CompanyPosition,
   type CompanyMembershipRecord,
@@ -42,6 +44,10 @@ export interface CompanyMembershipRepository {
   /** `pending_company_approval` → `active`. Returns how many rows actually moved. */
   approve(company: Types.ObjectId, membershipId: string): Promise<number>;
   approveAllPending(company: Types.ObjectId): Promise<number>;
+  /** `invited` → `inactive`, and only ever a seat nobody has claimed. Returns rows moved. */
+  cancelInvitation(company: Types.ObjectId, membershipId: string): Promise<number>;
+  /** Whoever holds the Main Contractor job, counting the owner and an unclaimed seat. */
+  findMainContractorSeat(company: Types.ObjectId): Promise<CompanyMembershipRecord | null>;
 }
 
 /** The only module that reads or writes `companymemberships`. */
@@ -128,5 +134,28 @@ export const companyMembershipRepository: CompanyMembershipRepository = {
     ).exec();
 
     return result.modifiedCount;
+  },
+
+  async cancelInvitation(company, membershipId) {
+    if (!Types.ObjectId.isValid(membershipId)) return 0;
+
+    // `user: null` is in the filter as well as the status, so a seat somebody already claimed can
+    // never be withdrawn through this route.
+    const result = await CompanyMembershipModel.updateOne(
+      { _id: new Types.ObjectId(membershipId), company, status: 'invited', user: null },
+      { $set: { status: 'inactive' } },
+    ).exec();
+
+    return result.modifiedCount;
+  },
+
+  async findMainContractorSeat(company) {
+    return CompanyMembershipModel.findOne({
+      company,
+      status: { $in: [...OCCUPIED_MEMBERSHIP_STATUSES] },
+      $or: [{ companyPosition: OWNER_COMPANY_POSITION }, { standing: 'owner' }],
+    })
+      .lean<CompanyMembershipRecord>()
+      .exec();
   },
 };
