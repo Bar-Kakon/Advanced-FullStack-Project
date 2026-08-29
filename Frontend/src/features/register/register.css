@@ -984,7 +984,8 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   box-shadow: 0 0 0 4px var(--primary-08);
 }
 
-.checkbox-label a {
+.checkbox-label a,
+.checkbox-label__doc {
   color: var(--primary);
   font-weight: 600;
 }
