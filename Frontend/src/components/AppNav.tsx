@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 
 import { useAuth } from '../auth/useAuth';
 import { useLanguage } from '../i18n/useLanguage';
+import { AccountMenu } from './AccountMenu';
 import { LanguageSwitch } from './LanguageSwitch';
 
 /**
@@ -62,15 +63,7 @@ export const AppNav = ({ name, initials }: { name: string; initials: string }) =
             </svg>
           </button>
 
-          {/* The account menu itself is not built; the chip is where the prototype put it. */}
-          <button type="button" className="nav-profile is-open-context" aria-label={t.nav.accountMenu} aria-haspopup="true">
-            <span className="nav-profile__avatar" aria-hidden="true">{initials}</span>
-            <span className="nav-profile__name" dir="auto">{name}</span>
-            <svg className="nav-profile__chevron" width="14" height="14" viewBox="0 0 24 24" fill="none"
-                 stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <path d="M6 9l6 6 6-6" />
-            </svg>
-          </button>
+          <AccountMenu name={name} initials={initials} />
 
           <LanguageSwitch />
         </div>

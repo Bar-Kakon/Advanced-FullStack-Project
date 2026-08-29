@@ -887,3 +887,6 @@ html[data-lang="en"] {
 }
 
 .avatar--image { object-fit: cover; padding: 0; }
+
+.account-menu__paper { min-width: 208px; }
+.account-menu__note { font-size: 12.5px; }
