@@ -333,9 +333,13 @@ const run = async (): Promise<never> => {
   const middle = order.indexOf(alsoRated.userId.toString());
   const unrated = order.indexOf(owner.userId.toString());
 
-  check(highest === 0, 'the five-star contractor comes first', { order, highest });
-  check(middle === 1, 'the three-star contractor comes second', { middle });
-  check(unrated > middle, 'an unrated contractor sorts below both, never as a zero', { unrated });
+  // Relative order, not absolute position: other rated accounts may share this search term.
+  check(highest >= 0 && middle >= 0 && unrated >= 0, 'all three are on the page',
+    { highest, middle, unrated });
+  check(highest < middle, 'the five-star contractor sorts above the three-star one',
+    { highest, middle });
+  check(middle < unrated, 'and an unrated contractor sorts below both, never as a zero',
+    { middle, unrated });
 
   section('17. A rating-sorted page still pages without repeating or skipping');
   let ratingCursor: string | null = null;
