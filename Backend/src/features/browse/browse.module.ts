@@ -5,6 +5,8 @@ import type { BlocksService } from '../blocks/blocks.service.js';
 import type { RelationshipService } from '../connections/relationship.service.js';
 import { companyRepository } from '../companies/company.repository.js';
 import { companyMembershipRepository } from '../companies/companyMembership.repository.js';
+import { fileAssetRepository } from '../files/fileAsset.repository.js';
+import { createFileAssetService } from '../files/fileAsset.service.js';
 import type { RoutesAdapter } from '../location/routes.adapter.js';
 import { ratingRepository } from '../ratings/rating.repository.js';
 import { userRepository } from '../users/user.repository.js';
@@ -12,7 +14,11 @@ import { workEntryRepository } from '../workentries/workEntry.repository.js';
 import { browseRepository } from './browse.repository.js';
 import { createBrowseController } from './browse.controller.js';
 import { createBrowseService } from './browse.service.js';
-import { browseSearchQuerySchema, contractorParamsSchema } from './browse.validation.js';
+import {
+  browseSearchQuerySchema,
+  contractorParamsSchema,
+  workImageParamsSchema,
+} from './browse.validation.js';
 import { createPhoneVisibilityService } from './phoneVisibility.service.js';
 import { createPublicProfileService } from './publicProfile.service.js';
 
@@ -46,6 +52,7 @@ export const createBrowseModule = ({
       relationships,
       blocks,
       phones: createPhoneVisibilityService(),
+      files: createFileAssetService(fileAssetRepository),
     }),
   );
 
@@ -57,6 +64,16 @@ export const createBrowseModule = ({
     '/contractors/:userId',
     validateRequest({ params: contractorParamsSchema }),
     controller.handleProfile,
+  );
+  router.get(
+    '/contractors/:userId/avatar',
+    validateRequest({ params: contractorParamsSchema }),
+    controller.handleAvatar,
+  );
+  router.get(
+    '/contractors/:userId/work-entries/:entryId/image',
+    validateRequest({ params: workImageParamsSchema }),
+    controller.handleWorkImage,
   );
 
   return router;

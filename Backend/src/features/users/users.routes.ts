@@ -4,7 +4,11 @@ import Joi from 'joi';
 import { validateRequest } from '../../middleware/validateRequest.js';
 import { uploadSingleImage } from '../files/upload.middleware.js';
 import type { ProfileController } from './profile.controller.js';
-import { profileUpdateBodySchema, workEntryBodySchema } from './profile.validation.js';
+import {
+  profileUpdateBodySchema,
+  workEntryBodySchema,
+  workEntryUpdateBodySchema,
+} from './profile.validation.js';
 
 export const AVATAR_FIELD = 'avatar';
 export const WORK_IMAGE_FIELD = 'image';
@@ -35,6 +39,12 @@ export const createUsersRouter = (
     uploadSingleImage(WORK_IMAGE_FIELD),
     validateRequest({ body: workEntryBodySchema }),
     controller.handleAddWorkEntry,
+  );
+  router.patch(
+    '/me/work-entries/:id',
+    uploadSingleImage(WORK_IMAGE_FIELD),
+    validateRequest({ params: idParamsSchema, body: workEntryUpdateBodySchema }),
+    controller.handleUpdateWorkEntry,
   );
   router.delete(
     '/me/work-entries/:id',

@@ -1,6 +1,6 @@
 import type { Availability } from '../companies/company.model.js';
 import type { CompanyPosition, CompanyStanding } from '../companies/companyMembership.model.js';
-import type { Region, Trade } from './user.model.js';
+import type { HeavyEquipment, Region, Trade } from './user.model.js';
 import type { StructuredPlace } from '../location/place.types.js';
 
 export interface WorkEntryDto {
@@ -28,6 +28,8 @@ export interface ProfileDto {
   readonly bio: string;
   readonly specialties: readonly Trade[];
   readonly specialtyOther: string;
+  /** Empty unless `heavy_equipment` is one of the specialties, which is what the server enforces. */
+  readonly heavyEquipment: readonly HeavyEquipment[];
   readonly businessPhone: string;
   readonly city: string;
   readonly region: Region | null;

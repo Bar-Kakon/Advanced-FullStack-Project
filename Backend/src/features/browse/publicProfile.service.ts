@@ -5,12 +5,21 @@ import type { CompanyRepository } from '../companies/company.repository.js';
 import type { CompanyMembershipRepository } from '../companies/companyMembership.repository.js';
 import type { UserRepository } from '../users/user.repository.js';
 import type { WorkEntryRepository } from '../workentries/workEntry.repository.js';
+import type { FileAssetRecord } from '../files/fileAsset.model.js';
+import type { FileAssetService } from '../files/fileAsset.service.js';
 import type { PhoneVisibilityService } from './phoneVisibility.service.js';
 import { contractorNotFound } from './browse.errors.js';
 import type { PublicProfileDto, PublicWorkEntryDto } from './publicProfile.dto.js';
 
+export interface OpenedPublicAsset {
+  readonly asset: FileAssetRecord;
+  readonly stream: NodeJS.ReadableStream;
+}
+
 export interface PublicProfileService {
   forViewer(viewerId: string, subjectUserId: string): Promise<PublicProfileDto>;
+  openAvatar(viewerId: string, subjectUserId: string): Promise<OpenedPublicAsset>;
+  openWorkImage(viewerId: string, subjectUserId: string, entryId: string): Promise<OpenedPublicAsset>;
 }
 
 export interface PublicProfileDependencies {
@@ -22,6 +31,7 @@ export interface PublicProfileDependencies {
   readonly relationships: RelationshipService;
   readonly blocks: BlocksService;
   readonly phones: PhoneVisibilityService;
+  readonly files: FileAssetService;
 }
 
 export const createPublicProfileService = ({
@@ -33,14 +43,22 @@ export const createPublicProfileService = ({
   relationships,
   blocks,
   phones,
-}: PublicProfileDependencies): PublicProfileService => ({
-  async forViewer(viewerId, subjectUserId) {
-    // A blocked person is not merely hidden from the list: their profile is not reachable either.
+  files,
+}: PublicProfileDependencies): PublicProfileService => {
+  /** The subject a viewer is allowed to read at all, or nothing they can tell apart from missing. */
+  const visibleSubject = async (viewerId: string, subjectUserId: string) => {
     const hidden = await blocks.hiddenUserIdsFor(viewerId);
     if (hidden.some((id) => id.toString() === subjectUserId)) throw contractorNotFound();
 
     const subject = await users.findProfileById(subjectUserId);
     if (subject === null || subject.status !== 'active') throw contractorNotFound();
+
+    return subject;
+  };
+
+  return {
+  async forViewer(viewerId, subjectUserId) {
+    const subject = await visibleSubject(viewerId, subjectUserId);
 
     const membership = await memberships.findActiveByUser(subjectUserId);
     const company = membership ? await companies.findById(membership.company) : null;
@@ -63,7 +81,9 @@ export const createPublicProfileService = ({
       scope: entry.scope ?? null,
       meta: entry.meta,
       onFieldSync: entry.fieldSyncVerifiedAt !== undefined,
-      imageUrl: entry.image ? `/api/users/me/assets/${entry.image.toString()}` : null,
+      imageUrl: entry.image
+        ? `/api/browse/contractors/${subjectUserId}/work-entries/${entry._id.toString()}/image`
+        : null,
     }));
 
     return {
@@ -106,4 +126,22 @@ export const createPublicProfileService = ({
       isSelf,
     };
   },
-});
+
+  async openAvatar(viewerId, subjectUserId) {
+    const subject = await visibleSubject(viewerId, subjectUserId);
+    const fileId = subject.avatar?.fileId;
+    if (fileId === undefined) throw contractorNotFound();
+
+    return files.openOwnedStream(fileId.toString(), subject._id);
+  },
+
+  async openWorkImage(viewerId, subjectUserId, entryId) {
+    const subject = await visibleSubject(viewerId, subjectUserId);
+
+    const entry = await workEntries.findOwnedById(entryId, subject._id);
+    if (entry === null || entry.image === undefined) throw contractorNotFound();
+
+    return files.openOwnedStream(entry.image.toString(), subject._id);
+  },
+  };
+};

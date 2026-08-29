@@ -15,7 +15,13 @@ import {
   workEntryNotFound,
   workLinkNotVerifiable,
 } from './profile.errors.js';
-import type { CompanyUpdateBody, ProfileUpdateBody, WorkEntryBody } from './profile.validation.js';
+import type {
+  CompanyUpdateBody,
+  ProfileUpdateBody,
+  WorkEntryBody,
+  WorkEntryUpdateBody,
+} from './profile.validation.js';
+import type { Trade } from './user.model.js';
 import type { UserRepository } from './user.repository.js';
 import type { WorkVerificationService } from './workEntryVerification.service.js';
 
@@ -27,6 +33,12 @@ export interface ProfileService {
   update(userId: string, patch: ProfileUpdateBody): Promise<ProfileDto>;
   updateCompany(userId: string, patch: CompanyUpdateBody): Promise<ProfileDto>;
   addWorkEntry(userId: string, entry: WorkEntryBody, upload: StoredUpload | null): Promise<WorkEntryDto>;
+  updateWorkEntry(
+    userId: string,
+    entryId: string,
+    edit: WorkEntryUpdateBody,
+    upload: StoredUpload | null,
+  ): Promise<WorkEntryDto>;
   removeWorkEntry(userId: string, entryId: string): Promise<void>;
   setAvatar(userId: string, upload: StoredUpload): Promise<ProfileDto>;
   removeAvatar(userId: string): Promise<ProfileDto>;
@@ -49,6 +61,19 @@ export interface ProfileDependencies {
 
 const assetUrl = (fileId: Types.ObjectId | undefined): string | null =>
   fileId === undefined ? null : `/api/users/me/assets/${fileId.toString()}`;
+
+const HEAVY_EQUIPMENT_TRADE = 'heavy_equipment';
+
+/** Machines are stored only while the trade that carries them is held. */
+const withHeavyEquipmentRule = (
+  patch: ProfileUpdateBody,
+  storedSpecialties: readonly Trade[],
+): ProfileUpdateBody => {
+  const effective = patch.specialties ?? storedSpecialties;
+  if (effective.includes(HEAVY_EQUIPMENT_TRADE)) return patch;
+
+  return { ...patch, heavyEquipment: [] };
+};
 
 const toWorkEntryDto = (entry: WorkEntryRecord): WorkEntryDto => ({
   id: entry._id.toString(),
@@ -98,6 +123,7 @@ export const createProfileService = ({
       bio: user.bio ?? '',
       specialties: user.specialties ?? [],
       specialtyOther: user.specialtyOther ?? '',
+      heavyEquipment: user.heavyEquipment ?? [],
       businessPhone: user.businessPhone ?? '',
       city: user.location?.city ?? '',
       region: user.location?.region ?? null,
@@ -143,7 +169,7 @@ export const createProfileService = ({
       const user = await users.findProfileById(userId);
       if (user === null) throw profileNotFound();
 
-      await users.updateProfile(user._id, patch);
+      await users.updateProfile(user._id, withHeavyEquipmentRule(patch, user.specialties ?? []));
       return assemble(userId);
     },
 
@@ -205,6 +231,48 @@ export const createProfileService = ({
         if (imageId && upload) await files.remove(imageId, upload.gridFsFileId);
         throw error;
       }
+    },
+
+    async updateWorkEntry(userId, entryId, edit, upload) {
+      const user = await users.findProfileById(userId);
+      if (user === null) {
+        if (upload) await files.discardOrphan(upload.gridFsFileId);
+        throw profileNotFound();
+      }
+
+      const existing = await workEntries.findOwnedById(entryId, user._id);
+      if (existing === null) {
+        if (upload) await files.discardOrphan(upload.gridFsFileId);
+        throw workEntryNotFound();
+      }
+
+      let replacement: Types.ObjectId | undefined;
+      if (upload) {
+        const asset = await files.record(user._id, 'work_entry', upload);
+        replacement = asset._id;
+      }
+
+      let updated;
+      try {
+        updated = await workEntries.updateOwnedById(entryId, user._id, {
+          ...(edit.title === undefined ? {} : { title: edit.title }),
+          ...(edit.meta === undefined ? {} : { meta: edit.meta }),
+          ...(edit.scope === undefined ? {} : { scope: edit.scope === '' ? null : edit.scope }),
+          ...(replacement === undefined ? {} : { image: replacement }),
+        });
+      } catch (error) {
+        if (replacement && upload) await files.remove(replacement, upload.gridFsFileId);
+        throw error;
+      }
+
+      if (updated === null) {
+        if (replacement && upload) await files.remove(replacement, upload.gridFsFileId);
+        throw workEntryNotFound();
+      }
+
+      if (replacement && existing.image) await removeAsset(existing.image, user._id);
+
+      return toWorkEntryDto(updated);
     },
 
     async removeWorkEntry(userId, entryId) {
