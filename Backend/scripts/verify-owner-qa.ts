@@ -258,6 +258,58 @@ const run = async (): Promise<never> => {
   check(strangerRows.some((row) => row.userId === ownerId),
     'a different viewer still finds the same person');
 
+  section('14. A public profile serves the pictures it advertises');
+  const avatarForm = new FormData();
+  avatarForm.append('avatar', new Blob([new Uint8Array(PNG_BYTES)], { type: 'image/png' }), 'me.png');
+  const avatarUp = await request(baseUrl, 'PUT', '/api/users/me/avatar', {
+    token: owner.token, form: avatarForm,
+  });
+  check(avatarUp.status === 200, 'the contractor has an avatar', avatarUp.status);
+
+  const seen = await request(baseUrl, 'GET', `/api/browse/contractors/${ownerId}`, {
+    token: stranger.token,
+  });
+  check(seen.status === 200, 'the profile is readable by another viewer', seen.status);
+  const publicProfile = seen.body['profile'] as {
+    avatarUrl: string | null;
+    work: { id: string; imageUrl: string | null }[];
+  };
+
+  check(publicProfile.avatarUrl !== null, 'it advertises an avatar URL', publicProfile.avatarUrl);
+  const avatarSeen = await rawRequest(baseUrl, publicProfile.avatarUrl ?? '', stranger.token);
+  check(avatarSeen.status === 200, 'and that URL really serves the bytes', avatarSeen.status);
+  const avatarBytes = Buffer.from(await avatarSeen.arrayBuffer());
+  check(avatarBytes.equals(PNG_BYTES), 'byte for byte');
+
+  const publicPhoto = publicProfile.work.find((row) => row.imageUrl !== null);
+  check(publicPhoto !== undefined, 'a work entry advertises a photo URL', publicPhoto?.imageUrl);
+  const photoSeen = await rawRequest(baseUrl, publicPhoto?.imageUrl ?? '', stranger.token);
+  check(photoSeen.status === 200, 'and that URL serves it to another viewer', photoSeen.status);
+  check(photoSeen.headers.get('content-type')?.startsWith('image/png') === true,
+    'as a PNG', photoSeen.headers.get('content-type'));
+
+  section('15. A public picture route discloses nothing it should not');
+  const anonymousAvatar = await fetch(`${baseUrl}${publicProfile.avatarUrl ?? ''}`);
+  check(anonymousAvatar.status === 401, 'an unauthenticated caller is refused', anonymousAvatar.status);
+
+  const wrongOwner = await rawRequest(
+    baseUrl,
+    `/api/browse/contractors/${stranger.userId.toString()}/work-entries/${photoEntry.id}/image`,
+    owner.token,
+  );
+  check(wrongOwner.status === 404, "another contractor's entry id answers 404", wrongOwner.status);
+
+  const unknownPerson = await rawRequest(
+    baseUrl, '/api/browse/contractors/64b7f3a2c1d4e5f6a7b8c9d0/avatar', owner.token,
+  );
+  check(unknownPerson.status === 404, 'an unknown person answers 404', unknownPerson.status);
+
+  const blocked = await request(baseUrl, 'PUT', `/api/blocks/${ownerId}`, { token: stranger.token });
+  check(blocked.status === 200 || blocked.status === 201, 'the viewer blocks the contractor', blocked.status);
+  const blockedAvatar = await rawRequest(baseUrl, publicProfile.avatarUrl ?? '', stranger.token);
+  check(blockedAvatar.status === 404, 'a blocked profile serves no picture either', blockedAvatar.status);
+  await request(baseUrl, 'DELETE', `/api/blocks/${ownerId}`, { token: stranger.token });
+
   await cleanUp(MARKER);
   return finish(harness);
 };

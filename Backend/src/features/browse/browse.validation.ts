@@ -45,3 +45,12 @@ export interface ContractorParams {
 export const contractorParamsSchema = Joi.object<ContractorParams>({
   userId: Joi.string().hex().length(24).required(),
 });
+
+export interface WorkImageParams extends ContractorParams {
+  readonly entryId: string;
+}
+
+export const workImageParamsSchema = Joi.object<WorkImageParams>({
+  userId: Joi.string().hex().length(24).required(),
+  entryId: Joi.string().hex().length(24).required(),
+});
