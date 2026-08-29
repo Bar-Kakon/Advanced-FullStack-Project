@@ -62,6 +62,9 @@ export type CompanyPermission = (typeof COMPANY_PERMISSIONS)[number];
 /** The states that mean a person is in a company: waiting to be let in, or in. */
 export const CURRENT_MEMBERSHIP_STATUSES = ['pending_company_approval', 'active'] as const;
 
+/** The owner of a business is its Main Contractor. No second seat is ever opened for that job. */
+export const OWNER_COMPANY_POSITION = 'main_contractor' as const;
+
 /**
  * An owner runs the business, so public Register grants all four at signup. Writing them now rather
  * than deriving them later is what keeps the rule true for accounts created before the

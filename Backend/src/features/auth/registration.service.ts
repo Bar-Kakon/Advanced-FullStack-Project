@@ -1,7 +1,10 @@
 import type { Types } from 'mongoose';
 
 import type { DbSession } from '../../db/mongoose.js';
-import { OWNER_DEFAULT_PERMISSIONS } from '../companies/companyMembership.model.js';
+import {
+  OWNER_COMPANY_POSITION,
+  OWNER_DEFAULT_PERMISSIONS,
+} from '../companies/companyMembership.model.js';
 import type {
   CompanyMembershipRepository,
   NewCompanyMembership,
@@ -98,8 +101,7 @@ const toNewUser = (input: RegisterBody, passwordHash: string, termsVersion: stri
 
 /**
  * Public Register onboards somebody who runs their own business, so the relationship it opens is an
- * active owner one. `companyPosition` is left unset: the screen does not ask, and a position would
- * grant nothing anyway.
+ * active owner one, holding the Main Contractor job of the company it just created.
  */
 const toOwnerMembership = (
   user: Types.ObjectId,
@@ -109,6 +111,7 @@ const toOwnerMembership = (
   user,
   standing: 'owner',
   status: 'active',
+  companyPosition: OWNER_COMPANY_POSITION,
   permissions: OWNER_DEFAULT_PERMISSIONS,
 });
 
