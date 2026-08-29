@@ -408,7 +408,71 @@ export const he = {
   dashboard: {
     title: 'לוח הבקרה האישי',
     welcome: 'שלום, {name}.',
-    notMigrated: 'לוח הבקרה האישי הוא היעד המאושר אחרי כניסה, והמסך עצמו עדיין לא הועבר ל-React.',
+    loading: 'טעינת לוח הבקרה…',
+    retry: 'ניסיון נוסף',
+    errors: {
+      network: 'לא הצלחנו להגיע לשרת. כדאי לבדוק את החיבור ולנסות שוב.',
+      unknown: 'לא הצלחנו לטעון את לוח הבקרה כרגע.',
+    },
+
+    company: {
+      title: 'העסק',
+      position: 'תפקיד',
+      standing: { owner: 'בעלות על העסק', employee: 'עובד בחברה' },
+      none: 'אין כרגע שיוך לחברה.',
+    },
+
+    network: {
+      title: 'הרשת שלי',
+      lede: 'מצב הקשרים המקצועיים, נכון לעכשיו.',
+      connected: 'קשרים פעילים',
+      incoming: 'בקשות שהתקבלו',
+      outgoing: 'בקשות שנשלחו',
+      blocked: 'חסימות שנוצרו',
+      browse: 'עיון בקבלנים',
+    },
+
+    team: {
+      title: 'הצוות',
+      lede: 'מצב ההצטרפות לחברה, נכון לעכשיו.',
+      active: 'חברי צוות פעילים',
+      pendingApproval: 'ממתינים לאישור',
+      openInvitations: 'מקומות שנפתחו',
+      manage: 'ניהול עובדים',
+    },
+
+    reputation: {
+      title: 'מוניטין',
+      rating: 'דירוג ממוצע',
+      ratingCount: 'מתוך {count} דירוגים',
+      notRated: 'אין עדיין דירוג',
+      notRatedNote: 'דירוג נוצר רק אחרי עבודה משותפת שהושלמה.',
+      completedWork: 'עבודות שהושלמו',
+      viewProfile: 'הפרופיל שלי',
+    },
+
+    reminder: {
+      title: 'השלמת הפרופיל',
+      lede: 'הפרטים האלה עדיין חסרים. אפשר להשלים אותם בכל שלב, והמסך פועל גם בלעדיהם.',
+      required: 'נדרש',
+      suggested: 'מומלץ',
+      dismiss: 'הסתרה',
+      edit: 'עריכת הפרופיל',
+      items: {
+        contactRoute: 'דרך יצירת קשר אחת לפחות',
+        specialties: 'תחום התמחות',
+        region: 'אזור עבודה',
+        structuredPlace: 'מיקום מדויק על המפה',
+        travelRadius: 'מרחק נסיעה מרבי',
+        bio: 'תיאור מקצועי',
+        avatar: 'תמונת פרופיל',
+        businessPhone: 'טלפון עסקי',
+        officePhone: 'טלפון משרד',
+        schedulingPrefs: 'העדפות תזמון',
+        completedWork: 'עבודות שהושלמו',
+      },
+    },
+
     management: {
       title: 'ניהול',
       employees: { name: 'ניהול עובדים', lede: 'הזמנת עובדים ואישור הצטרפות לחברה.' },
