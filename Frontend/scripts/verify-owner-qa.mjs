@@ -361,7 +361,9 @@ const run = async () => {
   check('no dead href="#" link remains',
     (await page.locator('.app-nav__link[href="#"]').count()) === 0);
   check('unbuilt destinations are present but inert',
-    (await page.locator('.app-nav__link.is-disabled').count()) === 3);
+    (await page.locator('.app-nav__link.is-disabled').count()) === 2);
+  check('and My network is now a real destination',
+    (await page.locator('.app-nav__link[href="/network"]').count()) === 1);
   check('the brand goes somewhere real',
     (await page.getAttribute('.app-nav__brand', 'href')) === '/dashboard');
   check('the bell claims no unread notifications',
