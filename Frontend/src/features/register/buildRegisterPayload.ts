@@ -1,10 +1,19 @@
-import type { Availability, Region, RegisterPayload, Trade } from '../../api/types';
+import type {
+  Availability,
+  CompanyPosition,
+  CompanyStanding,
+  Region,
+  RegisterPayload,
+  Trade,
+} from '../../api/types';
 
 /** What the form holds while it is being filled: every field a string, exactly as typed. */
 export interface RegisterFormValues {
   firstName: string;
   lastName: string;
+  standing: CompanyStanding;
   companyName: string;
+  companyPosition: CompanyPosition | '';
   email: string;
   specialty: Trade | '';
   specialtyOther: string;
@@ -21,7 +30,10 @@ export interface RegisterFormValues {
 export const emptyRegisterForm: RegisterFormValues = {
   firstName: '',
   lastName: '',
+  // Owner is what public Register has always created, so it is the state the form opens in.
+  standing: 'owner',
   companyName: '',
+  companyPosition: '',
   email: '',
   specialty: '',
   specialtyOther: '',
@@ -54,6 +66,11 @@ export const emptyRegisterForm: RegisterFormValues = {
  *
  * The two phones are built from separate, independent expressions. Neither reads the other, so no
  * fallback between them can exist here.
+ *
+ * The last conversion is `standing`. An owner sends the office phone and the availability, because
+ * both belong to the business they are creating. An employee sends neither — those are the
+ * company's, set by whoever runs it — and sends `companyPosition` instead, which is one of the
+ * three values the server matches their invitation on.
  */
 export const buildRegisterPayload = (values: RegisterFormValues): RegisterPayload => {
   if (values.specialty === '') throw new Error('buildRegisterPayload called without a specialty.');
@@ -63,11 +80,17 @@ export const buildRegisterPayload = (values: RegisterFormValues): RegisterPayloa
   const businessPhone = values.businessPhone.trim();
   const specialtyOther = values.specialtyOther.trim();
 
+  const isEmployee = values.standing === 'employee';
+  if (isEmployee && values.companyPosition === '') {
+    throw new Error('buildRegisterPayload called for an employee without a company position.');
+  }
+
   return {
     firstName: values.firstName.trim(),
     lastName: values.lastName.trim(),
-    standing: 'owner',
+    standing: values.standing,
     companyName: values.companyName.trim(),
+    ...(isEmployee ? { companyPosition: values.companyPosition as CompanyPosition } : {}),
     email: values.email.trim(),
     password: values.password,
     confirmPassword: values.confirmPassword,
@@ -75,9 +98,9 @@ export const buildRegisterPayload = (values: RegisterFormValues): RegisterPayloa
     ...(values.specialty === 'other' && specialtyOther ? { specialtyOther } : {}),
     city: values.city.trim(),
     region: values.region,
-    ...(officePhone ? { officePhone } : {}),
+    ...(!isEmployee && officePhone ? { officePhone } : {}),
     ...(businessPhone ? { businessPhone } : {}),
-    availability: values.availability,
+    ...(isEmployee ? {} : { availability: values.availability }),
     acceptedTerms: true,
   };
 };

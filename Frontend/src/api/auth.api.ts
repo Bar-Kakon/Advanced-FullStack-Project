@@ -13,7 +13,13 @@ import type {
 } from './types';
 
 /** The API error codes this screen answers individually. Anything else falls back to generic. */
-export type RegisterFailure = 'EMAIL_ALREADY_REGISTERED' | 'REQUEST_VALIDATION_FAILED' | 'NETWORK' | 'UNKNOWN';
+export type RegisterFailure =
+  | 'EMAIL_ALREADY_REGISTERED'
+  | 'REQUEST_VALIDATION_FAILED'
+  | 'INVITATION_NOT_FOUND'
+  | 'INVITATION_AMBIGUOUS'
+  | 'NETWORK'
+  | 'UNKNOWN';
 
 export const registerAccount = async (payload: RegisterPayload): Promise<RegisterResponse> => {
   const { data } = await api.post<RegisterResponse>('/auth/register', payload);
@@ -35,6 +41,10 @@ export const classifyRegisterError = (error: unknown): RegisterFailure => {
   const body = error.response.data as ApiErrorBody | undefined;
   if (body?.code === 'EMAIL_ALREADY_REGISTERED') return 'EMAIL_ALREADY_REGISTERED';
   if (body?.code === 'REQUEST_VALIDATION_FAILED') return 'REQUEST_VALIDATION_FAILED';
+  // An employee whose employer has not opened a seat for them yet. Saying so is the point: they
+  // need to know it is their employer's move, not a mistake they can correct here.
+  if (body?.code === 'INVITATION_NOT_FOUND') return 'INVITATION_NOT_FOUND';
+  if (body?.code === 'INVITATION_AMBIGUOUS') return 'INVITATION_AMBIGUOUS';
   return 'UNKNOWN';
 };
 

@@ -52,9 +52,11 @@ export const useRegisterForm = (onSuccess: () => void) => {
   const isComplete = useMemo(() => {
     const filled = REQUIRED.every((f) => String(values[f]).trim().length > 0);
     const otherOk = values.specialty !== 'other' || values.specialtyOther.trim().length > 0;
+    // An employee is claiming a seat, and the position is one of the three values it is matched on.
+    const positionOk = values.standing !== 'employee' || values.companyPosition !== '';
     const matches = values.password === values.confirmPassword;
     return (
-      filled && otherOk && matches && values.acceptedTerms &&
+      filled && otherOk && positionOk && matches && values.acceptedTerms &&
       !errors.email && !errors.password && values.password.length >= MIN_PASSWORD_LENGTH
     );
   }, [values, errors.email, errors.password]);

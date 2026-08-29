@@ -50,6 +50,14 @@ export const he = {
     officePhone: { label: 'טלפון משרד', placeholder: '03-1234567' },
     businessPhone: { label: 'טלפון עסקי', placeholder: '050-1234567' },
     availability: { label: 'זמינות', hint: 'אפשר לשנות בכל שלב בפרופיל.' },
+    standing: {
+      label: 'סוג ההרשמה',
+      placeholder: 'בחירה…',
+      owner: 'בעל/ת העסק — פתיחת חברה חדשה',
+      employee: 'עובד/ת בחברה שהזמינה אותי',
+      employeeHint: 'המעסיק פותח עבורכם מקום מראש. ההרשמה מותאמת לשם המלא, לשם החברה ולתפקיד שהוזנו שם, ומחכה לאישור המעסיק.',
+    },
+    companyPosition: { label: 'תפקיד בחברה', placeholder: 'בחירת תפקיד…' },
     password: { label: 'סיסמה', placeholder: '••••••••', hint: 'לפחות 8 תווים', error: 'הסיסמה חייבת להכיל לפחות 8 תווים' },
     confirmPassword: { label: 'אימות סיסמה', placeholder: '••••••••', error: 'הסיסמאות אינן תואמות' },
     terms: { before: 'קראתי ואני מסכים/ה ל', tos: 'תנאי השימוש', between: ' ול', privacy: 'מדיניות הפרטיות' },
@@ -81,6 +89,14 @@ export const he = {
     other: 'אחר',
   },
 
+  companyPositions: {
+    main_contractor: 'קבלן ראשי',
+    construction_manager: 'מנהל אתרים',
+    site_manager: 'מנהל עבודה',
+    contractor: 'קבלן',
+    employee: 'עובד',
+  },
+
   regions: {
     nationwide: 'כל הארץ',
     north: 'צפון',
@@ -104,6 +120,8 @@ export const he = {
     emailTaken: 'כתובת האימייל הזו כבר רשומה. אפשר להתחבר במקום.',
     validation: 'חלק מהפרטים אינם תקינים. בדקו את השדות המסומנים ונסו שוב.',
     network: 'לא הצלחנו להגיע לשרת. בדקו את החיבור ונסו שוב.',
+    noInvitation: 'לא נמצאה הזמנה תואמת. בקשו מהמעסיק לפתוח לכם מקום עם אותו שם מלא, שם חברה ותפקיד, ואז נסו שוב.',
+    ambiguousInvitation: 'נמצאה יותר מהזמנה אחת שמתאימה לפרטים האלה. פנו למעסיק כדי לוודא איזו מהן שלכם.',
   },
 
   /** The app navbar, shared by every authenticated screen. */

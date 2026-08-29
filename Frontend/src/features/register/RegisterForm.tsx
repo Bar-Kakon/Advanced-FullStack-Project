@@ -1,4 +1,13 @@
-import { REGIONS, TRADES, type Region, type Trade } from '../../api/types';
+import {
+  COMPANY_POSITIONS,
+  COMPANY_STANDINGS,
+  REGIONS,
+  TRADES,
+  type CompanyPosition,
+  type CompanyStanding,
+  type Region,
+  type Trade,
+} from '../../api/types';
 import { useLanguage } from '../../i18n/useLanguage';
 import { MIN_PASSWORD_LENGTH, useRegisterForm } from './useRegisterForm';
 import { ButtonSpinner } from '../../components/ButtonSpinner';
@@ -22,14 +31,21 @@ export const RegisterForm = ({ form }: { form: ReturnType<typeof useRegisterForm
   const alertMessage =
     failure === 'EMAIL_ALREADY_REGISTERED' ? t.errors.emailTaken
     : failure === 'REQUEST_VALIDATION_FAILED' ? t.errors.validation
+    : failure === 'INVITATION_NOT_FOUND' ? t.errors.noInvitation
+    : failure === 'INVITATION_AMBIGUOUS' ? t.errors.ambiguousInvitation
     : failure === 'NETWORK' ? t.errors.network
     : failure ? t.errors.generic
     : null;
+
+  /** An employee claims a seat their employer opened; an owner creates the business. */
+  const isEmployee = values.standing === 'employee';
 
   // Option lists pair a language-neutral code with the label for the language on screen. Built
   // here rather than stored, so switching language relabels them without touching any value.
   const tradeOptions = TRADES.map((code) => ({ value: code, label: t.trades[code] }));
   const regionOptions = REGIONS.map((code) => ({ value: code, label: t.regions[code] }));
+  const standingOptions = COMPANY_STANDINGS.map((code) => ({ value: code, label: t.form.standing[code] }));
+  const positionOptions = COMPANY_POSITIONS.map((code) => ({ value: code, label: t.companyPositions[code] }));
 
   return (
     <>
@@ -57,12 +73,32 @@ export const RegisterForm = ({ form }: { form: ReturnType<typeof useRegisterForm
           value={values.lastName} onChange={(v) => setValue('lastName', v)}
           onBlur={() => markTouched('lastName')} touched={!!touched.lastName}
         />
+        {/* Standing decides what the rest of the form means, so it is asked before the fields it
+            governs. It is organizational standing only — never a permission or a job title. */}
+        <SelectField<CompanyStanding>
+          className="col--full" id="standing" label={t.form.standing.label}
+          placeholder={t.form.standing.placeholder} options={standingOptions} required
+          {...(isEmployee ? { hint: t.form.standing.employeeHint } : {})}
+          value={values.standing} onChange={(v) => setValue('standing', (v || 'owner') as CompanyStanding)}
+        />
+
         <TextField
-          className="col--full" id="companyName" label={t.form.companyName.label}
+          className={isEmployee ? 'col--half' : 'col--full'} id="companyName" label={t.form.companyName.label}
           placeholder={t.form.companyName.placeholder} autoComplete="organization" maxLength={MAX.companyName} required
           value={values.companyName} onChange={(v) => setValue('companyName', v)}
           onBlur={() => markTouched('companyName')} touched={!!touched.companyName}
         />
+
+        {/* One of the three values the server matches the invitation on. Typing a company name is
+            not proof of employment, and neither is this — the seat has to already exist. */}
+        {isEmployee ? (
+          <SelectField<CompanyPosition>
+            className="col--half" id="companyPosition" label={t.form.companyPosition.label}
+            placeholder={t.form.companyPosition.placeholder} options={positionOptions} required
+            value={values.companyPosition} onChange={(v) => setValue('companyPosition', v)}
+            onBlur={() => markTouched('companyPosition')} touched={!!touched.companyPosition}
+          />
+        ) : null}
         <TextField
           className="col--half" id="email" label={t.form.email.label} type="email" dir="ltr"
           placeholder={t.form.email.placeholder} autoComplete="email" maxLength={MAX.email} required
@@ -108,13 +144,16 @@ export const RegisterForm = ({ form }: { form: ReturnType<typeof useRegisterForm
             onBlur={() => markTouched('region')} touched={!!touched.region}
           />
           {/* Two independent numbers. Each is optional on its own, and neither is derived from
-              the other — they are stored on two different documents server-side. */}
-          <TextField
-            id="officePhone" label={t.form.officePhone.label} optionalText={t.form.optional}
-            type="tel" dir="ltr" placeholder={t.form.officePhone.placeholder}
-            autoComplete="work tel" maxLength={MAX.phone}
-            value={values.officePhone} onChange={(v) => setValue('officePhone', v)}
-          />
+              the other — they are stored on two different documents server-side. The office line
+              belongs to the business, so only somebody creating one is asked for it. */}
+          {isEmployee ? null : (
+            <TextField
+              id="officePhone" label={t.form.officePhone.label} optionalText={t.form.optional}
+              type="tel" dir="ltr" placeholder={t.form.officePhone.placeholder}
+              autoComplete="work tel" maxLength={MAX.phone}
+              value={values.officePhone} onChange={(v) => setValue('officePhone', v)}
+            />
+          )}
           <TextField
             id="businessPhone" label={t.form.businessPhone.label} optionalText={t.form.optional}
             type="tel" dir="ltr" placeholder={t.form.businessPhone.placeholder}
@@ -123,11 +162,15 @@ export const RegisterForm = ({ form }: { form: ReturnType<typeof useRegisterForm
           />
         </div>
 
-        <AvailabilityChoice
-          legend={t.form.availability.label} hint={t.form.availability.hint}
-          labels={t.availability}
-          value={values.availability} onChange={(v) => setValue('availability', v)}
-        />
+        {/* Availability is the organization's, set by whoever runs it — so an employee is not
+            asked, and the server refuses the field on that path anyway. */}
+        {isEmployee ? null : (
+          <AvailabilityChoice
+            legend={t.form.availability.label} hint={t.form.availability.hint}
+            labels={t.availability}
+            value={values.availability} onChange={(v) => setValue('availability', v)}
+          />
+        )}
 
         <PasswordField
           className="col--half"

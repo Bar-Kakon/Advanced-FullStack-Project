@@ -29,6 +29,13 @@ export type Availability = (typeof AVAILABILITY_STATUSES)[number];
 export const COMPANY_STANDINGS = ['owner', 'employee'] as const;
 export type CompanyStanding = (typeof COMPANY_STANDINGS)[number];
 
+/** The organizational job. Descriptive: it is one of the values an invitation is matched on, and
+ *  it grants nothing — capabilities come only from the permission model. */
+export const COMPANY_POSITIONS = [
+  'main_contractor', 'construction_manager', 'site_manager', 'contractor', 'employee',
+] as const;
+export type CompanyPosition = (typeof COMPANY_POSITIONS)[number];
+
 export interface RegisterPayload {
   readonly firstName: string;
   readonly lastName: string;
@@ -39,7 +46,11 @@ export interface RegisterPayload {
    * to be linked to until an invitation flow exists.
    */
   readonly standing: CompanyStanding;
+  /** Either way: an owner names the business they are creating, an employee names the one that
+   *  invited them — and for an employee the server matches it against a seat, never trusts it. */
   readonly companyName: string;
+  /** Employee only. Part of what identifies the seat being claimed. */
+  readonly companyPosition?: CompanyPosition;
   readonly email: string;
   readonly password: string;
   /** Validated by the server and never stored. Required, so it is always sent. */
@@ -49,11 +60,12 @@ export interface RegisterPayload {
   readonly specialtyOther?: string;
   readonly city: string;
   readonly region: Region;
-  /** Belongs to the business. Independent of `businessPhone`, with no fallback either way. */
+  /** Belongs to the business, so only an owner registration may carry it. */
   readonly officePhone?: string;
   /** Belongs to the person. Independent of `officePhone`, with no fallback either way. */
   readonly businessPhone?: string;
-  readonly availability: Availability;
+  /** The organization's, so only an owner registration may carry it. */
+  readonly availability?: Availability;
   /** The server only accepts `true`, and records the consent against its own Terms version. */
   readonly acceptedTerms: true;
 }

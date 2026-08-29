@@ -50,6 +50,14 @@ export const en: Strings = {
     officePhone: { label: 'Office phone', placeholder: '03-1234567' },
     businessPhone: { label: 'Business phone', placeholder: '050-1234567' },
     availability: { label: 'Availability', hint: 'You can change this at any time from your profile.' },
+    standing: {
+      label: 'Registration type',
+      placeholder: 'Select…',
+      owner: 'I own the business — create a new company',
+      employee: 'I work for a company that invited me',
+      employeeHint: 'Your employer opens a place for you first. Registration is matched to the full name, company name and position they entered, and then waits for their approval.',
+    },
+    companyPosition: { label: 'Position in the company', placeholder: 'Select a position…' },
     password: { label: 'Password', placeholder: '••••••••', hint: 'At least 8 characters', error: 'Password must be at least 8 characters' },
     confirmPassword: { label: 'Confirm password', placeholder: '••••••••', error: "Passwords don't match" },
     terms: { before: 'I have read and agree to the ', tos: 'Terms of Service', between: ' and ', privacy: 'Privacy Policy' },
@@ -81,6 +89,14 @@ export const en: Strings = {
     other: 'Other',
   },
 
+  companyPositions: {
+    main_contractor: 'Main contractor',
+    construction_manager: 'Construction manager',
+    site_manager: 'Site manager',
+    contractor: 'Contractor',
+    employee: 'Employee',
+  },
+
   regions: {
     nationwide: 'Nationwide (all Israel)',
     north: 'North',
@@ -104,6 +120,8 @@ export const en: Strings = {
     emailTaken: 'That email address is already registered. You can sign in instead.',
     validation: 'Some details are not valid. Please check the highlighted fields and try again.',
     network: 'We could not reach the server. Check your connection and try again.',
+    noInvitation: 'No matching invitation was found. Ask your employer to add you with the same full name, company name and position, then try again.',
+    ambiguousInvitation: 'More than one invitation matches these details. Check with your employer which one is yours.',
   },
 
   nav: {
