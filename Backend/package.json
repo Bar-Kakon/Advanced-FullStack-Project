@@ -17,6 +17,7 @@
     "verify:rate-limit": "tsx scripts/verify-rate-limit.ts",
     "verify:employee-lifecycle": "tsx scripts/verify-employee-lifecycle.ts",
     "verify:invitation-lifecycle": "tsx scripts/verify-invitation-lifecycle.ts",
+    "verify:owner-main-contractor": "tsx scripts/verify-owner-main-contractor.ts",
     "verify:blocks-connections-ratings": "tsx scripts/verify-blocks-connections-ratings.ts",
     "verify:browse": "tsx scripts/verify-browse.ts",
     "verify:travel-exclusions": "tsx scripts/verify-travel-exclusions.ts",
@@ -25,7 +26,8 @@
     "verify:profile": "tsx scripts/verify-profile.ts",
     "verify:completed-work": "tsx scripts/verify-completed-work.ts",
     "verify:media": "tsx scripts/verify-media.ts",
-    "migrate:membership-uniqueness": "tsx scripts/migrate-membership-uniqueness.ts"
+    "migrate:membership-uniqueness": "tsx scripts/migrate-membership-uniqueness.ts",
+    "migrate:owner-main-contractor": "tsx scripts/migrate-owner-main-contractor.ts"
   },
   "dependencies": {
     "@types/nodemailer": "^8.0.1",
