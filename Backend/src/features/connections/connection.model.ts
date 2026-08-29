@@ -5,7 +5,7 @@ import { Schema, model, type Types } from 'mongoose';
  *
  *   pending     a request is waiting for the recipient.
  *   accepted    both sides are connected.
- *   declined    the recipient refused. Its own state, never a generic teardown.
+ *   declined    the recipient refused. Its own state, never a generic teardown, and not permanent.
  *   removed     an accepted connection was ended.
  *   withdrawn   the requester cancelled their own pending request.
  *
@@ -18,8 +18,15 @@ export type ConnectionStatus = (typeof CONNECTION_STATUSES)[number];
 /** The teardown states. History is kept, so an active check must exclude them explicitly. */
 export const INACTIVE_CONNECTION_STATUSES: readonly ConnectionStatus[] = ['removed', 'withdrawn'];
 
-/** The states a fresh request may reactivate. `declined` is excluded — see D17/D19 notes. */
-export const REACTIVATABLE_CONNECTION_STATUSES: readonly ConnectionStatus[] = ['removed', 'withdrawn'];
+/**
+ * The states a fresh request may reactivate. `declined` is among them: refusing a request is not a
+ * permanent bar, and Block is the mechanism for that.
+ */
+export const REACTIVATABLE_CONNECTION_STATUSES: readonly ConnectionStatus[] = [
+  'removed',
+  'withdrawn',
+  'declined',
+];
 
 export interface ConnectionRecord {
   readonly _id: Types.ObjectId;

@@ -211,14 +211,63 @@ const run = async (): Promise<void> => {
   check('the row is kept and marked withdrawn',
     (await ConnectionModel.findOne({ _id: edgeAB?._id }).lean())?.status === 'withdrawn');
 
+  console.log('\n9c. Declined is historical, not permanent — Block is the permanent mechanism');
+  const bcPair = [b.id, c.id].sort().join(':');
   const declineTarget = await send('POST', `/connections/${c.id}/request`, undefined, b.token);
   check('B requests C', declineTarget.status === 201);
+  const bcEdge = await ConnectionModel.findOne({ pair: bcPair }).lean();
+  check('the edge records B as requester', String(bcEdge?.requester) === b.id);
+
   await send('POST', `/connections/${b.id}/decline`, undefined, c.token);
-  const declinedEdge = await ConnectionModel.findOne({ pair: [b.id, c.id].sort().join(':') }).lean();
+  const declinedEdge = await ConnectionModel.findOne({ pair: bcPair }).lean();
+  check('declining marks the row declined, and keeps it', declinedEdge?.status === 'declined');
   check('declined stays its own state, not a teardown alias', declinedEdge?.status === 'declined');
+  check('and it stamped respondedAt', declinedEdge?.respondedAt !== undefined);
+
   const reRequestDeclined = await send('POST', `/connections/${c.id}/request`, undefined, b.token);
-  check('a declined edge is NOT reactivatable — no re-request loop',
-    reRequestDeclined.status === 409, String(reRequestDeclined.status));
+  check('B MAY ask again after being declined', reRequestDeclined.status === 201,
+    String(reRequestDeclined.status));
+  check('no duplicate pair row was created',
+    (await ConnectionModel.countDocuments({ pair: bcPair })) === 1);
+  const reused = await ConnectionModel.findOne({ pair: bcPair }).lean();
+  check('the SAME row was reused', String(reused?._id) === String(bcEdge?._id));
+  check('and it is pending again', reused?.status === 'pending');
+  check('with B still the requester on this new request', String(reused?.requester) === b.id);
+  check('respondedAt was cleared, so the old refusal does not linger',
+    reused?.respondedAt === undefined || reused?.respondedAt === null);
+  check('declining created no block row',
+    (await BlockModel.countDocuments({
+      $or: [{ blockerUserId: b.id, blockedUserId: c.id }, { blockerUserId: c.id, blockedUserId: b.id }],
+    })) === 0);
+
+  const projectedForB = await send('GET', '/browse/contractors?limit=48', undefined, b.token);
+  const bSeesC = ((projectedForB.body['contractors'] ?? []) as any[]).find((x) => x.userId === c.id);
+  check('Browse projects the re-request as outgoing for B',
+    bSeesC?.relationship === 'outgoing_request', String(bSeesC?.relationship));
+  const projectedForC = await send('GET', '/browse/contractors?limit=48', undefined, c.token);
+  const cSeesB = ((projectedForC.body['contractors'] ?? []) as any[]).find((x) => x.userId === b.id);
+  check('and as incoming for C', cSeesB?.relationship === 'incoming_request', String(cSeesB?.relationship));
+
+  console.log('\n9d. The reverse direction reuses the same row and flips it');
+  await send('POST', `/connections/${b.id}/decline`, undefined, c.token);
+  check('C declines again', (await ConnectionModel.findOne({ pair: bcPair }).lean())?.status === 'declined');
+
+  const reverseRequestAfterDecline = await send('POST', `/connections/${b.id}/request`, undefined, c.token);
+  check('now C may open a request toward B', reverseRequestAfterDecline.status === 201,
+    String(reverseRequestAfterDecline.status));
+  check('still exactly one row for the pair',
+    (await ConnectionModel.countDocuments({ pair: bcPair })) === 1);
+  const flipped = await ConnectionModel.findOne({ pair: bcPair }).lean();
+  check('the reused row now names C as requester', String(flipped?.requester) === c.id);
+  check('and B as recipient', String(flipped?.recipient) === b.id);
+  check('and it is pending', flipped?.status === 'pending');
+
+  const flippedForB = await send('GET', '/browse/contractors?limit=48', undefined, b.token);
+  const bSeesCNow = ((flippedForB.body['contractors'] ?? []) as any[]).find((x) => x.userId === c.id);
+  check('Browse now shows B an INCOMING request, the direction having flipped',
+    bSeesCNow?.relationship === 'incoming_request', String(bSeesCNow?.relationship));
+
+  await send('POST', `/connections/${c.id}/decline`, undefined, b.token);
 
   const removeNothing = await send('POST', `/connections/${c.id}/remove`, undefined, a.token);
   check('removing a connection that is not accepted answers 404', removeNothing.status === 404,
