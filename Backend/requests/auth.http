@@ -9,14 +9,14 @@
 @newEmail = nina@ninaworks.co.il
 
 ### Register — 201 + { user }. NO accessToken and NO Set-Cookie: Register creates an account,
-### it does not open a session. `standing` defaults to "owner" and creates a company and its
-### owner membership in one transaction. Rate limited: 10 per hour per IP.
+### it does not open a session. `standing` is REQUIRED: "owner" creates a company and its owner
+### membership in one transaction, "employee" claims a seat. Rate limited: 10 per hour per IP.
 # @name register
 POST {{host}}/auth/register
 Content-Type: application/json
 
 {
-  "firstName": "נינה", "lastName": "לוי",
+  "firstName": "נינה", "lastName": "לוי", "standing": "owner",
   "companyName": "לוי עבודות חשמל בע\"מ",
   "email": "{{newEmail}}",
   "password": "CorrectHorse42!", "confirmPassword": "CorrectHorse42!",
@@ -41,7 +41,7 @@ POST {{host}}/auth/register
 Content-Type: application/json
 
 {
-  "firstName": "Someone", "lastName": "Else", "companyName": "Different Ltd",
+  "firstName": "Someone", "lastName": "Else", "standing": "owner", "companyName": "Different Ltd",
   "email": "{{newEmail}}",
   "password": "CorrectHorse42!", "confirmPassword": "CorrectHorse42!",
   "specialty": "plumbing", "city": "חיפה", "region": "haifa", "acceptedTerms": true
@@ -52,7 +52,7 @@ POST {{host}}/auth/register
 Content-Type: application/json
 
 {
-  "firstName": "No", "lastName": "Phones", "companyName": "Quiet Ltd",
+  "firstName": "No", "lastName": "Phones", "standing": "owner", "companyName": "Quiet Ltd",
   "email": "quiet@example.com",
   "password": "CorrectHorse42!", "confirmPassword": "CorrectHorse42!",
   "specialty": "concrete", "city": "אשדוד", "region": "south", "acceptedTerms": true
@@ -63,7 +63,7 @@ POST {{host}}/auth/register
 Content-Type: application/json
 
 {
-  "firstName": "Office", "lastName": "Only", "companyName": "Office Ltd",
+  "firstName": "Office", "lastName": "Only", "standing": "owner", "companyName": "Office Ltd",
   "email": "office-only@example.com",
   "password": "CorrectHorse42!", "confirmPassword": "CorrectHorse42!",
   "specialty": "tiling", "city": "רמלה", "region": "lowlands",
@@ -75,7 +75,7 @@ POST {{host}}/auth/register
 Content-Type: application/json
 
 {
-  "firstName": "Business", "lastName": "Only", "companyName": "Business Ltd",
+  "firstName": "Business", "lastName": "Only", "standing": "owner", "companyName": "Business Ltd",
   "email": "business-only@example.com",
   "password": "CorrectHorse42!", "confirmPassword": "CorrectHorse42!",
   "specialty": "painting", "city": "נתניה", "region": "sharon",
@@ -87,7 +87,7 @@ POST {{host}}/auth/register
 Content-Type: application/json
 
 {
-  "firstName": "Other", "lastName": "Trade", "companyName": "Scaffold Ltd",
+  "firstName": "Other", "lastName": "Trade", "standing": "owner", "companyName": "Scaffold Ltd",
   "email": "other-trade@example.com",
   "password": "CorrectHorse42!", "confirmPassword": "CorrectHorse42!",
   "specialty": "other", "specialtyOther": "פיגומים",
@@ -99,7 +99,7 @@ POST {{host}}/auth/register
 Content-Type: application/json
 
 {
-  "firstName": "A", "lastName": "B", "companyName": "C", "email": "v1@example.com",
+  "firstName": "A", "lastName": "B", "standing": "owner", "companyName": "C", "email": "v1@example.com",
   "password": "CorrectHorse42!", "confirmPassword": "CorrectHorse42!",
   "specialty": "drilling", "specialtyOther": "scaffolding",
   "city": "חיפה", "region": "haifa", "acceptedTerms": true
@@ -110,7 +110,7 @@ POST {{host}}/auth/register
 Content-Type: application/json
 
 {
-  "firstName": "A", "lastName": "B", "companyName": "C", "email": "v2@example.com",
+  "firstName": "A", "lastName": "B", "standing": "owner", "companyName": "C", "email": "v2@example.com",
   "password": "CorrectHorse42!", "confirmPassword": "CorrectHorse42!",
   "specialty": "other", "city": "חיפה", "region": "haifa", "acceptedTerms": true
 }
@@ -120,7 +120,7 @@ POST {{host}}/auth/register
 Content-Type: application/json
 
 {
-  "firstName": "A", "lastName": "B", "companyName": "C", "email": "v3@example.com",
+  "firstName": "A", "lastName": "B", "standing": "owner", "companyName": "C", "email": "v3@example.com",
   "password": "CorrectHorse42!", "confirmPassword": "Different99!",
   "specialty": "drilling", "city": "חיפה", "region": "haifa", "acceptedTerms": true
 }
@@ -130,7 +130,7 @@ POST {{host}}/auth/register
 Content-Type: application/json
 
 {
-  "firstName": "A", "lastName": "B", "companyName": "C", "email": "v4@example.com",
+  "firstName": "A", "lastName": "B", "standing": "owner", "companyName": "C", "email": "v4@example.com",
   "password": "short", "confirmPassword": "short",
   "specialty": "drilling", "city": "חיפה", "region": "haifa", "acceptedTerms": true
 }
@@ -140,7 +140,7 @@ POST {{host}}/auth/register
 Content-Type: application/json
 
 {
-  "firstName": "A", "lastName": "B", "companyName": "C", "email": "v5@example.com",
+  "firstName": "A", "lastName": "B", "standing": "owner", "companyName": "C", "email": "v5@example.com",
   "password": "CorrectHorse42!", "confirmPassword": "CorrectHorse42!",
   "specialty": "drilling", "city": "חיפה", "region": "haifa",
   "availability": "vacation", "acceptedTerms": true
@@ -151,7 +151,7 @@ POST {{host}}/auth/register
 Content-Type: application/json
 
 {
-  "firstName": "A", "lastName": "B", "companyName": "C", "email": "v6@example.com",
+  "firstName": "A", "lastName": "B", "standing": "owner", "companyName": "C", "email": "v6@example.com",
   "password": "CorrectHorse42!", "confirmPassword": "CorrectHorse42!",
   "specialty": "drilling", "city": "חיפה", "region": "מרכז", "acceptedTerms": true
 }
@@ -161,7 +161,7 @@ POST {{host}}/auth/register
 Content-Type: application/json
 
 {
-  "firstName": "A", "lastName": "B", "companyName": "C", "email": "v7@example.com",
+  "firstName": "A", "lastName": "B", "standing": "owner", "companyName": "C", "email": "v7@example.com",
   "password": "CorrectHorse42!", "confirmPassword": "CorrectHorse42!",
   "specialty": "drilling", "city": "חיפה", "region": "haifa", "acceptedTerms": false
 }
@@ -171,7 +171,7 @@ POST {{host}}/auth/register
 Content-Type: application/json
 
 {
-  "firstName": "Mal", "lastName": "Icious", "companyName": "EvilCo",
+  "firstName": "Mal", "lastName": "Icious", "standing": "owner", "companyName": "EvilCo",
   "email": "inject@example.com",
   "password": "CorrectHorse42!", "confirmPassword": "CorrectHorse42!",
   "specialty": "general", "city": "אשדוד", "region": "south", "acceptedTerms": true,
@@ -231,6 +231,17 @@ Authorization: Bearer {{login.response.body.accessToken}}
 ### An employee approving themselves — 403 NO_ACTIVE_COMPANY (they are not active yet)
 POST {{host}}/companies/employees/approve-all
 Authorization: Bearer PASTE_THE_PENDING_EMPLOYEE_ACCESS_TOKEN
+
+### standing omitted entirely — 400 REQUEST_VALIDATION_FAILED. There is no silent default.
+POST {{host}}/auth/register
+Content-Type: application/json
+
+{
+  "firstName": "No", "lastName": "Standing", "companyName": "C",
+  "email": "nostanding@example.com",
+  "password": "CorrectHorse42!", "confirmPassword": "CorrectHorse42!",
+  "specialty": "drilling", "city": "חיפה", "region": "haifa", "acceptedTerms": true
+}
 
 ### Unknown standing — 400 REQUEST_VALIDATION_FAILED
 POST {{host}}/auth/register

@@ -148,6 +148,15 @@ const run = async (): Promise<void> => {
   });
   check('an employee still cannot set the business availability', employeeAvailability.status === 400);
 
+  const noStanding = await post('/auth/register', {
+    firstName: 'A', lastName: 'B', companyName: 'X',
+    email: `${MARKER}-nostanding@example.com`, password: OLD_PASSWORD, confirmPassword: OLD_PASSWORD,
+    specialty: 'drilling', city: 'חיפה', region: 'haifa', acceptedTerms: true,
+  });
+  check('omitting standing is refused — there is no silent owner default',
+    noStanding.status === 400 && noStanding.body['code'] === 'REQUEST_VALIDATION_FAILED',
+    `${noStanding.status} ${String(noStanding.body['code'])}`);
+
   const badStanding = await post('/auth/register', {
     firstName: 'A', lastName: 'B', standing: 'admin', companyName: 'X',
     email: `${MARKER}-bad@example.com`, password: OLD_PASSWORD, confirmPassword: OLD_PASSWORD,

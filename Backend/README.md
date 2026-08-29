@@ -159,15 +159,18 @@ Token, issues no Refresh Token, writes no `refreshtokens` row and sets no cookie
 > removing, not tolerating.
 
 `standing` decides what a registration means. It is **organizational standing only** — not a
-permission, not a project role, not a job title — and it defaults to `owner`, which is what public
-Register has always created.
+permission, not a project role, not a job title — and it is **required**: there is no default,
+because a request that does not say which registration it is should be answered rather than
+guessed at.
 
 | | `standing: 'owner'` | `standing: 'employee'` |
 |---|---|---|
 | Writes | company + user + owner membership | user, and **claims an existing seat** |
 | `companyName` | required — the business being created | required — the business that invited them, **matched, never trusted** |
 | `companyPosition` | refused | **required** — part of what identifies the seat |
-| `officePhone` · `availability` | optional | **refused** — they belong to the business |
+| `officePhone` | optional | **refused** — see below |
+| `availability` | optional | **refused** — D14 |
+| `businessPhone` · `specialty` · `city` · `region` | optional / required as before | **the same** — these are the person's, not the company's |
 | Membership status | `active` | `pending_company_approval` |
 | Permissions | the four approved owner defaults | **none** |
 
@@ -520,8 +523,10 @@ forgotten.
 
 **Still owed around it, and none of it is invented here:**
 
-- **No employee-management screen.** The four endpoints are reachable by API only, so an owner
-  cannot invite or approve from the product yet.
+- **The Employee Management screen exists as a defined feature and is not wired to these
+  endpoints yet.** It owns company member management, opening invitations, employee status, pending
+  approvals, individual and bulk approval, and member details — these four routes are what it will
+  call. Until it is integrated, an owner can invite and approve over the API only.
 - **No public Register affordance for the employee path on the web client** beyond the fields the
   screen now collects — see the client's own notes.
 - **Browse must exclude employees.** Browse selects people holding an `owner` membership, and

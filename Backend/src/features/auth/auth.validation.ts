@@ -96,17 +96,16 @@ export const registerBodySchema = Joi.object<RegisterBody>({
   firstName: Joi.string().trim().min(1).max(MAX_NAME_LENGTH).required(),
   lastName: Joi.string().trim().min(1).max(MAX_NAME_LENGTH).required(),
 
-  // Defaults to `owner`, which is what public Register has always created, so a client that does
-  // not send it is unchanged.
+  // Required, and deliberately not defaulted. It decides which of two registrations this is, and a
+  // request that does not say should be answered rather than guessed at.
   standing: Joi.string()
     .valid(...COMPANY_STANDINGS)
-    .default('owner'),
+    .required(),
 
   /*
-   * The three company-scoped fields are required for an owner and REFUSED for an employee — the
-   * same `when` idiom `specialtyOther` already uses. Refusing rather than ignoring is the security
-   * property: a public company name is not proof of employment, so the endpoint must not be able
-   * to receive one on a path that could act on it.
+   * Required on both paths, and it means two different things. An owner names the business they
+   * are creating. An employee names the one that invited them — and it is MATCHED, never trusted:
+   * on its own it proves nothing, it only narrows the search for a seat somebody already opened.
    */
   companyName: Joi.string().trim().min(1).max(MAX_COMPANY_NAME_LENGTH).required(),
 
@@ -143,9 +142,17 @@ export const registerBodySchema = Joi.object<RegisterBody>({
     .valid(...REGIONS)
     .required(),
 
-  // Two independent numbers. Neither is required by the other's presence and neither has a format
-  // rule, because none has been approved. The office line belongs to the business, so an employee
-  // registration cannot carry one.
+  /*
+   * Two independent numbers. Neither is required by the other's presence and neither has a format
+   * rule, because none has been approved.
+   *
+   * `officePhone` is refused on the employee path because D27 puts it on the COMPANY document, and
+   * an employee registration writes no company: the field would have nowhere to go. Accepting and
+   * discarding it is what `specialtyOther`'s `forbidden()` exists to avoid, and writing it to the
+   * employer's company would let somebody not yet approved edit that company's record. Which of
+   * those an employee may do is a decision nobody has taken, so the field is refused rather than
+   * guessed at. `businessPhone` is the person's own and is collected on both paths.
+   */
   officePhone: Joi.when('standing', {
     is: 'employee',
     then: Joi.any().forbidden(),
@@ -153,7 +160,12 @@ export const registerBodySchema = Joi.object<RegisterBody>({
   }),
   businessPhone: Joi.string().trim().max(MAX_PHONE_LENGTH).optional(),
 
-  // Availability is the organization's, set by whoever runs it, so it is an owner-only field.
+  /*
+   * D14, closed: availability is the ORGANIZATION's work availability, "controlled by the
+   * execution contractor / company owner", with "deliberately no per-user copy and no per-user
+   * override", and it "must not be reinterpreted as the personal availability of each employee".
+   * An employee supplying one at registration is exactly that reinterpretation, so it is refused.
+   */
   availability: Joi.when('standing', {
     is: 'employee',
     then: Joi.any().forbidden(),

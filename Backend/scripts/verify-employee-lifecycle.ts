@@ -123,9 +123,21 @@ const run = async (): Promise<void> => {
   check('the seat is untouched by either attempt',
     (await CompanyMembershipModel.findById(seat?._id).lean())?.status === 'invited');
 
+  console.log('\n4b. An employee may supply their own professional details, and not the company\'s');
+  const withOfficePhone = await send('POST', '/auth/register',
+    account('Erez', 'Employee', { standing: 'employee', companyName: COMPANY, companyPosition: 'site_manager', officePhone: '04-8123456' }));
+  check('an employee is refused the company office phone', withOfficePhone.status === 400, String(withOfficePhone.status));
+  const withAvailability = await send('POST', '/auth/register',
+    account('Erez', 'Employee', { standing: 'employee', companyName: COMPANY, companyPosition: 'site_manager', availability: 'open' }));
+  check('an employee is refused the company availability', withAvailability.status === 400, String(withAvailability.status));
+
   console.log('\n5. The invited employee registers and claims the seat');
+  // Their own number, trade, city and region are ordinary profile data and travel with them.
   const employeeRegistered = await send('POST', '/auth/register',
-    account('Erez', 'Employee', { standing: 'employee', companyName: COMPANY, companyPosition: 'site_manager' }));
+    account('Erez', 'Employee', {
+      standing: 'employee', companyName: COMPANY, companyPosition: 'site_manager',
+      businessPhone: '052-5550199',
+    }));
   check('the registration is accepted', employeeRegistered.status === 201, JSON.stringify(employeeRegistered.body));
   check('it opened no session', !('accessToken' in employeeRegistered.body));
 
@@ -138,6 +150,12 @@ const run = async (): Promise<void> => {
   check('the employee holds no permissions', (claimed?.permissions ?? []).length === 0);
   check('no second company was created', (await CompanyModel.countDocuments({ name: COMPANY })) === 1);
   check('the employee holds exactly one membership', (await CompanyMembershipModel.countDocuments({ user: employeeId })) === 1);
+  const employeeDoc = await UserModel.findById(employeeId).select('businessPhone specialties location').lean();
+  check('their own business phone, trade and location were stored on their user document',
+    employeeDoc?.businessPhone === '052-5550199' &&
+      (employeeDoc?.specialties ?? []).length === 1 &&
+      employeeDoc?.location?.region === 'haifa',
+    `${String(employeeDoc?.businessPhone)} · ${(employeeDoc?.specialties ?? []).join(',')} · ${String(employeeDoc?.location?.region)}`);
 
   console.log('\n6. Only somebody with the permission may approve');
   const employeeLogin = await send('POST', '/auth/login', { email: `${MARKER}-erez-employee@example.com`, password: PASSWORD });
