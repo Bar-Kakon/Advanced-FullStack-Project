@@ -595,7 +595,26 @@ Browse's unmigrated Sort control — and it is written up in [§8](#8-known-issu
 lost with the file.**
 
 **Retained, because no React replacement exists in `develop`:** `my-network.html` + `my-network.css`,
-`personal-dashboard.html` + `personal-dashboard.css`, and the shared `lang.ts` / `lang.js` that both screens load.
+`personal-dashboard.html` + `personal-dashboard.css`, `my-projects.html` + `my-projects.css`,
+`create-project.html` + `create-project.css`, and the shared `lang.ts` / `lang.js` that they load.
+
+**`my-projects` and `create-project` were reconciled in on 2026-08-30, the same way and for the same reason.**
+Both existed **only** under the pre-reorganisation root `screens/`, on `feature/my-projects` (`a791231`) and
+`feature/create-project` (`36c3d82`) — one commit each, touching nothing else, and **never migrated**: no ref
+in the repository has ever held them under `Frontend/screens/`. Merging either branch would have recreated
+the deleted root directory, so both were copied out instead. Each `.css` is **byte-identical**
+(`6a68944`, `f6f9794`); each `.html` differs in exactly **two lines** — the navbar links to
+`browse-contractors.html` and `my-tasks.html`, whose targets do not exist, repointed to `#`. Root `screens/`
+was **not** recreated. A side effect worth naming: `personal-dashboard.html` and `my-network.html` had linked
+to `my-projects.html` and `create-project.html` since they were written, and **those links resolve now for
+the first time**.
+
+**One dangling reference was created and deliberately not repaired:** `create-project.html` loads
+`validation.js`, which was intentionally deleted from `develop` in `ced43ba` because only the five screens
+deleted alongside it used one. It was **not reintroduced** — restoring a file that a cleanup removed on
+purpose is a decision for the owner, not a side effect of a path fix. The consequence is limited to the
+prototype: opening `create-project.html` directly logs one 404 and its CSS-only validation hints do not run.
+Nothing in the React application references it.
 
 **`personal-dashboard.html` arrived late, and how it arrived is the point (2026-08-29).** It was the one approved
 prototype that had never been moved out of the pre-reorganisation **root `screens/`** directory: it existed only on
@@ -1585,6 +1604,8 @@ My projects, and a row that acts inside an `Invited` project fails.
 > Every change (code, structure, scope) gets a dated line **with the reason**. Newest at top.
 >
 > **Format:** `[YYYY-MM-DD] What changed — why.`
+
+- `[2026-08-30]` **My projects and Create / Edit project were reconciled into `Frontend/screens/` (`25f8d8f`). INTEGRATED INTO `develop` as historical UI inventory — not as product behaviour, and not approved.** Both approved statics existed only under the pre-reorganisation root `screens/`, on `feature/my-projects` (`a791231`) and `feature/create-project` (`36c3d82`), one commit each. **Neither had ever been migrated** — `git log --diff-filter=A` across every ref returns nothing for them under `Frontend/screens/` — so merging the branches would have recreated the deleted root directory. They were copied out instead, exactly as the Personal dashboard was at `0d27b55`: both `.css` **byte-identical**, both `.html` differing only in the two navbar links whose targets no longer exist. **Root `screens/` was not recreated, and no file was duplicated** — neither screen exists at any second path. `build:screens` compiles, and the application's own typecheck and build are untouched, because nothing in `Frontend/src` or `Backend/src` references either file. **These are migration references, not the source of truth**: where a static screen and a current decision disagree, the decision wins — see [§3.7](#37-static-prototypes-and-the-environment-conventions-the-client-depends-on).
 
 - `[2026-08-30]` **Personal dashboard and My Network are merged into `develop` (`d6258ea`, `a3e76dd`, `d27afd0`, `aa84806`). IMPLEMENTED · INTEGRATED INTO `develop` · VERIFIED BY AUTOMATED TESTS · OWNER MANUAL QA PENDING — and none of those four means approved.** Four merges onto `develop` at `d6acdfe`, in layer order: Dashboard API (`3e3e993`), Network API (`31fa70e`), Dashboard screen (`8ae3ce6`), Network screen (`df9512f`). **One `develop` checkout now runs the whole platform** — the owner-QA corrections and both new screens together, which is what this integration was for.
 

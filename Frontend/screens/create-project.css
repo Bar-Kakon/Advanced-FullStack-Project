@@ -1,0 +1,1231 @@
+/* ─────────────────────────────────────────────
+   FieldSync — Create / Edit project (approved screen #12)
+   Static HTML/CSS prototype for the academic project.
+
+   Palette: --primary #23384D · --secondary #C7B89D
+            --background #F3F0EA · --surface #FFFDF8
+            --text #1F2428 · --brand-gradient
+   The only non-palette hue is the approved --error red, reused
+   here for validation states and for the destructive control.
+
+   One file serves both screen states. A hidden radio pair swaps
+   between the Create form and the Edit form, because a static
+   file cannot change an input value the way a route would.
+   ───────────────────────────────────────────── */
+
+:root {
+  /* ── Approved brand palette ── */
+  --primary:         #23384D;
+  --secondary:       #C7B89D;
+  --background:      #F3F0EA;
+  --surface:         #FFFDF8;
+  --text:            #1F2428;
+  --brand-gradient:  linear-gradient(135deg, #23384D 0%, #4A5D6E 55%, #C7B89D 100%);
+
+  /* ── Approved exception: red validation states (login screen, 2026-06-07) ── */
+  --error:           #A63232;
+  --error-bg:        rgba(166, 50, 50, 0.06);
+  --error-border:    rgba(166, 50, 50, 0.30);
+
+  /* ── Derived: opacity variants of palette colors ── */
+  --primary-08:      rgba(35, 56, 77, 0.08);
+  --primary-12:      rgba(35, 56, 77, 0.12);
+  --primary-20:      rgba(35, 56, 77, 0.20);
+  --primary-30:      rgba(35, 56, 77, 0.30);
+  --primary-45:      rgba(35, 56, 77, 0.45);
+  --secondary-15:    rgba(199, 184, 157, 0.15);
+  --secondary-30:    rgba(199, 184, 157, 0.30);
+  --secondary-45:    rgba(199, 184, 157, 0.45);
+  --secondary-55:    rgba(199, 184, 157, 0.55);
+  --text-mute:       rgba(31, 36, 40, 0.64);
+  --text-soft:       rgba(31, 36, 40, 0.75);
+  --surface-08:      rgba(255, 253, 248, 0.08);
+  --surface-15:      rgba(255, 253, 248, 0.15);
+  --surface-50:      rgba(255, 253, 248, 0.50);
+  --surface-60:      rgba(255, 253, 248, 0.60);
+  --surface-75:      rgba(255, 253, 248, 0.75);
+  --surface-90:      rgba(255, 253, 248, 0.90);
+  --surface-96:      rgba(255, 253, 248, 0.96);
+
+  /* Grid lines and the dialog scrim, both derived from the palette. */
+  --grid-light:      rgba(255, 253, 248, 0.06);
+  --scrim:           rgba(31, 36, 40, 0.62);
+
+  /* ── Typography — Hebrew is the default UI language ── */
+  --font-sans:  'Heebo', 'Inter', system-ui, sans-serif;
+  --font-serif: 'Frank Ruhl Libre', 'Fraunces', serif;
+  --font-mono:  'IBM Plex Mono', ui-monospace, 'SF Mono', monospace;
+
+  /* ── Shape ── */
+  --shadow-lift:     0 18px 36px -24px rgba(31, 36, 40, 0.70);
+  --shadow-card:     14px 14px 0 rgba(199, 184, 157, 0.16),
+                     0 26px 60px -42px rgba(31, 36, 40, 0.90);
+  --board-shadow:    inset 0 0 0 1px rgba(255, 253, 248, 0.08),
+                     inset 0 0 0 12px rgba(199, 184, 157, 0.08),
+                     0 34px 90px -54px rgba(31, 36, 40, 0.90);
+
+  --r-sm:        8px;
+  --r-md:        8px;
+  --nav-h:       66px;
+  --content-max: 1280px;
+  /* A single-column form reads better narrow, so the form is capped tighter than the navbar. */
+  --form-max:    960px;
+}
+
+/* ─────────────────────────────────────────────
+   Reset
+   ───────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { min-height: 100%; }
+
+/* Keeps an anchored section clear of the sticky navbar. */
+html { scroll-padding-top: calc(var(--nav-h) + 16px); }
+
+body {
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.55;
+  color: var(--text);
+  background:
+    radial-gradient(circle at 14% 16%, rgba(199, 184, 157, 0.18) 0 11%, transparent 26%),
+    radial-gradient(circle at 86% 12%, rgba(255, 253, 248, 0.10) 0 9%, transparent 24%),
+    var(--brand-gradient);
+  background-attachment: fixed;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+a { color: inherit; text-decoration: none; }
+button, input, select, textarea { font: inherit; color: inherit; }
+button { background: none; border: none; cursor: pointer; }
+ul { list-style: none; }
+fieldset { border: 0; }
+
+/* The fixed blueprint board sits behind all content, as on every app screen. */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 18px;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(var(--surface-08) 1px, transparent 1px),
+    linear-gradient(90deg, var(--surface-08) 1px, transparent 1px),
+    linear-gradient(var(--surface-15) 2px, transparent 2px),
+    linear-gradient(90deg, var(--surface-15) 2px, transparent 2px),
+    repeating-linear-gradient(135deg, transparent 0 42px, rgba(199, 184, 157, 0.13) 42px 43px),
+    repeating-linear-gradient(45deg, transparent 0 96px, rgba(255, 253, 248, 0.06) 96px 97px);
+  background-size: 24px 24px, 24px 24px, 120px 120px, 120px 120px, 170px 170px, 220px 220px;
+  border: 1px solid var(--surface-15);
+  box-shadow: var(--board-shadow);
+}
+
+/* This class hides text visually while leaving it available to a screen reader. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ─────────────────────────────────────────────
+   App shell — sibling after the language and mode radios
+   ───────────────────────────────────────────── */
+.app {
+  position: relative;
+  z-index: 1;
+  direction: rtl;
+  min-height: 100vh;
+}
+
+/* ─────────────────────────────────────────────
+   REUSABLE APP NAVBAR (.app-nav)
+   Copied from my-tasks.css, which carries the corrected 800px
+   wrap and the logical chip padding.
+   ───────────────────────────────────────────── */
+.app-nav {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  background:
+    linear-gradient(var(--grid-light) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-light) 1px, transparent 1px),
+    rgba(35, 56, 77, 0.92);
+  background-size: 22px 22px, 22px 22px, auto;
+  border-bottom: 1px solid var(--secondary-45);
+  box-shadow: 0 14px 30px -22px rgba(31, 36, 40, 0.95);
+  backdrop-filter: blur(10px);
+}
+
+.app-nav__inner {
+  max-width: var(--content-max);
+  margin-inline: auto;
+  height: var(--nav-h);
+  padding-inline: 22px;
+  display: flex;
+  align-items: center;
+  gap: 22px;
+}
+
+.app-nav__brand { display: inline-flex; align-items: center; gap: 10px; flex-shrink: 0; }
+.app-nav__mark {
+  display: inline-flex;
+  padding: 5px;
+  border-radius: 10px;
+  background: var(--surface-08);
+  border: 1px solid var(--surface-50);
+  box-shadow: inset 0 0 0 4px var(--surface-08), 0 0 0 1px var(--secondary-30);
+}
+.app-nav__name {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.2px;
+  color: var(--surface);
+}
+
+.app-nav__links { display: flex; align-items: center; gap: 4px; }
+.app-nav__link {
+  position: relative;
+  padding: 9px 14px;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--surface-75);
+  border-radius: var(--r-sm);
+  transition: color 0.16s, background 0.16s;
+}
+.app-nav__link:hover { color: var(--surface); background: var(--surface-08); }
+
+.app-nav__actions { display: flex; align-items: center; gap: 10px; margin-inline-start: auto; }
+
+.nav-icon-btn {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--r-sm);
+  color: var(--surface-75);
+  border: 1px solid var(--surface-15);
+  background: var(--surface-08);
+  transition: color 0.16s, border-color 0.16s, background 0.16s;
+}
+.nav-icon-btn:hover { color: var(--surface); border-color: var(--secondary-55); }
+.nav-icon-btn.has-dot::after {
+  content: '';
+  position: absolute;
+  top: 8px;
+  inset-inline-end: 9px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--secondary);
+  border: 1.5px solid rgba(35, 56, 77, 0.92);
+}
+
+.nav-profile {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  /* The padding is written logically so the tighter side stays beside the avatar in both directions. */
+  padding-block: 5px;
+  padding-inline-start: 7px;
+  padding-inline-end: 11px;
+  border-radius: 999px;
+  color: var(--surface);
+  border: 1px solid var(--surface-15);
+  background: var(--surface-08);
+  transition: border-color 0.16s, background 0.16s;
+}
+.nav-profile:hover { border-color: var(--secondary-55); background: var(--surface-15); }
+.nav-profile__avatar {
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--surface);
+  background: var(--brand-gradient);
+  border: 1px solid var(--secondary-55);
+}
+.nav-profile__name { font-size: 13px; font-weight: 600; }
+.nav-profile__chevron { color: var(--surface-60); }
+
+.lang-switch {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  /* The padding is written logically for the same reason as the profile chip above. */
+  padding-block: 5px;
+  padding-inline-start: 10px;
+  padding-inline-end: 8px;
+  background: var(--surface-96);
+  border: 1px solid var(--secondary-55);
+  border-radius: 999px;
+  box-shadow: var(--shadow-lift);
+  outline: 1px solid var(--surface-50);
+  outline-offset: -4px;
+}
+.lang-switch__globe { color: var(--text-mute); flex-shrink: 0; }
+.lang-switch__btn {
+  font-family: var(--font-sans);
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--text-soft);
+  padding: 3px 9px;
+  border-radius: 999px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  transition: color 0.18s, background 0.18s;
+}
+.lang-switch__btn:hover { color: var(--primary); }
+.lang-switch__sep { width: 1px; height: 14px; background: var(--secondary-30); }
+
+/* ─────────────────────────────────────────────
+   Page column and header
+   ───────────────────────────────────────────── */
+.pform {
+  max-width: var(--form-max);
+  margin-inline: auto;
+  padding: 28px 22px 60px;
+}
+
+.pform__head { margin-bottom: 18px; }
+
+.pform__back {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+  font-size: 14.5px;
+  font-weight: 500;
+  color: var(--surface-90);
+  padding: 6px 12px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--surface-15);
+  background: var(--surface-08);
+  transition: color 0.16s, border-color 0.16s, background 0.16s;
+}
+.pform__back:hover { color: var(--surface); border-color: var(--secondary-55); background: var(--surface-15); }
+/* The chevron is directional, so it mirrors with the layout. */
+.pform__back-icon { flex-shrink: 0; }
+#lang-he:checked ~ .app .pform__back-icon { transform: scaleX(-1); }
+
+.pform__title {
+  font-family: var(--font-serif);
+  font-size: 32px;
+  font-weight: 700;
+  line-height: 1.15;
+  color: var(--surface);
+}
+
+.pform__sub {
+  margin-top: 7px;
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--surface-90);
+}
+
+/* ─────────────────────────────────────────────
+   Prototype state switch — not a product control.
+   A static file cannot change an input value, so the two
+   screen states are two forms and this picks between them.
+   ───────────────────────────────────────────── */
+.modeswitch {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+  margin-bottom: 24px;
+  padding: 13px 16px;
+  border-radius: var(--r-md);
+  background: var(--surface-08);
+  border: 1px dashed var(--surface-50);
+}
+
+.modeswitch__tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--secondary);
+}
+.modeswitch__tag-icon { flex-shrink: 0; }
+
+.modeswitch__opts {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px;
+  border-radius: 999px;
+  background: var(--surface-08);
+  border: 1px solid var(--surface-15);
+}
+
+.modeswitch__btn {
+  padding: 6px 14px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--surface-75);
+  border-radius: 999px;
+  cursor: pointer;
+  transition: color 0.18s, background 0.18s;
+}
+.modeswitch__btn:hover { color: var(--surface); }
+
+.modeswitch__note {
+  flex-basis: 100%;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--surface-75);
+}
+
+/* ─────────────────────────────────────────────
+   Vellum panel — the shared card surface
+   ───────────────────────────────────────────── */
+.panel {
+  position: relative;
+  padding: 28px 26px;
+  margin-block-end: 22px;
+  background:
+    linear-gradient(135deg, transparent 0 20px, var(--surface-96) 20px),
+    linear-gradient(90deg, rgba(35, 56, 77, 0.03) 1px, transparent 1px),
+    linear-gradient(0deg, rgba(35, 56, 77, 0.03) 1px, transparent 1px),
+    linear-gradient(180deg, rgba(255, 253, 248, 0.99), rgba(243, 240, 234, 0.96));
+  background-size: auto, 20px 20px, 20px 20px, auto;
+  border: 1px solid var(--surface-75);
+  border-block-start: 4px solid var(--secondary-45);
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow-card);
+  outline: 1px solid var(--primary-08);
+  outline-offset: -7px;
+}
+
+/* The blueprint corner tick, tucked clear of the text. */
+.panel::after {
+  content: '';
+  position: absolute;
+  bottom: 10px;
+  inset-inline-end: 10px;
+  width: 16px;
+  height: 16px;
+  border: solid var(--secondary);
+  border-width: 0 2px 2px 0;
+  pointer-events: none;
+}
+
+.panel__title {
+  font-family: var(--font-serif);
+  font-size: 25px;
+  font-weight: 700;
+  line-height: 1.15;
+  color: var(--primary);
+}
+.panel__lede {
+  margin-top: 8px;
+  margin-bottom: 22px;
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--text-soft);
+}
+
+/* ─────────────────────────────────────────────
+   Sidenote — one placement everywhere, after the lede
+   ───────────────────────────────────────────── */
+.notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 14px 16px;
+  margin-block-end: 22px;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--text-soft);
+  background: var(--background);
+  border: 1px solid var(--secondary-30);
+  border-inline-start: 4px solid var(--secondary-45);
+  border-radius: var(--r-sm);
+}
+.notice__icon { color: var(--primary); flex-shrink: 0; margin-top: 3px; }
+.notice:last-child { margin-block-end: 0; }
+
+/* ─────────────────────────────────────────────
+   Form layout
+   ───────────────────────────────────────────── */
+.form-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 18px 20px;
+  margin-bottom: 22px;
+}
+.form-group { display: flex; flex-direction: column; gap: 8px; margin-bottom: 22px; }
+.form-row > .form-group { margin-bottom: 0; }
+.form-group:last-child { margin-bottom: 0; }
+
+.field-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  cursor: pointer;
+  font-family: var(--font-mono);
+  /* §3.5 rule 3 keeps a field label at the 14px reference size. */
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-soft);
+}
+.field-label::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border: 1px solid var(--secondary);
+  background: var(--primary-08);
+  transform: rotate(45deg);
+  flex-shrink: 0;
+}
+
+/* A required field says so in words, not with a symbol the reader has to decode. */
+.req {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--primary);
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--secondary-15);
+  border: 1px solid var(--secondary);
+}
+
+/* ─────────────────────────────────────────────
+   Fields
+   ───────────────────────────────────────────── */
+.form-input,
+.form-select,
+.form-textarea {
+  width: 100%;
+  height: 50px;
+  padding-block: 0;
+  padding-inline: 14px;
+  font-family: var(--font-sans);
+  font-size: 16px;
+  color: var(--text);
+  background:
+    linear-gradient(90deg, rgba(35, 56, 77, 0.035) 1px, transparent 1px),
+    var(--surface);
+  background-size: 14px 100%, auto;
+  border: 1.5px solid var(--secondary-30);
+  border-inline-start-width: 5px;
+  border-radius: var(--r-sm);
+  outline: none;
+  box-shadow: inset 0 -2px 0 var(--secondary-15), 4px 4px 0 rgba(199, 184, 157, 0.08);
+  /* §3.5 rule 1 allows colour to change on focus but never position or size. */
+  transition: border-color 0.16s, box-shadow 0.16s, background 0.16s;
+}
+
+/* A date field keeps its native picker, so the appearance reset is scoped away from it. */
+.form-input:not([type="date"]),
+.form-select {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.form-input::placeholder,
+.form-textarea::placeholder { color: var(--text-mute); }
+
+.form-input:hover,
+.form-select:hover,
+.form-textarea:hover {
+  border-color: var(--secondary-55);
+  border-inline-start-color: var(--secondary);
+}
+.form-input:focus,
+.form-select:focus,
+.form-textarea:focus {
+  border-color: var(--primary);
+  border-inline-start-color: var(--primary);
+  box-shadow: 0 0 0 4px var(--primary-08), inset 0 -2px 0 var(--primary), 4px 4px 0 rgba(35, 56, 77, 0.10);
+}
+
+.form-textarea {
+  height: auto;
+  min-height: 128px;
+  padding-block: 12px;
+  line-height: 1.6;
+  resize: vertical;
+}
+
+/* A date is an LTR sequence in both languages, so the box stays narrow enough for that to read naturally. */
+.form-input--date { max-width: 250px; }
+
+/* Native select dressed as a field. */
+.select-wrap { position: relative; }
+.form-select { padding-inline-end: 38px; cursor: pointer; }
+.select-chevron {
+  position: absolute;
+  inset-inline-end: 13px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-flex;
+  color: var(--text-mute);
+  pointer-events: none;
+}
+
+.field-hint { font-size: 14px; line-height: 1.5; color: var(--text-soft); }
+/* A hint that follows a block of content rather than a single field needs its own gap. */
+.field-hint--after { margin-top: 14px; }
+
+/* ─────────────────────────────────────────────
+   Validation — the same touched model as login, register
+   and edit profile, driven by the shared validation.js
+   ───────────────────────────────────────────── */
+.form-input.touched:not(:focus):invalid {
+  border-color: var(--error);
+  border-inline-start-color: var(--error);
+  box-shadow: 0 0 0 4px var(--error-bg), inset 0 -2px 0 var(--error);
+}
+.form-input.touched:not(:focus):invalid ~ .input-warn { display: flex; }
+
+/* The hard-hat warning sits inside the field, as it does on the login screen. */
+.input-wrapper { position: relative; }
+.input-wrapper .form-input { padding-inline-end: 42px; }
+.input-warn {
+  position: absolute;
+  top: 0;
+  inset-inline-end: 12px;
+  height: 50px;
+  display: none;
+  align-items: center;
+  color: var(--error);
+  pointer-events: none;
+}
+
+/* An icon alone is not an error message, so each invalid field also states the problem. */
+.field-error {
+  display: none;
+  align-items: center;
+  gap: 7px;
+  font-size: 14.5px;
+  font-weight: 500;
+  color: var(--error);
+}
+.field-error__icon { flex-shrink: 0; }
+.form-group:has(.form-input.touched:not(:focus):invalid) .field-error { display: flex; }
+
+/* ─────────────────────────────────────────────
+   Working calendar — the project inherits the contractor's
+   own default, and may differ from it for this project only
+   ───────────────────────────────────────────── */
+.wcal-toggle {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+}
+
+.wcal__state {
+  display: flex;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 14px 18px;
+  padding: 16px 18px;
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  border: 1px solid var(--secondary-30);
+  border-inline-start: 5px solid var(--secondary);
+}
+
+.wcal__stateinfo { min-width: 0; flex: 1 1 260px; }
+
+.wcal__status {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.35;
+  color: var(--primary);
+}
+.wcal__status-icon { flex-shrink: 0; color: var(--secondary); }
+
+.wcal__summary {
+  margin-top: 7px;
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--text-soft);
+}
+
+/* The action that moves between the two states sits beside the status it changes. */
+.wcal__action {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  align-self: center;
+  padding: 11px 16px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--primary);
+  cursor: pointer;
+  background: var(--secondary-15);
+  border: 1.5px dashed var(--secondary);
+  border-radius: var(--r-sm);
+  transition: background 0.15s, border-color 0.15s;
+}
+.wcal__action:hover { background: var(--secondary-30); border-style: solid; }
+.wcal__action-icon { flex-shrink: 0; }
+.wcal-toggle:focus-visible ~ .wcal__body .wcal__action { outline: 2px solid var(--primary); outline-offset: 2px; }
+
+/* ── The inherited week, shown as a summary rather than as controls ── */
+.daystrip {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(104px, 1fr));
+  gap: 8px;
+  margin-top: 18px;
+}
+
+.daychip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 11px 8px;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.3;
+  text-align: center;
+  border-radius: var(--r-sm);
+}
+.daychip__icon { flex-shrink: 0; }
+
+/* A working day is filled and a non-working day is dashed, so the state never rests on colour. */
+.daychip--on  { color: var(--surface); background: var(--primary);   border: 1.5px solid var(--primary); }
+.daychip--off { color: var(--text-mute); background: var(--surface); border: 1.5px dashed var(--primary-30); }
+
+/* ── The editable week ── */
+.dayset {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(112px, 1fr));
+  gap: 8px;
+  margin-top: 18px;
+}
+
+.daybox {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 11px 12px;
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.3;
+  color: var(--text-soft);
+  cursor: pointer;
+  background: var(--surface);
+  border: 1.5px solid var(--secondary-30);
+  border-radius: var(--r-sm);
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+}
+.daybox:hover { border-color: var(--secondary-55); background: var(--background); }
+
+.daybox__input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.daybox__mark {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--surface);
+  background: var(--surface);
+  border: 1.5px solid var(--secondary-55);
+  border-radius: 5px;
+  transition: background 0.15s, border-color 0.15s;
+}
+.daybox__mark svg { opacity: 0; transition: opacity 0.15s; }
+.daybox__input:checked + .daybox__mark { background: var(--primary); border-color: var(--primary); }
+.daybox__input:checked + .daybox__mark svg { opacity: 1; }
+.daybox:has(.daybox__input:checked) {
+  border-color: var(--primary-30);
+  background: var(--secondary-15);
+  color: var(--text);
+  font-weight: 600;
+}
+.daybox__input:focus-visible + .daybox__mark { box-shadow: 0 0 0 4px var(--primary-08); }
+
+.wcal__legend {
+  margin-top: 14px;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--text-mute);
+}
+
+/* The checkbox above decides which of the two states the panel is showing. */
+.wcal__custom { display: none; }
+.wcal:has(.wcal-toggle:checked) .wcal__inherited { display: none; }
+.wcal:has(.wcal-toggle:checked) .wcal__custom { display: block; }
+
+/* A customised project calendar reads as the exception it is. */
+.wcal:has(.wcal-toggle:checked) .wcal__state { border-inline-start-color: var(--primary); }
+
+/* ─────────────────────────────────────────────
+   Project photos
+   ───────────────────────────────────────────── */
+.photo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(178px, 1fr));
+  gap: 14px;
+}
+
+.photo {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border: 1px solid var(--secondary-30);
+  border-radius: var(--r-sm);
+  overflow: hidden;
+}
+
+/* The prototype has no image bytes, so a thumbnail is a blueprint tile with an image glyph. */
+.photo__thumb {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 4 / 3;
+  color: var(--secondary);
+  background:
+    linear-gradient(90deg, rgba(35, 56, 77, 0.05) 1px, transparent 1px),
+    linear-gradient(0deg, rgba(35, 56, 77, 0.05) 1px, transparent 1px),
+    var(--background);
+  background-size: 18px 18px, 18px 18px, auto;
+  border-block-end: 1px solid var(--secondary-30);
+}
+
+.photo__body { display: flex; flex-direction: column; gap: 4px; padding: 11px 13px; }
+.photo__name {
+  font-size: 14.5px;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--primary);
+  overflow-wrap: anywhere;
+}
+.photo__meta {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  letter-spacing: 0.03em;
+  color: var(--text-mute);
+}
+
+.photo__remove {
+  position: absolute;
+  top: 8px;
+  inset-inline-end: 8px;
+  display: inline-grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  color: var(--primary);
+  background: var(--surface-96);
+  border: 1px solid var(--secondary-45);
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+.photo__remove:hover {
+  color: var(--error);
+  border-color: var(--error-border);
+  background: var(--surface);
+}
+.photo__remove:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+
+/* The add tile is the upload affordance, and it keeps the grid rhythm. */
+.photo-add {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 158px;
+  padding: 22px 14px;
+  font-family: var(--font-sans);
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--text-soft);
+  background: transparent;
+  border: 2px dashed var(--secondary-45);
+  border-radius: var(--r-sm);
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+.photo-add:hover { color: var(--primary); border-color: var(--secondary); background: var(--secondary-15); }
+.photo-add:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+
+/* With no photo yet, the add tile runs the full width and carries the invitation. */
+.photo-drop {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  padding: 38px 20px;
+  font-family: var(--font-sans);
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-soft);
+  text-align: center;
+  background:
+    linear-gradient(90deg, rgba(35, 56, 77, 0.04) 1px, transparent 1px),
+    linear-gradient(0deg, rgba(35, 56, 77, 0.04) 1px, transparent 1px),
+    var(--surface);
+  background-size: 20px 20px, 20px 20px, auto;
+  border: 2px dashed var(--secondary-45);
+  border-radius: var(--r-sm);
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+.photo-drop:hover { color: var(--primary); border-color: var(--secondary); }
+.photo-drop:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+.photo-drop__icon { color: var(--secondary); }
+.photo-drop__hint { font-size: 14.5px; font-weight: 400; color: var(--text-mute); }
+
+/* ─────────────────────────────────────────────
+   Buttons — same family as the other app screens
+   ───────────────────────────────────────────── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 54px;
+  padding: 0 22px;
+  font-family: var(--font-sans);
+  font-size: 17px;
+  font-weight: 600;
+  border: 1.5px solid transparent;
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  transition: background 0.16s, box-shadow 0.2s, transform 0.12s, border-color 0.16s, color 0.16s;
+  white-space: nowrap;
+}
+.btn--sm { height: 44px; padding: 0 16px; font-size: 15px; }
+.btn:focus-visible { outline: 2px solid var(--secondary); outline-offset: 3px; }
+
+.btn--primary {
+  color: var(--surface);
+  background: var(--brand-gradient);
+  border-color: var(--primary);
+  box-shadow: 6px 6px 0 var(--secondary-30), 0 14px 28px -16px rgba(35, 56, 77, 0.80);
+}
+.btn--primary:hover {
+  box-shadow: 3px 3px 0 var(--secondary-55), 0 18px 32px -18px rgba(35, 56, 77, 0.90);
+  transform: translate(2px, 2px);
+}
+.btn--primary:active { transform: translateY(1px); }
+
+.btn--ghost {
+  color: var(--primary);
+  background: var(--surface);
+  border-color: var(--secondary-45);
+  font-weight: 500;
+  box-shadow: inset 0 -2px 0 var(--secondary-15), 4px 4px 0 var(--primary-08);
+}
+.btn--ghost:hover {
+  border-color: var(--secondary);
+  background: var(--background);
+  transform: translate(2px, 2px);
+  box-shadow: inset 0 -2px 0 var(--secondary-15), 2px 2px 0 var(--primary-12);
+}
+.btn--ghost:active { transform: translateY(1px); }
+
+.btn--quiet {
+  color: var(--text-soft);
+  background: transparent;
+  border-color: var(--secondary-30);
+  font-weight: 500;
+}
+.btn--quiet:hover { color: var(--primary); border-color: var(--secondary-55); background: var(--background); }
+
+/* Destructive: outlined at rest so it never competes with the primary save. */
+.btn--danger {
+  color: var(--error);
+  background: var(--surface);
+  border-color: var(--error-border);
+}
+.btn--danger:hover { color: var(--surface); background: var(--error); border-color: var(--error); }
+.btn--danger:active { transform: translateY(1px); }
+.btn--danger:focus-visible { outline: 2px solid var(--error); outline-offset: 3px; }
+
+/* ─────────────────────────────────────────────
+   Save bar — the one primary action of the screen
+   ───────────────────────────────────────────── */
+.form-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 20px 26px;
+  background: var(--surface-08);
+  border: 1px solid var(--surface-15);
+  border-inline-start: 5px solid var(--secondary);
+  border-radius: var(--r-md);
+}
+.form-actions__aside {
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--surface-75);
+  margin-inline-start: auto;
+  max-width: 46ch;
+}
+
+/* Cancel sits on the dark strip, so it needs the light treatment. */
+.form-actions .btn--ghost {
+  color: var(--surface);
+  background: var(--surface-08);
+  border-color: var(--surface-15);
+  box-shadow: none;
+}
+.form-actions .btn--ghost:hover {
+  background: var(--surface-15);
+  border-color: var(--secondary-55);
+  box-shadow: none;
+}
+
+/* ─────────────────────────────────────────────
+   Delete project — separated from the save bar by space
+   and by treatment, so the two are never reached for together
+   ───────────────────────────────────────────── */
+.danger {
+  margin-block-start: 36px;
+  padding: 22px 24px;
+  background: var(--surface);
+  border: 1px solid var(--error-border);
+  border-inline-start: 5px solid var(--error);
+  border-radius: var(--r-md);
+}
+
+.danger__title {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-family: var(--font-serif);
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--error);
+}
+.danger__icon { flex-shrink: 0; }
+
+.danger__body {
+  margin-top: 9px;
+  margin-bottom: 18px;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--text-soft);
+}
+
+/* ─────────────────────────────────────────────
+   Confirmation dialog — the screen's single :target component
+   ───────────────────────────────────────────── */
+.dialog { display: none; }
+
+.dialog:target {
+  display: grid;
+  place-items: center;
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  padding: 20px;
+}
+
+.dialog__scrim {
+  position: absolute;
+  inset: 0;
+  background: var(--scrim);
+  backdrop-filter: blur(2px);
+}
+
+.dialog__card {
+  position: relative;
+  width: 100%;
+  max-width: 500px;
+  padding: 26px;
+  text-align: start;
+  background:
+    linear-gradient(90deg, rgba(35, 56, 77, 0.03) 1px, transparent 1px),
+    linear-gradient(0deg, rgba(35, 56, 77, 0.03) 1px, transparent 1px),
+    linear-gradient(180deg, rgba(255, 253, 248, 0.99), rgba(243, 240, 234, 0.96));
+  background-size: 20px 20px, 20px 20px, auto;
+  border: 1px solid var(--surface-75);
+  border-block-start: 4px solid var(--error);
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow-card);
+  outline: 1px solid var(--primary-08);
+  outline-offset: -7px;
+}
+
+.dialog__title {
+  font-family: var(--font-serif);
+  font-size: 23px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--primary);
+}
+
+.dialog__body {
+  margin-top: 10px;
+  font-size: 15.5px;
+  line-height: 1.65;
+  color: var(--text-soft);
+}
+
+.dialog__actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 22px;
+}
+
+/* ─────────────────────────────────────────────
+   Responsive
+   ───────────────────────────────────────────── */
+@media (max-width: 860px) {
+  .app-nav__links { gap: 0; }
+  .app-nav__link { padding: 8px 10px; font-size: 12.5px; }
+  .nav-profile__name { display: none; }
+  .pform__title { font-size: 27px; }
+  .panel__title { font-size: 22px; }
+}
+
+/* The four links stop fitting beside the profile chip well above the small breakpoint, so they take their own row here. */
+@media (max-width: 800px) {
+  .app-nav__inner {
+    gap: 14px;
+    flex-wrap: wrap;
+    height: auto;
+    padding-block: 10px;
+  }
+  .app-nav__links {
+    order: 3;
+    flex-basis: 100%;
+    justify-content: space-between;
+    border-top: 1px solid var(--surface-15);
+    padding-top: 8px;
+  }
+  html { scroll-padding-top: 120px; }
+}
+
+@media (max-width: 620px) {
+  .app-nav__inner { gap: 12px; padding-inline: 14px; }
+  .pform { padding-inline: 14px; }
+  .panel { padding: 22px 18px; }
+  .form-actions { padding: 18px; }
+  .form-actions__aside { margin-inline-start: 0; flex-basis: 100%; max-width: none; }
+  .danger { padding: 20px 18px; }
+}
+
+@media (max-width: 480px) {
+  .form-input--date { max-width: none; }
+  .daystrip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .dayset { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .form-actions .btn { width: 100%; }
+  .dialog__actions .btn { width: 100%; }
+  .wcal__action { width: 100%; justify-content: center; }
+}
+
+@media (max-width: 420px) {
+  .lang-switch { padding-block: 4px; padding-inline-start: 8px; padding-inline-end: 6px; }
+  .app-nav__name { display: none; }
+  .pform__title { font-size: 24px; }
+  .daystrip { grid-template-columns: minmax(0, 1fr); }
+  .dayset { grid-template-columns: minmax(0, 1fr); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn--primary:hover,
+  .btn--ghost:hover { transform: none; }
+}
+
+/* ─────────────────────────────────────────────
+   CSS-only bilingual toggle — radio button hack
+   #lang-he checked = Hebrew + RTL  (DEFAULT)
+   #lang-en checked = English + LTR
+   ───────────────────────────────────────────── */
+
+/* Visually hidden; still keyboard and screen-reader accessible. */
+.lang-radio,
+.mode-radio {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+}
+
+/* ── Default: Hebrew shown, English hidden ── */
+.he-text { display: inline; }
+.en-text { display: none; }
+
+/* Option text cannot use the span trick, so a select is duplicated wholesale and swapped as a block. */
+.he-select { display: block; }
+.en-select { display: none; }
+
+/* A field carrying a language-specific placeholder or value is duplicated for the same reason. */
+.he-field { display: block; }
+.en-field { display: none; }
+
+/* ── Toggle button active states ── */
+#lang-he:checked ~ .app .lang-switch label[for="lang-he"] { color: var(--surface); background: var(--primary); }
+#lang-he:checked ~ .app .lang-switch label[for="lang-en"] { color: var(--text-soft); background: none; }
+#lang-en:checked ~ .app .lang-switch label[for="lang-en"] { color: var(--surface); background: var(--primary); }
+#lang-en:checked ~ .app .lang-switch label[for="lang-he"] { color: var(--text-soft); background: none; }
+
+/* ── English selected: swap text, direction and fonts ── */
+#lang-en:checked ~ .app .he-text { display: none;   }
+#lang-en:checked ~ .app .en-text { display: inline; }
+
+#lang-en:checked ~ .app .he-select { display: none;  }
+#lang-en:checked ~ .app .en-select { display: block; }
+#lang-en:checked ~ .app .he-field  { display: none;  }
+#lang-en:checked ~ .app .en-field  { display: block; }
+
+#lang-en:checked ~ .app {
+  direction: ltr;
+  --font-sans:  'Inter', system-ui, -apple-system, sans-serif;
+  --font-serif: 'Fraunces', 'Georgia', serif;
+}
+
+/* ─────────────────────────────────────────────
+   CSS-only screen-state switch — prototype only
+   #mode-create checked = the Create form  (DEFAULT)
+   #mode-edit   checked = the Edit form
+   Under React these are two routes and this disappears.
+   ───────────────────────────────────────────── */
+.mode-edit { display: none; }
+
+#mode-edit:checked ~ .app .mode-create { display: none; }
+#mode-edit:checked ~ .app .mode-edit { display: block; }
+#mode-edit:checked ~ .app span.mode-edit { display: inline; }
+
+#mode-create:checked ~ .app .modeswitch label[for="mode-create"] { color: var(--surface); background: var(--primary); }
+#mode-create:checked ~ .app .modeswitch label[for="mode-edit"]   { color: var(--surface-75); background: none; }
+#mode-edit:checked   ~ .app .modeswitch label[for="mode-edit"]   { color: var(--surface); background: var(--primary); }
+#mode-edit:checked   ~ .app .modeswitch label[for="mode-create"] { color: var(--surface-75); background: none; }
+
+/* A hidden radio still has to show where the keyboard is. */
+.mode-radio:focus-visible ~ .app .modeswitch__opts { outline: 2px solid var(--secondary); outline-offset: 3px; }
+.lang-radio:focus-visible ~ .app .lang-switch { outline: 2px solid var(--primary); outline-offset: 3px; }

@@ -1,0 +1,1262 @@
+<!DOCTYPE html>
+<html lang="he">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>יצירה ועריכה של פרויקט / Create or edit project — FieldSync</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <!-- Heebo and Frank Ruhl Libre serve Hebrew, Inter and Fraunces serve English, and IBM Plex Mono serves both. -->
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=IBM+Plex+Mono:wght@400;500&family=Heebo:wght@400;500;600;700&family=Frank+Ruhl+Libre:wght@500;700&display=swap"
+    rel="stylesheet" />
+  <link rel="stylesheet" href="create-project.css" />
+</head>
+<body>
+
+  <!-- These two radios drive every language state through sibling selectors, as on every other screen. -->
+  <input type="radio" name="lang" id="lang-he" class="lang-radio" checked>
+  <input type="radio" name="lang" id="lang-en" class="lang-radio">
+
+  <!-- These two drive the screen state. A static file cannot change an input value, so Create and Edit are two forms. -->
+  <input type="radio" name="screen-mode" id="mode-create" class="mode-radio" checked>
+  <input type="radio" name="screen-mode" id="mode-edit" class="mode-radio">
+
+  <div class="app">
+
+    <!-- ═══════════════════════════════════════════════
+         REUSABLE APP NAVBAR  (.app-nav)
+         ═══════════════════════════════════════════════ -->
+    <!-- This markup is copied from my-tasks.html so all app screens keep one navbar. -->
+    <!-- No link carries is-active: no navbar item points at this screen. -->
+    <header class="app-nav">
+      <div class="app-nav__inner">
+
+        <a href="personal-dashboard.html" class="app-nav__brand" aria-label="FieldSync — home">
+          <span class="app-nav__mark" aria-hidden="true">
+            <svg width="26" height="26" viewBox="0 0 40 40" fill="none">
+              <circle cx="8"  cy="20" r="6" fill="rgba(199,184,157,0.30)" stroke="rgba(255,253,248,0.92)" stroke-width="2"/>
+              <circle cx="32" cy="8"  r="6" fill="rgba(199,184,157,0.30)" stroke="rgba(255,253,248,0.92)" stroke-width="2"/>
+              <circle cx="32" cy="32" r="6" fill="rgba(199,184,157,0.30)" stroke="rgba(255,253,248,0.92)" stroke-width="2"/>
+              <line x1="14" y1="17" x2="26" y2="11" stroke="rgba(255,253,248,0.55)" stroke-width="1.5" stroke-dasharray="3 2"/>
+              <line x1="14" y1="23" x2="26" y2="29" stroke="rgba(255,253,248,0.55)" stroke-width="1.5" stroke-dasharray="3 2"/>
+              <line x1="32" y1="14" x2="32" y2="26" stroke="rgba(255,253,248,0.40)" stroke-width="1.5" stroke-dasharray="3 2"/>
+            </svg>
+          </span>
+          <span class="app-nav__name">FieldSync</span>
+        </a>
+
+        <nav class="app-nav__links" aria-label="Main">
+          <a href="#" class="app-nav__link">
+            <span class="he-text">עיון בקבלנים</span>
+            <span class="en-text">Browse</span>
+          </a>
+          <a href="my-network.html" class="app-nav__link">
+            <span class="he-text">הרשת שלי</span>
+            <span class="en-text">Network</span>
+          </a>
+          <a href="my-projects.html" class="app-nav__link">
+            <span class="he-text">פרויקטים</span>
+            <span class="en-text">Projects</span>
+          </a>
+          <a href="#" class="app-nav__link">
+            <span class="he-text">המשימות שלי</span>
+            <span class="en-text">My Tasks</span>
+          </a>
+        </nav>
+
+        <div class="app-nav__actions">
+
+          <!-- The bell is visual only; it opens the notifications popup in Stage 2. -->
+          <button type="button" class="nav-icon-btn has-dot" aria-label="Notifications">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/>
+              <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+            </svg>
+          </button>
+
+          <!-- The profile chip is visual only; its dropdown is wired in Stage 2. -->
+          <button type="button" class="nav-profile" aria-label="Account menu" aria-haspopup="true">
+            <span class="nav-profile__avatar" aria-hidden="true">
+              <span class="he-text">בכ</span><span class="en-text">BK</span>
+            </span>
+            <span class="nav-profile__name">
+              <span class="he-text">בר כאכון</span>
+              <span class="en-text">Bar Kakon</span>
+            </span>
+            <svg class="nav-profile__chevron" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M6 9l6 6 6-6"/>
+            </svg>
+          </button>
+
+          <div class="lang-switch" role="group" aria-label="Language / שפה">
+            <svg class="lang-switch__globe" width="15" height="15" viewBox="0 0 24 24"
+                 fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+              <circle cx="12" cy="12" r="9"/>
+              <path d="M3 12h18M12 3c2.5 2.7 2.5 15.3 0 18M12 3c-2.5 2.7-2.5 15.3 0 18"/>
+            </svg>
+            <label for="lang-he" class="lang-switch__btn">עב</label>
+            <span class="lang-switch__sep" aria-hidden="true"></span>
+            <label for="lang-en" class="lang-switch__btn">EN</label>
+          </div>
+
+        </div>
+      </div>
+    </header>
+
+    <!-- ═══════════════════════════════════════════════
+         CREATE / EDIT PROJECT — approved screen #12
+
+         One screen, two states. Everything below is the same
+         design; only the values, the primary action and the
+         presence of the delete section differ.
+
+         The reading order is fixed: project details, schedule,
+         working calendar, photos, the save action, and — in the
+         Edit state only — the delete action, last and apart.
+         ═══════════════════════════════════════════════ -->
+    <main class="pform">
+
+      <header class="pform__head">
+
+        <a href="my-projects.html" class="pform__back">
+          <svg class="pform__back-icon" width="16" height="16" viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M15 18l-6-6 6-6"/>
+          </svg>
+          <span class="he-text">חזרה לפרויקטים שלי</span>
+          <span class="en-text">Back to my projects</span>
+        </a>
+
+        <h1 class="pform__title">
+          <span class="mode-create">
+            <span class="he-text">פרויקט חדש</span>
+            <span class="en-text">New project</span>
+          </span>
+          <span class="mode-edit">
+            <span class="he-text">עריכת פרויקט</span>
+            <span class="en-text">Edit project</span>
+          </span>
+        </h1>
+
+        <p class="pform__sub">
+          <span class="mode-create">
+            <span class="he-text">הגדירו את פרטי הפרויקט, את חלון התאריכים ואת ימי העבודה שלו.</span>
+            <span class="en-text">Set the project details, its date window and its working days.</span>
+          </span>
+          <span class="mode-edit">
+            <span class="he-text" dir="auto">עדכון הפרטים, חלון התאריכים וימי העבודה של מחסן לוגיסטי — מודיעין.</span>
+            <span class="en-text" dir="auto">Update the details, date window and working days of Logistics warehouse — Modi'in.</span>
+          </span>
+        </p>
+      </header>
+
+      <!-- ══════════ PROTOTYPE STATE SWITCH ══════════
+           Not a product control. Approved screen #12 is one
+           screen with two states, and a file with no JavaScript
+           cannot swap the values in a field — so each state is
+           its own form and this picks between them. Under React
+           these are two routes and this strip does not exist.
+           ═══════════════════════════════════════════ -->
+      <div class="modeswitch" role="group" aria-label="Prototype screen state / מצב המסך באב־טיפוס">
+        <span class="modeswitch__tag">
+          <svg class="modeswitch__tag-icon" width="15" height="15" viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="2" y="4" width="20" height="13" rx="2"/><path d="M8 21h8M12 17v4"/>
+          </svg>
+          <span class="he-text">מצב אב־טיפוס</span>
+          <span class="en-text">Prototype state</span>
+        </span>
+        <span class="modeswitch__opts">
+          <label for="mode-create" class="modeswitch__btn">
+            <span class="he-text">יצירת פרויקט</span>
+            <span class="en-text">Create project</span>
+          </label>
+          <label for="mode-edit" class="modeswitch__btn">
+            <span class="he-text">עריכת פרויקט</span>
+            <span class="en-text">Edit project</span>
+          </label>
+        </span>
+        <span class="modeswitch__note">
+          <span class="he-text">שני המצבים חיים כאן באותו קובץ סטטי. במעבר ל־<bdi>React</bdi> אלה שני מסלולים נפרדים, והמתג הזה נעלם.</span>
+          <span class="en-text">Both states live here in one static file. Under React they become two separate routes and this switch disappears.</span>
+        </span>
+      </div>
+
+      <!-- ═══════════════════════════════════════════════
+           STATE 1 — CREATE
+           Empty fields, a working calendar inherited from the
+           contractor's own default, an empty photo area, and
+           no delete action anywhere.
+
+           novalidate: the instructor rule is no native validation
+           popups. The GET action gives the static prototype its
+           Create → My projects flow.
+           ═══════════════════════════════════════════════ -->
+      <form class="mode-create" action="my-projects.html" method="get" novalidate>
+
+        <!-- ══════════ 1 · PROJECT DETAILS ══════════ -->
+        <section class="panel" aria-labelledby="t-details-c">
+          <h2 class="panel__title" id="t-details-c">
+            <span class="he-text">פרטי הפרויקט</span>
+            <span class="en-text">Project details</span>
+          </h2>
+          <p class="panel__lede">
+            <span class="he-text">השם, המיקום והתיאור הם מה שחברי הצוות והקבלנים המוזמנים רואים ראשון.</span>
+            <span class="en-text">The name, the location and the description are the first things members and invited contractors see.</span>
+          </p>
+
+          <div class="form-group">
+            <label class="field-label" for="p-name-c">
+              <span class="he-text">שם הפרויקט</span>
+              <span class="en-text">Project name</span>
+              <span class="req"><span class="he-text">חובה</span><span class="en-text">Required</span></span>
+            </label>
+            <!-- A placeholder is language-specific, so the field is duplicated the way the trade select already is. -->
+            <div class="input-wrapper he-field">
+              <input class="form-input" type="text" id="p-name-c" name="name" dir="auto"
+                     placeholder="לדוגמה: מחסן לוגיסטי — מודיעין" maxlength="120" required />
+              <span class="input-warn" aria-hidden="true">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                     stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M2.5 18h19"/>
+                  <path d="M5 18v-2.5a7 7 0 0 1 14 0V18"/>
+                  <line x1="12" y1="9" x2="12" y2="12.7"/>
+                  <circle cx="12" cy="15.4" r="0.5" fill="currentColor"/>
+                </svg>
+              </span>
+            </div>
+            <div class="input-wrapper en-field">
+              <input class="form-input" type="text" name="name" dir="auto" aria-label="Project name"
+                     placeholder="For example: Logistics warehouse — Modi'in" maxlength="120" required />
+              <span class="input-warn" aria-hidden="true">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                     stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M2.5 18h19"/>
+                  <path d="M5 18v-2.5a7 7 0 0 1 14 0V18"/>
+                  <line x1="12" y1="9" x2="12" y2="12.7"/>
+                  <circle cx="12" cy="15.4" r="0.5" fill="currentColor"/>
+                </svg>
+              </span>
+            </div>
+            <!-- An icon alone is not a message, so the field also says what is wrong. -->
+            <p class="field-error">
+              <svg class="field-error__icon" width="15" height="15" viewBox="0 0 24 24" fill="none"
+                   stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="9"/><path d="M12 8v5"/><circle cx="12" cy="16" r="0.6" fill="currentColor"/>
+              </svg>
+              <span class="he-text">יש להזין שם לפרויקט.</span>
+              <span class="en-text">Enter a project name.</span>
+            </p>
+          </div>
+
+          <div class="form-group">
+            <label class="field-label" for="p-desc-c">
+              <span class="he-text">תיאור</span>
+              <span class="en-text">Description</span>
+            </label>
+            <textarea class="form-input form-textarea he-field" id="p-desc-c" name="description" dir="auto"
+                      placeholder="מה כולל הפרויקט, בקצרה — היקף, סוג המבנה, מה מיוחד בו"></textarea>
+            <textarea class="form-input form-textarea en-field" name="description" dir="auto" aria-label="Description"
+                      placeholder="What the project involves, briefly — scope, type of structure, anything unusual"></textarea>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="field-label" for="p-city-c">
+                <span class="he-text">עיר</span>
+                <span class="en-text">City</span>
+              </label>
+              <input class="form-input" type="text" id="p-city-c" name="city" dir="auto" maxlength="60" />
+            </div>
+
+            <div class="form-group">
+              <label class="field-label" for="p-region-he-c">
+                <span class="he-text">אזור</span>
+                <span class="en-text">Region</span>
+              </label>
+              <!-- Option text cannot use the span trick, so the select is duplicated wholesale. -->
+              <div class="select-wrap">
+                <select class="form-select he-select" id="p-region-he-c" name="region">
+                  <option value="" selected>בחירת אזור…</option>
+                  <option value="north">צפון</option>
+                  <option value="haifa">חיפה והקריות</option>
+                  <option value="sharon">השרון</option>
+                  <option value="center">מרכז</option>
+                  <option value="telaviv">תל אביב</option>
+                  <option value="jerusalem">ירושלים והסביבה</option>
+                  <option value="lowlands">שפלה</option>
+                  <option value="south">דרום</option>
+                </select>
+                <select class="form-select en-select" name="region" aria-label="Region">
+                  <option value="" selected>Select a region…</option>
+                  <option value="north">North</option>
+                  <option value="haifa">Haifa &amp; Krayot</option>
+                  <option value="sharon">Sharon</option>
+                  <option value="center">Center</option>
+                  <option value="telaviv">Tel Aviv</option>
+                  <option value="jerusalem">Jerusalem area</option>
+                  <option value="lowlands">Lowlands (Shfela)</option>
+                  <option value="south">South</option>
+                </select>
+                <span class="select-chevron" aria-hidden="true">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                       stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="field-label" for="p-addr-c">
+              <span class="he-text">כתובת</span>
+              <span class="en-text">Address</span>
+            </label>
+            <input class="form-input" type="text" id="p-addr-c" name="address" dir="auto" maxlength="120" />
+          </div>
+        </section>
+
+        <!-- ══════════ 2 · SCHEDULE ══════════ -->
+        <section class="panel" aria-labelledby="t-schedule-c">
+          <h2 class="panel__title" id="t-schedule-c">
+            <span class="he-text">לוח זמנים</span>
+            <span class="en-text">Schedule</span>
+          </h2>
+          <p class="panel__lede">
+            <span class="he-text">חלון התאריכים של הפרויקט. תאריכי המשימות נקבעים בנפרד, בכל משימה.</span>
+            <span class="en-text">The project's date window. Task dates are set separately, on each task.</span>
+          </p>
+
+          <p class="notice">
+            <svg class="notice__icon" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><circle cx="12" cy="8" r="0.6" fill="currentColor"/>
+            </svg>
+            <span>
+              <span class="he-text">החלון הזה הוא מסגרת הפרויקט בלבד. חישוב לוח הזמנים, התלויות בין המשימות והתפשטות של שינוי תאריך אינם ממומשים במסך הזה.</span>
+              <span class="en-text">This window is the project frame only. Schedule calculation, task dependencies and the cascade of a date change are not implemented on this screen.</span>
+            </span>
+          </p>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="field-label" for="p-start-c">
+                <span class="he-text">תאריך התחלה</span>
+                <span class="en-text">Start date</span>
+                <span class="req"><span class="he-text">חובה</span><span class="en-text">Required</span></span>
+              </label>
+              <!-- A date is written left to right in both languages, as the numeric fields on the profile screen already are. -->
+              <div class="input-wrapper">
+                <input class="form-input form-input--date" type="date" id="p-start-c" name="startDate" dir="ltr" required />
+                <span class="input-warn" aria-hidden="true">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                       stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M2.5 18h19"/>
+                    <path d="M5 18v-2.5a7 7 0 0 1 14 0V18"/>
+                    <line x1="12" y1="9" x2="12" y2="12.7"/>
+                    <circle cx="12" cy="15.4" r="0.5" fill="currentColor"/>
+                  </svg>
+                </span>
+              </div>
+              <p class="field-error">
+                <svg class="field-error__icon" width="15" height="15" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <circle cx="12" cy="12" r="9"/><path d="M12 8v5"/><circle cx="12" cy="16" r="0.6" fill="currentColor"/>
+                </svg>
+                <span class="he-text">יש לבחור תאריך התחלה.</span>
+                <span class="en-text">Choose a start date.</span>
+              </p>
+            </div>
+
+            <div class="form-group">
+              <label class="field-label" for="p-end-c">
+                <span class="he-text">תאריך יעד לסיום</span>
+                <span class="en-text">Target end date</span>
+                <span class="req"><span class="he-text">חובה</span><span class="en-text">Required</span></span>
+              </label>
+              <div class="input-wrapper">
+                <input class="form-input form-input--date" type="date" id="p-end-c" name="targetEndDate" dir="ltr" required />
+                <span class="input-warn" aria-hidden="true">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                       stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M2.5 18h19"/>
+                    <path d="M5 18v-2.5a7 7 0 0 1 14 0V18"/>
+                    <line x1="12" y1="9" x2="12" y2="12.7"/>
+                    <circle cx="12" cy="15.4" r="0.5" fill="currentColor"/>
+                  </svg>
+                </span>
+              </div>
+              <p class="field-hint">
+                <span class="he-text">היעד שהוסכם, לא סיום מחושב.</span>
+                <span class="en-text">The agreed target, not a computed end.</span>
+              </p>
+              <p class="field-error">
+                <svg class="field-error__icon" width="15" height="15" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <circle cx="12" cy="12" r="9"/><path d="M12 8v5"/><circle cx="12" cy="16" r="0.6" fill="currentColor"/>
+                </svg>
+                <span class="he-text">יש לבחור תאריך יעד לסיום.</span>
+                <span class="en-text">Choose a target end date.</span>
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <!-- ══════════ 3 · WORKING CALENDAR ══════════
+             A new project inherits the contractor's own default
+             working calendar, so nobody rebuilds their week per
+             project. The days shown are that contractor's default
+             and are never a FieldSync-wide working week.
+             ═══════════════════════════════════════════ -->
+        <section class="panel wcal" aria-labelledby="t-cal-c">
+          <h2 class="panel__title" id="t-cal-c">
+            <span class="he-text">לוח ימי עבודה</span>
+            <span class="en-text">Working calendar</span>
+          </h2>
+          <p class="panel__lede">
+            <span class="he-text">הפרויקט מתוזמן לפי ימי עבודה ולא לפי ימי לוח, וכל מי שמשתתף בו מתוזמן לפי הלוח של הפרויקט.</span>
+            <span class="en-text">The project is scheduled by working days rather than calendar days, and everyone taking part in it is scheduled by the project's calendar.</span>
+          </p>
+
+          <p class="notice">
+            <svg class="notice__icon" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><circle cx="12" cy="8" r="0.6" fill="currentColor"/>
+            </svg>
+            <span>
+              <span class="he-text">ל־<bdi>FieldSync</bdi> אין שבוע עבודה קבוע. הלוח שמופיע כאן הוא ברירת המחדל שהגדרתם לעצמכם — לקבלנים אחרים יש לוחות אחרים, ויש שעובדים בשישי ויש שלא.</span>
+              <span class="en-text">FieldSync has no fixed working week. The calendar shown here is the default you set for yourself — other contractors have different ones, and some work on Friday while others do not.</span>
+            </span>
+          </p>
+
+          <!-- The checkbox decides which of the two states below is shown, and both labels point at it. -->
+          <input type="checkbox" id="cal-custom-c" class="wcal-toggle"
+                 aria-controls="wcal-body-c"
+                 aria-label="Customize the working calendar for this project / התאמת לוח ימי העבודה לפרויקט הזה" />
+
+          <div class="wcal__body" id="wcal-body-c">
+
+            <!-- ── State A: the project inherits the contractor's default ── -->
+            <div class="wcal__inherited">
+              <div class="wcal__state">
+                <div class="wcal__stateinfo">
+                  <p class="wcal__status">
+                    <svg class="wcal__status-icon" width="19" height="19" viewBox="0 0 24 24" fill="none"
+                         stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>
+                    </svg>
+                    <span class="he-text">משתמש בלוח ברירת המחדל שלכם</span>
+                    <span class="en-text">Using your default working calendar</span>
+                  </p>
+                  <p class="wcal__summary">
+                    <span class="he-text">ראשון עד חמישי ימי עבודה · שישי ושבת אינם ימי עבודה. זו ברירת המחדל שהגדרתם לעצמכם, והפרויקט החדש יורש אותה.</span>
+                    <span class="en-text">Sunday to Thursday working · Friday and Saturday off. This is the default you set for yourself, and the new project inherits it.</span>
+                  </p>
+                </div>
+                <label for="cal-custom-c" class="wcal__action">
+                  <svg class="wcal__action-icon" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                       stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3"/><path d="M1 14h6M9 8h6M17 16h6"/>
+                  </svg>
+                  <span class="he-text">התאמה לפרויקט הזה</span>
+                  <span class="en-text">Customize for this project</span>
+                </label>
+              </div>
+
+              <!-- A summary, not a control: the days are read here and edited in the state below. -->
+              <ul class="daystrip">
+                <li class="daychip daychip--on">
+                  <svg class="daychip__icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                       stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>
+                  <span class="he-text">ראשון</span><span class="en-text">Sunday</span>
+                </li>
+                <li class="daychip daychip--on">
+                  <svg class="daychip__icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                       stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>
+                  <span class="he-text">שני</span><span class="en-text">Monday</span>
+                </li>
+                <li class="daychip daychip--on">
+                  <svg class="daychip__icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                       stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>
+                  <span class="he-text">שלישי</span><span class="en-text">Tuesday</span>
+                </li>
+                <li class="daychip daychip--on">
+                  <svg class="daychip__icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                       stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>
+                  <span class="he-text">רביעי</span><span class="en-text">Wednesday</span>
+                </li>
+                <li class="daychip daychip--on">
+                  <svg class="daychip__icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                       stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>
+                  <span class="he-text">חמישי</span><span class="en-text">Thursday</span>
+                </li>
+                <li class="daychip daychip--off">
+                  <svg class="daychip__icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                       stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/></svg>
+                  <span class="he-text">שישי</span><span class="en-text">Friday</span>
+                </li>
+                <li class="daychip daychip--off">
+                  <svg class="daychip__icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                       stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/></svg>
+                  <span class="he-text">שבת</span><span class="en-text">Saturday</span>
+                </li>
+              </ul>
+
+              <p class="wcal__legend">
+                <span class="he-text">התאמה לפרויקט חלה על הפרויקט הזה בלבד ואינה משנה את ברירת המחדל שלכם.</span>
+                <span class="en-text">Customizing applies to this project only and does not change your default.</span>
+              </p>
+            </div>
+
+            <!-- ── State B: a calendar for this project, starting from the default ── -->
+            <div class="wcal__custom">
+              <div class="wcal__state">
+                <div class="wcal__stateinfo">
+                  <p class="wcal__status">
+                    <svg class="wcal__status-icon" width="19" height="19" viewBox="0 0 24 24" fill="none"
+                         stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3"/><path d="M1 14h6M9 8h6M17 16h6"/>
+                    </svg>
+                    <span class="he-text">לוח מותאם לפרויקט הזה</span>
+                    <span class="en-text">Customized for this project</span>
+                  </p>
+                  <p class="wcal__summary">
+                    <span class="he-text">בחרו את ימי העבודה של הפרויקט. הבחירה מתחילה מברירת המחדל שלכם.</span>
+                    <span class="en-text">Choose the working days for this project. The selection starts from your default.</span>
+                  </p>
+                </div>
+                <label for="cal-custom-c" class="wcal__action">
+                  <svg class="wcal__action-icon" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                       stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="M9 15l2 2 4-4"/>
+                  </svg>
+                  <span class="he-text">חזרה לברירת המחדל</span>
+                  <span class="en-text">Reset to default</span>
+                </label>
+              </div>
+
+              <fieldset class="dayset">
+                <legend class="sr-only"><span class="he-text">ימי העבודה של הפרויקט</span><span class="en-text">Working days for this project</span></legend>
+                <label class="daybox">
+                  <input class="daybox__input" type="checkbox" name="workingDays" value="sun" checked />
+                  <span class="daybox__mark" aria-hidden="true">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                         stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+                  </span>
+                  <span class="he-text">ראשון</span><span class="en-text">Sunday</span>
+                </label>
+                <label class="daybox">
+                  <input class="daybox__input" type="checkbox" name="workingDays" value="mon" checked />
+                  <span class="daybox__mark" aria-hidden="true">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                         stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+                  </span>
+                  <span class="he-text">שני</span><span class="en-text">Monday</span>
+                </label>
+                <label class="daybox">
+                  <input class="daybox__input" type="checkbox" name="workingDays" value="tue" checked />
+                  <span class="daybox__mark" aria-hidden="true">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                         stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+                  </span>
+                  <span class="he-text">שלישי</span><span class="en-text">Tuesday</span>
+                </label>
+                <label class="daybox">
+                  <input class="daybox__input" type="checkbox" name="workingDays" value="wed" checked />
+                  <span class="daybox__mark" aria-hidden="true">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                         stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+                  </span>
+                  <span class="he-text">רביעי</span><span class="en-text">Wednesday</span>
+                </label>
+                <label class="daybox">
+                  <input class="daybox__input" type="checkbox" name="workingDays" value="thu" checked />
+                  <span class="daybox__mark" aria-hidden="true">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                         stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+                  </span>
+                  <span class="he-text">חמישי</span><span class="en-text">Thursday</span>
+                </label>
+                <label class="daybox">
+                  <input class="daybox__input" type="checkbox" name="workingDays" value="fri" />
+                  <span class="daybox__mark" aria-hidden="true">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                         stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+                  </span>
+                  <span class="he-text">שישי</span><span class="en-text">Friday</span>
+                </label>
+                <label class="daybox">
+                  <input class="daybox__input" type="checkbox" name="workingDays" value="sat" />
+                  <span class="daybox__mark" aria-hidden="true">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                         stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+                  </span>
+                  <span class="he-text">שבת</span><span class="en-text">Saturday</span>
+                </label>
+              </fieldset>
+
+              <p class="wcal__legend">
+                <span class="he-text">השינוי חל על הפרויקט הזה בלבד ואינו משנה את ברירת המחדל שלכם.</span>
+                <span class="en-text">The change applies to this project only and does not change your default.</span>
+              </p>
+            </div>
+          </div>
+
+          <p class="notice">
+            <svg class="notice__icon" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>
+            </svg>
+            <span>
+              <span class="he-text">כאן נקבע דפוס השבוע בלבד. חגים, ערבי חג ותאריכים חריגים בודדים אינם נקבעים במסך הזה.</span>
+              <span class="en-text">This sets the weekly pattern only. Holidays, holiday eves and one-off exception dates are not set on this screen.</span>
+            </span>
+          </p>
+        </section>
+
+        <!-- ══════════ 4 · PROJECT PHOTOS ══════════ -->
+        <section class="panel" aria-labelledby="t-photos-c">
+          <h2 class="panel__title" id="t-photos-c">
+            <span class="he-text">תמונות הפרויקט</span>
+            <span class="en-text">Project photos</span>
+          </h2>
+          <p class="panel__lede">
+            <span class="he-text">תמונות של האתר ושל העבודה, המצורפות לפרויקט.</span>
+            <span class="en-text">Photos of the site and the work, attached to the project.</span>
+          </p>
+
+          <!-- With no photo yet, the add control is the whole area rather than one tile in an empty grid. -->
+          <button type="button" class="photo-drop">
+            <svg class="photo-drop__icon" width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <rect x="3" y="4" width="18" height="16" rx="2"/>
+              <circle cx="8.5" cy="9.5" r="1.5"/>
+              <path d="M21 15l-5-5L5 20"/>
+            </svg>
+            <span>
+              <span class="he-text">הוספת תמונות לפרויקט</span>
+              <span class="en-text">Add photos to the project</span>
+            </span>
+            <span class="photo-drop__hint">
+              <span class="he-text">קובצי תמונה. מגבלת הגודל ומספר הקבצים תלויות בשיטת אחסון הקבצים, שטרם נבחרה.</span>
+              <span class="en-text">Image files. The size limit and the number of files depend on the file-storage approach, which has not been chosen yet.</span>
+            </span>
+          </button>
+        </section>
+
+        <!-- ══════════ 5 · THE PRIMARY ACTION ══════════ -->
+        <div class="form-actions">
+          <button type="submit" class="btn btn--primary">
+            <span class="he-text">יצירת הפרויקט</span>
+            <span class="en-text">Create project</span>
+          </button>
+          <a href="my-projects.html" class="btn btn--ghost">
+            <span class="he-text">ביטול</span>
+            <span class="en-text">Cancel</span>
+          </a>
+          <p class="form-actions__aside">
+            <span class="he-text">יצירת הפרויקט היא מה שהופך אתכם לקבלן הראשי הרשום בו.</span>
+            <span class="en-text">Creating the project is what makes you its general contractor of record.</span>
+          </p>
+        </div>
+      </form>
+
+      <!-- ═══════════════════════════════════════════════
+           STATE 2 — EDIT
+           The same design with an existing project in it:
+           Logistics warehouse — Modi'in, which My projects
+           renders as an Owner card, so the viewer really is
+           allowed to edit and to reach the delete action.
+           ═══════════════════════════════════════════════ -->
+      <form class="mode-edit" action="my-projects.html" method="get" novalidate>
+
+        <!-- ══════════ 1 · PROJECT DETAILS ══════════ -->
+        <section class="panel" aria-labelledby="t-details-e">
+          <h2 class="panel__title" id="t-details-e">
+            <span class="he-text">פרטי הפרויקט</span>
+            <span class="en-text">Project details</span>
+          </h2>
+          <p class="panel__lede">
+            <span class="he-text">השם, המיקום והתיאור הם מה שחברי הצוות והקבלנים המוזמנים רואים ראשון.</span>
+            <span class="en-text">The name, the location and the description are the first things members and invited contractors see.</span>
+          </p>
+
+          <div class="form-group">
+            <label class="field-label" for="p-name-e">
+              <span class="he-text">שם הפרויקט</span>
+              <span class="en-text">Project name</span>
+              <span class="req"><span class="he-text">חובה</span><span class="en-text">Required</span></span>
+            </label>
+            <div class="input-wrapper he-field">
+              <input class="form-input" type="text" id="p-name-e" name="name" dir="auto"
+                     value="מחסן לוגיסטי — מודיעין" maxlength="120" required />
+              <span class="input-warn" aria-hidden="true">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                     stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M2.5 18h19"/>
+                  <path d="M5 18v-2.5a7 7 0 0 1 14 0V18"/>
+                  <line x1="12" y1="9" x2="12" y2="12.7"/>
+                  <circle cx="12" cy="15.4" r="0.5" fill="currentColor"/>
+                </svg>
+              </span>
+            </div>
+            <div class="input-wrapper en-field">
+              <input class="form-input" type="text" name="name" dir="auto" aria-label="Project name"
+                     value="Logistics warehouse — Modi'in" maxlength="120" required />
+              <span class="input-warn" aria-hidden="true">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                     stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M2.5 18h19"/>
+                  <path d="M5 18v-2.5a7 7 0 0 1 14 0V18"/>
+                  <line x1="12" y1="9" x2="12" y2="12.7"/>
+                  <circle cx="12" cy="15.4" r="0.5" fill="currentColor"/>
+                </svg>
+              </span>
+            </div>
+            <p class="field-error">
+              <svg class="field-error__icon" width="15" height="15" viewBox="0 0 24 24" fill="none"
+                   stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="9"/><path d="M12 8v5"/><circle cx="12" cy="16" r="0.6" fill="currentColor"/>
+              </svg>
+              <span class="he-text">יש להזין שם לפרויקט.</span>
+              <span class="en-text">Enter a project name.</span>
+            </p>
+          </div>
+
+          <div class="form-group">
+            <label class="field-label" for="p-desc-e">
+              <span class="he-text">תיאור</span>
+              <span class="en-text">Description</span>
+            </label>
+            <textarea class="form-input form-textarea he-field" id="p-desc-e" name="description" dir="auto"
+                      placeholder="מה כולל הפרויקט, בקצרה">מחסן לוגיסטי בן שתי קומות, עם רחבת פריקה ומשרדי הנהלה.</textarea>
+            <textarea class="form-input form-textarea en-field" name="description" dir="auto" aria-label="Description"
+                      placeholder="What the project involves, briefly">A two-storey logistics warehouse, with a loading yard and management offices.</textarea>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="field-label" for="p-city-e">
+                <span class="he-text">עיר</span>
+                <span class="en-text">City</span>
+              </label>
+              <input class="form-input he-field" type="text" id="p-city-e" name="city" dir="auto" value="מודיעין" maxlength="60" />
+              <input class="form-input en-field" type="text" name="city" dir="auto" aria-label="City" value="Modi'in" maxlength="60" />
+            </div>
+
+            <div class="form-group">
+              <label class="field-label" for="p-region-he-e">
+                <span class="he-text">אזור</span>
+                <span class="en-text">Region</span>
+              </label>
+              <div class="select-wrap">
+                <select class="form-select he-select" id="p-region-he-e" name="region">
+                  <option value="">בחירת אזור…</option>
+                  <option value="north">צפון</option>
+                  <option value="haifa">חיפה והקריות</option>
+                  <option value="sharon">השרון</option>
+                  <option value="center" selected>מרכז</option>
+                  <option value="telaviv">תל אביב</option>
+                  <option value="jerusalem">ירושלים והסביבה</option>
+                  <option value="lowlands">שפלה</option>
+                  <option value="south">דרום</option>
+                </select>
+                <select class="form-select en-select" name="region" aria-label="Region">
+                  <option value="">Select a region…</option>
+                  <option value="north">North</option>
+                  <option value="haifa">Haifa &amp; Krayot</option>
+                  <option value="sharon">Sharon</option>
+                  <option value="center" selected>Center</option>
+                  <option value="telaviv">Tel Aviv</option>
+                  <option value="jerusalem">Jerusalem area</option>
+                  <option value="lowlands">Lowlands (Shfela)</option>
+                  <option value="south">South</option>
+                </select>
+                <span class="select-chevron" aria-hidden="true">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                       stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="field-label" for="p-addr-e">
+              <span class="he-text">כתובת</span>
+              <span class="en-text">Address</span>
+            </label>
+            <input class="form-input he-field" type="text" id="p-addr-e" name="address" dir="auto" value="היוצרים 4, אזור התעשייה" maxlength="120" />
+            <input class="form-input en-field" type="text" name="address" dir="auto" aria-label="Address" value="HaYotzrim 4, industrial zone" maxlength="120" />
+          </div>
+        </section>
+
+        <!-- ══════════ 2 · SCHEDULE ══════════ -->
+        <section class="panel" aria-labelledby="t-schedule-e">
+          <h2 class="panel__title" id="t-schedule-e">
+            <span class="he-text">לוח זמנים</span>
+            <span class="en-text">Schedule</span>
+          </h2>
+          <p class="panel__lede">
+            <span class="he-text">חלון התאריכים של הפרויקט. תאריכי המשימות נקבעים בנפרד, בכל משימה.</span>
+            <span class="en-text">The project's date window. Task dates are set separately, on each task.</span>
+          </p>
+
+          <p class="notice">
+            <svg class="notice__icon" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><circle cx="12" cy="8" r="0.6" fill="currentColor"/>
+            </svg>
+            <span>
+              <span class="he-text">שינוי התאריכים כאן משנה את מסגרת הפרויקט. הוא אינו מזיז משימות קיימות ואינו מפעיל בקשה לשינוי תאריך — אלה אינם ממומשים במסך הזה.</span>
+              <span class="en-text">Changing these dates changes the project frame. It does not move existing tasks and does not open a date-change request — neither is implemented on this screen.</span>
+            </span>
+          </p>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="field-label" for="p-start-e">
+                <span class="he-text">תאריך התחלה</span>
+                <span class="en-text">Start date</span>
+                <span class="req"><span class="he-text">חובה</span><span class="en-text">Required</span></span>
+              </label>
+              <div class="input-wrapper">
+                <input class="form-input form-input--date" type="date" id="p-start-e" name="startDate" dir="ltr" value="2026-05-12" required />
+                <span class="input-warn" aria-hidden="true">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                       stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M2.5 18h19"/>
+                    <path d="M5 18v-2.5a7 7 0 0 1 14 0V18"/>
+                    <line x1="12" y1="9" x2="12" y2="12.7"/>
+                    <circle cx="12" cy="15.4" r="0.5" fill="currentColor"/>
+                  </svg>
+                </span>
+              </div>
+              <p class="field-error">
+                <svg class="field-error__icon" width="15" height="15" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <circle cx="12" cy="12" r="9"/><path d="M12 8v5"/><circle cx="12" cy="16" r="0.6" fill="currentColor"/>
+                </svg>
+                <span class="he-text">יש לבחור תאריך התחלה.</span>
+                <span class="en-text">Choose a start date.</span>
+              </p>
+            </div>
+
+            <div class="form-group">
+              <label class="field-label" for="p-end-e">
+                <span class="he-text">תאריך יעד לסיום</span>
+                <span class="en-text">Target end date</span>
+                <span class="req"><span class="he-text">חובה</span><span class="en-text">Required</span></span>
+              </label>
+              <div class="input-wrapper">
+                <input class="form-input form-input--date" type="date" id="p-end-e" name="targetEndDate" dir="ltr" value="2027-01-30" required />
+                <span class="input-warn" aria-hidden="true">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                       stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M2.5 18h19"/>
+                    <path d="M5 18v-2.5a7 7 0 0 1 14 0V18"/>
+                    <line x1="12" y1="9" x2="12" y2="12.7"/>
+                    <circle cx="12" cy="15.4" r="0.5" fill="currentColor"/>
+                  </svg>
+                </span>
+              </div>
+              <p class="field-hint">
+                <span class="he-text">היעד שהוסכם, לא סיום מחושב.</span>
+                <span class="en-text">The agreed target, not a computed end.</span>
+              </p>
+              <p class="field-error">
+                <svg class="field-error__icon" width="15" height="15" viewBox="0 0 24 24" fill="none"
+                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <circle cx="12" cy="12" r="9"/><path d="M12 8v5"/><circle cx="12" cy="16" r="0.6" fill="currentColor"/>
+                </svg>
+                <span class="he-text">יש לבחור תאריך יעד לסיום.</span>
+                <span class="en-text">Choose a target end date.</span>
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <!-- ══════════ 3 · WORKING CALENDAR ══════════
+             This project already differs from the contractor's
+             default, so the Edit state opens on the customised
+             calendar and Reset to default is reachable at once.
+             The difference is mock data for one project, not a
+             rule about projects in general.
+             ═══════════════════════════════════════════ -->
+        <section class="panel wcal" aria-labelledby="t-cal-e">
+          <h2 class="panel__title" id="t-cal-e">
+            <span class="he-text">לוח ימי עבודה</span>
+            <span class="en-text">Working calendar</span>
+          </h2>
+          <p class="panel__lede">
+            <span class="he-text">הפרויקט מתוזמן לפי ימי עבודה ולא לפי ימי לוח, וכל מי שמשתתף בו מתוזמן לפי הלוח של הפרויקט.</span>
+            <span class="en-text">The project is scheduled by working days rather than calendar days, and everyone taking part in it is scheduled by the project's calendar.</span>
+          </p>
+
+          <p class="notice">
+            <svg class="notice__icon" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><circle cx="12" cy="8" r="0.6" fill="currentColor"/>
+            </svg>
+            <span>
+              <span class="he-text">ל־<bdi>FieldSync</bdi> אין שבוע עבודה קבוע. ברירת המחדל שמוצגת כאן היא זו שהגדרתם לעצמכם — לקבלנים אחרים יש לוחות אחרים, ויש שעובדים בשישי ויש שלא.</span>
+              <span class="en-text">FieldSync has no fixed working week. The default shown here is the one you set for yourself — other contractors have different ones, and some work on Friday while others do not.</span>
+            </span>
+          </p>
+
+          <input type="checkbox" id="cal-custom-e" class="wcal-toggle" checked
+                 aria-controls="wcal-body-e"
+                 aria-label="Customize the working calendar for this project / התאמת לוח ימי העבודה לפרויקט הזה" />
+
+          <div class="wcal__body" id="wcal-body-e">
+
+            <!-- ── State A: back on the contractor's default ── -->
+            <div class="wcal__inherited">
+              <div class="wcal__state">
+                <div class="wcal__stateinfo">
+                  <p class="wcal__status">
+                    <svg class="wcal__status-icon" width="19" height="19" viewBox="0 0 24 24" fill="none"
+                         stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>
+                    </svg>
+                    <span class="he-text">משתמש בלוח ברירת המחדל שלכם</span>
+                    <span class="en-text">Using your default working calendar</span>
+                  </p>
+                  <p class="wcal__summary">
+                    <span class="he-text">ראשון עד חמישי ימי עבודה · שישי ושבת אינם ימי עבודה. זו ברירת המחדל שהגדרתם לעצמכם, והפרויקט מתוזמן לפיה.</span>
+                    <span class="en-text">Sunday to Thursday working · Friday and Saturday off. This is the default you set for yourself, and the project is scheduled by it.</span>
+                  </p>
+                </div>
+                <label for="cal-custom-e" class="wcal__action">
+                  <svg class="wcal__action-icon" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                       stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3"/><path d="M1 14h6M9 8h6M17 16h6"/>
+                  </svg>
+                  <span class="he-text">התאמה לפרויקט הזה</span>
+                  <span class="en-text">Customize for this project</span>
+                </label>
+              </div>
+
+              <ul class="daystrip">
+                <li class="daychip daychip--on">
+                  <svg class="daychip__icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                       stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>
+                  <span class="he-text">ראשון</span><span class="en-text">Sunday</span>
+                </li>
+                <li class="daychip daychip--on">
+                  <svg class="daychip__icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                       stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>
+                  <span class="he-text">שני</span><span class="en-text">Monday</span>
+                </li>
+                <li class="daychip daychip--on">
+                  <svg class="daychip__icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                       stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>
+                  <span class="he-text">שלישי</span><span class="en-text">Tuesday</span>
+                </li>
+                <li class="daychip daychip--on">
+                  <svg class="daychip__icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                       stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>
+                  <span class="he-text">רביעי</span><span class="en-text">Wednesday</span>
+                </li>
+                <li class="daychip daychip--on">
+                  <svg class="daychip__icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                       stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>
+                  <span class="he-text">חמישי</span><span class="en-text">Thursday</span>
+                </li>
+                <li class="daychip daychip--off">
+                  <svg class="daychip__icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                       stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/></svg>
+                  <span class="he-text">שישי</span><span class="en-text">Friday</span>
+                </li>
+                <li class="daychip daychip--off">
+                  <svg class="daychip__icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                       stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/></svg>
+                  <span class="he-text">שבת</span><span class="en-text">Saturday</span>
+                </li>
+              </ul>
+
+              <p class="wcal__legend">
+                <span class="he-text">התאמה לפרויקט חלה על הפרויקט הזה בלבד ואינה משנה את ברירת המחדל שלכם.</span>
+                <span class="en-text">Customizing applies to this project only and does not change your default.</span>
+              </p>
+            </div>
+
+            <!-- ── State B: the calendar this project actually uses ── -->
+            <div class="wcal__custom">
+              <div class="wcal__state">
+                <div class="wcal__stateinfo">
+                  <p class="wcal__status">
+                    <svg class="wcal__status-icon" width="19" height="19" viewBox="0 0 24 24" fill="none"
+                         stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3"/><path d="M1 14h6M9 8h6M17 16h6"/>
+                    </svg>
+                    <span class="he-text">לוח מותאם לפרויקט הזה</span>
+                    <span class="en-text">Customized for this project</span>
+                  </p>
+                  <p class="wcal__summary">
+                    <span class="he-text">שונה מברירת המחדל שלכם: בפרויקט הזה שישי הוא יום עבודה.</span>
+                    <span class="en-text">Differs from your default: on this project Friday is a working day.</span>
+                  </p>
+                </div>
+                <label for="cal-custom-e" class="wcal__action">
+                  <svg class="wcal__action-icon" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                       stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="M9 15l2 2 4-4"/>
+                  </svg>
+                  <span class="he-text">חזרה לברירת המחדל</span>
+                  <span class="en-text">Reset to default</span>
+                </label>
+              </div>
+
+              <fieldset class="dayset">
+                <legend class="sr-only"><span class="he-text">ימי העבודה של הפרויקט</span><span class="en-text">Working days for this project</span></legend>
+                <label class="daybox">
+                  <input class="daybox__input" type="checkbox" name="workingDays" value="sun" checked />
+                  <span class="daybox__mark" aria-hidden="true">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                         stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+                  </span>
+                  <span class="he-text">ראשון</span><span class="en-text">Sunday</span>
+                </label>
+                <label class="daybox">
+                  <input class="daybox__input" type="checkbox" name="workingDays" value="mon" checked />
+                  <span class="daybox__mark" aria-hidden="true">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                         stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+                  </span>
+                  <span class="he-text">שני</span><span class="en-text">Monday</span>
+                </label>
+                <label class="daybox">
+                  <input class="daybox__input" type="checkbox" name="workingDays" value="tue" checked />
+                  <span class="daybox__mark" aria-hidden="true">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                         stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+                  </span>
+                  <span class="he-text">שלישי</span><span class="en-text">Tuesday</span>
+                </label>
+                <label class="daybox">
+                  <input class="daybox__input" type="checkbox" name="workingDays" value="wed" checked />
+                  <span class="daybox__mark" aria-hidden="true">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                         stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+                  </span>
+                  <span class="he-text">רביעי</span><span class="en-text">Wednesday</span>
+                </label>
+                <label class="daybox">
+                  <input class="daybox__input" type="checkbox" name="workingDays" value="thu" checked />
+                  <span class="daybox__mark" aria-hidden="true">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                         stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+                  </span>
+                  <span class="he-text">חמישי</span><span class="en-text">Thursday</span>
+                </label>
+                <label class="daybox">
+                  <input class="daybox__input" type="checkbox" name="workingDays" value="fri" checked />
+                  <span class="daybox__mark" aria-hidden="true">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                         stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+                  </span>
+                  <span class="he-text">שישי</span><span class="en-text">Friday</span>
+                </label>
+                <label class="daybox">
+                  <input class="daybox__input" type="checkbox" name="workingDays" value="sat" />
+                  <span class="daybox__mark" aria-hidden="true">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                         stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+                  </span>
+                  <span class="he-text">שבת</span><span class="en-text">Saturday</span>
+                </label>
+              </fieldset>
+
+              <p class="wcal__legend">
+                <span class="he-text">השינוי חל על הפרויקט הזה בלבד ואינו משנה את ברירת המחדל שלכם.</span>
+                <span class="en-text">The change applies to this project only and does not change your default.</span>
+              </p>
+            </div>
+          </div>
+
+          <p class="notice">
+            <svg class="notice__icon" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>
+            </svg>
+            <span>
+              <span class="he-text">כאן נקבע דפוס השבוע בלבד. חגים, ערבי חג ותאריכים חריגים בודדים אינם נקבעים במסך הזה.</span>
+              <span class="en-text">This sets the weekly pattern only. Holidays, holiday eves and one-off exception dates are not set on this screen.</span>
+            </span>
+          </p>
+        </section>
+
+        <!-- ══════════ 4 · PROJECT PHOTOS ══════════ -->
+        <section class="panel" aria-labelledby="t-photos-e">
+          <h2 class="panel__title" id="t-photos-e">
+            <span class="he-text">תמונות הפרויקט</span>
+            <span class="en-text">Project photos</span>
+          </h2>
+          <p class="panel__lede">
+            <span class="he-text">תמונות של האתר ושל העבודה, המצורפות לפרויקט.</span>
+            <span class="en-text">Photos of the site and the work, attached to the project.</span>
+          </p>
+
+          <!-- The prototype has no image bytes, so each preview is a blueprint tile carrying the stored filename. -->
+          <ul class="photo-grid">
+            <li class="photo">
+              <button type="button" class="photo__remove" aria-label="Remove photo / הסרת תמונה">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                     stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg>
+              </button>
+              <span class="photo__thumb" aria-hidden="true">
+                <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                     stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="4" width="18" height="16" rx="2"/>
+                  <circle cx="8.5" cy="9.5" r="1.5"/>
+                  <path d="M21 15l-5-5L5 20"/>
+                </svg>
+              </span>
+              <div class="photo__body">
+                <p class="photo__name" dir="ltr">site-north.jpg</p>
+                <p class="photo__meta">
+                  <span class="he-text">הועלה 3 ביוני 2026</span>
+                  <span class="en-text">Uploaded 3 June 2026</span>
+                </p>
+              </div>
+            </li>
+            <li class="photo">
+              <button type="button" class="photo__remove" aria-label="Remove photo / הסרת תמונה">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                     stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg>
+              </button>
+              <span class="photo__thumb" aria-hidden="true">
+                <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                     stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="4" width="18" height="16" rx="2"/>
+                  <circle cx="8.5" cy="9.5" r="1.5"/>
+                  <path d="M21 15l-5-5L5 20"/>
+                </svg>
+              </span>
+              <div class="photo__body">
+                <p class="photo__name" dir="ltr">foundation-pour.jpg</p>
+                <p class="photo__meta">
+                  <span class="he-text">הועלה 21 ביוני 2026</span>
+                  <span class="en-text">Uploaded 21 June 2026</span>
+                </p>
+              </div>
+            </li>
+            <li class="photo">
+              <button type="button" class="photo__remove" aria-label="Remove photo / הסרת תמונה">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                     stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg>
+              </button>
+              <span class="photo__thumb" aria-hidden="true">
+                <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                     stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="4" width="18" height="16" rx="2"/>
+                  <circle cx="8.5" cy="9.5" r="1.5"/>
+                  <path d="M21 15l-5-5L5 20"/>
+                </svg>
+              </span>
+              <div class="photo__body">
+                <p class="photo__name" dir="ltr">loading-yard.jpg</p>
+                <p class="photo__meta">
+                  <span class="he-text">הועלה 4 באוגוסט 2026</span>
+                  <span class="en-text">Uploaded 4 August 2026</span>
+                </p>
+              </div>
+            </li>
+            <li>
+              <button type="button" class="photo-add">
+                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                     stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M12 5v14M5 12h14"/>
+                </svg>
+                <span class="he-text">הוספת תמונה</span>
+                <span class="en-text">Add photo</span>
+              </button>
+            </li>
+          </ul>
+
+          <p class="field-hint field-hint--after">
+            <span class="he-text">קובצי תמונה. מגבלת הגודל ומספר הקבצים תלויות בשיטת אחסון הקבצים, שטרם נבחרה.</span>
+            <span class="en-text">Image files. The size limit and the number of files depend on the file-storage approach, which has not been chosen yet.</span>
+          </p>
+        </section>
+
+        <!-- ══════════ 5 · THE PRIMARY ACTION ══════════ -->
+        <div class="form-actions">
+          <button type="submit" class="btn btn--primary">
+            <span class="he-text">שמירת שינויים</span>
+            <span class="en-text">Save changes</span>
+          </button>
+          <a href="my-projects.html" class="btn btn--ghost">
+            <span class="he-text">ביטול</span>
+            <span class="en-text">Cancel</span>
+          </a>
+          <p class="form-actions__aside">
+            <span class="he-text">ניהול חברי הפרויקט והתפקידים שלהם אינו נעשה במסך הזה.</span>
+            <span class="en-text">Project members and their roles are not managed on this screen.</span>
+          </p>
+        </div>
+      </form>
+
+      <!-- ══════════ 6 · DELETE PROJECT ══════════
+           Edit state only, last on the page, apart from the save
+           bar and in a different treatment, so it is never
+           reached for by accident.
+
+           What deletion actually does is an open product
+           decision, so neither this section nor its dialog says
+           what happens to the project or to anything in it.
+           ═══════════════════════════════════════════ -->
+      <section class="danger mode-edit" id="delete" aria-labelledby="t-delete">
+        <h2 class="danger__title" id="t-delete">
+          <svg class="danger__icon" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/>
+          </svg>
+          <span class="he-text">מחיקת הפרויקט</span>
+          <span class="en-text">Delete project</span>
+        </h2>
+        <p class="danger__body">
+          <span class="he-text">מה קורה לפרויקט שנמחק — למשימות שבו, לקבצים, להודעות, להיסטוריה ולחברי הפרויקט — טרם הוגדר במוצר. הפעולה מופיעה כאן כדי לקבוע את מקומה ואת אופייה, ואינה מבצעת דבר באב־טיפוס.</span>
+          <span class="en-text">What happens to a deleted project — its tasks, its files, its messages, its history and its members — has not been defined in the product yet. The action appears here to fix its placement and its character, and it does nothing in the prototype.</span>
+        </p>
+        <a href="#confirm-delete" class="btn btn--danger btn--sm">
+          <span class="he-text">מחיקת הפרויקט</span>
+          <span class="en-text">Delete project</span>
+        </a>
+
+        <!-- The dialog lives inside the delete section, so it cannot be reached while the Create state is showing. -->
+        <div class="dialog" id="confirm-delete" role="dialog" aria-modal="true" aria-labelledby="cd-title">
+          <a href="#delete" class="dialog__scrim" aria-label="Close / סגירה"></a>
+          <div class="dialog__card">
+            <h2 class="dialog__title" id="cd-title">
+              <span class="he-text">למחוק את הפרויקט הזה?</span>
+              <span class="en-text">Delete this project?</span>
+            </h2>
+            <p class="dialog__body">
+              <span class="he-text">התנהגות המחיקה טרם נקבעה. לא הוחלט אם הפרויקט נמחק, מועבר לארכיון או נשמר, לא הוחלט מה קורה למשימות, לקבצים, להודעות, להיסטוריה ולחברי הפרויקט, ולא הוחלט אם אפשר לבטל את הפעולה. באב־טיפוס הזה הכפתור אינו מבצע דבר.</span>
+              <span class="en-text">The deletion behaviour has not been decided. Whether the project is deleted, archived or kept has not been decided, neither has what happens to its tasks, files, messages, history and members, and neither has whether the action can be undone. In this prototype the button does nothing.</span>
+            </p>
+            <div class="dialog__actions">
+              <a href="#delete" class="btn btn--quiet btn--sm">
+                <span class="he-text">ביטול</span><span class="en-text">Cancel</span>
+              </a>
+              <button type="button" class="btn btn--danger btn--sm">
+                <span class="he-text">מחיקת הפרויקט</span><span class="en-text">Delete project</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+  </div>
+
+  <!-- This script persists the language choice across screens, as on every other bilingual screen. -->
+  <script src="lang.js"></script>
+  <!-- This script marks a field touched on blur, so a validation state appears only after the field is left. -->
+  <script src="validation.js"></script>
+</body>
+</html>

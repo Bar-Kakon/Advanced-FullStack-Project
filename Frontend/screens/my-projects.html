@@ -1,0 +1,778 @@
+<!DOCTYPE html>
+<html lang="he">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>הפרויקטים שלי / My projects — FieldSync</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <!-- Heebo and Frank Ruhl Libre serve Hebrew, Inter and Fraunces serve English, and IBM Plex Mono serves both. -->
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=IBM+Plex+Mono:wght@400;500&family=Heebo:wght@400;500;600;700&family=Frank+Ruhl+Libre:wght@500;700&display=swap"
+    rel="stylesheet" />
+  <link rel="stylesheet" href="my-projects.css" />
+</head>
+<body>
+
+  <!-- These two radios drive every language state through sibling selectors, as on every other screen. -->
+  <input type="radio" name="lang" id="lang-he" class="lang-radio" checked>
+  <input type="radio" name="lang" id="lang-en" class="lang-radio">
+
+  <div class="app">
+
+    <!-- ═══════════════════════════════════════════════
+         REUSABLE APP NAVBAR  (.app-nav)
+         ═══════════════════════════════════════════════ -->
+    <!-- This markup is copied from personal-dashboard.html so all app screens keep one navbar. -->
+    <header class="app-nav">
+      <div class="app-nav__inner">
+
+        <a href="personal-dashboard.html" class="app-nav__brand" aria-label="FieldSync — home">
+          <span class="app-nav__mark" aria-hidden="true">
+            <svg width="26" height="26" viewBox="0 0 40 40" fill="none">
+              <circle cx="8"  cy="20" r="6" fill="rgba(199,184,157,0.30)" stroke="rgba(255,253,248,0.92)" stroke-width="2"/>
+              <circle cx="32" cy="8"  r="6" fill="rgba(199,184,157,0.30)" stroke="rgba(255,253,248,0.92)" stroke-width="2"/>
+              <circle cx="32" cy="32" r="6" fill="rgba(199,184,157,0.30)" stroke="rgba(255,253,248,0.92)" stroke-width="2"/>
+              <line x1="14" y1="17" x2="26" y2="11" stroke="rgba(255,253,248,0.55)" stroke-width="1.5" stroke-dasharray="3 2"/>
+              <line x1="14" y1="23" x2="26" y2="29" stroke="rgba(255,253,248,0.55)" stroke-width="1.5" stroke-dasharray="3 2"/>
+              <line x1="32" y1="14" x2="32" y2="26" stroke="rgba(255,253,248,0.40)" stroke-width="1.5" stroke-dasharray="3 2"/>
+            </svg>
+          </span>
+          <span class="app-nav__name">FieldSync</span>
+        </a>
+
+        <nav class="app-nav__links" aria-label="Main">
+          <a href="#" class="app-nav__link">
+            <span class="he-text">עיון בקבלנים</span>
+            <span class="en-text">Browse</span>
+          </a>
+          <a href="my-network.html" class="app-nav__link">
+            <span class="he-text">הרשת שלי</span>
+            <span class="en-text">Network</span>
+          </a>
+          <!-- This screen is the Projects route, so its own link carries the active state. -->
+          <a href="my-projects.html" class="app-nav__link is-active" aria-current="page">
+            <span class="he-text">פרויקטים</span>
+            <span class="en-text">Projects</span>
+          </a>
+          <a href="#" class="app-nav__link">
+            <span class="he-text">המשימות שלי</span>
+            <span class="en-text">My Tasks</span>
+          </a>
+        </nav>
+
+        <div class="app-nav__actions">
+
+          <!-- The bell is visual only; it opens the notifications popup in Stage 2. -->
+          <button type="button" class="nav-icon-btn has-dot" aria-label="Notifications">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/>
+              <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+            </svg>
+          </button>
+
+          <!-- The profile chip is visual only; its dropdown is wired in Stage 2. -->
+          <button type="button" class="nav-profile" aria-label="Account menu" aria-haspopup="true">
+            <span class="nav-profile__avatar" aria-hidden="true">
+              <span class="he-text">בכ</span><span class="en-text">BK</span>
+            </span>
+            <span class="nav-profile__name">
+              <span class="he-text">בר כאכון</span>
+              <span class="en-text">Bar Kakon</span>
+            </span>
+            <svg class="nav-profile__chevron" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M6 9l6 6 6-6"/>
+            </svg>
+          </button>
+
+          <div class="lang-switch" role="group" aria-label="Language / שפה">
+            <svg class="lang-switch__globe" width="15" height="15" viewBox="0 0 24 24"
+                 fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+              <circle cx="12" cy="12" r="9"/>
+              <path d="M3 12h18M12 3c2.5 2.7 2.5 15.3 0 18M12 3c-2.5 2.7-2.5 15.3 0 18"/>
+            </svg>
+            <label for="lang-he" class="lang-switch__btn">עב</label>
+            <span class="lang-switch__sep" aria-hidden="true"></span>
+            <label for="lang-en" class="lang-switch__btn">EN</label>
+          </div>
+
+        </div>
+      </div>
+    </header>
+
+    <!-- ═══════════════════════════════════════════════
+         MY PROJECTS — approved screen #11
+
+         The organising axis is the viewer's role, and the three
+         states are read from the documented model rather than
+         stored: Owner is projects.owner, Member is a memberships
+         document with status "accepted", Invited is the same
+         document with status "invited". No second role field
+         exists anywhere on this screen.
+         ═══════════════════════════════════════════════ -->
+    <main class="projects">
+
+      <header class="projects__head">
+        <div class="projects__headtext">
+          <h1 class="projects__title">
+            <span class="he-text">הפרויקטים שלי</span>
+            <span class="en-text">My projects</span>
+          </h1>
+          <p class="projects__sub">
+            <span class="he-text">שמונה פרויקטים, מסודרים לפי היחס שלכם לכל אחד. התפקיד קובע מה כל כרטיס מאפשר לעשות.</span>
+            <span class="en-text">Eight projects, organised by your relationship to each one. Your role decides what each card lets you do.</span>
+          </p>
+        </div>
+        <!-- Creating a project is what makes the creator its owner, so the control belongs to the screen rather than to a card. -->
+        <a href="create-project.html" class="btn btn--onboard">
+          <span class="he-text">פרויקט חדש</span>
+          <span class="en-text">New project</span>
+        </a>
+      </header>
+
+      <!-- The filter runs on hidden radios rather than :target, so a later dialog on this screen can still claim the target. -->
+      <input type="radio" name="role-filter" id="rf-all" class="role-radio" checked>
+      <input type="radio" name="role-filter" id="rf-owner" class="role-radio">
+      <input type="radio" name="role-filter" id="rf-member" class="role-radio">
+      <input type="radio" name="role-filter" id="rf-invited" class="role-radio">
+
+      <!-- The counts are written by hand here; under React they are derived from the same lists they label. -->
+      <div class="rolebar" role="group" aria-label="Filter by role / סינון לפי תפקיד">
+        <label for="rf-all" class="rolebar__btn">
+          <span class="he-text">הכול</span><span class="en-text">All</span>
+          <span class="rolebar__count">8</span>
+        </label>
+        <label for="rf-owner" class="rolebar__btn">
+          <span class="he-text">בעלות</span><span class="en-text">Owner</span>
+          <span class="rolebar__count">3</span>
+        </label>
+        <label for="rf-member" class="rolebar__btn">
+          <span class="he-text">חברות</span><span class="en-text">Member</span>
+          <span class="rolebar__count">3</span>
+        </label>
+        <label for="rf-invited" class="rolebar__btn">
+          <span class="he-text">הזמנה</span><span class="en-text">Invited</span>
+          <span class="rolebar__count">2</span>
+        </label>
+      </div>
+
+      <div class="projects__groups">
+
+        <!-- ══════════ OWNER ══════════════════════════
+             projects.owner is the viewer, and their own
+             membership carries role "gc" with status "accepted".
+             ═══════════════════════════════════════════ -->
+        <section class="projgroup" id="g-owner" aria-labelledby="h-owner">
+          <header class="projgroup__head">
+            <div class="projgroup__titlerow">
+              <h2 class="projgroup__title" id="h-owner">
+                <svg class="projgroup__icon" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <circle cx="8" cy="15" r="4"/><path d="M10.85 12.15 19 4"/><path d="m18 5 2 2"/><path d="m15 8 2 2"/>
+                </svg>
+                <span class="he-text">פרויקטים בבעלותכם</span>
+                <span class="en-text">Projects you own</span>
+              </h2>
+              <span class="projgroup__count">3</span>
+            </div>
+            <p class="projgroup__lede">
+              <span class="he-text">פרויקטים שיצרתם. אתם הקבלן הראשי הרשום בהם, ורק אתם יכולים לפתוח בהם משימות חדשות.</span>
+              <span class="en-text">Projects you created. You are the general contractor of record on them, and only you can open new tasks in them.</span>
+            </p>
+          </header>
+
+          <div class="pgrid">
+
+            <!-- ── Modi'in — active, nothing waiting on the viewer ── -->
+            <article class="pcard pcard--owner">
+              <div class="pcard__top">
+                <span class="rolebadge rolebadge--owner">
+                  <svg class="rolebadge__icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <circle cx="8" cy="15" r="4"/><path d="M10.85 12.15 19 4"/><path d="m18 5 2 2"/><path d="m15 8 2 2"/>
+                  </svg>
+                  <span class="he-text">בעלות</span><span class="en-text">Owner</span>
+                </span>
+                <span class="pstatus pstatus--active">
+                  <span class="he-text">פעיל</span><span class="en-text">Active</span>
+                </span>
+              </div>
+              <h3 class="pcard__name">
+                <span class="he-text" dir="auto">מחסן לוגיסטי — מודיעין</span>
+                <span class="en-text" dir="auto">Logistics warehouse — Modi'in</span>
+              </h3>
+              <p class="pcard__role">
+                <span class="he-text">התפקיד שלכם: קבלן ראשי</span>
+                <span class="en-text">Your role: general contractor</span>
+              </p>
+              <ul class="pmeta">
+                <li class="pmeta__item">
+                  <svg class="pmeta__icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/>
+                  </svg>
+                  <span class="he-text" dir="auto">מודיעין</span><span class="en-text" dir="auto">Modi'in</span>
+                </li>
+                <li class="pmeta__item">
+                  <svg class="pmeta__icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
+                  </svg>
+                  <span class="he-text">9 חברי צוות</span><span class="en-text">9 members</span>
+                </li>
+              </ul>
+              <dl class="pdates">
+                <div>
+                  <dt class="pdates__label"><span class="he-text">התחלה</span><span class="en-text">Start</span></dt>
+                  <dd class="pdates__value"><span class="he-text">12 במאי 2026</span><span class="en-text">12 May 2026</span></dd>
+                </div>
+                <div>
+                  <dt class="pdates__label"><span class="he-text">יעד סיום</span><span class="en-text">Target end</span></dt>
+                  <dd class="pdates__value"><span class="he-text">30 בינואר 2027</span><span class="en-text">30 January 2027</span></dd>
+                </div>
+              </dl>
+              <div class="pcard__actions">
+                <a href="project-dashboard.html" class="btn btn--ghost btn--sm">
+                  <span class="he-text">פתיחה</span><span class="en-text">Open</span>
+                </a>
+                <a href="create-task.html" class="btn btn--ghost btn--sm">
+                  <span class="he-text">משימה חדשה</span><span class="en-text">New task</span>
+                </a>
+                <a href="create-project.html" class="btn btn--quiet btn--sm">
+                  <span class="he-text">עריכה</span><span class="en-text">Edit</span>
+                </a>
+              </div>
+            </article>
+
+            <!-- ── Kfar Saba — still in planning, an invitation of the viewer's is out ── -->
+            <article class="pcard pcard--owner">
+              <div class="pcard__top">
+                <span class="rolebadge rolebadge--owner">
+                  <svg class="rolebadge__icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <circle cx="8" cy="15" r="4"/><path d="M10.85 12.15 19 4"/><path d="m18 5 2 2"/><path d="m15 8 2 2"/>
+                  </svg>
+                  <span class="he-text">בעלות</span><span class="en-text">Owner</span>
+                </span>
+                <span class="pstatus">
+                  <span class="he-text">בתכנון</span><span class="en-text">Planning</span>
+                </span>
+              </div>
+              <h3 class="pcard__name">
+                <span class="he-text" dir="auto">וילה פרטית — כפר סבא</span>
+                <span class="en-text" dir="auto">Private villa — Kfar Saba</span>
+              </h3>
+              <p class="pcard__role">
+                <span class="he-text">התפקיד שלכם: קבלן ראשי</span>
+                <span class="en-text">Your role: general contractor</span>
+              </p>
+              <ul class="pmeta">
+                <li class="pmeta__item">
+                  <svg class="pmeta__icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/>
+                  </svg>
+                  <span class="he-text" dir="auto">כפר סבא</span><span class="en-text" dir="auto">Kfar Saba</span>
+                </li>
+                <li class="pmeta__item">
+                  <svg class="pmeta__icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
+                  </svg>
+                  <span class="he-text">3 חברי צוות</span><span class="en-text">3 members</span>
+                </li>
+              </ul>
+              <dl class="pdates">
+                <div>
+                  <dt class="pdates__label"><span class="he-text">התחלה</span><span class="en-text">Start</span></dt>
+                  <dd class="pdates__value"><span class="he-text">5 באוקטובר 2026</span><span class="en-text">5 October 2026</span></dd>
+                </div>
+                <div>
+                  <dt class="pdates__label"><span class="he-text">יעד סיום</span><span class="en-text">Target end</span></dt>
+                  <dd class="pdates__value"><span class="he-text">15 ביולי 2027</span><span class="en-text">15 July 2027</span></dd>
+                </div>
+              </dl>
+              <div class="pcard__actions">
+                <a href="project-dashboard.html" class="btn btn--ghost btn--sm">
+                  <span class="he-text">פתיחה</span><span class="en-text">Open</span>
+                </a>
+                <a href="create-task.html" class="btn btn--ghost btn--sm">
+                  <span class="he-text">משימה חדשה</span><span class="en-text">New task</span>
+                </a>
+                <a href="create-project.html" class="btn btn--quiet btn--sm">
+                  <span class="he-text">עריכה</span><span class="en-text">Edit</span>
+                </a>
+              </div>
+            </article>
+
+            <!-- ── Petah Tikva — completed, and it keeps the same owner controls ── -->
+            <article class="pcard pcard--owner">
+              <div class="pcard__top">
+                <span class="rolebadge rolebadge--owner">
+                  <svg class="rolebadge__icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <circle cx="8" cy="15" r="4"/><path d="M10.85 12.15 19 4"/><path d="m18 5 2 2"/><path d="m15 8 2 2"/>
+                  </svg>
+                  <span class="he-text">בעלות</span><span class="en-text">Owner</span>
+                </span>
+                <span class="pstatus">
+                  <span class="he-text">הושלם</span><span class="en-text">Completed</span>
+                </span>
+              </div>
+              <h3 class="pcard__name">
+                <span class="he-text" dir="auto">שיפוץ מרפאה — פתח תקווה</span>
+                <span class="en-text" dir="auto">Clinic refurbishment — Petah Tikva</span>
+              </h3>
+              <p class="pcard__role">
+                <span class="he-text">התפקיד שלכם: קבלן ראשי</span>
+                <span class="en-text">Your role: general contractor</span>
+              </p>
+              <ul class="pmeta">
+                <li class="pmeta__item">
+                  <svg class="pmeta__icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/>
+                  </svg>
+                  <span class="he-text" dir="auto">פתח תקווה</span><span class="en-text" dir="auto">Petah Tikva</span>
+                </li>
+                <li class="pmeta__item">
+                  <svg class="pmeta__icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
+                  </svg>
+                  <span class="he-text">6 חברי צוות</span><span class="en-text">6 members</span>
+                </li>
+              </ul>
+              <dl class="pdates">
+                <div>
+                  <dt class="pdates__label"><span class="he-text">התחלה</span><span class="en-text">Start</span></dt>
+                  <dd class="pdates__value"><span class="he-text">2 בפברואר 2026</span><span class="en-text">2 February 2026</span></dd>
+                </div>
+                <div>
+                  <dt class="pdates__label"><span class="he-text">יעד סיום</span><span class="en-text">Target end</span></dt>
+                  <dd class="pdates__value"><span class="he-text">26 ביוני 2026</span><span class="en-text">26 June 2026</span></dd>
+                </div>
+              </dl>
+              <div class="pcard__actions">
+                <a href="project-dashboard.html" class="btn btn--ghost btn--sm">
+                  <span class="he-text">פתיחה</span><span class="en-text">Open</span>
+                </a>
+                <a href="create-task.html" class="btn btn--ghost btn--sm">
+                  <span class="he-text">משימה חדשה</span><span class="en-text">New task</span>
+                </a>
+                <a href="create-project.html" class="btn btn--quiet btn--sm">
+                  <span class="he-text">עריכה</span><span class="en-text">Edit</span>
+                </a>
+              </div>
+            </article>
+
+          </div>
+
+          <!-- The CSS shows this only while the grid above it holds no card. -->
+          <div class="pgroup-empty">
+            <p class="pgroup-empty__line">
+              <span class="he-text">עדיין לא יצרתם פרויקט. פרויקט שתיצרו יופיע כאן, ואתם תהיו הקבלן הראשי הרשום בו.</span>
+              <span class="en-text">You have not created a project yet. A project you create appears here, with you as its general contractor of record.</span>
+            </p>
+            <div class="pgroup-empty__actions">
+              <a href="create-project.html" class="btn btn--onboard btn--sm">
+                <span class="he-text">פרויקט חדש</span><span class="en-text">New project</span>
+              </a>
+            </div>
+          </div>
+        </section>
+
+        <!-- ══════════ MEMBER ═════════════════════════
+             A memberships document with status "accepted"
+             where the viewer is not projects.owner. The role
+             code on that document is shown as well, so the
+             screen never reduces the enum to three values.
+             ═══════════════════════════════════════════ -->
+        <section class="projgroup" id="g-member" aria-labelledby="h-member">
+          <header class="projgroup__head">
+            <div class="projgroup__titlerow">
+              <h2 class="projgroup__title" id="h-member">
+                <svg class="projgroup__icon" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
+                </svg>
+                <span class="he-text">פרויקטים שהצטרפתם אליהם</span>
+                <span class="en-text">Projects you joined</span>
+              </h2>
+              <span class="projgroup__count">3</span>
+            </div>
+            <p class="projgroup__lede">
+              <span class="he-text">פרויקטים של אחרים שההזמנה שלכם אליהם אושרה. התפקיד נקבע לכל פרויקט בנפרד, ולכן הוא יכול להיות שונה בכל כרטיס כאן.</span>
+              <span class="en-text">Other people's projects whose invitation you accepted. The role is set per project, so it can differ on every card here.</span>
+            </p>
+          </header>
+
+          <div class="pgrid">
+
+            <!-- ── Rothschild 42 — the only project with an action waiting on the viewer ── -->
+            <article class="pcard pcard--member">
+              <div class="pcard__top">
+                <span class="rolebadge rolebadge--member">
+                  <svg class="rolebadge__icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
+                  </svg>
+                  <span class="he-text">חברות</span><span class="en-text">Member</span>
+                </span>
+                <span class="pstatus pstatus--active">
+                  <span class="he-text">פעיל</span><span class="en-text">Active</span>
+                </span>
+              </div>
+              <h3 class="pcard__name">
+                <span class="he-text" dir="auto">רוטשילד 42 — מגדל מגורים</span>
+                <span class="en-text" dir="auto">Rothschild 42 — residential tower</span>
+              </h3>
+              <p class="pcard__role">
+                <span class="he-text">התפקיד שלכם: קבלן משנה</span>
+                <span class="en-text">Your role: subcontractor</span>
+              </p>
+              <ul class="pmeta">
+                <li class="pmeta__item">
+                  <svg class="pmeta__icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/>
+                  </svg>
+                  <span class="he-text" dir="auto">תל אביב</span><span class="en-text" dir="auto">Tel Aviv</span>
+                </li>
+                <li class="pmeta__item">
+                  <svg class="pmeta__icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
+                  </svg>
+                  <span class="he-text">9 חברי צוות</span><span class="en-text">9 members</span>
+                </li>
+              </ul>
+              <dl class="pdates">
+                <div>
+                  <dt class="pdates__label"><span class="he-text">התחלה</span><span class="en-text">Start</span></dt>
+                  <dd class="pdates__value"><span class="he-text">1 באוגוסט 2026</span><span class="en-text">1 August 2026</span></dd>
+                </div>
+                <div>
+                  <dt class="pdates__label"><span class="he-text">יעד סיום</span><span class="en-text">Target end</span></dt>
+                  <dd class="pdates__value"><span class="he-text">30 בנובמבר 2027</span><span class="en-text">30 November 2027</span></dd>
+                </div>
+              </dl>
+              <!-- A count only, deliberately: the list itself belongs to Pending actions on the Home screen. -->
+              <p class="pending">
+                <svg class="pending__icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M9 11l2 2 4-4"/><path d="M20 12a8 8 0 1 1-3.2-6.4"/>
+                </svg>
+                <span class="he-text">פעולה אחת ממתינה לכם</span>
+                <span class="en-text">1 action waiting on you</span>
+              </p>
+              <div class="pcard__actions">
+                <a href="project-dashboard.html" class="btn btn--ghost btn--sm">
+                  <span class="he-text">פתיחה</span><span class="en-text">Open</span>
+                </a>
+                <a href="my-tasks.html" class="btn btn--quiet btn--sm">
+                  <span class="he-text">המשימות שלי כאן</span><span class="en-text">My tasks here</span>
+                </a>
+              </div>
+            </article>
+
+            <!-- ── Ness Ziona — the same relationship in a different per-project role ── -->
+            <article class="pcard pcard--member">
+              <div class="pcard__top">
+                <span class="rolebadge rolebadge--member">
+                  <svg class="rolebadge__icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
+                  </svg>
+                  <span class="he-text">חברות</span><span class="en-text">Member</span>
+                </span>
+                <span class="pstatus pstatus--active">
+                  <span class="he-text">פעיל</span><span class="en-text">Active</span>
+                </span>
+              </div>
+              <h3 class="pcard__name">
+                <span class="he-text" dir="auto">פארק תעשייה — נס ציונה</span>
+                <span class="en-text" dir="auto">Industrial park — Ness Ziona</span>
+              </h3>
+              <p class="pcard__role">
+                <span class="he-text">התפקיד שלכם: ספק</span>
+                <span class="en-text">Your role: supplier</span>
+              </p>
+              <ul class="pmeta">
+                <li class="pmeta__item">
+                  <svg class="pmeta__icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/>
+                  </svg>
+                  <span class="he-text" dir="auto">נס ציונה</span><span class="en-text" dir="auto">Ness Ziona</span>
+                </li>
+                <li class="pmeta__item">
+                  <svg class="pmeta__icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
+                  </svg>
+                  <span class="he-text">14 חברי צוות</span><span class="en-text">14 members</span>
+                </li>
+              </ul>
+              <dl class="pdates">
+                <div>
+                  <dt class="pdates__label"><span class="he-text">התחלה</span><span class="en-text">Start</span></dt>
+                  <dd class="pdates__value"><span class="he-text">20 ביוני 2026</span><span class="en-text">20 June 2026</span></dd>
+                </div>
+                <div>
+                  <dt class="pdates__label"><span class="he-text">יעד סיום</span><span class="en-text">Target end</span></dt>
+                  <dd class="pdates__value"><span class="he-text">12 במרץ 2027</span><span class="en-text">12 March 2027</span></dd>
+                </div>
+              </dl>
+              <div class="pcard__actions">
+                <a href="project-dashboard.html" class="btn btn--ghost btn--sm">
+                  <span class="he-text">פתיחה</span><span class="en-text">Open</span>
+                </a>
+                <a href="my-tasks.html" class="btn btn--quiet btn--sm">
+                  <span class="he-text">המשימות שלי כאן</span><span class="en-text">My tasks here</span>
+                </a>
+              </div>
+            </article>
+
+            <!-- ── Haifa — archived, and a viewer membership, which changes nothing about the role axis ── -->
+            <article class="pcard pcard--member">
+              <div class="pcard__top">
+                <span class="rolebadge rolebadge--member">
+                  <svg class="rolebadge__icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
+                  </svg>
+                  <span class="he-text">חברות</span><span class="en-text">Member</span>
+                </span>
+                <span class="pstatus pstatus--archived">
+                  <span class="he-text">בארכיון</span><span class="en-text">Archived</span>
+                </span>
+              </div>
+              <h3 class="pcard__name">
+                <span class="he-text" dir="auto">מגדל משרדים — חיפה</span>
+                <span class="en-text" dir="auto">Office tower — Haifa</span>
+              </h3>
+              <p class="pcard__role">
+                <span class="he-text">התפקיד שלכם: צפייה בלבד</span>
+                <span class="en-text">Your role: view only</span>
+              </p>
+              <ul class="pmeta">
+                <li class="pmeta__item">
+                  <svg class="pmeta__icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/>
+                  </svg>
+                  <span class="he-text" dir="auto">חיפה</span><span class="en-text" dir="auto">Haifa</span>
+                </li>
+                <li class="pmeta__item">
+                  <svg class="pmeta__icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
+                  </svg>
+                  <span class="he-text">11 חברי צוות</span><span class="en-text">11 members</span>
+                </li>
+              </ul>
+              <dl class="pdates">
+                <div>
+                  <dt class="pdates__label"><span class="he-text">התחלה</span><span class="en-text">Start</span></dt>
+                  <dd class="pdates__value"><span class="he-text">1 במרץ 2025</span><span class="en-text">1 March 2025</span></dd>
+                </div>
+                <div>
+                  <dt class="pdates__label"><span class="he-text">יעד סיום</span><span class="en-text">Target end</span></dt>
+                  <dd class="pdates__value"><span class="he-text">30 בנובמבר 2025</span><span class="en-text">30 November 2025</span></dd>
+                </div>
+              </dl>
+              <div class="pcard__actions">
+                <a href="project-dashboard.html" class="btn btn--ghost btn--sm">
+                  <span class="he-text">פתיחה</span><span class="en-text">Open</span>
+                </a>
+                <a href="my-tasks.html" class="btn btn--quiet btn--sm">
+                  <span class="he-text">המשימות שלי כאן</span><span class="en-text">My tasks here</span>
+                </a>
+              </div>
+            </article>
+
+          </div>
+
+          <div class="pgroup-empty">
+            <p class="pgroup-empty__line">
+              <span class="he-text">לא הצטרפתם לפרויקט של אף אחד אחר. הצטרפות מתחילה בהזמנה, והזמנה מגיעה בדרך כלל מקבלן שכבר מחובר אליכם.</span>
+              <span class="en-text">You have not joined anyone else's project. Joining starts with an invitation, and an invitation usually comes from a contractor already connected to you.</span>
+            </p>
+            <div class="pgroup-empty__actions">
+              <a href="browse-contractors.html" class="btn btn--onboard btn--sm">
+                <span class="he-text">עיון בקבלנים</span><span class="en-text">Browse contractors</span>
+              </a>
+              <a href="my-network.html" class="btn btn--ghost btn--sm">
+                <span class="he-text">הרשת שלי</span><span class="en-text">My network</span>
+              </a>
+            </div>
+          </div>
+        </section>
+
+        <!-- ══════════ INVITED ════════════════════════
+             A memberships document with status "invited".
+             The authorisation query the whole backend uses is
+             findOne({ project, user, status: "accepted" }), so an
+             invited viewer cannot open the project yet — which is
+             why these cards carry no Open control at all.
+             ═══════════════════════════════════════════ -->
+        <section class="projgroup" id="g-invited" aria-labelledby="h-invited">
+          <header class="projgroup__head">
+            <div class="projgroup__titlerow">
+              <h2 class="projgroup__title" id="h-invited">
+                <svg class="projgroup__icon" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/>
+                </svg>
+                <span class="he-text">הזמנות שממתינות לתשובה שלכם</span>
+                <span class="en-text">Invitations waiting for your answer</span>
+              </h2>
+              <span class="projgroup__count">2</span>
+            </div>
+            <p class="projgroup__lede">
+              <span class="he-text">עד שתאשרו, הפרויקט עדיין לא נפתח לכם — ולכן אין כאן קישור פתיחה, רק אישור או דחייה.</span>
+              <span class="en-text">Until you accept, the project is not open to you — so there is no Open link here, only Accept or Decline.</span>
+            </p>
+          </header>
+
+          <div class="pgrid">
+
+            <!-- ── Herzl 8 — the invitation the Home screen's Respond control points at ── -->
+            <article class="pcard pcard--invited">
+              <div class="pcard__top">
+                <span class="rolebadge rolebadge--invited">
+                  <svg class="rolebadge__icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/>
+                  </svg>
+                  <span class="he-text">הזמנה</span><span class="en-text">Invited</span>
+                </span>
+                <span class="pstatus pstatus--active">
+                  <span class="he-text">פעיל</span><span class="en-text">Active</span>
+                </span>
+              </div>
+              <h3 class="pcard__name">
+                <span class="he-text" dir="auto">הרצל 8 — שיפוץ</span>
+                <span class="en-text" dir="auto">Herzl 8 — refurbishment</span>
+              </h3>
+              <p class="pcard__role">
+                <span class="he-text">התפקיד המוצע: קבלן משנה</span>
+                <span class="en-text">Offered role: subcontractor</span>
+              </p>
+              <ul class="pmeta">
+                <li class="pmeta__item">
+                  <svg class="pmeta__icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/>
+                  </svg>
+                  <span class="he-text" dir="auto">רמת גן</span><span class="en-text" dir="auto">Ramat Gan</span>
+                </li>
+              </ul>
+              <dl class="pdates">
+                <div>
+                  <dt class="pdates__label"><span class="he-text">התחלה</span><span class="en-text">Start</span></dt>
+                  <dd class="pdates__value"><span class="he-text">1 בספטמבר 2026</span><span class="en-text">1 September 2026</span></dd>
+                </div>
+                <div>
+                  <dt class="pdates__label"><span class="he-text">יעד סיום</span><span class="en-text">Target end</span></dt>
+                  <dd class="pdates__value"><span class="he-text">20 בדצמבר 2026</span><span class="en-text">20 December 2026</span></dd>
+                </div>
+              </dl>
+              <div class="invite">
+                <span class="invite__from">
+                  <span class="invite__avatar" aria-hidden="true"><span class="he-text">פח</span><span class="en-text">FH</span></span>
+                  <span class="invite__name"><span class="he-text" dir="auto">פאדי חדאד</span><span class="en-text" dir="auto">Fadi Haddad</span></span>
+                </span>
+                <p class="invite__stamp">
+                  <span class="he-text">ההזמנה נשלחה ב־21 באוגוסט 2026</span>
+                  <span class="en-text">Invitation sent 21 August 2026</span>
+                </p>
+              </div>
+              <div class="pcard__actions">
+                <button type="button" class="btn btn--primary btn--sm">
+                  <span class="he-text">אישור ההזמנה</span><span class="en-text">Accept</span>
+                </button>
+                <button type="button" class="btn btn--quiet btn--sm">
+                  <span class="he-text">דחייה</span><span class="en-text">Decline</span>
+                </button>
+              </div>
+            </article>
+
+            <!-- ── Rishon LeZion — a second invitation, in a different offered role ── -->
+            <article class="pcard pcard--invited">
+              <div class="pcard__top">
+                <span class="rolebadge rolebadge--invited">
+                  <svg class="rolebadge__icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/>
+                  </svg>
+                  <span class="he-text">הזמנה</span><span class="en-text">Invited</span>
+                </span>
+                <span class="pstatus">
+                  <span class="he-text">בתכנון</span><span class="en-text">Planning</span>
+                </span>
+              </div>
+              <h3 class="pcard__name">
+                <span class="he-text" dir="auto">חניון תת־קרקעי — ראשון לציון</span>
+                <span class="en-text" dir="auto">Underground car park — Rishon LeZion</span>
+              </h3>
+              <p class="pcard__role">
+                <span class="he-text">התפקיד המוצע: ספק</span>
+                <span class="en-text">Offered role: supplier</span>
+              </p>
+              <ul class="pmeta">
+                <li class="pmeta__item">
+                  <svg class="pmeta__icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/>
+                  </svg>
+                  <span class="he-text" dir="auto">ראשון לציון</span><span class="en-text" dir="auto">Rishon LeZion</span>
+                </li>
+              </ul>
+              <dl class="pdates">
+                <div>
+                  <dt class="pdates__label"><span class="he-text">התחלה</span><span class="en-text">Start</span></dt>
+                  <dd class="pdates__value"><span class="he-text">15 באוקטובר 2026</span><span class="en-text">15 October 2026</span></dd>
+                </div>
+                <div>
+                  <dt class="pdates__label"><span class="he-text">יעד סיום</span><span class="en-text">Target end</span></dt>
+                  <dd class="pdates__value"><span class="he-text">30 באפריל 2027</span><span class="en-text">30 April 2027</span></dd>
+                </div>
+              </dl>
+              <div class="invite">
+                <span class="invite__from">
+                  <span class="invite__avatar" aria-hidden="true"><span class="he-text">רא</span><span class="en-text">RA</span></span>
+                  <span class="invite__name"><span class="he-text" dir="auto">רונן אדלר</span><span class="en-text" dir="auto">Ronen Adler</span></span>
+                </span>
+                <p class="invite__stamp">
+                  <span class="he-text">ההזמנה נשלחה ב־22 באוגוסט 2026</span>
+                  <span class="en-text">Invitation sent 22 August 2026</span>
+                </p>
+              </div>
+              <div class="pcard__actions">
+                <button type="button" class="btn btn--primary btn--sm">
+                  <span class="he-text">אישור ההזמנה</span><span class="en-text">Accept</span>
+                </button>
+                <button type="button" class="btn btn--quiet btn--sm">
+                  <span class="he-text">דחייה</span><span class="en-text">Decline</span>
+                </button>
+              </div>
+            </article>
+
+          </div>
+
+          <div class="pgroup-empty">
+            <p class="pgroup-empty__line">
+              <span class="he-text">אין הזמנות שממתינות לתשובה שלכם.</span>
+              <span class="en-text">No invitations are waiting for your answer.</span>
+            </p>
+          </div>
+        </section>
+
+      </div>
+
+      <!-- The CSS shows this, and hides the filter and all three groups, only when no card exists anywhere. -->
+      <section class="projects__none" aria-labelledby="h-none">
+        <h2 class="projects__none-title" id="h-none">
+          <span class="he-text">אין כאן עדיין פרויקטים</span>
+          <span class="en-text">No projects here yet</span>
+        </h2>
+        <p class="projects__none-body">
+          <span class="he-text">לא יצרתם פרויקט ולא הצטרפתם לאחד. אפשר להתחיל פרויקט משלכם, או למצוא קבלנים ולהתחבר אליהם כדי שיוכלו להזמין אתכם.</span>
+          <span class="en-text">You have not created a project and have not joined one. You can start a project of your own, or find contractors and connect with them so they can invite you.</span>
+        </p>
+        <div class="projects__none-actions">
+          <a href="create-project.html" class="btn btn--primary btn--sm">
+            <span class="he-text">פרויקט חדש</span><span class="en-text">New project</span>
+          </a>
+          <a href="browse-contractors.html" class="btn btn--ghost btn--sm">
+            <span class="he-text">עיון בקבלנים</span><span class="en-text">Browse contractors</span>
+          </a>
+        </div>
+      </section>
+
+    </main>
+
+  </div>
+
+  <!-- This script persists the language choice across screens, as on every other bilingual screen. -->
+  <script src="lang.js"></script>
+</body>
+</html>
