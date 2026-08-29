@@ -213,7 +213,7 @@ const run = async (): Promise<void> => {
 
   loadEnvFile({ quiet: true });
   await connectToDatabase(loadConfig().mongoUri);
-  await UserModel.deleteMany({ email: new RegExp(MARKER) }).exec();
+  await UserModel.deleteMany({ email: { $regex: `^${MARKER}` } }).exec();
 
   console.log('\n6. The same decision, over the real API and the real database');
   const email = `${MARKER}@example.com`;
@@ -297,7 +297,7 @@ const run = async (): Promise<void> => {
     .map((p) => p.placeId);
   check('and the reloaded profile agrees', reloadedIds.includes('x') && reloadedIds.includes('y'));
 
-  await UserModel.deleteMany({ email: new RegExp(MARKER) }).exec();
+  await UserModel.deleteMany({ email: { $regex: `^${MARKER}` } }).exec();
   await disconnectFromDatabase();
 
   console.log(`\n${failures === 0 ? 'All checks passed.' : `${failures} check(s) FAILED.`}\n`);
