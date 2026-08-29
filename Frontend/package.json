@@ -11,7 +11,8 @@
     "typecheck": "tsc -p tsconfig.json",
     "build:screens": "tsc -p tsconfig.screens.json",
     "watch:screens": "tsc -p tsconfig.screens.json --watch",
-    "verify:layout": "node scripts/verify-browse-layout.mjs"
+    "verify:layout": "node scripts/verify-browse-layout.mjs",
+    "verify:profile-data": "node scripts/verify-profile-real-data.mjs"
   },
   "devDependencies": {
     "@types/react": "^19.2.18",

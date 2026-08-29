@@ -22,9 +22,10 @@ export interface EditProfileValues {
   specialties: readonly Trade[];
   specialtyOther: string;
   equipment: readonly EquipmentCode[];
-  availability: Availability;
+  /** `''` while the server holds no answer yet, so nothing is defaulted on the person's behalf. */
+  availability: Availability | '';
   city: string;
-  region: Region;
+  region: Region | '';
   travelRadiusKm: string;
   delayToleranceDays: string;
   noticeRequiredDays: string;
@@ -34,23 +35,28 @@ export interface EditProfileValues {
 
 export type EditProfileField = keyof EditProfileValues;
 
-/** Numbers are held as the strings the boxes contain, so a half-typed value is not coerced. */
+/**
+ * Numbers are held as the strings the boxes contain, so a half-typed value is not coerced. An
+ * absent value becomes an empty box, never a zero or a guess.
+ */
+const numberBox = (value: number | null): string => (value === null ? '' : String(value));
+
 export const fromProfile = (profile: ProfileView): EditProfileValues => ({
   firstName: profile.firstName,
   lastName: profile.lastName,
-  companyName: profile.companyName,
-  officePhone: profile.officePhone,
-  businessPhone: profile.businessPhone,
+  companyName: profile.companyName ?? '',
+  officePhone: profile.officePhone ?? '',
+  businessPhone: profile.businessPhone ?? '',
   bio: profile.bio,
   specialties: profile.specialties,
   specialtyOther: profile.specialtyOther,
-  equipment: profile.equipment,
-  availability: profile.availability,
+  equipment: [],
+  availability: profile.availability ?? '',
   city: profile.city,
-  region: profile.region,
-  travelRadiusKm: String(profile.travelRadiusKm),
-  delayToleranceDays: String(profile.delayToleranceDays),
-  noticeRequiredDays: String(profile.noticeRequiredDays),
+  region: profile.region ?? '',
+  travelRadiusKm: numberBox(profile.travelRadiusKm),
+  delayToleranceDays: numberBox(profile.delayToleranceDays),
+  noticeRequiredDays: numberBox(profile.noticeRequiredDays),
   work: profile.work,
 });
 
@@ -77,14 +83,17 @@ export const useEditProfileForm = (initial: EditProfileValues) => {
     setValues((prev) => ({ ...prev, equipment: toggle(prev.equipment, code, on) }));
   }, []);
 
-  /**
-   * Removing an entry takes the tile off the screen, which is the whole of what the client can
-   * honestly do: there is no collection to delete from and no endpoint to call. Adding one cannot
-   * go even that far — an entry is an uploaded image plus its details, and neither file storage
-   * nor an entry shape exists — so the screen reports that rather than inventing a tile.
-   */
   const removeWork = useCallback((id: string): void => {
     setValues((prev) => ({ ...prev, work: prev.work.filter((entry) => entry.id !== id) }));
+  }, []);
+
+  const setWork = useCallback((work: readonly CompletedWorkEntry[]): void => {
+    setValues((prev) => ({ ...prev, work }));
+  }, []);
+
+  const reset = useCallback((next: EditProfileValues): void => {
+    setValues(next);
+    setTouched({});
   }, []);
 
   const flags = useMemo(
@@ -99,5 +108,8 @@ export const useEditProfileForm = (initial: EditProfileValues) => {
     [values.specialties, values.region],
   );
 
-  return { values, setValue, touched, markTouched, toggleSpecialty, toggleEquipment, removeWork, flags };
+  return {
+    values, setValue, touched, markTouched, toggleSpecialty, toggleEquipment,
+    removeWork, setWork, reset, flags,
+  };
 };

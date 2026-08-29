@@ -1,65 +1,144 @@
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { AVAILABILITY_STATUSES, REGIONS, TRADES, type Region, type Trade } from '../../api/types';
 import { AppNav } from '../../components/AppNav';
-import { useAuth } from '../../auth/useAuth';
+import { ButtonSpinner } from '../../components/ButtonSpinner';
 import { useLanguage } from '../../i18n/useLanguage';
 import { useDocumentTitle } from '../../routes/useDocumentTitle';
 import { useScreenStylesheet } from '../../styles/useScreenStylesheet';
+import { addWorkEntry, classifyProfileError, removeWorkEntry } from '../../api/profile.api';
+import { AvatarField } from './components/AvatarField';
 import { Choice } from './components/Choice';
 import { CompletedWorkPanel } from './components/CompletedWorkPanel';
 import { EditNumber, EditSelect, EditText, EditTextarea } from './components/EditField';
 import { EquipmentPicker } from './components/EquipmentPicker';
 import { RatingsPanel } from './components/RatingsPanel';
 import { TrustPanel } from './components/TrustPanel';
-import { initialsOf, representativeProfile } from './profileModel';
+import { WorkEntryForm } from './components/WorkEntryForm';
+import { initialsOf } from './profileModel';
 import { fromProfile, useEditProfileForm } from './useEditProfileForm';
+import { useMyProfile } from './useMyProfile';
+import { useProfileSave } from './useProfileSave';
 import profileCss from './profile.css?inline';
 import editProfileCss from './edit-profile.css?inline';
 
 /** Bounds the backend already enforces on the same values where it accepts them at Register. */
 const MAX = { name: 100, companyName: 120, city: 80, phone: 30, specialtyOther: 60, bio: 600 } as const;
 
+const EMPTY_FORM = fromProfile({
+  firstName: '', lastName: '', email: '', language: 'he', profileComplete: false,
+  bio: '', specialties: [], specialtyOther: '', businessPhone: '', city: '',
+  region: null, travelRadiusKm: null, delayToleranceDays: null, noticeRequiredDays: null,
+  avatarUrl: null, companyName: null, officePhone: null, availability: null,
+  standing: null, companyPosition: null, companyMembershipActive: false,
+  rating: null, flexibility: null, ratings: [], work: [],
+});
+
 /**
  * Edit profile — the editing surface behind My profile's single Edit control.
  *
- * **There is no profile-update endpoint.** The API mounts `/health`, `/health-auth` and `/auth`;
- * `features/users/` on the server is a model and a repository with no controller and no route. So
- * Save cannot persist, and this screen says so in words rather than pretending. The control ships
- * in its correct place — a gap in the model has never been a reason to drop a control here — and
- * the form is fully wired in React state, so the moment an endpoint exists it has one caller to
- * add rather than a screen to build.
+ * Every value is read from `GET /users/me` and written back through the two routes that own it:
+ * the person's own fields to `PATCH /users/me`, and company name, office phone and availability to
+ * `PATCH /companies/me`, because those three live on the company document.
  *
  * Rating, flexibility and the ratings list are read-only here, as they are everywhere: the first
- * two are computed from behaviour and the third is other people's words. **Completed work is
- * not** — this screen carries its manager, with a remove control per tile and an add tile, which
- * is what the approved edit screen has always had. Neither action can persist: D13 has not
- * decided where an entry lives and D1 has not decided where an uploaded image lives, so removal
- * is honest about being on-screen only and adding says what is missing.
+ * two are computed from behaviour and the third is other people's words.
  */
 export const EditProfilePage = () => {
-  const { t, lang } = useLanguage();
-  const { user } = useAuth();
+  const { t } = useLanguage();
   const navigate = useNavigate();
+  const { profile, loading, failure: loadFailure, setProfile, reload } = useMyProfile();
+  const form = useEditProfileForm(EMPTY_FORM);
+  const { values, setValue, touched, markTouched, toggleSpecialty, toggleEquipment, setWork, reset, flags } = form;
+  const { save, saving, saved, failure: saveFailure, clearSaved } = useProfileSave();
+
   useScreenStylesheet(
     { id: 'profile.css', css: profileCss },
     { id: 'edit-profile.css', css: editProfileCss },
   );
   useDocumentTitle('עריכת הפרופיל / Edit profile — FieldSync');
 
-  const profile = representativeProfile(user, lang);
-  const form = useEditProfileForm(fromProfile(profile));
-  const { values, setValue, touched, markTouched, toggleSpecialty, toggleEquipment, removeWork, flags } = form;
-
   const [equipmentOpen, setEquipmentOpen] = useState(false);
-  const [saveAttempted, setSaveAttempted] = useState(false);
-  const [workTouched, setWorkTouched] = useState(false);
+  const [addingWork, setAddingWork] = useState(false);
+  const [workBusy, setWorkBusy] = useState(false);
+  const [workError, setWorkError] = useState<string | null>(null);
+
+  // The form is filled once the server has answered, and again after a save returns a fresher read.
+  useEffect(() => {
+    if (profile) reset(fromProfile(profile));
+  }, [profile, reset]);
 
   const fullName = `${values.firstName} ${values.lastName}`.trim();
   const initials = initialsOf(values.firstName, values.lastName);
-
   const regionOptions = REGIONS.map((code) => ({ value: code, label: t.regions[code] }));
+
+  const submit = useCallback(async (): Promise<void> => {
+    if (!profile) return;
+    const next = await save(values, profile);
+    if (next) setProfile(next);
+  }, [profile, save, setProfile, values]);
+
+  const addWork = useCallback(async (
+    entry: { title: string; scope?: string; meta: string },
+    image: File | null,
+  ): Promise<void> => {
+    setWorkBusy(true);
+    setWorkError(null);
+    try {
+      const created = await addWorkEntry(entry, image);
+      setWork([...values.work, created]);
+      setAddingWork(false);
+    } catch (error) {
+      const code = classifyProfileError(error);
+      setWorkError(
+        code === 'UNSUPPORTED_FILE_TYPE' ? t.editProfile.avatar.badType
+        : code === 'FILE_TOO_LARGE' ? t.editProfile.avatar.tooLarge
+        : code === 'NETWORK' ? t.profile.errors.network
+        : t.editProfile.work.addFailed,
+      );
+    } finally {
+      setWorkBusy(false);
+    }
+  }, [setWork, t, values.work]);
+
+  const dropWork = useCallback(async (id: string): Promise<void> => {
+    setWorkError(null);
+    try {
+      await removeWorkEntry(id);
+      setWork(values.work.filter((entry) => entry.id !== id));
+    } catch {
+      setWorkError(t.editProfile.work.removeFailed);
+    }
+  }, [setWork, t, values.work]);
+
+  if (loading || profile === null) {
+    return (
+      <div className="app">
+        <AppNav name={fullName} initials={initials} />
+        <main className="profile">
+          {loadFailure ? (
+            <div className="notice notice--warn" role="alert">
+              <span>{loadFailure === 'NETWORK' ? t.profile.errors.network : t.profile.errors.generic}</span>
+              <button type="button" className="btn btn--ghost btn--sm" onClick={reload}>
+                {t.profile.errors.retry}
+              </button>
+            </div>
+          ) : (
+            <p className="panel__lede">{t.profile.loading}</p>
+          )}
+        </main>
+      </div>
+    );
+  }
+
+  const saveMessage =
+    saveFailure === 'NOT_PERMITTED' ? t.editProfile.actions.notPermitted
+    : saveFailure === 'NETWORK' ? t.profile.errors.network
+    : saveFailure === 'VALIDATION' ? t.editProfile.actions.invalid
+    : saveFailure ? t.editProfile.actions.saveFailed
+    : saved ? t.editProfile.actions.saved
+    : t.editProfile.actions.aside;
 
   return (
     <div className="app">
@@ -76,7 +155,15 @@ export const EditProfilePage = () => {
         {/* The same trust panel as the view screen, and read-only here too. Availability is not
             shown as a status in it, because this screen offers it as a choice further down. */}
         <TrustPanel
-          profile={{ ...profile, firstName: values.firstName, lastName: values.lastName, companyName: values.companyName, specialties: values.specialties, city: values.city, region: values.region }}
+          profile={{
+            ...profile,
+            firstName: values.firstName,
+            lastName: values.lastName,
+            companyName: values.companyName || null,
+            specialties: values.specialties,
+            city: values.city,
+            region: values.region === '' ? null : values.region,
+          }}
           initials={initials}
           availabilityLabel={null}
         />
@@ -85,9 +172,9 @@ export const EditProfilePage = () => {
         <form
           className="profile-form"
           noValidate
-          onSubmit={(e) => {
-            e.preventDefault();
-            setSaveAttempted(true);
+          onSubmit={(event) => {
+            event.preventDefault();
+            void submit();
           }}
         >
           <div className="profile-grid">
@@ -97,15 +184,7 @@ export const EditProfilePage = () => {
                 <h2 id="identity-title" className="panel__title">{t.editProfile.identity.title}</h2>
                 <p className="panel__lede">{t.editProfile.identity.lede}</p>
 
-                {/* Avatar upload is a visual stub — file storage is still an open decision. */}
-                <div className="avatar-row">
-                  <span className="avatar avatar--lg" aria-hidden="true">{initials}</span>
-                  <div className="avatar-row__actions">
-                    <button type="button" className="btn btn--ghost btn--sm">{t.editProfile.avatar.upload}</button>
-                    <button type="button" className="btn btn--quiet btn--sm">{t.editProfile.avatar.remove}</button>
-                    <p className="field-hint">{t.editProfile.avatar.hint}</p>
-                  </div>
-                </div>
+                <AvatarField profile={profile} initials={initials} onChanged={setProfile} />
 
                 {/* D14: this is the *organization's* work availability — whether the business is
                     taking new work — and it is the owner's to set. It is never any employee's
@@ -218,17 +297,20 @@ export const EditProfilePage = () => {
                   ) : null}
 
                   {flags.showEquipment ? (
-                    <button
-                      type="button"
-                      className="equip-trigger equip-trigger--visible"
-                      onClick={() => setEquipmentOpen(true)}
-                    >
-                      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                           strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                        <path d="M12 5v14M5 12h14" />
-                      </svg>
-                      {t.editProfile.equipment.trigger}
-                    </button>
+                    <>
+                      <button
+                        type="button"
+                        className="equip-trigger equip-trigger--visible"
+                        onClick={() => setEquipmentOpen(true)}
+                      >
+                        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                             strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                          <path d="M12 5v14M5 12h14" />
+                        </svg>
+                        {t.editProfile.equipment.trigger}
+                      </button>
+                      <p className="field-hint">{t.editProfile.equipment.notStored}</p>
+                    </>
                   ) : null}
                 </fieldset>
               </section>
@@ -248,7 +330,7 @@ export const EditProfilePage = () => {
                   touched={!!touched.city}
                 />
 
-                <EditSelect<Region>
+                <EditSelect<Region | ''>
                   id="region" label={t.editProfile.location.region}
                   placeholder={t.editProfile.location.regionPlaceholder}
                   options={regionOptions} required
@@ -307,10 +389,24 @@ export const EditProfilePage = () => {
             manage={{
               addLabel: t.editProfile.work.add,
               removeLabel: t.editProfile.work.remove,
-              onAdd: () => setWorkTouched(true),
-              onRemove: (id) => { removeWork(id); setWorkTouched(true); },
+              onAdd: () => { setAddingWork(true); setWorkError(null); },
+              onRemove: (id) => void dropWork(id),
             }}
-            notice={workTouched ? <p className="field-hint" role="status">{t.editProfile.work.notStored}</p> : null}
+            notice={
+              <>
+                {addingWork ? (
+                  <WorkEntryForm
+                    onSubmit={(entry, image) => void addWork(entry, image)}
+                    onCancel={() => setAddingWork(false)}
+                    busy={workBusy}
+                    error={workError}
+                  />
+                ) : null}
+                {!addingWork && workError ? (
+                  <p className="field-error" role="alert">{workError}</p>
+                ) : null}
+              </>
+            }
           />
 
           <RatingsPanel
@@ -319,13 +415,17 @@ export const EditProfilePage = () => {
           />
 
           <div className="form-actions">
-            <button type="submit" className="btn btn--primary">{t.editProfile.actions.save}</button>
-            <button type="button" className="btn btn--ghost" onClick={() => navigate('/profile')}>
+            <button type="submit" className="btn btn--primary" disabled={saving} aria-busy={saving}>
+              {saving ? t.editProfile.actions.saving : t.editProfile.actions.save}
+              {saving ? <ButtonSpinner /> : null}
+            </button>
+            <button
+              type="button" className="btn btn--ghost"
+              onClick={() => { clearSaved(); navigate('/profile'); }}
+            >
               {t.editProfile.actions.cancel}
             </button>
-            <p className="form-actions__aside">
-              {saveAttempted ? t.editProfile.actions.noEndpoint : t.editProfile.actions.aside}
-            </p>
+            <p className="form-actions__aside" role={saveFailure ? 'alert' : 'status'}>{saveMessage}</p>
           </div>
         </form>
 
