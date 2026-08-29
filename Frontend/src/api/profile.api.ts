@@ -2,6 +2,7 @@ import { isAxiosError } from 'axios';
 
 import { api } from './client';
 import type { ApiErrorBody, Availability, CompanyPosition, Region, Trade } from './types';
+import type { StructuredPlace } from '../location/place.types';
 
 export interface ReceivedRatingDto {
   readonly id: string;
@@ -33,6 +34,8 @@ export interface Profile {
   readonly businessPhone: string;
   readonly city: string;
   readonly region: Region | null;
+  /** `null` for a legacy account that only ever typed a city. No Place ID is invented for it. */
+  readonly place: StructuredPlace | null;
   readonly travelRadiusKm: number | null;
   readonly delayToleranceDays: number | null;
   readonly noticeRequiredDays: number | null;
@@ -70,6 +73,7 @@ export interface ProfilePatch {
   businessPhone?: string | null;
   city?: string;
   region?: Region;
+  place?: StructuredPlace;
   travelRadiusKm?: number;
   delayToleranceDays?: number;
   noticeRequiredDays?: number;

@@ -2,6 +2,7 @@ import { useCallback, useMemo, useState } from 'react';
 
 import type { Availability, Region, Trade } from '../../api/types';
 import type { CompletedWorkEntry, EquipmentCode, ProfileView } from './profileModel';
+import type { StructuredPlace } from '../../location/place.types';
 
 /**
  * Everything Edit profile holds while it is being edited.
@@ -25,6 +26,7 @@ export interface EditProfileValues {
   /** `''` while the server holds no answer yet, so nothing is defaulted on the person's behalf. */
   availability: Availability | '';
   city: string;
+  place: StructuredPlace | null;
   region: Region | '';
   travelRadiusKm: string;
   delayToleranceDays: string;
@@ -53,6 +55,7 @@ export const fromProfile = (profile: ProfileView): EditProfileValues => ({
   equipment: [],
   availability: profile.availability ?? '',
   city: profile.city,
+  place: profile.place,
   region: profile.region ?? '',
   travelRadiusKm: numberBox(profile.travelRadiusKm),
   delayToleranceDays: numberBox(profile.delayToleranceDays),

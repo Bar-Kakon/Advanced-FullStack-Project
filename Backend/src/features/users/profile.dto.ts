@@ -1,6 +1,7 @@
 import type { Availability } from '../companies/company.model.js';
 import type { CompanyPosition, CompanyStanding } from '../companies/companyMembership.model.js';
 import type { Region, Trade } from './user.model.js';
+import type { StructuredPlace } from '../location/place.types.js';
 
 export interface WorkEntryDto {
   readonly id: string;
@@ -30,6 +31,12 @@ export interface ProfileDto {
   readonly businessPhone: string;
   readonly city: string;
   readonly region: Region | null;
+  /**
+   * The structured place behind `city`, when one was ever chosen. `null` for a legacy account that
+   * only has free text — no Place ID is invented for it, and `city`/`region` stay authoritative
+   * for display either way.
+   */
+  readonly place: StructuredPlace | null;
   readonly travelRadiusKm: number | null;
   readonly delayToleranceDays: number | null;
   readonly noticeRequiredDays: number | null;

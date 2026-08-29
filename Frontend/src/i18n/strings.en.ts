@@ -241,6 +241,11 @@ export const en: Strings = {
     },
   },
 
+  location: {
+    legacyCity: 'Your saved location is only "{city}", with no map location. Pick a place from the list to add one.',
+    unavailableFallback: 'Place search is unavailable right now, so you can type the town name.',
+  },
+
   nav: {
     home: 'FieldSync — home',
     label: 'Main',

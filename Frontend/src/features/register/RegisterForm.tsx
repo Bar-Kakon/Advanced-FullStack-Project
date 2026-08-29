@@ -18,6 +18,7 @@ import { SelectField } from '../../components/SelectField';
 import { TextField } from '../../components/TextField';
 import { AvailabilityChoice } from './components/AvailabilityChoice';
 import { TermsCheckbox } from './components/TermsCheckbox';
+import { LocationField } from '../../location/LocationField';
 
 /** Bounds copied from the endpoint's schema, so the box refuses what the server would reject. */
 const MAX = {
@@ -131,11 +132,14 @@ export const RegisterForm = ({ form }: { form: ReturnType<typeof useRegisterForm
 
         {/* City, region and the two phones share one grid cell, stacked. */}
         <div className="field-stack col--half">
-          <TextField
-            id="city" label={t.form.city.label} placeholder={t.form.city.placeholder}
-            autoComplete="address-level2" maxLength={MAX.city} required
-            value={values.city} onChange={(v) => setValue('city', v)}
-            onBlur={() => markTouched('city')} touched={!!touched.city}
+          <LocationField
+            label={t.form.city.label}
+            placeholder={t.form.city.placeholder}
+            place={values.place}
+            city={values.city}
+            onPlace={(place) => setValue('place', place)}
+            onCity={(city) => setValue('city', city)}
+            required
           />
           <SelectField<Region>
             id="region" label={t.form.region.label} placeholder={t.form.region.placeholder}

@@ -1,12 +1,12 @@
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
 
-import { useLanguage } from '../../../i18n/useLanguage';
-import type { StructuredPlace } from '../../../api/browse.types';
-import { usePlacesAutocomplete } from '../usePlacesAutocomplete';
+import { useLanguage } from '../i18n/useLanguage';
+import type { StructuredPlace } from './place.types';
+import { usePlacesAutocomplete } from './usePlacesAutocomplete';
 
 /**
- * Structured place selection. The chosen value is always a Google place with an id — free text is
- * never the stored identity — so Register and Edit Profile can reuse this unchanged later.
+ * Structured place selection, shared by Browse, Register and Edit profile. The chosen value is
+ * always a Google place with an id — free text is never the stored identity.
  */
 export const PlaceAutocomplete = ({
   label,

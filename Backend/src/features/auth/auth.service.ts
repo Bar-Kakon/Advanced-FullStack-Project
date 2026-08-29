@@ -16,6 +16,8 @@ export interface LoginResult extends TokenPair {
 export interface AuthService {
   login(credentials: LoginBody): Promise<LoginResult>;
   refresh(rawRefreshToken: string | undefined): Promise<TokenPair>;
+  /** Ends this session. Revokes only the family the presented token belongs to. */
+  logout(rawRefreshToken: string | undefined): Promise<void>;
   /** The same answer Login gives, re-read. It is how a client asks whether anything has changed. */
   currentUser(userId: string): Promise<SessionUser>;
 }
@@ -92,6 +94,26 @@ export const createAuthService = ({
 
     await refreshTokenStore.markUsed(stored._id);
     return tokenPair.issue(user._id.toString(), stored.family);
+  },
+
+  /**
+   * Signing out revokes the token family the caller presented and nothing else, so the person's
+   * other devices keep their own sessions. It touches no account data: the user, their company and
+   * their history are untouched, and the account can sign in again immediately.
+   *
+   * Every path resolves, including a missing, malformed or already-revoked token. A logout that
+   * answered differently for a real family than an imaginary one would let a caller probe for them.
+   */
+  async logout(rawRefreshToken) {
+    if (rawRefreshToken === undefined) return;
+
+    const claims = refreshTokens.verify(rawRefreshToken);
+    if (claims === null) return;
+
+    const stored = await refreshTokenStore.findByHash(refreshTokenStore.hash(rawRefreshToken));
+    if (stored === null) return;
+
+    await refreshTokenStore.revokeFamily(stored.family);
   },
 
   /**

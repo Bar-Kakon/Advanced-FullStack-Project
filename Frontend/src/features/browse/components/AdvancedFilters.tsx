@@ -1,6 +1,6 @@
 import { useLanguage } from '../../../i18n/useLanguage';
 import type { BrowseState } from '../useBrowse';
-import { PlaceAutocomplete } from './PlaceAutocomplete';
+import { PlaceAutocomplete } from '../../../location/PlaceAutocomplete';
 
 const KM_STEPS = [10, 25, 50, 75, 100, 150, 200];
 const STARS = [5, 4, 3, 2, 1];

@@ -183,35 +183,6 @@
 .pp-work__title { font-size: 15px; font-weight: 600; overflow-wrap: anywhere; }
 .pp-work__meta { font-size: 13.5px; color: var(--text-soft); overflow-wrap: anywhere; }
 
-/* ═══ Structured place field ═══ */
-.place-field { position: relative; }
-.place-field__chosen {
-  display: flex; align-items: center; justify-content: space-between; gap: 8px;
-  padding: 8px 12px;
-  background: var(--background);
-  border: 1px solid var(--secondary-45);
-  border-radius: var(--r-sm);
-}
-.place-field__name { font-size: 14.5px; overflow-wrap: anywhere; }
-.place-field__list {
-  position: absolute; inset-inline: 0; z-index: 20;
-  margin-block-start: 4px; padding: 4px;
-  list-style: none;
-  max-height: 240px; overflow-y: auto;
-  background: var(--surface);
-  border: 1px solid var(--secondary-45);
-  border-radius: var(--r-sm);
-  box-shadow: var(--shadow-lift);
-}
-.place-field__note { padding: 8px 10px; font-size: 14px; color: var(--text-soft); }
-.place-field__option {
-  display: block; width: 100%; text-align: start;
-  padding: 8px 10px; font-size: 14.5px;
-  background: none; border: 0; border-radius: var(--r-sm); cursor: pointer;
-  color: var(--text);
-}
-.place-field__option:hover, .place-field__option.is-active { background: var(--background); }
-
 .notice--warn {
   display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;
   color: var(--text);

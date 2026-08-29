@@ -16,12 +16,14 @@ import { EquipmentPicker } from './components/EquipmentPicker';
 import { RatingsPanel } from './components/RatingsPanel';
 import { TrustPanel } from './components/TrustPanel';
 import { WorkEntryForm } from './components/WorkEntryForm';
+import { LocationField } from '../../location/LocationField';
 import { initialsOf } from './profileModel';
 import { fromProfile, useEditProfileForm } from './useEditProfileForm';
 import { useMyProfile } from './useMyProfile';
 import { useProfileSave } from './useProfileSave';
 import profileCss from './profile.css?inline';
 import editProfileCss from './edit-profile.css?inline';
+import placeCss from '../../location/place.css?inline';
 
 /** Bounds the backend already enforces on the same values where it accepts them at Register. */
 const MAX = { name: 100, companyName: 120, city: 80, phone: 30, specialtyOther: 60, bio: 600 } as const;
@@ -29,7 +31,7 @@ const MAX = { name: 100, companyName: 120, city: 80, phone: 30, specialtyOther: 
 const EMPTY_FORM = fromProfile({
   firstName: '', lastName: '', email: '', language: 'he', profileComplete: false,
   bio: '', specialties: [], specialtyOther: '', businessPhone: '', city: '',
-  region: null, travelRadiusKm: null, delayToleranceDays: null, noticeRequiredDays: null,
+  region: null, place: null, travelRadiusKm: null, delayToleranceDays: null, noticeRequiredDays: null,
   avatarUrl: null, companyName: null, officePhone: null, availability: null,
   standing: null, companyPosition: null, companyMembershipActive: false,
   rating: null, flexibility: null, ratings: [], work: [],
@@ -56,6 +58,7 @@ export const EditProfilePage = () => {
   useScreenStylesheet(
     { id: 'profile.css', css: profileCss },
     { id: 'edit-profile.css', css: editProfileCss },
+    { id: 'place.css', css: placeCss },
   );
   useDocumentTitle('עריכת הפרופיל / Edit profile — FieldSync');
 
@@ -322,12 +325,14 @@ export const EditProfilePage = () => {
                 <h2 id="location-title" className="panel__title">{t.editProfile.location.title}</h2>
                 <p className="panel__lede">{t.editProfile.location.lede}</p>
 
-                <EditText
-                  id="city" label={t.editProfile.location.city}
-                  placeholder={t.editProfile.location.cityPlaceholder} dir="auto" required
-                  autoComplete="address-level2" maxLength={MAX.city} value={values.city}
-                  onChange={(v) => setValue('city', v)} onBlur={() => markTouched('city')}
-                  touched={!!touched.city}
+                <LocationField
+                  label={t.editProfile.location.city}
+                  placeholder={t.editProfile.location.cityPlaceholder}
+                  place={values.place}
+                  city={values.city}
+                  onPlace={(place) => setValue('place', place)}
+                  onCity={(city) => setValue('city', city)}
+                  required
                 />
 
                 <EditSelect<Region | ''>

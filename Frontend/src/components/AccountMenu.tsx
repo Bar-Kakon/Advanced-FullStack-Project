@@ -33,9 +33,9 @@ export const AccountMenu = ({ name, initials }: { name: string; initials: string
   }, [close, navigate]);
 
   /* The session is ended first, so the route guard sees a signed-out state when Login renders. */
-  const logOut = useCallback((): void => {
+  const logOut = useCallback(async (): Promise<void> => {
     close();
-    signOut();
+    await signOut();
     navigate('/login', { replace: true });
   }, [close, navigate, signOut]);
 
@@ -92,7 +92,7 @@ export const AccountMenu = ({ name, initials }: { name: string; initials: string
 
         <Divider />
 
-        <MenuItem onClick={logOut}>
+        <MenuItem onClick={() => void logOut()}>
           <ListItemText>{t.nav.account.logOut}</ListItemText>
         </MenuItem>
       </Menu>

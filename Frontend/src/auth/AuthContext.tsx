@@ -1,5 +1,6 @@
 import { createContext, useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 
+import { logout } from '../api/auth.api';
 import type { LoginResponse, SessionUser } from '../api/types';
 import { ACCESS_TOKEN_KEY, clearAccessToken, getAccessToken, setAccessToken } from './tokenStorage';
 import { USER_KEY, clearStoredUser, readStoredUser, storeUser } from './session';
@@ -29,7 +30,7 @@ export interface AuthValue {
   signIn(response: LoginResponse): void;
   /** Replaces the cached identity with a fresher read of the same thing. No token is touched. */
   setUser(user: SessionUser): void;
-  signOut(): void;
+  signOut(): Promise<void>;
 }
 
 export const AuthContext = createContext<AuthValue | null>(null);
@@ -67,10 +68,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     [reread],
   );
 
-  const signOut = useCallback((): void => {
-    clearAccessToken();
-    clearStoredUser();
-    reread();
+  /**
+   * The server is asked first, so the refresh cookie and its token family are really gone. The
+   * local clear happens either way: a failed request must never leave somebody looking signed in
+   * with credentials they asked to give up.
+   */
+  const signOut = useCallback(async (): Promise<void> => {
+    try {
+      await logout();
+    } catch (error) {
+      console.error('Sign-out could not reach the server; clearing this device anyway.', error);
+    } finally {
+      clearAccessToken();
+      clearStoredUser();
+      reread();
+    }
   }, [reread]);
 
   const value = useMemo<AuthValue>(

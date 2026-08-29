@@ -23,6 +23,7 @@ import { useBrowse } from './useBrowse';
 import profileCss from '../profile/profile.css?inline';
 import editProfileCss from '../profile/edit-profile.css?inline';
 import browseCss from './browse.css?inline';
+import placeCss from '../../location/place.css?inline';
 
 export const BrowsePage = () => {
   const { t } = useLanguage();
@@ -43,6 +44,7 @@ export const BrowsePage = () => {
     { id: 'profile.css', css: profileCss },
     { id: 'edit-profile.css', css: editProfileCss },
     { id: 'browse.css', css: browseCss },
+    { id: 'place.css', css: placeCss },
   );
   useDocumentTitle('עיון בקבלנים / Browse contractors — FieldSync');
 

@@ -1,11 +1,15 @@
 import { useEffect, useRef, useState } from 'react';
 
-import type { StructuredPlace } from '../../api/browse.types';
+import { useLanguage } from '../i18n/useLanguage';
+import type { StructuredPlace } from './place.types';
 
 const PLACES_KEY = import.meta.env['VITE_GOOGLE_MAPS_API_KEY'] as string | undefined;
 const AUTOCOMPLETE_URL = 'https://places.googleapis.com/v1/places:autocomplete';
 const PLACE_DETAILS_URL = 'https://places.googleapis.com/v1/places';
 const DEBOUNCE_MS = 300;
+
+/** Whether a browser Places key was configured at all. Screens degrade to free text without one. */
+export const placesConfigured = Boolean(PLACES_KEY);
 
 interface Suggestion {
   readonly placePrediction?: { readonly placeId?: string; readonly text?: { readonly text?: string } };
@@ -17,8 +21,13 @@ interface Suggestion {
  *
  * A prediction carries no coordinates, so the chosen place is resolved to its details before it
  * leaves this hook — which is what lets the rest of the app treat a place as always structured.
+ *
+ * Results are asked for in the interface language, and the language is part of the effect's
+ * dependencies: switching it re-runs the search and clears what the previous locale returned, so a
+ * Hebrew screen never keeps showing English names.
  */
 export const usePlacesAutocomplete = (query: string) => {
+  const { lang } = useLanguage();
   const [suggestions, setSuggestions] = useState<readonly StructuredPlace[]>([]);
   const [searching, setSearching] = useState(false);
   const [unavailable, setUnavailable] = useState(!PLACES_KEY);
@@ -38,6 +47,8 @@ export const usePlacesAutocomplete = (query: string) => {
     const ticket = ++sequence.current;
     const controller = new AbortController();
     setSearching(true);
+    // Anything the previous language produced is wrong the moment the language changes.
+    setSuggestions([]);
 
     const timer = setTimeout(() => {
       void (async () => {
@@ -46,7 +57,12 @@ export const usePlacesAutocomplete = (query: string) => {
             method: 'POST',
             signal: controller.signal,
             headers: { 'Content-Type': 'application/json', 'X-Goog-Api-Key': PLACES_KEY },
-            body: JSON.stringify({ input: query, includedRegionCodes: ['il'] }),
+            body: JSON.stringify({
+              input: query,
+              includedRegionCodes: ['il'],
+              languageCode: lang,
+              regionCode: 'IL',
+            }),
           });
           if (!response.ok) throw new Error(String(response.status));
 
@@ -58,7 +74,7 @@ export const usePlacesAutocomplete = (query: string) => {
           const detailed = await Promise.all(
             predictions.slice(0, 6).map(async (prediction) => {
               const details = await fetch(
-                `${PLACE_DETAILS_URL}/${encodeURIComponent(prediction.placeId!)}`,
+                `${PLACE_DETAILS_URL}/${encodeURIComponent(prediction.placeId!)}?languageCode=${lang}&regionCode=IL`,
                 {
                   signal: controller.signal,
                   headers: {
@@ -110,7 +126,7 @@ export const usePlacesAutocomplete = (query: string) => {
       clearTimeout(timer);
       controller.abort();
     };
-  }, [query]);
+  }, [query, lang]);
 
   return { suggestions, searching, unavailable };
 };

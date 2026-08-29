@@ -1,5 +1,7 @@
 import Joi from 'joi';
 
+import { structuredPlaceSchema, type StructuredPlaceBody } from '../location/place.validation.js';
+
 import { REGIONS, TRADES, type Region, type Trade } from './user.model.js';
 import { AVAILABILITY_STATUSES, type Availability } from '../companies/company.model.js';
 
@@ -23,6 +25,7 @@ export interface ProfileUpdateBody {
   readonly businessPhone?: string | null;
   readonly city?: string;
   readonly region?: Region;
+  readonly place?: StructuredPlaceBody;
   readonly travelRadiusKm?: number;
   readonly delayToleranceDays?: number;
   readonly noticeRequiredDays?: number;
@@ -52,6 +55,7 @@ export const profileUpdateBodySchema = Joi.object<ProfileUpdateBody>({
 
   city: Joi.string().trim().min(1).max(MAX_CITY_LENGTH),
   region: Joi.string().valid(...REGIONS),
+  place: structuredPlaceSchema,
   travelRadiusKm: Joi.number().integer().min(0).max(500),
 
   delayToleranceDays: Joi.number().integer().min(0).max(30),

@@ -258,6 +258,11 @@ export const he = {
     },
   },
 
+  location: {
+    legacyCity: 'המיקום השמור שלכם הוא "{city}" בלבד, בלי מיקום על המפה. בחרו מקום מהרשימה כדי להוסיף אותו.',
+    unavailableFallback: 'חיפוש המקומות אינו זמין כרגע, ולכן אפשר להקליד את שם היישוב.',
+  },
+
   /** The app navbar, shared by every authenticated screen. */
   nav: {
     home: 'FieldSync — דף הבית',

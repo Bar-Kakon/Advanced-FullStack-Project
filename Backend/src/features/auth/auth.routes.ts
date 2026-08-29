@@ -42,6 +42,9 @@ export const createAuthRouter = (
   // its own, and rotation plus family revocation already answer a replayed one.
   router.post('/refresh', controller.handleRefresh);
 
+  // Unauthenticated on purpose: an expired Access Token must not trap somebody in a session.
+  router.post('/logout', controller.handleLogout);
+
   // The only authenticated route in this feature, and the only one that reads rather than writes.
   router.get('/me', requireAccessToken, controller.handleMe);
 

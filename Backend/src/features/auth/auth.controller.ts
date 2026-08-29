@@ -17,6 +17,7 @@ export interface AuthController {
   readonly handleRegister: RequestHandler;
   readonly handleLogin: RequestHandler;
   readonly handleRefresh: RequestHandler;
+  readonly handleLogout: RequestHandler;
   readonly handleMe: RequestHandler;
   readonly handleForgotPassword: RequestHandler;
   readonly handleResetPassword: RequestHandler;
@@ -68,6 +69,17 @@ export const createAuthController = ({
 
       sendRefreshToken(res, refreshToken);
       res.json({ accessToken });
+    },
+
+    /**
+     * Always 204, whether or not the cookie named a live session. The cookie is cleared either
+     * way, so a client that repeats this is in the same state as one that did it once.
+     */
+    handleLogout: async (req: Request, res: Response) => {
+      await authService.logout(cookie.read(req));
+
+      res.clearCookie(REFRESH_TOKEN_COOKIE, cookie.clearOptions);
+      res.status(204).send();
     },
 
     /** A read: who the caller is now. Nothing is issued and the Refresh cookie is untouched. */

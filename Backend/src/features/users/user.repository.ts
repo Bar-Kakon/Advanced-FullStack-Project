@@ -40,7 +40,7 @@ export interface NewUser {
   readonly specialties: readonly Trade[];
   readonly specialtyOther?: string;
   readonly businessPhone?: string;
-  readonly location: { readonly city: string; readonly region: Region };
+  readonly location: { readonly city: string; readonly region: Region; readonly place?: StoredPlace };
   readonly termsAcceptances: readonly TermsAcceptance[];
 }
 
@@ -54,6 +54,8 @@ export interface ProfileUpdate {
   readonly businessPhone?: string | null;
   readonly city?: string;
   readonly region?: Region;
+  /** Written only when the person picked a real Google place; never derived from `city`. */
+  readonly place?: StoredPlace;
   readonly travelRadiusKm?: number;
   readonly delayToleranceDays?: number;
   readonly noticeRequiredDays?: number;
@@ -178,6 +180,7 @@ export const userRepository: UserRepository = {
     put('businessPhone', update.businessPhone);
     put('location.city', update.city);
     put('location.region', update.region);
+    put('location.place', update.place);
     put('location.travelRadiusKm', update.travelRadiusKm);
     put('schedulingPrefs.delayToleranceDays', update.delayToleranceDays);
     put('schedulingPrefs.noticeRequiredDays', update.noticeRequiredDays);

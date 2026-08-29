@@ -101,6 +101,7 @@ export const createProfileService = ({
       businessPhone: user.businessPhone ?? '',
       city: user.location?.city ?? '',
       region: user.location?.region ?? null,
+      place: user.location?.place ?? null,
       travelRadiusKm: user.location?.travelRadiusKm ?? null,
       delayToleranceDays: user.schedulingPrefs?.delayToleranceDays ?? null,
       noticeRequiredDays: user.schedulingPrefs?.noticeRequiredDays ?? null,

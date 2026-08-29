@@ -93,7 +93,11 @@ const toNewUser = (input: RegisterBody, passwordHash: string, termsVersion: stri
   firstName: input.firstName,
   lastName: input.lastName,
   specialties: [input.specialty],
-  location: { city: input.city, region: input.region },
+  location: {
+    city: input.city,
+    region: input.region,
+    ...(input.place === undefined ? {} : { place: input.place }),
+  },
   termsAcceptances: [{ version: termsVersion, acceptedAt: new Date() }],
   ...(input.specialtyOther === undefined ? {} : { specialtyOther: input.specialtyOther }),
   ...(input.businessPhone === undefined ? {} : { businessPhone: input.businessPhone }),

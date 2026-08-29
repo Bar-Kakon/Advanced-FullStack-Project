@@ -92,6 +92,14 @@ export const fetchCurrentUser = async (): Promise<SessionUser> => {
  */
 export type ForgotPasswordFailure = 'NETWORK' | 'UNKNOWN';
 
+/**
+ * Ends the session on the server: the refresh-token family is revoked and its cookie cleared.
+ * Answers 204 whether or not there was a live session, so nothing here can probe for one.
+ */
+export const logout = async (): Promise<void> => {
+  await api.post('/auth/logout');
+};
+
 export const requestPasswordReset = async (payload: ForgotPasswordPayload): Promise<void> => {
   await api.post<StatusResponse>('/auth/forgot-password', payload);
 };

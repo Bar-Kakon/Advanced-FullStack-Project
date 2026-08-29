@@ -145,7 +145,12 @@ export const MyProfilePage = () => {
                     them in either direction. Each is reported empty on its own terms. */}
                 <Fact label={t.profile.details.officePhone} value={profile.officePhone || null} dir="ltr" />
                 <Fact label={t.profile.details.businessPhone} value={profile.businessPhone || null} dir="ltr" />
-                <Fact label={t.profile.details.city} value={profile.city || null} dir="auto" />
+                {/* A chosen place names itself; an account that only ever typed a city shows that. */}
+                <Fact
+                  label={t.profile.details.city}
+                  value={profile.place?.displayName ?? (profile.city || null)}
+                  dir="auto"
+                />
                 <Fact
                   label={t.profile.details.region}
                   value={profile.region === null ? null : t.regions[profile.region]}

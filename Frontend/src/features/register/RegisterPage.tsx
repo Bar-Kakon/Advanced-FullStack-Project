@@ -8,6 +8,7 @@ import { useScreenStylesheet } from '../../styles/useScreenStylesheet';
 import { RegisterForm } from './RegisterForm';
 import { useRegisterForm } from './useRegisterForm';
 import registerCss from './register.css?inline';
+import placeCss from '../../location/place.css?inline';
 
 /**
  * The Register screen: the brand panel, the card, and the form.
@@ -24,7 +25,10 @@ import registerCss from './register.css?inline';
 export const RegisterPage = () => {
   const { t } = useLanguage();
   const navigate = useNavigate();
-  useScreenStylesheet({ id: 'register.css', css: registerCss });
+  useScreenStylesheet(
+    { id: 'register.css', css: registerCss },
+    { id: 'place.css', css: placeCss },
+  );
   useDocumentTitle('יצירת חשבון / Create account — FieldSync');
 
   const onSuccess = useCallback((): void => {

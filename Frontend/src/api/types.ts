@@ -1,3 +1,4 @@
+import type { StructuredPlace } from '../location/place.types';
 /**
  * The Register wire contract, mirrored from `Backend/src/features/auth/auth.validation.ts`.
  *
@@ -69,6 +70,8 @@ export interface RegisterPayload {
   readonly availability?: Availability;
   /** The server only accepts `true`, and records the consent against its own Terms version. */
   readonly acceptedTerms: true;
+  /** The structured place behind `city`, when the browser resolved one. */
+  readonly place?: StructuredPlace;
 }
 
 /**

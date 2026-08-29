@@ -15,6 +15,7 @@
     "verify:register-txn": "tsx scripts/verify-register-transaction.ts",
     "verify:password-reset": "tsx scripts/verify-password-reset.ts",
     "verify:rate-limit": "tsx scripts/verify-rate-limit.ts",
+    "verify:logout": "tsx scripts/verify-logout.ts",
     "verify:employee-lifecycle": "tsx scripts/verify-employee-lifecycle.ts",
     "verify:invitation-lifecycle": "tsx scripts/verify-invitation-lifecycle.ts",
     "verify:owner-main-contractor": "tsx scripts/verify-owner-main-contractor.ts",

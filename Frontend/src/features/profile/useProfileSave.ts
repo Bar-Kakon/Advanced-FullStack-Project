@@ -25,6 +25,7 @@ export const buildProfilePatch = (values: EditProfileValues, saved: Profile): Pr
   if (values.bio !== saved.bio) patch.bio = values.bio;
   if (trimmed(values.city) !== saved.city) patch.city = trimmed(values.city);
   if (values.region !== '' && values.region !== saved.region) patch.region = values.region;
+  if (values.place !== null && values.place.placeId !== saved.place?.placeId) patch.place = values.place;
 
   const specialtiesChanged =
     values.specialties.length !== saved.specialties.length

@@ -15,7 +15,7 @@ import type {
   StructuredPlace,
   TravelProposal,
 } from '../../../api/browse.types';
-import { PlaceAutocomplete } from './PlaceAutocomplete';
+import { PlaceAutocomplete } from '../../../location/PlaceAutocomplete';
 
 const KM_STEPS = [10, 25, 50, 75, 100, 150, 200];
 

@@ -13,6 +13,8 @@ const COOKIE_PATH = '/api/auth';
 export interface RefreshTokenCookie {
   readonly options: CookieOptions;
   read(req: Request): string | undefined;
+  /** The same attributes without a lifetime, which is what a browser needs to drop the cookie. */
+  readonly clearOptions: CookieOptions;
 }
 
 /**
@@ -24,7 +26,15 @@ export interface RefreshTokenCookie {
 export const createRefreshTokenCookie = (nodeEnv: NodeEnv, ttlSeconds: number): RefreshTokenCookie => {
   const isProduction = nodeEnv === 'production';
 
+  const attributes: CookieOptions = {
+    httpOnly: true,
+    secure: isProduction,
+    sameSite: isProduction ? 'none' : 'lax',
+    path: COOKIE_PATH,
+  };
+
   return {
+    clearOptions: attributes,
     options: {
       httpOnly: true,
       secure: isProduction,

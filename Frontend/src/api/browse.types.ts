@@ -1,3 +1,4 @@
+import type { StructuredPlace } from '../location/place.types';
 import type { Availability, CompanyPosition, Region, Trade } from './types';
 
 /** The four Browse states, mirrored from `relationship.service.ts`. Blocked is never among them. */
@@ -6,14 +7,7 @@ export const RELATIONSHIP_STATES = [
 ] as const;
 export type RelationshipState = (typeof RELATIONSHIP_STATES)[number];
 
-export interface StructuredPlace {
-  readonly placeId: string;
-  readonly displayName: string;
-  readonly city?: string;
-  readonly adminArea?: string;
-  readonly latitude: number;
-  readonly longitude: number;
-}
+export type { StructuredPlace } from '../location/place.types';
 
 export interface ContractorSummary {
   readonly userId: string;

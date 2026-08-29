@@ -1,5 +1,7 @@
 import Joi from 'joi';
 
+import { structuredPlaceSchema, type StructuredPlaceBody } from '../location/place.validation.js';
+
 import { AVAILABILITY_STATUSES, type Availability } from '../companies/company.model.js';
 import {
   COMPANY_POSITIONS,
@@ -42,6 +44,8 @@ export interface RegisterBody {
   readonly region: Region;
   readonly officePhone?: string;
   readonly businessPhone?: string;
+  /** Optional: the structured place behind `city`, when the browser resolved one. */
+  readonly place?: StructuredPlaceBody;
   readonly availability?: Availability;
   readonly acceptedTerms: true;
 }
@@ -159,6 +163,7 @@ export const registerBodySchema = Joi.object<RegisterBody>({
     otherwise: Joi.string().trim().max(MAX_PHONE_LENGTH).optional(),
   }),
   businessPhone: Joi.string().trim().max(MAX_PHONE_LENGTH).optional(),
+  place: structuredPlaceSchema.optional(),
 
   /*
    * D14, closed: availability is the ORGANIZATION's work availability, "controlled by the

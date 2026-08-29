@@ -1,3 +1,4 @@
+import type { StructuredPlace } from '../../location/place.types';
 import type {
   Availability,
   CompanyPosition,
@@ -18,6 +19,7 @@ export interface RegisterFormValues {
   specialty: Trade | '';
   specialtyOther: string;
   city: string;
+  place: StructuredPlace | null;
   region: Region | '';
   officePhone: string;
   businessPhone: string;
@@ -38,6 +40,7 @@ export const emptyRegisterForm: RegisterFormValues = {
   specialty: '',
   specialtyOther: '',
   city: '',
+  place: null,
   region: '',
   officePhone: '',
   businessPhone: '',
@@ -97,6 +100,7 @@ export const buildRegisterPayload = (values: RegisterFormValues): RegisterPayloa
     specialty: values.specialty,
     ...(values.specialty === 'other' && specialtyOther ? { specialtyOther } : {}),
     city: values.city.trim(),
+    ...(values.place === null ? {} : { place: values.place }),
     region: values.region,
     ...(!isEmployee && officePhone ? { officePhone } : {}),
     ...(businessPhone ? { businessPhone } : {}),
