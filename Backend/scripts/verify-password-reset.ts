@@ -126,38 +126,27 @@ const run = async (): Promise<void> => {
   check('no companyPosition was invented from the registration',
     ownerMembership?.companyPosition === undefined, String(ownerMembership?.companyPosition));
 
-  const employeeEmail = `${MARKER}-employee@example.com`;
-  const employee = await post('/auth/register', {
-    firstName: 'Emp', lastName: 'Loyee', standing: 'employee', email: employeeEmail,
-    password: OLD_PASSWORD, confirmPassword: OLD_PASSWORD,
-    specialty: 'drilling', city: 'חיפה', region: 'haifa', acceptedTerms: true,
-  });
-  check('an employee registration is accepted', employee.status === 201, JSON.stringify(employee.body));
-  const employeeId = (await UserModel.findOne({ email: employeeEmail }).select('_id').lean())?._id;
-  check('the employee account exists', !!employeeId);
-  if (!employeeId) throw new Error('the employee account was not created');
-  check('the employee holds NO company membership at all',
-    (await CompanyMembershipModel.countDocuments({ user: employeeId })) === 0);
-  check('no company was created for the employee',
-    (await CompanyModel.countDocuments({ name: { $regex: 'Loyee|Emp' } })) === 0);
-  check('the employee registration issued no session either',
-    !('accessToken' in employee.body) && employee.setCookie === null);
-
+  // The employee lifecycle itself is verified by `verify:employee-lifecycle`; what matters here is
+  // that a registration naming a real company with no seat waiting for it creates nothing.
   const namedCompany = await post('/auth/register', {
     firstName: 'Sneak', lastName: 'In', standing: 'employee', companyName: COMPANY,
+    companyPosition: 'employee',
     email: `${MARKER}-sneak@example.com`, password: OLD_PASSWORD, confirmPassword: OLD_PASSWORD,
     specialty: 'drilling', city: 'חיפה', region: 'haifa', acceptedTerms: true,
   });
-  check('typing a real company name as an employee is REFUSED, not ignored',
-    namedCompany.status === 400 && namedCompany.body['code'] === 'REQUEST_VALIDATION_FAILED',
+  check('typing a real company name with no invitation waiting creates nothing',
+    namedCompany.status === 409 && namedCompany.body['code'] === 'INVITATION_NOT_FOUND',
     `${namedCompany.status} ${String(namedCompany.body['code'])}`);
+  check('and no account was created for that attempt',
+    (await UserModel.countDocuments({ email: `${MARKER}-sneak@example.com` })) === 0);
 
   const employeeAvailability = await post('/auth/register', {
-    firstName: 'A', lastName: 'B', standing: 'employee', availability: 'open',
+    firstName: 'A', lastName: 'B', standing: 'employee', companyName: COMPANY,
+    companyPosition: 'employee', availability: 'open',
     email: `${MARKER}-avail@example.com`, password: OLD_PASSWORD, confirmPassword: OLD_PASSWORD,
     specialty: 'drilling', city: 'חיפה', region: 'haifa', acceptedTerms: true,
   });
-  check('an employee cannot set the business availability', employeeAvailability.status === 400);
+  check('an employee still cannot set the business availability', employeeAvailability.status === 400);
 
   const badStanding = await post('/auth/register', {
     firstName: 'A', lastName: 'B', standing: 'admin', companyName: 'X',

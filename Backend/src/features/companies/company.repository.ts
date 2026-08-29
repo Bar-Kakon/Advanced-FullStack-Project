@@ -11,6 +11,8 @@ export interface NewCompany {
 
 export interface CompanyRepository {
   create(company: NewCompany, session?: DbSession): Promise<Types.ObjectId>;
+  /** Every company holding this name. The name is not unique, so this returns a list. */
+  findIdsByName(name: string): Promise<Types.ObjectId[]>;
 }
 
 /**
@@ -23,5 +25,9 @@ export const companyRepository: CompanyRepository = {
     if (created === undefined) throw new Error('Company insert returned no document.');
 
     return created._id;
+  },
+
+  async findIdsByName(name) {
+    return CompanyModel.find({ name }).distinct('_id');
   },
 };

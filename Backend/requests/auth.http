@@ -179,30 +179,58 @@ Content-Type: application/json
   "passwordHash": "$2b$12$attackerControlledHash", "companyStanding": "member"
 }
 
-### Employee registration — 201, and it creates NO company and NO membership.
-### There is no invitation endpoint yet, so an employee has no company relationship to claim.
+### ── Employee lifecycle: invite → register → approve ────────────────────────
+### Run `npm run verify:employee-lifecycle` for the whole thing asserted end to end.
+
+### 1. The owner opens a seat — 201 { invitationId }. Needs company.invite_employees.
+# @name invitation
+POST {{host}}/companies/employees/invitations
+Content-Type: application/json
+Authorization: Bearer {{login.response.body.accessToken}}
+
+{ "fullName": "Erez Employee", "companyPosition": "site_manager" }
+
+### 2. The invited employee registers — 201 { user }. The seat becomes pending_company_approval.
+### The company name only narrows the search; the seat is matched on name + position as well.
 POST {{host}}/auth/register
 Content-Type: application/json
 
 {
-  "firstName": "Emp", "lastName": "Loyee", "standing": "employee",
-  "email": "employee@example.com",
+  "firstName": "Erez", "lastName": "Employee", "standing": "employee",
+  "companyName": "לוי עבודות חשמל בע\"מ", "companyPosition": "site_manager",
+  "email": "erez@example.com",
   "password": "CorrectHorse42!", "confirmPassword": "CorrectHorse42!",
   "specialty": "electrical", "city": "חיפה", "region": "haifa", "acceptedTerms": true
 }
 
-### Employee sending a real company name — 400 REQUEST_VALIDATION_FAILED.
-### A public company name is not proof of employment, so the field is refused, not ignored.
+### No seat waiting — 409 INVITATION_NOT_FOUND, and NOTHING is written.
+### Typing a real company name is not proof of employment.
 POST {{host}}/auth/register
 Content-Type: application/json
 
 {
   "firstName": "Sneak", "lastName": "In", "standing": "employee",
-  "companyName": "לוי עבודות חשמל בע\"מ",
+  "companyName": "לוי עבודות חשמל בע\"מ", "companyPosition": "contractor",
   "email": "sneak@example.com",
   "password": "CorrectHorse42!", "confirmPassword": "CorrectHorse42!",
   "specialty": "electrical", "city": "חיפה", "region": "haifa", "acceptedTerms": true
 }
+
+### 3. The owner sees who is waiting — 200
+GET {{host}}/companies/employees
+Authorization: Bearer {{login.response.body.accessToken}}
+
+### 4a. Approve one — 200 { approved: 1 }
+POST {{host}}/companies/employees/{{invitation.response.body.invitationId}}/approve
+Authorization: Bearer {{login.response.body.accessToken}}
+
+### 4b. Or approve every waiting activation at once — 200 { approved: n }
+POST {{host}}/companies/employees/approve-all
+Authorization: Bearer {{login.response.body.accessToken}}
+
+### An employee approving themselves — 403 NO_ACTIVE_COMPANY (they are not active yet)
+POST {{host}}/companies/employees/approve-all
+Authorization: Bearer PASTE_THE_PENDING_EMPLOYEE_ACCESS_TOKEN
 
 ### Unknown standing — 400 REQUEST_VALIDATION_FAILED
 POST {{host}}/auth/register

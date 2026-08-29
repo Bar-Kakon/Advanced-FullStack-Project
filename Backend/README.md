@@ -49,6 +49,7 @@ node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"
 | `npm run verify:register-txn` | Proves the Register transaction is all-or-nothing (needs a database) |
 | `npm run verify:password-reset` | Walks Register → Login → forgot → reset → Login against the running server and the real database. **Needs a freshly started server** — it spends much of the auth rate-limit budget |
 | `npm run verify:rate-limit` | Proves each auth limiter fires, at its configured budget, through the project error contract. **Needs a freshly started server** |
+| `npm run verify:employee-lifecycle` | Walks invite → employee registers → `pending_company_approval` → owner approves → `active`, including the bulk approval. **Needs a freshly started server** |
 
 Verify it is up:
 
@@ -113,6 +114,7 @@ src/
 │           ├── accessToken.service.ts  issue + verify Access Tokens
 │           ├── refreshToken.service.ts issue + verify Refresh Tokens
 │           └── tokenPair.service.ts    sign a pair and record it — shared by Register and Login
+│   └── companies/         company, membership, and the employee-management module
 ├── mail/
 │   ├── mailer.ts          Nodemailer over Brevo SMTP, or log mode when unconfigured
 │   └── passwordResetEmail.ts  the reset message, composed in one place
@@ -162,24 +164,74 @@ Register has always created.
 
 | | `standing: 'owner'` | `standing: 'employee'` |
 |---|---|---|
-| Writes | company + user + owner membership | **the user, and nothing else** |
-| `companyName` | **required** | **refused** |
-| `officePhone` | optional | **refused** |
-| `availability` | optional, defaults `open` | **refused** |
+| Writes | company + user + owner membership | user, and **claims an existing seat** |
+| `companyName` | required — the business being created | required — the business that invited them, **matched, never trusted** |
+| `companyPosition` | refused | **required** — part of what identifies the seat |
+| `officePhone` · `availability` | optional | **refused** — they belong to the business |
+| Membership status | `active` | `pending_company_approval` |
 | Permissions | the four approved owner defaults | **none** |
 
-**Why an employee registration creates no membership.** A company name is public, so accepting one
-as evidence of employment would hand anybody a seat in any business. The approved path is an owner
-opening an `invited` seat that a later registration claims — and **no endpoint creates one yet**, so
-an employee registration currently produces an account with no company relationship. That is a
-reported gap, not a design.
+### The employee lifecycle
 
-**The three company-scoped fields are refused rather than ignored**, using the same `Joi.when` idiom
-`specialtyOther` already uses. Refusing is the security property: the endpoint cannot receive a
-company name on a path that could act on it.
+```
+  OWNER                                    EMPLOYEE
+    │
+    │ POST /companies/employees/invitations
+    │   { fullName, companyPosition }
+    ▼
+  ┌──────────┐   no user yet. The seat records the name and the job
+  │ invited  │   it will be matched on, and carries no permissions.
+  └──────────┘
+    │                                         │ POST /auth/register
+    │                                         │   standing: employee
+    │                                         │   companyName + companyPosition + full name
+    │                                         ▼
+    │   ┌───────────────────────────────────────────────────────┐
+    │   │ match: a company of that NAME, an `invited` seat with  │
+    │   │ that invitedFullName and that companyPosition          │
+    │   │   no match  ──► 409 INVITATION_NOT_FOUND, nothing written
+    │   │   >1 match  ──► 409 INVITATION_AMBIGUOUS
+    │   └───────────────────────────────────────────────────────┘
+    │                                         ▼
+    │                          ┌──────────────────────────┐
+    │                          │ pending_company_approval │  bound to the account,
+    │                          └──────────────────────────┘  still not a member
+    │ POST /companies/employees/:id/approve            │
+    │ POST /companies/employees/approve-all            │
+    ▼                                                  ▼
+  ┌────────┐  active. Still no permissions — approval admits them,
+  │ active │  it does not grant them anything.
+  └────────┘
+```
 
-**No authority is ever inferred.** Not from `standing`, and not from `companyPosition` — which
-public Register does not set at all.
+**A company name alone never grants membership.** It only narrows the search for a seat somebody
+already opened, and the name is not unique, so every company holding it is searched and **more than
+one match is refused rather than guessed at**. There is no email, phone or one-time-code matching:
+none of those is part of the model.
+
+**Nothing is written when no seat matches.** The match runs *before* the transaction, so a
+registration with no invitation creates no user, no company and no membership. The claim itself is
+conditional on the seat still being `invited`, so two registrations racing for one seat cannot both
+win, and it commits inside the same transaction as the account.
+
+**Authority never comes from standing or from a job title.** `companyPosition` is descriptive.
+Capabilities come only from `permissions`, and an employee is created with none — approval does not
+change that. Project and task creation need `project.create` / `task.create`, granted explicitly.
+
+### Employee management endpoints
+
+All authenticated, and all authorised by the caller's own recorded `company.invite_employees`
+permission on an **active** membership — never by their standing and never by their position.
+
+| Route | Does |
+|---|---|
+| `POST /api/companies/employees/invitations` | opens a seat: `{ fullName, companyPosition }` |
+| `GET /api/companies/employees` | this company's memberships, so the owner can see who is waiting |
+| `POST /api/companies/employees/:membershipId/approve` | one activation → `active` |
+| `POST /api/companies/employees/approve-all` | every waiting activation at once |
+
+`COMPANY_PERMISSION_DENIED` (403) when the permission is missing, `NO_ACTIVE_COMPANY` (403) when the
+caller has no active membership, `PENDING_ACTIVATION_NOT_FOUND` (404) when nothing matched.
 
 One owner signup writes **three** documents inside **one transaction**:
 
@@ -455,35 +507,31 @@ Two indexes carry the rules: `{ company, status }` serves "this company's pendin
 a **partial unique** index on `{ user }` where `status: 'active'` enforces **one active relationship
 per person at a time**.
 
-### Not built here — the future employee flow this model must not block
+### The employee flow — built, and what is still owed around it
 
-Public Register creates an **owner** and nothing else. The rest is documented so a later endpoint
-cannot contradict the model, and **none of it is implemented**:
-
-```
- 1. OWNER INVITES         owner adds staff with full name + company position only.
-    (future screen)       The company is known from their own account.
-                          → membership { user: null, status: 'invited' }
-                          → creates NO user account
-
- 2. EMPLOYEE REGISTERS    a separate path: full name + company name + position.
-    (future endpoint)     The backend looks for a matching 'invited' row.
-                          no match  → cannot join that company, full stop
-                          match     → account created, the SAME row becomes
-                                      status: 'pending_company_approval'
-
- 3. OWNER APPROVES        one, several, or all valid pending activations.
-    (future screen)       → status: 'active'
-```
+The lifecycle in [The employee lifecycle](#the-employee-lifecycle) is **implemented**: the owner's
+invitation endpoint, the matching claim inside Register, single approval, and approving every
+waiting activation at once. Approving *several* is the single-approval route called per row; a
+subset endpoint is a small addition if a screen wants one call for it.
 
 Because the pending list is *the invited row itself*, somebody who merely types a company name has
 no row to claim and **can never appear in it**. That is structural, not a filter that could be
 forgotten.
 
-Two further rules recorded here, not implemented: an employee is **not an independent professional
-profile and must not appear in Browse** (Browse selects people holding an `owner` membership), and
-**employee availability is a separate future concept** — it must never reuse or overwrite
-`companies.availability`, and its vocabulary is not invented yet.
+**Still owed around it, and none of it is invented here:**
+
+- **No employee-management screen.** The four endpoints are reachable by API only, so an owner
+  cannot invite or approve from the product yet.
+- **No public Register affordance for the employee path on the web client** beyond the fields the
+  screen now collects — see the client's own notes.
+- **Browse must exclude employees.** Browse selects people holding an `owner` membership, and
+  Browse is not built, so there is nothing to enforce it in yet. The rule is recorded, not coded.
+- **Employee availability is a separate future concept.** It must never reuse or overwrite
+  `companies.availability`, and its vocabulary is not invented yet.
+- **Leaving a company** has no endpoint: `inactive` exists in the enum with no path to it.
+- **A second active membership is refused by the partial unique index**, which surfaces as a driver
+  error rather than a named failure. It cannot happen through Register — a registration creates a
+  new account — so it is a gap that only opens when a joining flow for existing accounts is built.
 
 ### Availability belongs to the business
 
@@ -561,6 +609,11 @@ ahead of the conditions that need it. Everything this branch actually implements
 | `INVALID_REFRESH_TOKEN` | 401 | The Refresh Token was missing, malformed, expired, unknown, already spent, revoked, or was not a Refresh Token |
 | `INVALID_RESET_TOKEN` | 401 | The reset link was unknown, expired, superseded by a newer request, or already spent |
 | `TOO_MANY_REQUESTS` | 429 | An auth endpoint's rate limit was exceeded for the caller's IP |
+| `INVITATION_NOT_FOUND` | 409 | Employee registration matched no open seat |
+| `INVITATION_AMBIGUOUS` | 409 | Employee registration matched more than one open seat |
+| `COMPANY_PERMISSION_DENIED` | 403 | The caller lacks `company.invite_employees` |
+| `NO_ACTIVE_COMPANY` | 403 | The caller holds no active company membership |
+| `PENDING_ACTIVATION_NOT_FOUND` | 404 | No pending activation matched in this company |
 | `INTERNAL_SERVER_ERROR` | 500 | Anything unexpected |
 
 `INVALID_CREDENTIALS` cannot distinguish an unknown account from a wrong password from a suspended

@@ -1,7 +1,12 @@
 import Joi from 'joi';
 
 import { AVAILABILITY_STATUSES, type Availability } from '../companies/company.model.js';
-import { COMPANY_STANDINGS, type CompanyStanding } from '../companies/companyMembership.model.js';
+import {
+  COMPANY_POSITIONS,
+  COMPANY_STANDINGS,
+  type CompanyPosition,
+  type CompanyStanding,
+} from '../companies/companyMembership.model.js';
 import { REGIONS, TRADES, type Region, type Trade } from '../users/user.model.js';
 
 export interface LoginBody {
@@ -23,7 +28,11 @@ export interface RegisterBody {
   readonly lastName: string;
   /** Organizational standing, and nothing else. It is not a permission and not a job title. */
   readonly standing: CompanyStanding;
-  readonly companyName?: string;
+  /** Required either way: an owner names the business they are creating, an employee names the
+   *  one that invited them — and for the employee it is matched, never trusted. */
+  readonly companyName: string;
+  /** Employee only. Part of what identifies the seat being claimed. */
+  readonly companyPosition?: CompanyPosition;
   readonly email: string;
   readonly password: string;
   readonly confirmPassword: string;
@@ -99,10 +108,16 @@ export const registerBodySchema = Joi.object<RegisterBody>({
    * property: a public company name is not proof of employment, so the endpoint must not be able
    * to receive one on a path that could act on it.
    */
-  companyName: Joi.when('standing', {
+  companyName: Joi.string().trim().min(1).max(MAX_COMPANY_NAME_LENGTH).required(),
+
+  // The employee's job, and one of the three values their invitation is matched on. It describes
+  // the role and grants nothing: capabilities come only from `permissions`.
+  companyPosition: Joi.when('standing', {
     is: 'employee',
-    then: Joi.any().forbidden(),
-    otherwise: Joi.string().trim().min(1).max(MAX_COMPANY_NAME_LENGTH).required(),
+    then: Joi.string()
+      .valid(...COMPANY_POSITIONS)
+      .required(),
+    otherwise: Joi.any().forbidden(),
   }),
 
   email,

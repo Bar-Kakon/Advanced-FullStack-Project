@@ -7,14 +7,18 @@ import type {
   NewCompanyMembership,
 } from '../companies/companyMembership.repository.js';
 import type { Availability } from '../companies/company.model.js';
+import type { CompanyPosition } from '../companies/companyMembership.model.js';
 import type { CompanyRepository, NewCompany } from '../companies/company.repository.js';
 import type { UserRecord } from '../users/user.model.js';
 import type { NewUser, UserRepository } from '../users/user.repository.js';
-import { emailAlreadyRegistered } from './auth.errors.js';
+import { emailAlreadyRegistered, invitationAmbiguous, invitationNotFound } from './auth.errors.js';
 import type { RegisterBody } from './auth.validation.js';
 
-/** What the schema guarantees once `standing` is `owner`: the company-scoped fields are present. */
-type OwnerRegisterBody = RegisterBody & { readonly companyName: string; readonly availability: Availability };
+/** What the schema guarantees once `standing` is `owner`: the owner-only fields are present. */
+type OwnerRegisterBody = RegisterBody & { readonly availability: Availability };
+
+/** And once it is `employee`: the two values their invitation is matched on. */
+type EmployeeRegisterBody = RegisterBody & { readonly companyPosition: CompanyPosition };
 import { toAuthenticatedUser, type AuthenticatedUser } from './authenticatedUser.mapper.js';
 import type { PasswordService } from './password.service.js';
 
@@ -111,6 +115,9 @@ const toOwnerMembership = (
 const isOwnerRegistration = (input: RegisterBody): input is OwnerRegisterBody =>
   input.standing === 'owner';
 
+/** The person's own name, as the owner would have typed it when opening the seat. */
+const fullNameOf = (input: RegisterBody): string => `${input.firstName} ${input.lastName}`;
+
 export const createRegistrationService = ({
   users,
   companies,
@@ -118,7 +125,29 @@ export const createRegistrationService = ({
   passwords,
   transactions,
   termsVersion,
-}: RegistrationDependencies): RegistrationService => ({
+}: RegistrationDependencies): RegistrationService => {
+  /**
+   * The approved matching model: an open seat, in a company holding that name, opened for that
+   * person under that job title. Company names are deliberately not unique, so every company of
+   * that name is searched and an ambiguous result is refused rather than guessed at.
+   */
+  const findInvitationFor = async (input: EmployeeRegisterBody): Promise<Types.ObjectId> => {
+    const companyIds = await companies.findIdsByName(input.companyName);
+    if (companyIds.length === 0) throw invitationNotFound();
+
+    const matches = await memberships.findOpenInvitations({
+      companyIds,
+      invitedFullName: fullNameOf(input),
+      companyPosition: input.companyPosition,
+    });
+
+    if (matches.length === 0) throw invitationNotFound();
+    if (matches.length > 1) throw invitationAmbiguous();
+
+    return matches[0]!._id;
+  };
+
+  return {
   /**
    * Three documents, one transaction: the company, the person, and the owner relationship between
    * them all commit together or none of them exists. There is no state in which an account is half
@@ -133,6 +162,15 @@ export const createRegistrationService = ({
 
     const passwordHash = await passwords.hash(input.password);
 
+    /*
+     * An employee claims a seat their employer already opened. The match is made BEFORE the
+     * transaction, so a registration with no invitation writes nothing at all — and the company
+     * name is only ever used to find candidate seats, never as evidence on its own.
+     */
+    const invitation = isOwnerRegistration(input)
+      ? null
+      : await findInvitationFor(input as EmployeeRegisterBody);
+
     try {
       const user = await transactions.run(async (session): Promise<UserRecord> => {
         const created = await users.create(
@@ -140,16 +178,15 @@ export const createRegistrationService = ({
           session,
         );
 
-        /*
-         * An employee registration stops at the person. It creates no company and no membership,
-         * because there is nothing here that could prove which company they belong to — a company
-         * name is public, so accepting one as evidence would hand anybody a seat in any business.
-         * The approved path is an owner opening an `invited` seat that a registration then claims,
-         * and no endpoint creates one yet. That gap is reported rather than filled from here.
-         */
-        if (!isOwnerRegistration(input)) return created;
+        if (invitation !== null) {
+          // The claim is conditional on the seat still being open, so it also commits or rolls
+          // back with the account: there is no state where a user exists holding nothing.
+          const claimed = await memberships.claimInvitation(invitation, created._id, session);
+          if (!claimed) throw invitationNotFound();
+          return created;
+        }
 
-        const company = await companies.create(toNewCompany(input), session);
+        const company = await companies.create(toNewCompany(input as OwnerRegisterBody), session);
         await memberships.create(toOwnerMembership(created._id, company), session);
         return created;
       });
@@ -158,5 +195,6 @@ export const createRegistrationService = ({
     } catch (error) {
       throw isDuplicateEmailError(error) ? emailAlreadyRegistered() : error;
     }
-  },
-});
+    },
+  };
+};

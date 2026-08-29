@@ -85,7 +85,10 @@ const run = async (): Promise<void> => {
   await wipe();
 
   console.log('\n1. The membership write fails — the third and last document');
+  // Only `create` is exercised on the owner path; the rest of the repository is spread in so the
+  // stub stays a stub rather than a second implementation.
   const failingMemberships = {
+    ...companyMembershipRepository,
     create: async (): Promise<never> => {
       throw new Error('injected failure: membership write');
     },
