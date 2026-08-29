@@ -893,6 +893,54 @@ blockSchema.index({ blockedUserId: 1 });
 module.exports = mongoose.model('Block', blockSchema);`
 },
 
+/* ─────────── profilereminderdismissals ─────────── */
+{
+  id: 'profilereminderdismissals', model: 'ProfileReminderDismissal', domain: 'identity', stage: 4,
+  tag: 'the dashboard nag, silenced on purpose',
+  pos: { x: 290, y: 430 },
+  purpose: 'One document per user, recording that they dismissed the Personal dashboard\'s profile reminder and <em>exactly which gaps they were shown</em> when they did. Added 2026-08-29 with the Personal dashboard build. It is the storage this registry has needed since the onboarding wizard was folded into registration: there is no mandatory profile flow, so the only thing left to carry an unfinished profile is a non-blocking reminder — and a reminder that reappears on every page load is not dismissible.',
+  callout: 'It stores **the dismissed gaps, not a boolean and not a date**. A boolean would silence the reminder for ever, including gaps that appeared long afterwards; a date would silence it until an arbitrary interval elapsed, which is a nag on a timer. Storing the key set makes the rule exact: the reminder stays hidden while the current gaps are a **subset** of what was dismissed, and returns the moment a gap appears that the person never actually dismissed.',
+  fields: [
+    { name: '_id', type: 'ObjectId', note: '' },
+    { name: 'user', type: 'ObjectId', ref: 'users', req: true, uniq: true, note: 'Whose reminder this is. Unique, because a person has one reminder state — a second row would be two answers to one question. The upsert is what keeps it that way under a double-click.' },
+    { name: 'version', type: 'Number', req: true, note: 'The reminder model\'s own version, currently `1`. It exists so the *rules* can change later without a stored decision being silently reinterpreted: if the set of things the reminder may ask for is redefined, a row written under the old version is recognisably old rather than wrongly trusted.' },
+    { name: 'dismissedKeys', type: '[String]', req: true, note: 'The keys that were listed when the person pressed Dismiss — `contactRoute`, `specialties`, `region`, `structuredPlace`, `travelRadius`, `bio`, `avatar`, `businessPhone`, `officePhone`, `schedulingPrefs`, `completedWork`. Storing the keys rather than a count is what lets a *new* gap be told apart from an already-dismissed one.' },
+    { name: 'dismissedAt', type: 'Date', req: true, note: 'When it was dismissed. Not used to expire anything — kept so the decision can be shown back to the person and audited.' }
+  ],
+  indexes: [
+    { def: '{ user: 1 } — unique, `profile_reminder_dismissal_user_unique`', serves: 'reading reminder state on every dashboard load, and the dismiss upsert', why: 'The dashboard reads this once per load, so it has to be an indexed point lookup. Uniqueness is enforced by the database rather than by a read-then-write, which is what makes two dismiss requests racing each other produce one row instead of two.' }
+  ],
+  why: [
+    '**It is a relationship, not a field on the user.** A user document answers *who is this person*; whether they have silenced one particular piece of dashboard advice is not part of their identity. Keeping it separate means the reminder can be redesigned, or dropped entirely, without a migration on [[users]].',
+    '**Dismissal hides the reminder; it never fakes completeness.** The dashboard still reports the real missing list alongside `visible: false`, so nothing downstream is told a profile is finished when it is not.',
+    '**Optional fields must not strand anybody.** Contact completeness is satisfied by **any one** of the account email, `users.businessPhone` or `companies.officePhone` — and since every account has an email, it is always satisfied. Neither phone becomes required because the other is absent, so no optional field can leave a person permanently "incomplete".',
+    '**Distinct from D18.** D18 asks where a dismissed *cleanup item* — an agreementForm message whose createdTask is still null — is remembered, and is still open. This collection answers only the profile reminder, and deliberately does not reach for the same shape on the assumption the two are one problem.'
+  ],
+  relations: [
+    { to: 'users', via: 'user', store: 'ref', card: '1:1', why: 'One row per person at most, created lazily on the first dismissal. Somebody who never dismisses has no document, which is the correct representation of "has not decided" — a default-valued row on every account would be a claim nobody made.' }
+  ],
+  sample: `{
+  _id:           ObjectId("6651dd28c2b9e30012af0e42"),
+  user:          ObjectId("6650a1f4c2b9e30012af0b21"),
+  version:       1,
+  dismissedKeys: ["bio", "avatar", "businessPhone",
+                  "officePhone", "schedulingPrefs"],
+  dismissedAt:   ISODate("2026-08-29T11:40:00Z")
+}`,
+  schema: `const profileReminderDismissalSchema = new Schema({
+  user:          { type: Schema.Types.ObjectId, ref: 'User', required: true },
+  version:       { type: Number, required: true },
+  dismissedKeys: [{ type: String, required: true }],
+  dismissedAt:   { type: Date, required: true }
+}, { timestamps: true });
+
+profileReminderDismissalSchema.index({ user: 1 },
+  { unique: true, name: 'profile_reminder_dismissal_user_unique' });
+
+module.exports = mongoose.model('ProfileReminderDismissal',
+                                profileReminderDismissalSchema);`
+},
+
 /* ─────────── ratings ─────────── */
 {
   id: 'ratings', model: 'Rating', domain: 'identity', stage: 6,
