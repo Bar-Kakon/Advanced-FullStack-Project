@@ -6,16 +6,24 @@ import type {
   CompanyMembershipRepository,
   NewCompanyMembership,
 } from '../companies/companyMembership.repository.js';
+import type { Availability } from '../companies/company.model.js';
+import type { CompanyPosition } from '../companies/companyMembership.model.js';
 import type { CompanyRepository, NewCompany } from '../companies/company.repository.js';
 import type { UserRecord } from '../users/user.model.js';
 import type { NewUser, UserRepository } from '../users/user.repository.js';
-import { emailAlreadyRegistered } from './auth.errors.js';
+import { emailAlreadyRegistered, invitationAmbiguous, invitationNotFound } from './auth.errors.js';
 import type { RegisterBody } from './auth.validation.js';
+
+/** What the schema guarantees once `standing` is `owner`: the owner-only fields are present. */
+type OwnerRegisterBody = RegisterBody & { readonly availability: Availability };
+
+/** And once it is `employee`: the two values their invitation is matched on. */
+type EmployeeRegisterBody = RegisterBody & { readonly companyPosition: CompanyPosition };
 import { toAuthenticatedUser, type AuthenticatedUser } from './authenticatedUser.mapper.js';
 import type { PasswordService } from './password.service.js';
-import type { TokenPair, TokenPairService } from './tokens/tokenPair.service.js';
 
-export interface RegistrationResult extends TokenPair {
+/** No tokens. Register creates an account; Login is the only thing that opens a session. */
+export interface RegistrationResult {
   readonly user: AuthenticatedUser;
 }
 
@@ -33,7 +41,6 @@ export interface RegistrationDependencies {
   readonly companies: CompanyRepository;
   readonly memberships: CompanyMembershipRepository;
   readonly passwords: PasswordService;
-  readonly tokenPair: TokenPairService;
   readonly transactions: TransactionRunner;
   /** The Terms version currently in force, from config — never taken from the request body. */
   readonly termsVersion: string;
@@ -58,8 +65,12 @@ const isDuplicateEmailError = (error: unknown): boolean => {
   return candidate.code === DUPLICATE_KEY_CODE && candidate.keyPattern?.['email'] !== undefined;
 };
 
-/** The office number belongs to the business, so it is the company document that carries it. */
-const toNewCompany = (input: RegisterBody): NewCompany => ({
+/**
+ * The office number belongs to the business, so it is the company document that carries it. Only
+ * an owner registration reaches this — validation refuses these fields for an employee, so the
+ * non-null assertions here rest on the schema rather than on hope.
+ */
+const toNewCompany = (input: OwnerRegisterBody): NewCompany => ({
   name: input.companyName,
   availability: input.availability,
   ...(input.officePhone === undefined ? {} : { officePhone: input.officePhone }),
@@ -101,15 +112,42 @@ const toOwnerMembership = (
   permissions: OWNER_DEFAULT_PERMISSIONS,
 });
 
+const isOwnerRegistration = (input: RegisterBody): input is OwnerRegisterBody =>
+  input.standing === 'owner';
+
+/** The person's own name, as the owner would have typed it when opening the seat. */
+const fullNameOf = (input: RegisterBody): string => `${input.firstName} ${input.lastName}`;
+
 export const createRegistrationService = ({
   users,
   companies,
   memberships,
   passwords,
-  tokenPair,
   transactions,
   termsVersion,
-}: RegistrationDependencies): RegistrationService => ({
+}: RegistrationDependencies): RegistrationService => {
+  /**
+   * The approved matching model: an open seat, in a company holding that name, opened for that
+   * person under that job title. Company names are deliberately not unique, so every company of
+   * that name is searched and an ambiguous result is refused rather than guessed at.
+   */
+  const findInvitationFor = async (input: EmployeeRegisterBody): Promise<Types.ObjectId> => {
+    const companyIds = await companies.findIdsByName(input.companyName);
+    if (companyIds.length === 0) throw invitationNotFound();
+
+    const matches = await memberships.findOpenInvitations({
+      companyIds,
+      invitedFullName: fullNameOf(input),
+      companyPosition: input.companyPosition,
+    });
+
+    if (matches.length === 0) throw invitationNotFound();
+    if (matches.length > 1) throw invitationAmbiguous();
+
+    return matches[0]!._id;
+  };
+
+  return {
   /**
    * Three documents, one transaction: the company, the person, and the owner relationship between
    * them all commit together or none of them exists. There is no state in which an account is half
@@ -117,30 +155,46 @@ export const createRegistrationService = ({
    *
    * The duplicate check and the bcrypt hash run *before* the transaction opens. Hashing is a
    * quarter-second of CPU, and holding a transaction open across it would widen the window for
-   * write conflicts to no purpose. Tokens are issued *after* it commits, so a session can never be
-   * handed out for a user that was rolled back.
+   * write conflicts to no purpose.
    */
   async register(input) {
     if (await users.existsByEmail(input.email)) throw emailAlreadyRegistered();
 
     const passwordHash = await passwords.hash(input.password);
 
+    /*
+     * An employee claims a seat their employer already opened. The match is made BEFORE the
+     * transaction, so a registration with no invitation writes nothing at all — and the company
+     * name is only ever used to find candidate seats, never as evidence on its own.
+     */
+    const invitation = isOwnerRegistration(input)
+      ? null
+      : await findInvitationFor(input as EmployeeRegisterBody);
+
     try {
       const user = await transactions.run(async (session): Promise<UserRecord> => {
-        const company = await companies.create(toNewCompany(input), session);
         const created = await users.create(
           toNewUser(input, passwordHash, termsVersion),
           session,
         );
 
+        if (invitation !== null) {
+          // The claim is conditional on the seat still being open, so it also commits or rolls
+          // back with the account: there is no state where a user exists holding nothing.
+          const claimed = await memberships.claimInvitation(invitation, created._id, session);
+          if (!claimed) throw invitationNotFound();
+          return created;
+        }
+
+        const company = await companies.create(toNewCompany(input as OwnerRegisterBody), session);
         await memberships.create(toOwnerMembership(created._id, company), session);
         return created;
       });
 
-      const tokens = await tokenPair.issue(user._id.toString());
-      return { ...tokens, user: toAuthenticatedUser(user) };
+      return { user: toAuthenticatedUser(user) };
     } catch (error) {
       throw isDuplicateEmailError(error) ? emailAlreadyRegistered() : error;
     }
-  },
-});
+    },
+  };
+};

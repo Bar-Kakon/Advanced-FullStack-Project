@@ -1,0 +1,60 @@
+/* FieldSync — My profile, view-mode-only styles */
+/* Loaded AFTER profile.css, which carries everything shared with edit-profile.html. */
+/* This file contains only styles specific to the read-only presentation. */
+
+/* ═══ The single global Edit control — icon only ═══ */
+.btn--edit {
+  width: 54px;
+  padding: 0;
+  color: var(--primary);
+  background: var(--secondary);
+  border-color: var(--secondary);
+  box-shadow: 4px 4px 0 rgba(35, 56, 77, 0.28), 0 14px 28px -18px rgba(31, 36, 40, 0.90);
+}
+.btn--edit:hover {
+  background: var(--surface);
+  border-color: var(--surface);
+  box-shadow: 2px 2px 0 rgba(35, 56, 77, 0.32), 0 18px 32px -20px rgba(31, 36, 40, 0.95);
+  transform: translate(2px, 2px);
+}
+.btn--edit:active { transform: translateY(1px); }
+.btn__icon { flex-shrink: 0; }
+
+/* The pencil is filled with the button colour so it occludes the wrench behind it */
+.icon-pencil { fill: var(--secondary); }
+.btn--edit:hover .icon-pencil { fill: var(--surface); }
+
+/* ═══ Read-only field lists ═══ */
+.facts { display: flex; flex-direction: column; gap: 18px; }
+.fact { display: flex; flex-direction: column; gap: 7px; min-width: 0; }
+.fact__value {
+  font-size: 17px;
+  line-height: 1.5;
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+.fact__value--empty { color: var(--text-mute); font-style: italic; }
+.fact__unit {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0.06em;
+  color: var(--text-soft);
+  margin-inline-start: 6px;
+}
+
+/* ═══ Bio ═══ */
+.bio-text {
+  font-size: 17px;
+  line-height: 1.7;
+  color: var(--text-soft);
+  max-width: var(--prose-max);
+}
+
+/* ═══ Responsive ═══ */
+@media (max-width: 620px) {
+  .profile__head { align-items: flex-start; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn--edit:hover { transform: none; }
+}

@@ -38,6 +38,7 @@ const COMPANY = `${MARKER} Ltd`;
 const body: RegisterBody = {
   firstName: 'Txn',
   lastName: 'Verify',
+  standing: 'owner',
   companyName: COMPANY,
   email: EMAIL,
   password: 'CorrectHorse42!',
@@ -49,15 +50,9 @@ const body: RegisterBody = {
   acceptedTerms: true,
 };
 
-/** Tokens are not what is under test here; the HTTP verification covers the real pair. */
-const stubTokenPair = {
-  issue: async () => ({ accessToken: 'stub', refreshToken: 'stub' }),
-};
-
 const baseDeps = (): Omit<RegistrationDependencies, 'memberships' | 'users'> => ({
   companies: companyRepository,
   passwords: passwordService,
-  tokenPair: stubTokenPair,
   transactions: { run: runInTransaction },
   termsVersion: TERMS_VERSION,
 });
@@ -90,8 +85,8 @@ const run = async (): Promise<void> => {
   await wipe();
 
   console.log('\n1. The membership write fails — the third and last document');
-  // Only `create` is exercised here; the rest of the repository is spread in so the stub stays a
-  // stub rather than becoming a second implementation.
+  // Only `create` is exercised on the owner path; the rest of the repository is spread in so the
+  // stub stays a stub rather than a second implementation.
   const failingMemberships = {
     ...companyMembershipRepository,
     create: async (): Promise<never> => {

@@ -14,7 +14,8 @@ import { workVerificationService } from './workEntryVerification.service.js';
 
 export interface UsersModule {
   readonly router: Router;
-  readonly companiesRouter: Router;
+  /** Mounted by `createCompaniesModule`, which owns the `/companies` prefix. */
+  readonly companyProfileRoutes: Router;
 }
 
 /**
@@ -35,6 +36,6 @@ export const createUsersModule = (requireAccessToken: RequestHandler): UsersModu
 
   return {
     router: createUsersRouter(controller, requireAccessToken),
-    companiesRouter: createCompaniesRouter(controller, requireAccessToken),
+    companyProfileRoutes: createCompaniesRouter(controller),
   };
 };

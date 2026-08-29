@@ -47,12 +47,9 @@ node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"
 | `npm start` | Runs the built `dist/server.js` |
 | `npm run typecheck` | Type-checks `src/` and `scripts/` without emitting |
 | `npm run verify:register-txn` | Proves the Register transaction is all-or-nothing (needs a database) |
-| `npm run verify:profile` | Proves the profile read, the write allowlist and the company permission |
-| `npm run verify:completed-work` | Proves Completed Work ownership and the server-derived badge |
-| `npm run verify:media` | Proves the upload rules, GridFS storage and owner-only serving |
-
-The three profile scripts boot the real application on an ephemeral port and drive it over real
-HTTP, so nothing is stubbed. They create their own accounts and delete everything they wrote.
+| `npm run verify:password-reset` | Walks Register → Login → forgot → reset → Login against the running server and the real database. **Needs a freshly started server** — it spends much of the auth rate-limit budget |
+| `npm run verify:rate-limit` | Proves each auth limiter fires, at its configured budget, through the project error contract. **Needs a freshly started server** |
+| `npm run verify:employee-lifecycle` | Walks invite → employee registers → `pending_company_approval` → owner approves → `active`, including the bulk approval. **Needs a freshly started server** |
 
 Verify it is up:
 
@@ -86,55 +83,41 @@ src/
 ├── features/
 │   ├── companies/
 │   │   ├── company.model.ts                Mongoose Company — the business + work availability
-│   │   ├── company.repository.ts           create / findById / update
-│   │   ├── companies.routes.ts             PATCH /companies/me — the company half of Edit Profile
+│   │   ├── company.repository.ts           create
 │   │   ├── companyMembership.model.ts      person × company: standing, status, position,
 │   │   │                                   permissions — and the enums for all four
-│   │   └── companyMembership.repository.ts create / findActiveByUser
-│   ├── files/
-│   │   ├── fileAsset.model.ts      Mongoose FileAsset — who owns a file, what it is, where it lives
-│   │   ├── fileAsset.repository.ts create / find by owner / delete / attach to a scope id
-│   │   ├── fileAsset.service.ts    record, remove, discard an orphan, open an owned stream
-│   │   ├── gridFs.service.ts       the only module that talks to GridFS
-│   │   ├── upload.middleware.ts    Multer + a storage engine that streams straight into GridFS
-│   │   └── file.errors.ts          UNSUPPORTED_FILE_TYPE / FILE_TOO_LARGE /
-│   │                               UNEXPECTED_FILE_FIELD / FILE_NOT_AVAILABLE
-│   ├── workentries/
-│   │   ├── workEntry.model.ts      Mongoose WorkEntry — one Completed Work item
-│   │   └── workEntry.repository.ts create / list / find / delete, always scoped by owner
+│   │   └── companyMembership.repository.ts create
 │   ├── users/
 │   │   ├── user.model.ts       Mongoose User — a PERSON: identity, trade, location. No company fields
-│   │   ├── user.repository.ts  the only module that queries users for auth and for the profile
-│   │   ├── users.module.ts     the profile feature's composition root
-│   │   ├── users.routes.ts     GET/PATCH /users/me, work entries, avatar, assets
-│   │   ├── profile.controller.ts  HTTP boundary for both profile screens
-│   │   ├── profile.service.ts     assembles the profile and owns every profile write
-│   │   ├── profile.dto.ts         the only user shape the profile routes put on the wire
-│   │   ├── profile.validation.ts  JOI allowlists for the profile, company and work-entry bodies
-│   │   ├── profile.errors.ts      PROFILE_NOT_FOUND / COMPANY_PERMISSION_DENIED /
-│   │   │                          NO_ACTIVE_COMPANY / WORK_ENTRY_NOT_FOUND /
-│   │   │                          WORK_LINK_NOT_VERIFIABLE
-│   │   └── workEntryVerification.service.ts  the only thing that may grant the FieldSync badge
+│   │   └── user.repository.ts  the only module that queries users for auth
 │   └── auth/
 │       ├── auth.module.ts              the feature's composition root; the only file given config
-│       ├── auth.routes.ts              POST /register, POST /login, POST /refresh
+│       ├── auth.routes.ts              POST /register, /login, /refresh,
+│       │                               /forgot-password, /reset-password
 │       ├── auth.controller.ts          HTTP boundary: read validated input, call a use case, respond
 │       ├── auth.service.ts             the login and refresh use cases
 │       ├── registration.service.ts     the register use case
+│       ├── passwordReset.service.ts    the forgot-password and reset-password use cases
+│       ├── passwordResetToken.model.ts      one row per issued reset link (hash only)
+│       ├── passwordResetToken.repository.ts mint / look up / spend a reset link
 │       ├── auth.validation.ts          JOI schemas for the register and login bodies
-│       ├── auth.errors.ts              INVALID_CREDENTIALS / UNAUTHENTICATED /
+│       ├── auth.errors.ts              INVALID_CREDENTIALS / UNAUTHENTICATED / INVALID_RESET_TOKEN /
 │       │                               INVALID_REFRESH_TOKEN / EMAIL_ALREADY_REGISTERED
 │       ├── authenticatedUser.mapper.ts document → safe wire representation
 │       ├── password.service.ts         the only module that calls bcrypt
 │       ├── refreshToken.model.ts       stored Refresh Tokens (SHA-256 hashes, TTL-expired)
 │       ├── refreshToken.repository.ts  save / look up / retire / revoke a family
 │       ├── refreshTokenCookie.ts       HttpOnly cookie transport policy
-│       ├── requireAccessToken.middleware.ts  who is making this request — and nothing else
+│       ├── requireAccessToken.middleware.ts  who is making this request, and is the token still current
 │       └── tokens/
 │           ├── token.types.ts          claims, and the `typ` purpose marker
 │           ├── accessToken.service.ts  issue + verify Access Tokens
 │           ├── refreshToken.service.ts issue + verify Refresh Tokens
 │           └── tokenPair.service.ts    sign a pair and record it — shared by Register and Login
+│   └── companies/         company, membership, and the employee-management module
+├── mail/
+│   ├── mailer.ts          Nodemailer over Brevo SMTP, or log mode when unconfigured
+│   └── passwordResetEmail.ts  the reset message, composed in one place
 └── shared/
     ├── errors.ts          AppError
     └── logger.ts          the single stdout/stderr boundary
@@ -163,18 +146,198 @@ hiding it. Expired rows are removed by a TTL index.
 
 Request collection for every case: [`requests/auth.http`](requests/auth.http).
 
+### The session payload — `SessionUser` and `CompanyContext`
+
+Login and `GET /api/auth/me` answer the **same shape**, so a client never has two ideas of who is
+signed in. Register does not: it creates an account and opens no session, so its 201 carries the
+plain `AuthenticatedUser` with no company half.
+
+| Route | Answers | Issues a token |
+|---|---|---|
+| `POST /api/auth/login` | `{ accessToken, user: SessionUser }` | ✅ access + rotating refresh cookie |
+| `GET /api/auth/me` | `{ user: SessionUser }` | ❌ nothing — a pure read |
+| `POST /api/auth/register` | `{ user: AuthenticatedUser }` | ❌ no session at all |
+
+```ts
+interface SessionUser extends AuthenticatedUser {   // id, email, firstName, lastName,
+  company: CompanyContext | null;                   // language, profileComplete
+}
+
+interface CompanyContext {
+  id: string;
+  standing: 'owner' | 'employee';
+  membershipStatus: 'pending_company_approval' | 'active';
+  permissions: readonly CompanyPermission[];
+  employeeSetupComplete: boolean;
+}
+```
+
+**`membershipStatus` is carried as the code it is, not reduced to a boolean.** Waiting for a
+company's approval and having left that company are different facts, and no boolean separates them —
+a client that could not tell them apart would show an ex-employee the Waiting for Approval screen.
+
+**`company` is `null` for somebody holding no *current* relationship** — never joined, or ended.
+See [One person, one company](#one-person-one-company) for why an ended row is not a current one.
+
+`CompanyContext` deliberately carries **no company name, office phone or availability**. Those
+belong to the profile feature; a session payload that grows a second copy of them is a second answer
+waiting to disagree with the first.
+
+**`GET /api/auth/me` exists because an Access Token is stateless.** Nothing that happens after one is
+minted — an employer approving a membership, most of all — can reach the copy a client is holding.
+This is how the client asks, and it is what the Waiting for Approval screen's *Check status* calls.
+It issues nothing, rotates nothing, and leaves the Refresh cookie untouched.
+
 ## Register
 
-`POST /api/auth/register` — the only way to create an account. It **authenticates the new user
-immediately** (approved 2026-08-28), issuing the same Access + Refresh pair Login issues, through
-the same `tokenPair` service. There is no second token mechanism and no weaker signup session.
+`POST /api/auth/register` — the only way to create an account. It **does not authenticate anybody**.
+Creating an account and starting a session are two things, and Login is the one that starts a
+session: the approved flow is `Register → Login → Personal dashboard`. So Register issues no Access
+Token, issues no Refresh Token, writes no `refreshtokens` row and sets no cookie. It answers
+`201 { user }`, and the client goes to Login.
 
-It is the onboarding flow for somebody who runs their own business — an independent contractor,
-a supplier, or a company owner. One signup writes **three** documents inside **one transaction**:
+> Until 2026-08-29 it did authenticate immediately, issuing the same pair Login issues. That was
+> removed rather than kept as an option — a credential the flow guarantees nobody uses is worth
+> removing, not tolerating.
+
+`standing` decides what a registration means. It is **organizational standing only** — not a
+permission, not a project role, not a job title — and it is **required**: there is no default,
+because a request that does not say which registration it is should be answered rather than
+guessed at.
+
+| | `standing: 'owner'` | `standing: 'employee'` |
+|---|---|---|
+| Writes | company + user + owner membership | user, and **claims an existing seat** |
+| `companyName` | required — the business being created | required — the business that invited them, **matched, never trusted** |
+| `companyPosition` | refused | **required** — part of what identifies the seat |
+| `officePhone` | optional | **refused** — see below |
+| `availability` | optional | **refused** — D14 |
+| `businessPhone` · `specialty` · `city` · `region` | optional / required as before | **the same** — these are the person's, not the company's |
+| Membership status | `active` | `pending_company_approval` |
+| Permissions | the four approved owner defaults | **none** |
+
+### The employee lifecycle
 
 ```
-POST /api/auth/register
+  OWNER                                    EMPLOYEE
+    │
+    │ POST /companies/employees/invitations
+    │   { fullName, companyPosition }
+    ▼
+  ┌──────────┐   no user yet. The seat records the name and the job
+  │ invited  │   it will be matched on, and carries no permissions.
+  └──────────┘
+    │                                         │ POST /auth/register
+    │                                         │   standing: employee
+    │                                         │   companyName + companyPosition + full name
+    │                                         ▼
+    │   ┌───────────────────────────────────────────────────────┐
+    │   │ match: a company of that NAME, an `invited` seat with  │
+    │   │ that invitedFullName and that companyPosition          │
+    │   │   no match  ──► 409 INVITATION_NOT_FOUND, nothing written
+    │   │   >1 match  ──► 409 INVITATION_AMBIGUOUS
+    │   └───────────────────────────────────────────────────────┘
+    │                                         ▼
+    │                          ┌──────────────────────────┐
+    │                          │ pending_company_approval │  bound to the account,
+    │                          └──────────────────────────┘  still not a member
+    │ POST /companies/employees/:id/approve            │
+    │ POST /companies/employees/approve-all            │
+    ▼                                                  ▼
+  ┌────────┐  active. Still no permissions — approval admits them,
+  │ active │  it does not grant them anything.
+  └────────┘
+```
+
+**A company name alone never grants membership.** It only narrows the search for a seat somebody
+already opened, and the name is not unique, so every company holding it is searched and **more than
+one match is refused rather than guessed at**. There is no email, phone or one-time-code matching:
+none of those is part of the model.
+
+**Nothing is written when no seat matches.** The match runs *before* the transaction, so a
+registration with no invitation creates no user, no company and no membership. The claim itself is
+conditional on the seat still being `invited`, so two registrations racing for one seat cannot both
+win, and it commits inside the same transaction as the account.
+
+**Authority never comes from standing or from a job title.** `companyPosition` is descriptive.
+Capabilities come only from `permissions`, and an employee is created with none — approval does not
+change that. Project and task creation need `project.create` / `task.create`, granted explicitly.
+
+**The six `companyPosition` codes** are `main_contractor`, `construction_manager`,
+`regional_construction_manager`, `site_manager`, `contractor` and `employee`. They are stable
+identifiers and are never renamed to follow a label: the Hebrew wording for a site manager was
+reworded twice while `site_manager` stayed exactly what it was.
+`regional_construction_manager` was added 2026-08-29 on owner instruction, naming a role the
+terminology already distinguished in words but had no code for. On the same day
+**`main_contractor`'s Hebrew label moved to `קבלן ביצוע ראשי`** — because the old `קבלן ראשי` is
+already the Hebrew for the *per-project role* `gc`, and a company job title must not share a string
+with a project role — and, as the rule above predicts, **the code did not move**.
+
+#### What the client does between Login and `active`
+
+The lifecycle above is the server half. The two client-visible states it produces:
+
+```
+  employee Registers        → 201, NO session. Login is still the boundary.
+  employee Logs in          → 200. They are a fully authenticated User.
+                              company.membershipStatus = 'pending_company_approval'
+    ▼
+  Waiting for Approval      tokens intact · not signed out · not sent back to Register
+                            · not treated as banned. They simply hold no ACTIVE
+                            membership, so company-dependent areas stay closed.
+    │  Check status  ─────►  GET /api/auth/me   (same token, nothing reissued)
+    ▼
+  owner approves            → membershipStatus = 'active'
+                            → the next /auth/me moves them on
+```
+
+**No re-registration, no approval token, and no second Login** is required merely because the owner
+approved somebody — the Access Token they already hold keeps working, and `/auth/me` is how its
+holder learns the membership changed. There is **no real-time infrastructure**: no WebSockets, no
+SSE, no polling and no short-interval timers. The manual check plus ordinary session revalidation is
+the whole mechanism.
+
+### Employee management endpoints
+
+All authenticated, and all authorised by the caller's own recorded `company.invite_employees`
+permission on an **active** membership — never by their standing and never by their position.
+
+| Route | Does |
+|---|---|
+| `POST /api/companies/employees/invitations` | opens a seat: `{ fullName, companyPosition }` |
+| `GET /api/companies/employees` | this company's memberships, so the owner can see who is waiting |
+| `POST /api/companies/employees/:membershipId/approve` | one activation → `active` |
+| `POST /api/companies/employees/approve-all` | every waiting activation at once |
+| `POST /api/companies/employee-setup/complete` | records that this company has been through employee setup |
+
+`COMPANY_PERMISSION_DENIED` (403) when the permission is missing, `NO_ACTIVE_COMPANY` (403) when the
+caller has no active membership, `PENDING_ACTIVATION_NOT_FOUND` (404) when nothing matched.
+
+**The invitation body is two fields and only two: `fullName` and `companyPosition`.** No email, no
+password, no phone, no availability and no permissions — the person supplies their own account
+details when they register against the seat. **The company is never in the body**: it is derived from
+the caller's own active membership, so an owner cannot open a seat at a company that is not theirs,
+and there is nothing for a client to select or spoof. The employee side still matches on the approved
+combination — `invitedFullName` + company name + `companyPosition` — and no fourth key was added.
+
+`POST /api/companies/employee-setup/complete` sits outside `/employees` because it records a fact
+about the **company**, and it is recorded whether or not anybody was ever invited:
+
+- authenticated, and gated by the same `company.invite_employees` capability as the routes above;
+- writes `companies.employeeSetupCompletedAt`, and nothing else;
+- **Skip and Finish are the same call** — both mean the business was offered the step and dealt with
+  it, and a separate `skipped` state would be a distinction nothing downstream asks about;
+- **idempotent**, and the first stamp is the one kept: a later call must not rewrite the day it
+  actually happened;
+- answers `200 { employeeSetupComplete: true }`;
+- **grants no permissions** and **changes no membership lifecycle state**. It is not an approval.
+
+One owner signup writes **three** documents inside **one transaction**:
+
+```
+POST /api/auth/register            (owner path)
   │
+  ├─ 0. rate limiter                10 per hour per IP
   ├─ 1. JOI validates the body      unknown keys stripped, so isAdmin / status
   │                                 / passwordHash in a body go nowhere
   ├─ 2. email already taken? ───────► 409 EMAIL_ALREADY_REGISTERED, nothing written
@@ -188,8 +351,7 @@ POST /api/auth/register
   │  ║    any throw, including a unique-index violation
   │  ║    ────────────────────────► ABORT ALL THREE
   │  ╚═════════════════════════════════════════════════════════╝
-  ├─ 7. issueTokenPair()            AFTER commit — a token is never issued
-  └─ 8. 201 { accessToken, user }     for a user that was rolled back
+  └─ 7. 201 { user }                no token, no cookie, no session
 ```
 
 **There is no partial Register state.** Either the company, the person and the owner relationship
@@ -219,6 +381,135 @@ service receives it as a dependency and never imports the database library itsel
 | `businessPhone` | ➖ | **`users.businessPhone`** — the person's number |
 | `availability` | ➖ (default `open`) | **`companies.availability`** |
 | `acceptedTerms` | ✅ must be `true` | **`users.termsAcceptances[]`** — the version + a timestamp. The boolean itself is not stored |
+
+## Password reset
+
+Two endpoints, and one rule that shapes both: **nothing either of them returns says whether an
+account exists.**
+
+```
+POST /api/auth/forgot-password        { email }
+  │
+  ├─ 1. JOI validates the body
+  ├─ 2. look the address up
+  │     ├─ no such account, or not active ──► stop here, quietly
+  │     └─ found
+  │        ├─ 3. invalidate every live reset token that user holds
+  │        ├─ 4. randomBytes(32) → the raw token, hex          goes in the email
+  │        ├─ 5. store SHA-256(raw) + expiresAt = now + 30min  goes in the database
+  │        └─ 6. hand the email to the mailer WITHOUT awaiting it
+  └─ 200 { status: 'ok' }            ← identical on every path above
+
+POST /api/auth/reset-password         { token, newPassword }
+  │
+  ├─ 1. JOI validates the body        password rules are Register's, applied here independently
+  ├─ 2. SHA-256 the supplied token and look the hash up
+  ├─ 3. refuse unless: found · not used · not superseded · not expired · account still active
+  ├─ 4. bcrypt the new password       OUTSIDE the transaction — ~250ms of CPU
+  │  ╔═ TRANSACTION ═══════════════════════════════════════════╗
+  ├──╢ 5. write the new passwordHash                           ║
+  │  ║ 6. mark the reset token used                            ║
+  │  ║ 7. revoke EVERY Refresh Token the user holds            ║
+  │  ╚═════════════════════════════════════════════════════════╝
+  └─ 200 { status: 'ok' }            no token, no cookie — the person signs in
+```
+
+**The email is written in the account's own `users.language`** — Hebrew for a Hebrew account,
+English for an English one, never both. There is no second email-language setting, and the language
+is read well away from the response: the answer this endpoint gives is identical whether or not the
+account exists, so it can carry no such fact.
+
+**Why the email is not awaited.** Reaching an SMTP relay takes far longer than any database work on
+this path. Awaiting it would make a known address answer measurably slower than an unknown one,
+which is an account-enumeration oracle by stopwatch — the same class of leak the unified
+`INVALID_CREDENTIALS` answer exists to close.
+
+**Why a collection and not two fields on the user.** A reset token has a lifecycle: issued,
+superseded, spent, expired. `security.resetTokenHash` + `security.resetTokenExpiresAt` on the user
+document cannot tell a spent token from an absent one, cannot record that a newer request replaced
+an older link, and put security state in the permanent identity document. `passwordresettokens`
+mirrors `refreshtokens`, because it is the same kind of object.
+
+| | Refresh Token | Password-reset token |
+|---|---|---|
+| Stored | SHA-256 hash | SHA-256 hash |
+| Lifetime | 7 days | **30 minutes** |
+| Reuse | rotates — spend once, get a replacement | **spend once, then dead** |
+| Superseded by | rotation, within a family | a newer forgot-password request |
+| Swept by | TTL index on `expiresAt` | TTL index on `expiresAt` |
+
+**One usable link at a time.** A second forgot-password request invalidates the first link. Asking
+again says the earlier email is not the one being held, and two live links widen the window an
+intercepted email is useful in.
+
+**Every reset failure answers `401 INVALID_RESET_TOKEN`** — unknown, expired, superseded and
+already-spent alike. The person holding a dead link learns it is dead and nothing else.
+
+**After a reset, both credentials stop working, and they stop for different reasons.**
+
+*Refresh Tokens* are rows, so they are revoked: every un-revoked row that user holds is stamped
+inside the same transaction, through the `refreshtokens` collection the rotation and
+replay-detection logic already uses. There is no second session mechanism.
+
+*Access Tokens* are stateless JWTs with no server-side record, so there is nothing to revoke. They
+are invalidated instead — the reset writes **`users.security.passwordChangedAt`**, and
+`requireAccessToken` refuses any token whose `iat` predates it:
+
+```
+Authorization: Bearer …
+      │
+      ├─ 1. signature + `typ: access`        the token is genuine
+      ├─ 2. look the account up               ONE indexed read, two projected fields
+      ├─ 3. no such account?          ──────► 401 UNAUTHENTICATED
+      ├─ 4. isSessionPermitted(status)? ─no─► 401 UNAUTHENTICATED
+      ├─ 5. iat < security.passwordChangedAt? 401 UNAUTHENTICATED
+      └─ 6. res.locals.auth = { userId }
+```
+
+**Step 4 is the same rule Login and Refresh apply** — the one `isSessionPermitted` function, given a
+status rather than a whole user so all three callers can ask it. A ban therefore reaches a token
+already in circulation, immediately, instead of waiting for it to expire. **It closes access and
+nothing else:** no task, project, membership, message or consent record is touched.
+
+**The cost is one indexed `findById` per authenticated request**, projected to
+`security.passwordChangedAt` alone. That is the price of making a stateless token revocable, and it
+is paid on every protected route rather than only after a reset — there is no way to know a token
+is stale without asking. If it ever matters, the answer is a short-lived cache keyed by user id,
+not a weaker check.
+
+**One second of granularity, stated rather than hidden.** A JWT's `iat` is whole seconds, so
+`passwordChangedAt` is stored truncated to the second and compared in the same unit. A token minted
+in the *same second* as the reset therefore survives. Rounding the other way closes that window and
+opens a worse one: it rejects the token Login mints moments later, which is a legitimate sign-in
+failing. The sub-second window needs an attacker who already has the password and hits the same
+second as the victim's reset.
+
+**Register does not set it.** Absent means the password has never been changed, which is exactly
+what a new account means.
+
+## Outgoing mail
+
+`src/mail/` — one service, so no controller ever constructs a transport.
+
+```
+src/mail/
+├── mailer.ts               createMailer(config.mail) → { send, mode }
+│                           smtp mode: Nodemailer over Brevo's SMTP relay
+│                           log  mode: writes a warning instead of sending
+└── passwordResetEmail.ts   composes subject + text + html from the reset URL
+```
+
+**Brevo is the email service; Nodemailer is the client that talks to it.** Ordinary authenticated
+SMTP, so there is no vendor SDK in the dependency tree and no API key in the application.
+
+`SMTP_HOST`, `SMTP_USER`, `SMTP_PASS` and `MAIL_FROM` are **all-or-nothing**: three of the four is a
+deployment that looks configured and fails on the first send, so the server refuses to start on a
+partial set. With none of them set it starts in **log mode** — nothing is sent, every attempt logs a
+warning, and the reset link is written to the log so the flow can still be walked locally. A
+configured server never logs a token.
+
+`FRONTEND_URL` is **required**. The reset link is `${FRONTEND_URL}/reset-password?token=<raw token>`,
+and an email carrying the wrong link is worse than a server that will not boot.
 
 ### Recording consent
 
@@ -273,6 +564,7 @@ without their account changing type.
                                               → 'active' → 'inactive'
                       companyPosition the JOB      (main_contractor,
                                                     construction_manager,
+                                                    regional_construction_manager,
                                                     site_manager, contractor, employee)
                       permissions     what they MAY DO
 ```
@@ -312,38 +604,111 @@ from `companyPosition`. Grants beyond the defaults are an explicit act by an own
 manager.
 
 Two indexes carry the rules: `{ company, status }` serves "this company's pending activations", and
-a **partial unique** index on `{ user }` where `status: 'active'` enforces **one active relationship
-per person at a time**.
+`user_current_unique` enforces one company per person — see the next section.
 
-### Not built here — the future employee flow this model must not block
+### One person, one company
 
-Public Register creates an **owner** and nothing else. The rest is documented so a later endpoint
-cannot contradict the model, and **none of it is implemented**:
+**A user belongs to exactly one company at a time.** The two states that mean *in a company* are
+`pending_company_approval` and `active`, and a person may hold **at most one row in either**. These
+states do not exist in this model, and the database refuses to store them:
 
+- active at company A **and** pending at company B;
+- two pending memberships;
+- two active memberships.
+
+```js
+companyMembershipSchema.index(
+  { user: 1 },
+  {
+    name: 'user_current_unique',
+    unique: true,
+    partialFilterExpression: { status: { $in: ['pending_company_approval', 'active'] } },
+  },
+);
 ```
- 1. OWNER INVITES         owner adds staff with full name + company position only.
-    (future screen)       The company is known from their own account.
-                          → membership { user: null, status: 'invited' }
-                          → creates NO user account
 
- 2. EMPLOYEE REGISTERS    a separate path: full name + company name + position.
-    (future endpoint)     The backend looks for a matching 'invited' row.
-                          no match  → cannot join that company, full stop
-                          match     → account created, the SAME row becomes
-                                      status: 'pending_company_approval'
+Two kinds of row sit **outside** the filter, on purpose:
 
- 3. OWNER APPROVES        one, several, or all valid pending activations.
-    (future screen)       → status: 'active'
+- **an unclaimed `invited` seat carries no user at all**, so a company may hold as many open seats as
+  it likes;
+- **an `inactive` row is history.** Leaving a company does not bar somebody from later joining
+  another one — the ended row stays stored and stays out of the constraint.
+
+> **Superseded.** The earlier `user_1` index made only *activation* exclusive, so "active at A,
+> pending at B" was writable. Uniqueness no longer applies to `active` alone, and any description
+> that still says so is stale.
+
+#### Migrating the index
+
+The two indexes share the `{ user: 1 }` key, so Mongoose's `autoIndex` raises `IndexOptionsConflict`
+and **skips the new one** — the constraint would be in the code and absent from the database. Run
+once per environment:
+
+```bash
+npm run migrate:membership-uniqueness
 ```
+
+It drops `user_1`, syncs `user_current_unique`, and prints the resulting indexes. If any user already
+holds more than one live membership it **reports them and exits non-zero instead of guessing how to
+merge them** — that is a data question, not a script's call. This is an engineering migration and
+settles no product rule of its own.
+
+### Current company, and history
+
+`CompanyContext` answers the caller's **current** relationship, and an ended one is not current:
+
+| Membership rows the user holds | `company` on the session payload |
+|---|---|
+| none | `null` |
+| one `pending_company_approval` | that context — what the Waiting for Approval screen runs on |
+| one `active` | that context — normal access |
+| `inactive` / ended only | `null` |
+
+`findCurrentByUser` reads only the pending-or-active row. `user_current_unique` guarantees at most
+one match, so there is nothing to choose between and no ordering rule to get wrong.
+
+**Historical permissions are stored, and are never current capabilities.** When a membership becomes
+`inactive` its `permissions` array is **preserved for history and audit** and is deliberately **not**
+cleared — an audit trail that erases what somebody was allowed to do cannot answer what they were
+allowed to do. Being history, it:
+
+- is **not** returned as a current capability;
+- is **not** exposed through `CompanyContext`;
+- grants **no** Employee Management access;
+- grants **no** company or project authority;
+- affects **no** routing.
+
+**Stored historically ≠ currently authorized.** The read is what enforces it: an ended row never
+becomes a company context, so its permission list has nowhere to reach.
+
+### The employee flow — built, and what is still owed around it
+
+The lifecycle in [The employee lifecycle](#the-employee-lifecycle) is **implemented**: the owner's
+invitation endpoint, the matching claim inside Register, single approval, and approving every
+waiting activation at once. Approving *several* is the single-approval route called per row; a
+subset endpoint is a small addition if a screen wants one call for it.
 
 Because the pending list is *the invited row itself*, somebody who merely types a company name has
 no row to claim and **can never appear in it**. That is structural, not a filter that could be
 forgotten.
 
-Two further rules recorded here, not implemented: an employee is **not an independent professional
-profile and must not appear in Browse** (Browse selects people holding an `owner` membership), and
-**employee availability is a separate future concept** — it must never reuse or overwrite
-`companies.availability`, and its vocabulary is not invented yet.
+**Still owed around it, and none of it is invented here:**
+
+- **The Employee Management screen exists as a defined feature and is not wired to these
+  endpoints yet.** It owns company member management, opening invitations, employee status, pending
+  approvals, individual and bulk approval, and member details — these four routes are what it will
+  call. Until it is integrated, an owner can invite and approve over the API only.
+- **No public Register affordance for the employee path on the web client** beyond the fields the
+  screen now collects — see the client's own notes.
+- **Browse must exclude employees.** Browse selects people holding an `owner` membership, and
+  Browse is not built, so there is nothing to enforce it in yet. The rule is recorded, not coded.
+- **Employee availability is a separate future concept.** It must never reuse or overwrite
+  `companies.availability`, and its vocabulary is not invented yet.
+- **Leaving a company** has no endpoint: `inactive` exists in the enum with no path to it.
+- **A second live membership is refused by `user_current_unique`**, which surfaces as a driver error
+  rather than a named failure. It cannot happen through Register — a registration creates a new
+  account — so it is a gap that only opens when a joining flow for existing accounts is built, and
+  that flow will need a named error of its own.
 
 ### Availability belongs to the business
 
@@ -356,77 +721,42 @@ This is **work availability of the organization** and nothing else. It is not th
 availability of each employee: managing staff availability is a separate future concept that must
 not touch this field.
 
-## My Profile and Edit Profile
+## Rate limiting
 
-Both screens are served by **one** payload from `GET /api/users/me`, so the view and the form can
-never disagree about what is stored. The caller is always the person their Access Token proves —
-no route in this feature names a user, so there is no id to tamper with.
+The four auth entry points are limited per caller IP. Ordinary authenticated application traffic is
+**not** limited — that is a separate decision and this is not it.
 
-The payload is assembled key by key in `profile.service.ts` from three documents:
+| Endpoint | Limit | Window | The abuse it answers |
+|---|---|---|---|
+| `POST /auth/login` | 10 | 15 min | credential stuffing / brute force |
+| `POST /auth/register` | 10 | 60 min | automated account creation |
+| `POST /auth/forgot-password` | 5 | 15 min | mail flooding, Brevo quota abuse |
+| `POST /auth/reset-password` | 10 | 15 min | repeated invalid-token and password attempts |
 
-```
-GET /api/users/me
-        │
-        ├── users            firstName, lastName, email, language, bio, specialties,
-        │                    businessPhone, location, schedulingPrefs, avatar
-        ├── companies        companyName, officePhone, availability   ← read, never copied onto the user
-        ├── companymemberships   standing, companyPosition            ← descriptive only
-        └── workentries      the Completed Work list
-```
+**These numbers are engineering defaults, not approved product values.** They live in one place —
+`AUTH_RATE_LIMITS` in `middleware/rateLimit.ts` — so a route asks for a named limit instead of
+carrying a window and a count of its own.
 
-Nothing is mirrored. A company's name lives in one place, so renaming a company changes every
-profile that shows it and there is no second copy to go stale.
+**Keyed on IP, never on the submitted email.** A forgot-password limiter keyed on the address in the
+body would let anyone lock a chosen person out of password recovery by spending their quota. IPv6 is
+normalised to a /64 block, so one client cannot rotate addresses inside its own prefix for extra
+attempts.
 
-### What may be written, and where
+**The limiter sits in front of validation**, so a flood costs a counter increment rather than a JOI
+pass — and on login it never reaches bcrypt.
 
-| Value | Route | Guarded by |
-|---|---|---|
-| firstName, lastName, bio, specialties, specialtyOther, businessPhone, city, region, travelRadiusKm, delayToleranceDays, noticeRequiredDays | `PATCH /api/users/me` | the caller's own token |
-| companyName, officePhone, availability | `PATCH /api/companies/me` | an **active** membership holding `company.manage` |
+**`POST /auth/refresh` is deliberately not limited.** It is spent by an HttpOnly cookie the browser
+sends on its own, and rotation plus family revocation already answer a replayed one.
 
-Both bodies are explicit JOI allowlists and `validateRequest` strips unknown keys, so a body that
-also carries `email`, `status`, `profileComplete`, `permissions` or `passwordHash` loses them at the
-boundary. The repository then writes field by field — there is no `$set: req.body` anywhere.
+**The answer is the project's own error contract**, not the library's default body:
+`429 { "code": "TOO_MANY_REQUESTS", "message": … }`, raised as an `AppError` and rendered by the
+same error handler as everything else. Standard `RateLimit` headers are sent; the legacy
+`X-RateLimit-*` ones are not.
 
-A `null` clears an optional value; an absent key leaves it untouched. The two are different requests
-and mean different things.
-
-### Completed Work
-
-`POST /api/users/me/work-entries` and `DELETE /api/users/me/work-entries/:id`. The owner is part of
-every query, so another person's entry is not merely refused — it is not found.
-
-`projectId` and `taskId` are optional. A free-standing portfolio entry is a first-class kind, not a
-degraded one, because a contractor's history predates this platform.
-
-**The `Completed on FieldSync` badge is server-derived and has no field in the request contract.**
-It may only ever be granted by `workEntryVerification.service.ts`, from canonical project and task
-data. Those collections arrive in Stage 3, so today nothing can be proved: a linked entry is
-refused with `WORK_LINK_NOT_VERIFIABLE` rather than stored with a claim nothing backs. Refusing is
-also what protects confidential delegation (§3.3, sharpened by D13) — a wrong badge would publish
-the very relationship the visibility model exists to hide.
-
-### Images
-
-Uploads use **Multer**, with a storage engine that pipes the incoming file straight into **GridFS**.
-Neither of Multer's shipped engines is usable here: disk storage is ephemeral on Heroku, and memory
-storage would hold a whole upload in the process. Nothing is ever buffered whole, in either
-direction — serving pipes the download stream to the response.
-
-- JPEG, PNG and WebP only, checked on the declared MIME type rather than the filename.
-- 5 MB per file, enforced by Multer's own limit.
-- One file per request, under one named field (`avatar` or `image`).
-- A rejected or failed upload takes its bytes with it, so nothing is orphaned.
-- Replacing an avatar deletes the file it replaced; deleting a work entry deletes its photo.
-
-The client never sees a storage path. `avatarUrl` and `imageUrl` are paths to
-`GET /api/users/me/assets/:id`, which looks an asset up **by id and by owner together**: knowing an
-id is not authorization, and another person's asset answers exactly as a missing one does.
-
-### Ratings
-
-`rating`, `flexibility` and `ratings` are `null`, `null` and `[]`. There is no rating domain yet, and
-a cold start is reported honestly rather than filled with a placeholder number.
+> **Deployment.** Counters are in memory, so each dyno limits independently and a restart clears
+> them. `trust proxy` is enabled only in production, where Heroku puts exactly one proxy in front —
+> without it every caller behind that proxy would share a single key. Trusting the header anywhere
+> else would let a client forge it and buy a fresh quota per request.
 
 ## API error contract
 
@@ -452,17 +782,15 @@ ahead of the conditions that need it. Everything this branch actually implements
 | `REQUEST_BODY_TOO_LARGE` | 413 | The body exceeded the 100kb limit |
 | `EMAIL_ALREADY_REGISTERED` | 409 | Register: the email already holds an account |
 | `INVALID_CREDENTIALS` | 401 | Login failed — for **any** reason |
-| `UNAUTHENTICATED` | 401 | The Access Token was missing, malformed, expired, or was not an Access Token |
+| `UNAUTHENTICATED` | 401 | The Access Token was missing, malformed, expired, was not an Access Token, belongs to no account, or was issued before the account's password last changed |
 | `INVALID_REFRESH_TOKEN` | 401 | The Refresh Token was missing, malformed, expired, unknown, already spent, revoked, or was not a Refresh Token |
-| `PROFILE_NOT_FOUND` | 404 | The token verified, but it identifies no account |
-| `COMPANY_PERMISSION_DENIED` | 403 | A company edit by a member without `company.manage` |
-| `NO_ACTIVE_COMPANY` | 403 | A company edit by someone with no active membership |
-| `WORK_ENTRY_NOT_FOUND` | 404 | The work entry does not exist, or is not the caller's |
-| `WORK_LINK_NOT_VERIFIABLE` | 422 | A work entry named a project or task the server cannot prove |
-| `UNSUPPORTED_FILE_TYPE` | 400 | The upload's MIME type is not JPEG, PNG or WebP |
-| `FILE_TOO_LARGE` | 413 | The upload exceeded 5 MB |
-| `UNEXPECTED_FILE_FIELD` | 400 | A file arrived under an unexpected field, or more than one did |
-| `FILE_NOT_AVAILABLE` | 404 | The asset does not exist, or is not the caller's |
+| `INVALID_RESET_TOKEN` | 401 | The reset link was unknown, expired, superseded by a newer request, or already spent |
+| `TOO_MANY_REQUESTS` | 429 | An auth endpoint's rate limit was exceeded for the caller's IP |
+| `INVITATION_NOT_FOUND` | 409 | Employee registration matched no open seat |
+| `INVITATION_AMBIGUOUS` | 409 | Employee registration matched more than one open seat |
+| `COMPANY_PERMISSION_DENIED` | 403 | The caller lacks `company.invite_employees` |
+| `NO_ACTIVE_COMPANY` | 403 | The caller holds no active company membership |
+| `PENDING_ACTIVATION_NOT_FOUND` | 404 | No pending activation matched in this company |
 | `INTERNAL_SERVER_ERROR` | 500 | Anything unexpected |
 
 `INVALID_CREDENTIALS` cannot distinguish an unknown account from a wrong password from a suspended
@@ -478,24 +806,6 @@ an address to it. Login and password reset are unchanged and keep their unified 
 documented usage — a well-formed request rejected by a domain invariant.
 
 ## Deliberately not decided here
-
-**D1 — the file-storage decision — is open, and this branch does not close it.** GridFS was
-instructed for this task, and the code is built so that the choice can change without a migration
-of meaning: every asset row records `storage.driver`, `gridFs.service.ts` is the only module that
-knows GridFS exists, and the client is only ever given `/api/users/me/assets/:id` rather than a
-storage path.
-
-**D13's storage question is likewise still open.** Completed Work was named as either an embedded
-array on the user or its own collection; a separate `workentries` collection is what this branch
-implements, because entries are added and removed one at a time and will later link to projects.
-That is one of the two options already on the table, not a new one.
-
-**Heavy equipment (the second half of D14) is not implemented.** No approved schema exists for it
-anywhere, so there is nothing to store and it has not been invented.
-
-**`equipment`, ratings and delegation-aware serialization are not in this branch.** Ratings return
-an honest empty state; the viewer-aware serializer that would tell a delegate's work from anyone
-else's is Stage 5.
 
 **D16 — 403 vs 404 for a resource the viewer may not see — is open and this branch does not touch
 it.** `notFoundHandler` answers "no route matched" and nothing else; there is no reusable

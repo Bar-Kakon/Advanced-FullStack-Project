@@ -18,8 +18,12 @@ export interface CompanyUpdate {
 
 export interface CompanyRepository {
   create(company: NewCompany, session?: DbSession): Promise<Types.ObjectId>;
+  /** Every company holding this name. The name is not unique, so this returns a list. */
+  findIdsByName(name: string): Promise<Types.ObjectId[]>;
   findById(id: Types.ObjectId): Promise<CompanyRecord | null>;
   update(id: Types.ObjectId, update: CompanyUpdate): Promise<void>;
+  /** Stamps employee setup as done. Idempotent, and the first stamp is the one that survives. */
+  markEmployeeSetupComplete(id: Types.ObjectId, at: Date): Promise<void>;
 }
 
 /**
@@ -32,6 +36,10 @@ export const companyRepository: CompanyRepository = {
     if (created === undefined) throw new Error('Company insert returned no document.');
 
     return created._id;
+  },
+
+  async findIdsByName(name) {
+    return CompanyModel.find({ name }).distinct('_id');
   },
 
   async findById(id) {
@@ -56,5 +64,13 @@ export const companyRepository: CompanyRepository = {
     if (Object.keys(changes).length === 0) return;
 
     await CompanyModel.updateOne({ _id: id }, changes).exec();
+  },
+
+  /** The filter keeps the original stamp: a later call must not rewrite the day it happened. */
+  async markEmployeeSetupComplete(id, at) {
+    await CompanyModel.updateOne(
+      { _id: id, employeeSetupCompletedAt: { $exists: false } },
+      { $set: { employeeSetupCompletedAt: at } },
+    ).exec();
   },
 };

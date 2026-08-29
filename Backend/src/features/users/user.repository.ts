@@ -8,10 +8,11 @@ import {
   type Trade,
   type UserProfileRecord,
   type UserRecord,
+  type UserStatus,
   type UserWithPasswordHash,
 } from './user.model.js';
 
-const IDENTITY_FIELDS = 'email status firstName lastName language profileComplete';
+const IDENTITY_FIELDS = 'email status firstName lastName language profileComplete security.passwordChangedAt';
 
 /**
  * Everything the profile screens read, and nothing else. `passwordHash` is `select: false` and is
@@ -55,12 +56,29 @@ export interface ProfileUpdate {
   readonly noticeRequiredDays?: number;
 }
 
+/** What a protected route needs to know about a token holder, and nothing more. */
+export interface CredentialState {
+  readonly status: UserStatus;
+  readonly passwordChangedAt: Date | null;
+}
+
+export interface PasswordUpdate {
+  readonly passwordHash: string;
+  readonly passwordChangedAt: Date;
+}
+
 export interface UserRepository {
   findByEmailWithPasswordHash(email: string): Promise<UserWithPasswordHash | null>;
+  /** Identity only. Password reset never needs the hash it is about to replace. */
+  findByEmail(email: string): Promise<UserRecord | null>;
   findById(id: string): Promise<UserRecord | null>;
   findProfileById(id: string): Promise<UserProfileRecord | null>;
   updateProfile(id: Types.ObjectId, update: ProfileUpdate): Promise<void>;
   setAvatarFile(id: Types.ObjectId, fileId: Types.ObjectId | null): Promise<void>;
+  /** The narrowest read the auth middleware can make: `null` when no such user exists. */
+  findCredentialState(id: string): Promise<CredentialState | null>;
+  /** The hash and the change stamp move together, so one call writes both. */
+  updatePassword(id: Types.ObjectId, update: PasswordUpdate, session?: DbSession): Promise<void>;
   existsByEmail(email: string): Promise<boolean>;
   create(user: NewUser, session?: DbSession): Promise<UserRecord>;
 }
@@ -75,6 +93,31 @@ export const userRepository: UserRepository = {
       .select(`${IDENTITY_FIELDS} +passwordHash`)
       .lean<UserWithPasswordHash>()
       .exec();
+  },
+
+  async findByEmail(email) {
+    return UserModel.findOne({ email }).select(IDENTITY_FIELDS).lean<UserRecord>().exec();
+  },
+
+  async findCredentialState(id) {
+    if (!Types.ObjectId.isValid(id)) return null;
+
+    const found = await UserModel.findById(id)
+      .select('status security.passwordChangedAt')
+      .lean<{ status: UserStatus; security?: { passwordChangedAt?: Date } }>()
+      .exec();
+
+    if (found === null) return null;
+    return { status: found.status, passwordChangedAt: found.security?.passwordChangedAt ?? null };
+  },
+
+  async updatePassword(id, { passwordHash, passwordChangedAt }, session) {
+    const query = UserModel.updateOne(
+      { _id: id },
+      { $set: { passwordHash, 'security.passwordChangedAt': passwordChangedAt } },
+    );
+    if (session) query.session(session);
+    await query.exec();
   },
 
   async findById(id) {

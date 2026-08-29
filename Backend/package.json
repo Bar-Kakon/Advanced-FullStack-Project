@@ -13,21 +13,28 @@
     "start": "node dist/server.js",
     "typecheck": "tsc --noEmit && tsc -p tsconfig.scripts.json",
     "verify:register-txn": "tsx scripts/verify-register-transaction.ts",
+    "verify:password-reset": "tsx scripts/verify-password-reset.ts",
+    "verify:rate-limit": "tsx scripts/verify-rate-limit.ts",
+    "verify:employee-lifecycle": "tsx scripts/verify-employee-lifecycle.ts",
     "verify:profile": "tsx scripts/verify-profile.ts",
     "verify:completed-work": "tsx scripts/verify-completed-work.ts",
-    "verify:media": "tsx scripts/verify-media.ts"
+    "verify:media": "tsx scripts/verify-media.ts",
+    "migrate:membership-uniqueness": "tsx scripts/migrate-membership-uniqueness.ts"
   },
   "dependencies": {
+    "@types/nodemailer": "^8.0.1",
     "bcrypt": "^6.0.0",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
+    "express-rate-limit": "^8.7.0",
     "helmet": "^8.3.0",
     "joi": "^18.2.5",
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.9.4",
-    "multer": "^2.3.0"
+    "multer": "^2.3.0",
+    "nodemailer": "^9.0.6"
   },
   "devDependencies": {
     "@types/bcrypt": "^6.0.0",

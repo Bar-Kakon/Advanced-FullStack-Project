@@ -1,4 +1,4 @@
-/** Builds real accounts through the real Register endpoint, and removes them afterwards. */
+/** Builds real accounts through the real Register and Login endpoints, and removes them afterwards. */
 import { Types } from 'mongoose';
 
 import { CompanyModel } from '../../src/features/companies/company.model.js';
@@ -23,6 +23,7 @@ export const createAccount = async (baseUrl: string, marker: string, index: numb
     json: {
       firstName: 'Verify',
       lastName: `Account${index}`,
+      standing: 'owner',
       companyName,
       email,
       password: 'CorrectHorse42!',
@@ -37,16 +38,21 @@ export const createAccount = async (baseUrl: string, marker: string, index: numb
 
   if (status !== 201) throw new Error(`Register failed for the harness account: ${JSON.stringify(body)}`);
 
+  const signIn = await request(baseUrl, 'POST', '/api/auth/login', {
+    json: { email, password: 'CorrectHorse42!' },
+  });
+  if (signIn.status !== 200) {
+    throw new Error(`Login failed for the harness account: ${JSON.stringify(signIn.body)}`);
+  }
+
+  const token = signIn.body['accessToken'] as string;
+  if (!token) throw new Error('Login answered 200 without an Access Token.');
+
   const user = await UserModel.findOne({ email }).lean().exec();
   const company = await CompanyModel.findOne({ name: companyName }).lean().exec();
   if (!user || !company) throw new Error('Register reported success but wrote no account.');
 
-  return {
-    email,
-    token: body['accessToken'] as string,
-    userId: user._id,
-    companyId: company._id,
-  };
+  return { email, token, userId: user._id, companyId: company._id };
 };
 
 /** Everything the scripts create carries the same marker, so cleanup can be exact. */

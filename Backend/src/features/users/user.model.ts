@@ -74,6 +74,7 @@ export interface UserRecord {
   readonly lastName: string;
   readonly language: UserLanguage;
   readonly profileComplete: boolean;
+  readonly security?: { readonly passwordChangedAt?: Date };
 }
 
 /** The identity fields plus everything the profile screens read. */
@@ -138,6 +139,12 @@ const userSchema = new Schema(
         acceptedAt: { type: Date, required: true },
       },
     ],
+
+    // Server-controlled, and the only input to the "is this token still valid" check. Absent means
+    // the password has never been changed, which is why registration does not set it.
+    security: {
+      passwordChangedAt: { type: Date },
+    },
   },
   { timestamps: true },
 );
