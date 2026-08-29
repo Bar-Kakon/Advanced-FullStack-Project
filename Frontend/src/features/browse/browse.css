@@ -28,7 +28,12 @@
 }
 
 /* ═══ Filter rail — pinned, never a drawer ═══ */
-.filters { position: sticky; top: calc(var(--nav-h) + 16px); }
+.filters {
+  position: sticky;
+  top: calc(var(--nav-h) + 16px);
+  max-height: calc(100vh - var(--nav-h) - 40px);
+  overflow-y: auto;
+}
 .filters__card {
   background: var(--surface);
   border: 1px solid var(--secondary-30);
@@ -204,6 +209,11 @@
     position: static;
     max-height: none;
   }
+  .browse__body.has-advanced.has-profile .filters,
+  .browse__body.has-advanced.has-profile .adv-panel {
+    position: static;
+    max-height: none;
+  }
 }
 
 /* Not enough width for three tracks: the profile goes below in the two-column case too. */
@@ -216,6 +226,13 @@
   }
   .browse__body.has-advanced { grid-template-columns: 268px minmax(0, 1fr); }
   .browse__body.has-advanced .adv-panel { grid-column: 1 / -1; position: static; }
+
+  .browse__body.has-profile .filters,
+  .browse__body.has-profile .adv-panel,
+  .browse__body.has-advanced .filters {
+    position: static;
+    max-height: none;
+  }
 }
 
 /* Tablet: the rail stops being a column and sits above the results, still fully usable. */
