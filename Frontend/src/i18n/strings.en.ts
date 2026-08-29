@@ -240,6 +240,65 @@ export const en: Strings = {
     welcome: 'Hello, {name}.',
     notMigrated:
       'The Personal dashboard is the approved destination after signing in, and the screen itself has not been migrated to React yet.',
+    employees: 'Employee management',
+  },
+
+  employees: {
+    title: 'Employee management',
+    lede: 'Open a seat for an employee, and approve anyone who has registered and is waiting for the company to approve their membership.',
+
+    invite: {
+      title: 'Open a seat for an employee',
+      lede: 'Only a name and a position are needed. The employee chooses their own email address and password when they register.',
+      fullName: {
+        label: 'Full name',
+        placeholder: 'Alex Levi',
+        hint: 'The full name exactly as the employee will enter it when registering.',
+      },
+      companyPosition: { label: 'Company position', placeholder: 'Choose a position…' },
+      submit: 'Open seat',
+      created: 'The seat is open. The employee can register now using this name and position.',
+    },
+
+    list: {
+      title: 'Employees and invitations',
+      count: '{count} rows',
+      name: 'Full name',
+      position: 'Position',
+      status: 'Status',
+      nameMissing: 'No name',
+      positionMissing: 'No position',
+    },
+
+    status: {
+      invited: 'Invitation open — not registered yet',
+      pending_company_approval: 'Registered, waiting for company approval',
+      active: 'Active',
+      inactive: 'Inactive',
+    },
+
+    actions: {
+      approve: 'Approve membership',
+      approveAll: 'Approve all waiting ({count})',
+      refresh: 'Refresh list',
+    },
+
+    empty: {
+      noEmployees: 'No seats have been opened yet. You can open the first one in the form above.',
+      noPending: 'No memberships are waiting for approval right now.',
+    },
+
+    loading: 'Loading the employee list…',
+
+    errors: {
+      notPermitted: 'You are not permitted to manage this company’s employees. Ask the company owner.',
+      noCompany: 'Your account does not belong to an active company, so there are no employees to manage.',
+      unauthenticated: 'Your session has expired. Sign in again to continue.',
+      nothingToApprove: 'This membership has already been approved, or it is not waiting for approval. Refresh the list.',
+      validation: 'Some of the details are not valid. Check the marked fields and try again.',
+      network: 'We could not reach the server. Check your connection and try again.',
+      generic: 'Something went wrong. Please try again.',
+    },
   },
 
   profile: {

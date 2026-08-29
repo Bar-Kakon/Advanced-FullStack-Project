@@ -43,6 +43,10 @@ export const PersonalDashboardPage = () => {
         <section className="panel">
           <p className="panel__lede">{t.dashboard.notMigrated}</p>
           <Link to="/profile" className="btn btn--ghost btn--sm">{t.profile.title}</Link>
+          {/* The navbar's four destinations are still `#`, so the way into employee management is
+              the one this screen already uses for My profile rather than a fifth navbar link the
+              approved navigation has not been redrawn to carry. */}
+          <Link to="/employees" className="btn btn--ghost btn--sm">{t.dashboard.employees}</Link>
         </section>
       </main>
     </div>

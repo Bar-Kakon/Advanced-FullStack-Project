@@ -10,6 +10,7 @@ import { RegisterPage } from './features/register/RegisterPage';
 import { PersonalDashboardPage } from './features/dashboard/PersonalDashboardPage';
 import { MyProfilePage } from './features/profile/MyProfilePage';
 import { EditProfilePage } from './features/profile/EditProfilePage';
+import { EmployeeManagementPage } from './features/employees/EmployeeManagementPage';
 
 /**
  * The app root.
@@ -39,6 +40,9 @@ export const App = () => (
             <Route path="/dashboard" element={<PersonalDashboardPage />} />
             <Route path="/profile" element={<MyProfilePage />} />
             <Route path="/profile/edit" element={<EditProfilePage />} />
+            {/* Reachable whenever the owner wants it, and the server decides whether they may.
+                No guard here reads a standing or a job title to open the door. */}
+            <Route path="/employees" element={<EmployeeManagementPage />} />
           </Route>
 
           {/* No 404 screen is migrated yet — approved screen #28 exists as a static prototype

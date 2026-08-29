@@ -141,3 +141,62 @@ export interface ApiErrorBody {
   readonly code: string;
   readonly message: string;
 }
+
+/**
+ * The life of one company relationship, in order, mirrored from `companyMembership.model.ts`:
+ *
+ *   invited                    the company opened a seat. NO account has claimed it.
+ *   pending_company_approval   somebody claimed that seat by registering.
+ *   active                     the company approved them.
+ *   inactive                   the relationship ended.
+ *
+ * These are codes, never labels. A reader is shown `t.employees.status`, which holds the one
+ * sentence each of them is given in each language.
+ */
+export const COMPANY_MEMBERSHIP_STATUSES = [
+  'invited', 'pending_company_approval', 'active', 'inactive',
+] as const;
+export type CompanyMembershipStatus = (typeof COMPANY_MEMBERSHIP_STATUSES)[number];
+
+/**
+ * One row of `GET /companies/employees`, mirrored from `employeeManagement.controller.ts`.
+ *
+ * `invitedFullName` and `companyPosition` are nullable because the controller answers `null` for a
+ * row that never carried one — the owner's own membership is written by Register, which asks for
+ * neither. `userId` is `null` until a seat is claimed, and that absence is the point: an
+ * invitation exists before an account does, so there is no person here whose email or phone the
+ * screen could reach for. The type gives it nothing to invent them from.
+ */
+export interface EmployeeMembership {
+  readonly id: string;
+  readonly status: CompanyMembershipStatus;
+  readonly standing: CompanyStanding;
+  readonly invitedFullName: string | null;
+  readonly companyPosition: CompanyPosition | null;
+  readonly userId: string | null;
+}
+
+/** Every relationship in the caller's company, oldest first. The owner's own row is among them. */
+export interface EmployeeListResponse {
+  readonly memberships: readonly EmployeeMembership[];
+}
+
+/**
+ * `POST /companies/employees/invitations`, mirrored from `createInvitationBodySchema`. Two fields,
+ * and deliberately only two: opening a seat asks nothing about the person's account, because the
+ * person supplies all of that themselves when they register against it.
+ */
+export interface CreateInvitationPayload {
+  readonly fullName: string;
+  readonly companyPosition: CompanyPosition;
+}
+
+/** A 201 names the row that now exists. The list is re-read rather than patched from this. */
+export interface CreateInvitationResponse {
+  readonly invitationId: string;
+}
+
+/** Both approval endpoints answer with how many relationships actually moved to `active`. */
+export interface ApprovalResponse {
+  readonly approved: number;
+}

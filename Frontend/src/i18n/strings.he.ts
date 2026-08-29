@@ -260,6 +260,78 @@ export const he = {
     title: 'לוח הבקרה האישי',
     welcome: 'שלום, {name}.',
     notMigrated: 'לוח הבקרה האישי הוא היעד המאושר אחרי כניסה, והמסך עצמו עדיין לא הועבר ל-React.',
+    employees: 'ניהול עובדים',
+  },
+
+  /**
+   * Employee management. One resource for both places the feature is used, because it is one
+   * feature: the surrounding navigation differs and nothing a reader sees does.
+   */
+  employees: {
+    title: 'ניהול עובדים',
+    lede: 'פתחו מקום לעובד/ת, ואשרו את מי שכבר נרשם/ה וההצטרפות שלו/ה ממתינה לאישור החברה.',
+
+    invite: {
+      title: 'פתיחת מקום לעובד/ת',
+      // Says why so little is asked for, so the two fields do not read as a form cut short.
+      lede: 'נדרשים רק שם ותפקיד. את כתובת המייל והסיסמה העובד/ת בוחר/ת בעצמו/ה בעת ההרשמה.',
+      fullName: {
+        label: 'שם מלא',
+        placeholder: 'ישראל ישראלי',
+        hint: 'השם המלא כפי שהעובד/ת יזין/תזין אותו בהרשמה.',
+      },
+      companyPosition: { label: 'תפקיד בחברה', placeholder: 'בחירת תפקיד…' },
+      submit: 'פתיחת מקום',
+      created: 'המקום נפתח. העובד/ת יכול/ה להירשם עכשיו עם השם והתפקיד האלה.',
+    },
+
+    list: {
+      title: 'עובדים והזמנות',
+      /** Named rather than numbered, so a row nobody has claimed is not read as a person. */
+      count: '{count} רשומות',
+      name: 'שם מלא',
+      position: 'תפקיד',
+      status: 'סטטוס',
+      /** The invitation carries a name and the position carries a code, so neither can be empty. */
+      nameMissing: 'ללא שם',
+      positionMissing: 'ללא תפקיד',
+    },
+
+    /**
+     * One label per lifecycle code, and this is the only place they are written. The wording says
+     * what has happened to the relationship, never what the code is called.
+     */
+    status: {
+      invited: 'הזמנה פתוחה — טרם נרשמו',
+      pending_company_approval: 'נרשם/ה, ממתין/ה לאישור החברה',
+      active: 'פעיל/ה',
+      inactive: 'לא פעיל/ה',
+    },
+
+    actions: {
+      approve: 'אישור ההצטרפות',
+      approveAll: 'אישור כל הממתינים ({count})',
+      refresh: 'רענון הרשימה',
+    },
+
+    empty: {
+      /** The first thing an owner sees, so it says what to do rather than that nothing is here. */
+      noEmployees: 'עדיין לא נפתחו מקומות לעובדים. אפשר לפתוח את המקום הראשון בטופס שלמעלה.',
+      noPending: 'אין כרגע הצטרפויות הממתינות לאישור.',
+    },
+
+    loading: 'טוען את רשימת העובדים…',
+
+    errors: {
+      notPermitted: 'אין לכם הרשאה לנהל את העובדים של החברה הזו. פנו לבעל/ת החברה.',
+      noCompany: 'החשבון שלכם אינו משויך לחברה פעילה, ולכן אין עובדים לנהל.',
+      unauthenticated: 'ההתחברות פגה. התחברו שוב כדי להמשיך.',
+      // A stale screen rather than a failed action: somebody else already approved this person.
+      nothingToApprove: 'ההצטרפות הזו כבר אושרה או שאינה ממתינה לאישור. רעננו את הרשימה.',
+      validation: 'חלק מהפרטים אינם תקינים. בדקו את השדות המסומנים ונסו שוב.',
+      network: 'לא הצלחנו להגיע לשרת. בדקו את החיבור ונסו שוב.',
+      generic: 'משהו השתבש. אנא נסו שוב.',
+    },
   },
 
   profile: {
