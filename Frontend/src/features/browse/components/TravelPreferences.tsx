@@ -17,7 +17,12 @@ import type {
 } from '../../../api/browse.types';
 import { PlaceAutocomplete } from '../../../location/PlaceAutocomplete';
 
-const KM_STEPS = [10, 25, 50, 75, 100, 150, 200];
+/** The bounds the server enforces on a travel radius. */
+const MIN_KM = 1;
+const MAX_KM = 500;
+const DEFAULT_KM = 50;
+
+const clampKm = (value: number): number => Math.min(MAX_KM, Math.max(MIN_KM, Math.round(value)));
 
 const toPayload = (
   place: StructuredPlace & { drivingDistanceMeters?: number | null },
@@ -48,7 +53,8 @@ export const TravelPreferences = ({ onClose }: { onClose: () => void }) => {
   const dialogRef = useRef<HTMLDivElement>(null);
 
   const [base, setBase] = useState<StructuredPlace | null>(null);
-  const [radiusKm, setRadiusKm] = useState(50);
+  const [radiusBox, setRadiusBox] = useState(String(DEFAULT_KM));
+  const [baseTouched, setBaseTouched] = useState(false);
   const [proposal, setProposal] = useState<TravelProposal | null>(null);
   const [chosen, setChosen] = useState<ApprovedTravelLocationPayload[]>([]);
   const [removed, setRemoved] = useState<RemovedTravelLocationPayload[]>([]);
@@ -81,7 +87,7 @@ export const TravelPreferences = ({ onClose }: { onClose: () => void }) => {
         setChosen([...mine.approvedTravelLocations]);
         setRemoved([...mine.previouslyRemoved]);
         if (mine.basePlace) setBase(mine.basePlace);
-        if (mine.travelRadiusKm) setRadiusKm(mine.travelRadiusKm);
+        if (mine.travelRadiusKm) setRadiusBox(String(mine.travelRadiusKm));
         setReviewing(mine.approvedTravelLocations.length > 0);
       } catch (error) {
         if (!isAbortError(error)) setFailure(t.browse.errors.generic);
@@ -93,8 +99,17 @@ export const TravelPreferences = ({ onClose }: { onClose: () => void }) => {
     return () => controller.abort();
   }, [t]);
 
+  const radiusKm = clampKm(Number(radiusBox) || DEFAULT_KM);
+  const radiusValid = radiusBox.trim() !== '' && Number(radiusBox) >= MIN_KM && Number(radiusBox) <= MAX_KM;
+
+  /* Every Google call is deliberate: nothing here fires on typing, on blur or on a radius change. */
   const propose = useCallback(async (): Promise<void> => {
-    if (!base || proposing) return;
+    if (!base) {
+      setBaseTouched(true);
+      return;
+    }
+    if (proposing || !radiusValid) return;
+
     setProposing(true);
     setFailure(null);
     setSaved(false);
@@ -145,14 +160,22 @@ export const TravelPreferences = ({ onClose }: { onClose: () => void }) => {
     setSaved(false);
   }, []);
 
+  /* A cleared origin blocks the save instead of quietly leaving the stored one in place. */
   const confirm = useCallback(async (): Promise<void> => {
     if (saving) return;
+    if (!base || !radiusValid) {
+      setBaseTouched(true);
+      setSaved(false);
+      setFailure(t.browse.travel.baseRequired);
+      return;
+    }
+
     setSaving(true);
     setFailure(null);
     try {
       await saveTravelPreferences({
         travelRadiusKm: radiusKm,
-        ...(base ? { basePlace: toPayload(base, 'manual') } : {}),
+        basePlace: toPayload(base, 'manual'),
         approvedTravelLocations: chosen,
         removedTravelLocations: removed,
       });
@@ -164,7 +187,7 @@ export const TravelPreferences = ({ onClose }: { onClose: () => void }) => {
     } finally {
       setSaving(false);
     }
-  }, [saving, radiusKm, base, chosen, removed, t]);
+  }, [saving, radiusKm, radiusValid, base, chosen, removed, t]);
 
   const insideRadius = useMemo(
     () => new Set(proposal?.suggested.map((place) => place.placeId) ?? []),
@@ -190,7 +213,7 @@ export const TravelPreferences = ({ onClose }: { onClose: () => void }) => {
         <div className="travel-dialog__head">
           <h2 className="travel-dialog__title">{t.browse.travel.title}</h2>
           <button type="button" className="adv-panel__close" onClick={onClose}>
-            {t.browse.profile.close}
+            {t.browse.travel.close}
           </button>
         </div>
 
@@ -202,33 +225,57 @@ export const TravelPreferences = ({ onClose }: { onClose: () => void }) => {
               <PlaceAutocomplete
                 label={t.browse.travel.baseLabel}
                 value={base}
-                onChange={setBase}
+                onChange={(place) => {
+                  setBase(place);
+                  setBaseTouched(true);
+                }}
+                required
+                invalid={baseTouched && base === null}
+                error={t.browse.travel.baseRequired}
               />
+              <p className="field-hint">{t.browse.travel.baseFromProfile}</p>
 
+              {/* The box and the slider are one value: any whole number in range is enterable. */}
               <div className="form-group">
-                <label className="field-label" htmlFor="travel-radius">
-                  {`${t.browse.travel.radiusLabel} — ${radiusKm} ${t.browse.advanced.km}`}
+                <label className="field-label" htmlFor="travel-radius-km">
+                  {t.browse.travel.radiusLabel}
                 </label>
+                <div className="unit-field">
+                  <input
+                    id="travel-radius-km"
+                    className={`form-input form-input--num${radiusValid ? '' : ' touched'}`}
+                    type="number"
+                    dir="ltr"
+                    inputMode="numeric"
+                    min={MIN_KM}
+                    max={MAX_KM}
+                    step={1}
+                    value={radiusBox}
+                    onChange={(event) => setRadiusBox(event.target.value)}
+                  />
+                  <span className="unit-field__unit">{t.browse.advanced.km}</span>
+                </div>
                 <input
-                  id="travel-radius"
                   className="travel-slider"
                   type="range"
-                  min={KM_STEPS[0]}
-                  max={KM_STEPS[KM_STEPS.length - 1]}
-                  step={5}
+                  aria-label={t.browse.travel.radiusLabel}
+                  min={MIN_KM}
+                  max={MAX_KM}
+                  step={1}
                   value={radiusKm}
-                  onChange={(event) => setRadiusKm(Number(event.target.value))}
+                  onChange={(event) => setRadiusBox(event.target.value)}
                 />
+                <p className="field-hint">{t.browse.travel.radiusHint}</p>
               </div>
 
               <button
                 type="button"
                 className="btn btn--primary"
                 onClick={() => void propose()}
-                disabled={!base || proposing}
+                disabled={proposing || !radiusValid}
                 aria-busy={proposing}
               >
-                {proposing ? t.browse.travel.proposing : t.browse.travel.propose}
+                {t.browse.travel.propose}
                 {proposing ? <ButtonSpinner /> : null}
               </button>
 
@@ -303,7 +350,7 @@ export const TravelPreferences = ({ onClose }: { onClose: () => void }) => {
                       disabled={saving}
                       aria-busy={saving}
                     >
-                      {saving ? t.browse.travel.confirming : t.browse.travel.confirm}
+                      {t.browse.travel.confirm}
                       {saving ? <ButtonSpinner /> : null}
                     </button>
                     {saved ? (

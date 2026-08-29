@@ -397,16 +397,31 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 /* Touched-field validation — same behavior as signup.
    validation.ts adds .touched on blur; red shows only after leaving an
    invalid field (empty required included), never on load or while editing. */
+/* The same block the register screen draws, so one error language serves both. */
 .field-error {
   display: none;
   font-size: 14.5px;
   color: var(--error);
-  margin-top: 5px;
+  margin-top: 4px;
+  padding: 8px 10px;
   line-height: 1.4;
+  background: var(--error-bg);
+  border: 1px solid var(--error-border);
+  border-inline-start: 4px solid var(--error);
+  border-radius: var(--r-sm);
+  box-shadow: 3px 3px 0 rgba(166, 50, 50, 0.08);
 }
+.field-error--visible { display: block; }
 
 /* Touched + left + invalid → red field + in-field hard-hat warning */
-.form-input.touched:not(:focus):invalid { border-color: var(--error); box-shadow: 0 0 0 4px var(--error-bg); }
+.form-input.touched:not(:focus):invalid {
+  border-color: var(--error);
+  border-inline-start-color: var(--error);
+  box-shadow:
+    0 0 0 4px var(--error-bg),
+    inset 0 -2px 0 var(--error),
+    4px 4px 0 rgba(166, 50, 50, 0.08);
+}
 .form-input.touched:not(:focus):invalid ~ .input-warn { display: flex; }
 
 /* "Sign in" stays disabled until the email is valid and the password is filled.
@@ -444,17 +459,18 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 .input-action:hover { color: var(--primary); }
 
 /* Hard-hat warning inside an invalid field; sits left of the eye toggle */
+/* Logical, so the hard-hat sits on the trailing edge in both directions. */
 .input-warn {
   position: absolute;
   top: 0;
-  right: 12px;
+  inset-inline-end: 12px;
   height: 48px;
   display: none;
   align-items: center;
   color: var(--error);
   pointer-events: none;
 }
-.input-wrapper:has(.input-action) .input-warn { right: 46px; }
+.input-wrapper:has(.input-action) .input-warn { inset-inline-end: 46px; }
 
 /* Eye / eye-off state swap driven by JS class */
 .icon-eye-off                          { display: none; }

@@ -2,7 +2,9 @@ import { useLanguage } from '../../../i18n/useLanguage';
 import type { BrowseState } from '../useBrowse';
 import { PlaceAutocomplete } from '../../../location/PlaceAutocomplete';
 
-const KM_STEPS = [10, 25, 50, 75, 100, 150, 200];
+/** The bounds the server enforces on `maxDrivingKm`. */
+const MIN_KM = 1;
+const MAX_KM = 500;
 const STARS = [5, 4, 3, 2, 1];
 
 /**
@@ -42,26 +44,28 @@ export const AdvancedFilters = ({ state, onClose }: { state: BrowseState; onClos
             onChange={(place) => applyFilters({ origin: place })}
           />
 
+          {/* Any whole number the server accepts, not a list of presets. */}
           <div className="form-group">
             <label className="field-label" htmlFor="browse-km">{t.browse.advanced.maxKmLabel}</label>
-            <select
-              id="browse-km"
-              className="form-select"
-              value={filters.maxDrivingKm ?? ''}
-              onChange={(e) =>
-                applyFilters({ maxDrivingKm: e.target.value ? Number(e.target.value) : null })
-              }
-            >
-              <option value="">—</option>
-              {KM_STEPS.map((km) => (
-                <option key={km} value={km}>{`${km} ${t.browse.advanced.km}`}</option>
-              ))}
-            </select>
+            <div className="unit-field">
+              <input
+                id="browse-km"
+                className="form-input form-input--num"
+                type="number"
+                dir="ltr"
+                inputMode="numeric"
+                min={MIN_KM}
+                max={MAX_KM}
+                step={1}
+                value={filters.maxDrivingKm ?? ''}
+                onChange={(e) =>
+                  applyFilters({ maxDrivingKm: e.target.value === '' ? null : Number(e.target.value) })
+                }
+              />
+              <span className="unit-field__unit">{t.browse.advanced.km}</span>
+            </div>
+            <p className="field-hint">{t.browse.advanced.maxKmHint}</p>
           </div>
-
-          {state.degraded ? (
-            <p className="notice notice--warn" role="status">{t.browse.advanced.degraded}</p>
-          ) : null}
         </div>
 
         <div className="adv-group">

@@ -13,7 +13,7 @@ import {
   isAbortError,
   requestConnection,
 } from '../../api/browse.api';
-import type { PublicProfile } from '../../api/browse.types';
+import { BROWSE_SORTS, type BrowseSort, type PublicProfile } from '../../api/browse.types';
 import { AdvancedFilters } from './components/AdvancedFilters';
 import { ContractorCard } from './components/ContractorCard';
 import { FilterRail } from './components/FilterRail';
@@ -116,9 +116,32 @@ export const BrowsePage = () => {
             <h1 className="browse__title">{t.browse.title}</h1>
             <p className="browse__sub">{t.browse.lede}</p>
           </div>
-          <button type="button" className="btn btn--ghost btn--sm" onClick={() => setTravelOpen(true)}>
-            {t.browse.travel.openEditor}
-          </button>
+          <div className="browse__head-actions">
+            {/* The order the prototype approved, minus the two the product cannot compute. */}
+            <div className="browse__sort">
+              <label className="field-label" htmlFor="browse-sort">{t.browse.sort.label}</label>
+              <div className="select-wrap">
+                <select
+                  id="browse-sort"
+                  className="form-select"
+                  value={state.filters.sort}
+                  onChange={(e) => state.applyFilters({ sort: e.target.value as BrowseSort })}
+                >
+                  {BROWSE_SORTS.map((code) => (
+                    <option key={code} value={code}>{t.browse.sort[code]}</option>
+                  ))}
+                </select>
+                <span className="select-chevron" aria-hidden="true">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                       strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9l6 6 6-6" /></svg>
+                </span>
+              </div>
+            </div>
+
+            <button type="button" className="btn btn--ghost btn--sm" onClick={() => setTravelOpen(true)}>
+              {t.browse.travel.openEditor}
+            </button>
+          </div>
         </header>
 
         <div className={bodyClass}>
@@ -149,7 +172,11 @@ export const BrowsePage = () => {
             {state.loading && !state.loaded ? (
               <p className="panel__lede">{t.browse.loading}</p>
             ) : state.contractors.length === 0 && !message ? (
-              <p className="panel__lede">{t.browse.empty}</p>
+              <p className="panel__lede">
+                {state.filters.minRating === null
+                  ? t.browse.empty
+                  : t.browse.emptyByRating.replace('{stars}', String(state.filters.minRating))}
+              </p>
             ) : (
               <>
                 <p className="results__count">

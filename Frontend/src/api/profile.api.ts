@@ -1,7 +1,14 @@
 import { isAxiosError } from 'axios';
 
 import { api } from './client';
-import type { ApiErrorBody, Availability, CompanyPosition, Region, Trade } from './types';
+import type {
+  ApiErrorBody,
+  Availability,
+  CompanyPosition,
+  EquipmentCode,
+  Region,
+  Trade,
+} from './types';
 import type { StructuredPlace } from '../location/place.types';
 
 export interface ReceivedRatingDto {
@@ -31,6 +38,8 @@ export interface Profile {
   readonly bio: string;
   readonly specialties: readonly Trade[];
   readonly specialtyOther: string;
+  /** Empty unless `heavy_equipment` is one of the specialties; the server enforces that. */
+  readonly heavyEquipment: readonly EquipmentCode[];
   readonly businessPhone: string;
   readonly city: string;
   readonly region: Region | null;
@@ -70,6 +79,7 @@ export interface ProfilePatch {
   bio?: string;
   specialties?: readonly Trade[];
   specialtyOther?: string | null;
+  heavyEquipment?: readonly EquipmentCode[];
   businessPhone?: string | null;
   city?: string;
   region?: Region;
@@ -125,6 +135,21 @@ export const addWorkEntry = async (
   if (image) form.append('image', image);
 
   const { data } = await api.post<{ entry: WorkEntry }>('/users/me/work-entries', form);
+  return data.entry;
+};
+
+export const updateWorkEntry = async (
+  id: string,
+  entry: { title: string; scope: string; meta: string },
+  image?: File | null,
+): Promise<WorkEntry> => {
+  const form = new FormData();
+  form.append('title', entry.title);
+  form.append('meta', entry.meta);
+  form.append('scope', entry.scope);
+  if (image) form.append('image', image);
+
+  const { data } = await api.patch<{ entry: WorkEntry }>(`/users/me/work-entries/${id}`, form);
   return data.entry;
 };
 

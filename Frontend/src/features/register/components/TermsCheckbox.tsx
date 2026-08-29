@@ -7,9 +7,8 @@ import type { Strings } from '../../../i18n/strings.types';
  * A plain HTML form would have submitted the string `"on"` instead, which the server rejects — the
  * gap is invisible until the first real request, so it is worth naming.
  *
- * The two links still point at `#`: no Terms or Privacy document has been written. The version
- * being accepted is never sent from here — the server records the version it is serving, because
- * a client could claim any value.
+ * The version being accepted is never sent from here — the server records the version it is
+ * serving, because a client could claim any value.
  */
 export const TermsCheckbox = ({
   terms, checked, onChange, onBlur, touched,
@@ -36,11 +35,12 @@ export const TermsCheckbox = ({
         <path d="M5 12l5 5L20 6" />
       </svg>
     </span>
+    {/* Named rather than linked: no Terms or Privacy document exists to open (D25). */}
     <span className="checkbox-label">
       {terms.before}
-      <a href="#">{terms.tos}</a>
+      <span className="checkbox-label__doc">{terms.tos}</span>
       {terms.between}
-      <a href="#">{terms.privacy}</a>
+      <span className="checkbox-label__doc">{terms.privacy}</span>
     </span>
   </label>
 );

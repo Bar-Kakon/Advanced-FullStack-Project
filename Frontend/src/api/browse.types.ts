@@ -77,7 +77,15 @@ export interface BrowsePage {
  * The two location filters are separate on purpose. `approvedPlaceId` asks whether a contractor
  * said they will work in a place; `originPlaceId` + `maxDrivingKm` ask how far they are by road.
  */
+/**
+ * The orders the server can actually produce. There is no flexibility order, because D6 has no
+ * arithmetic and a sort would be inventing the score.
+ */
+export const BROWSE_SORTS = ['relevance', 'rating_desc'] as const;
+export type BrowseSort = (typeof BROWSE_SORTS)[number];
+
 export interface BrowseFilters {
+  readonly sort: BrowseSort;
   readonly q: string;
   readonly specialties: readonly Trade[];
   readonly regions: readonly Region[];
@@ -90,6 +98,7 @@ export interface BrowseFilters {
 }
 
 export const emptyBrowseFilters: BrowseFilters = {
+  sort: 'relevance',
   q: '',
   specialties: [],
   regions: [],

@@ -22,9 +22,16 @@ export const REGIONS = [
 
 export const AVAILABILITY_STATUSES = ['open', 'limited', 'closed'] as const;
 
+/** The ten machine codes that refine the `heavy_equipment` trade. Mirrored from `user.model.ts`. */
+export const EQUIPMENT_CODES = [
+  'excavator', 'backhoe', 'drill_rig', 'mini_excavator', 'crawler',
+  'jcb', 'wheel_loader', 'bobcat', 'bulldozer', 'hooklift_truck',
+] as const;
+
 export type Trade = (typeof TRADES)[number];
 export type Region = (typeof REGIONS)[number];
 export type Availability = (typeof AVAILABILITY_STATUSES)[number];
+export type EquipmentCode = (typeof EQUIPMENT_CODES)[number];
 
 /** Organizational standing only — not a permission, not a project role, not a job title. */
 export const COMPANY_STANDINGS = ['owner', 'employee'] as const;

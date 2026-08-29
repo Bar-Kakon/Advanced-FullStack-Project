@@ -59,7 +59,7 @@ const EmployeeRow = ({
           disabled={cancelling}
           aria-busy={cancelling}
         >
-          {cancelling ? t.employees.actions.cancelling : t.employees.actions.cancelInvitation}
+          {t.employees.actions.cancelInvitation}
           {cancelling ? <ButtonSpinner /> : null}
         </button>
       ) : null}

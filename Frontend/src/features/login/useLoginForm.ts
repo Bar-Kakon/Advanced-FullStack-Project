@@ -44,8 +44,12 @@ export const useLoginForm = (onSuccess: (response: LoginResponse) => void) => {
   }, []);
 
   const errors = useMemo(
-    () => ({ email: values.email.length > 0 && !EMAIL_PATTERN.test(values.email.trim()) }),
-    [values.email],
+    () => ({
+      emailMissing: values.email.trim().length === 0,
+      email: values.email.length > 0 && !EMAIL_PATTERN.test(values.email.trim()),
+      passwordMissing: values.password.length === 0,
+    }),
+    [values.email, values.password],
   );
 
   const isComplete = useMemo(

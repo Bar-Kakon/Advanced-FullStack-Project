@@ -3,6 +3,9 @@ import type { Availability, Region, Trade } from '../../../api/types';
 import { useLanguage } from '../../../i18n/useLanguage';
 import type { BrowseState } from '../useBrowse';
 
+const toggle = (list: readonly Availability[], code: Availability, on: boolean): Availability[] =>
+  on ? [...list, code] : list.filter((entry) => entry !== code);
+
 /** The Basic rail. Pinned in the layout by design — never a drawer, modal or overlay. */
 export const FilterRail = ({
   state,
@@ -76,22 +79,27 @@ export const FilterRail = ({
             </select>
           </div>
 
-          <div className="form-group">
-            <label className="field-label" htmlFor="browse-availability">{t.browse.filters.availability.label}</label>
-            <select
-              id="browse-availability"
-              className="form-select"
-              value={one(filters.availability)}
-              onChange={(e) =>
-                applyFilters({ availability: e.target.value ? [e.target.value as Availability] : [] })
-              }
-            >
-              <option value="">{t.browse.filters.availability.placeholder}</option>
-              {AVAILABILITY_STATUSES.map((code) => (
-                <option key={code} value={code}>{t.availability[code]}</option>
-              ))}
-            </select>
-          </div>
+          {/* Three states, multi-select, as the approved rail has always had them. */}
+          <fieldset className="form-group avail-filter">
+            <legend className="field-label">{t.browse.filters.availability.label}</legend>
+            {AVAILABILITY_STATUSES.map((code) => (
+              <label key={code} className="avail-option" htmlFor={`browse-availability-${code}`}>
+                <input
+                  className="avail-option__input"
+                  id={`browse-availability-${code}`}
+                  type="checkbox"
+                  name="availability"
+                  value={code}
+                  checked={filters.availability.includes(code)}
+                  onChange={(e) => applyFilters({ availability: toggle(filters.availability, code, e.target.checked) })}
+                />
+                <span className={`avail avail--${code}`}>
+                  <span className="avail__dot" aria-hidden="true" />
+                  {t.availability[code]}
+                </span>
+              </label>
+            ))}
+          </fieldset>
 
           <button
             type="button"

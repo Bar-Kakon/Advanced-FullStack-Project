@@ -98,17 +98,16 @@ export const ContractorCard = ({
             disabled={connecting}
             aria-busy={connecting}
           >
-            {connecting ? t.browse.card.connecting : t.browse.card.connect}
+            {t.browse.card.connect}
             {connecting ? <ButtonSpinner /> : null}
           </button>
         ) : null}
 
-        {/* `#` because My network is not migrated yet, as in the navbar. A router link would send
-            an authenticated person to the login screen, which is where an unknown path lands. */}
+        {/* Disabled rather than linked: My network is not migrated, as in the navbar. */}
         {contractor.relationship === 'outgoing_request' || contractor.relationship === 'incoming_request' ? (
-          <a href="#" className="btn btn--quiet btn--sm">
+          <button type="button" className="btn btn--quiet btn--sm" disabled aria-disabled="true">
             {t.browse.card.manageInNetwork}
-          </a>
+          </button>
         ) : null}
       </div>
     </article>

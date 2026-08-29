@@ -1,21 +1,13 @@
 import type { ReactNode } from 'react';
+import EditOutlinedIcon from '@mui/icons-material/EditOutlined';
+import CloseIcon from '@mui/icons-material/Close';
+import IconButton from '@mui/material/IconButton';
+import Tooltip from '@mui/material/Tooltip';
 
 import { useLanguage } from '../../../i18n/useLanguage';
+import { WorkPhoto } from './WorkPhoto';
 import type { CompletedWorkEntry } from '../profileModel';
 
-/**
- * Completed work. My profile renders it read-only; Edit profile passes `manage`, which turns it
- * into the manager the approved edit screen has always carried — a remove control on every tile
- * and an add tile at the end of the grid.
- *
- * The badge appears only where the work the entry represents is itself complete, and it says the
- * completion is *recorded*, not that it was good.
- *
- * The lede is a prop rather than a fixed string: the two screens say different things about the
- * same section on purpose. The view screen explains what the badge means to someone reading it;
- * the edit screen explains what may be put here and that linking an entry is optional — which is
- * only in question while entries are being added.
- */
 export const CompletedWorkPanel = ({
   entries,
   lede,
@@ -27,11 +19,12 @@ export const CompletedWorkPanel = ({
   /** Absent on the read view. Present on Edit profile, where the section is editable. */
   manage?: {
     addLabel: string;
+    editLabel: string;
     removeLabel: string;
     onAdd: () => void;
+    onEdit: (entry: CompletedWorkEntry) => void;
     onRemove: (id: string) => void;
   };
-  /** Anything the screen needs to say about what just happened to the list. */
   notice?: ReactNode;
 }) => {
   const { t } = useLanguage();
@@ -44,24 +37,30 @@ export const CompletedWorkPanel = ({
         {entries.map((entry) => (
           <li className="work-item" key={entry.id}>
             {manage ? (
-              <button
-                type="button"
-                className="work-item__remove"
-                aria-label={manage.removeLabel}
-                onClick={() => manage.onRemove(entry.id)}
-              >
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                     strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6L6 18M6 6l12 12" /></svg>
-              </button>
+              <div className="work-item__tools">
+                <Tooltip title={manage.editLabel}>
+                  <IconButton
+                    size="small"
+                    aria-label={manage.editLabel}
+                    onClick={() => manage.onEdit(entry)}
+                  >
+                    <EditOutlinedIcon fontSize="small" />
+                  </IconButton>
+                </Tooltip>
+                <Tooltip title={manage.removeLabel}>
+                  <IconButton
+                    size="small"
+                    aria-label={manage.removeLabel}
+                    onClick={() => manage.onRemove(entry.id)}
+                  >
+                    <CloseIcon fontSize="small" />
+                  </IconButton>
+                </Tooltip>
+              </div>
             ) : null}
-            <span className="work-item__thumb" aria-hidden="true">
-              <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                   strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="3" y="4" width="18" height="16" rx="2" />
-                <circle cx="8.5" cy="9.5" r="1.5" />
-                <path d="M21 15l-5-5L5 20" />
-              </svg>
-            </span>
+
+            <WorkPhoto url={entry.imageUrl} title={entry.title} />
+
             <div className="work-item__body">
               <p className="work-item__title" dir="auto">{entry.title}</p>
               {entry.scope ? <p className="work-item__scope" dir="auto">{entry.scope}</p> : null}

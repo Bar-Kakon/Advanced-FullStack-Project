@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
 
+import { InputWarning } from '../components/InputWarning';
 import { useLanguage } from '../i18n/useLanguage';
 import type { StructuredPlace } from './place.types';
 import { usePlacesAutocomplete } from './usePlacesAutocomplete';
@@ -13,11 +14,18 @@ export const PlaceAutocomplete = ({
   value,
   onChange,
   placeholder,
+  required = false,
+  invalid = false,
+  error,
 }: {
   label: string;
   value: StructuredPlace | null;
   onChange: (place: StructuredPlace | null) => void;
   placeholder?: string;
+  required?: boolean;
+  /** Shows the same touched-and-empty treatment every other required field on the screen uses. */
+  invalid?: boolean;
+  error?: string;
 }) => {
   const { t } = useLanguage();
   const inputId = useId();
@@ -78,26 +86,35 @@ export const PlaceAutocomplete = ({
         </div>
       ) : (
         <>
-          <input
-            id={inputId}
-            className="form-input"
-            type="text"
-            role="combobox"
-            aria-expanded={open}
-            aria-controls={listId}
-            aria-autocomplete="list"
-            autoComplete="off"
-            dir="auto"
-            placeholder={placeholder ?? t.browse.place.placeholder}
-            value={query}
-            onChange={(event) => {
-              setQuery(event.target.value);
-              setOpen(true);
-              setActive(-1);
-            }}
-            onFocus={() => setOpen(true)}
-            onKeyDown={onKeyDown}
-          />
+          <div className="input-wrapper">
+            <input
+              id={inputId}
+              className={`form-input${invalid ? ' touched' : ''}`}
+              type="text"
+              role="combobox"
+              aria-expanded={open}
+              aria-controls={listId}
+              aria-autocomplete="list"
+              aria-invalid={invalid}
+              autoComplete="off"
+              dir="auto"
+              required={required}
+              placeholder={placeholder ?? t.browse.place.placeholder}
+              value={query}
+              onChange={(event) => {
+                setQuery(event.target.value);
+                setOpen(true);
+                setActive(-1);
+              }}
+              onFocus={() => setOpen(true)}
+              onKeyDown={onKeyDown}
+            />
+            {required ? <InputWarning /> : null}
+          </div>
+
+          {invalid && error ? (
+            <p className="field-error field-error--visible" aria-live="polite">{error}</p>
+          ) : null}
 
           {open && query.trim().length > 1 ? (
             <ul className="place-field__list" id={listId} role="listbox">

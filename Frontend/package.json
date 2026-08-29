@@ -15,7 +15,9 @@
     "verify:profile-data": "node scripts/verify-profile-real-data.mjs",
     "verify:invitation-ui": "node scripts/verify-invitation-ui.mjs",
     "verify:account-menu": "node scripts/verify-account-menu.mjs",
-    "verify:integrated": "node scripts/verify-integrated-flow.mjs"
+    "verify:integrated": "node scripts/verify-integrated-flow.mjs",
+    "verify:owner-qa": "node scripts/verify-owner-qa.mjs",
+    "verify:min-rating-ui": "node scripts/verify-min-rating-ui.mjs"
   },
   "devDependencies": {
     "@types/react": "^19.2.18",
@@ -28,6 +30,7 @@
   "dependencies": {
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
+    "@mui/icons-material": "^9.4.0",
     "@mui/material": "^9.4.0",
     "axios": "^1.20.0",
     "react": "^19.2.8",

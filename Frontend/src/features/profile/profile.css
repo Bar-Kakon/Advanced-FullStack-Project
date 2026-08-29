@@ -189,6 +189,9 @@ fieldset { border: 0; }
   transition: color 0.16s, background 0.16s;
 }
 .app-nav__link:hover { color: var(--surface); background: var(--surface-08); }
+/* A navigation item whose screen is not built yet: present, inert, and never a false link. */
+.app-nav__link.is-disabled { opacity: 0.55; cursor: default; }
+.app-nav__link.is-disabled:hover { color: inherit; background: none; }
 
 .app-nav__actions {
   display: flex;
@@ -213,7 +216,8 @@ fieldset { border: 0; }
   background: var(--surface-08);
   transition: color 0.16s, border-color 0.16s, background 0.16s;
 }
-.nav-icon-btn:hover { color: var(--surface); border-color: var(--secondary-55); }
+.nav-icon-btn:hover:not(:disabled) { color: var(--surface); border-color: var(--secondary-55); }
+.nav-icon-btn:disabled { opacity: 0.55; cursor: default; }
 .nav-icon-btn.has-dot::after {
   content: '';
   position: absolute;
@@ -689,6 +693,13 @@ fieldset { border: 0; }
     var(--background);
   background-size: 18px 18px, 18px 18px, auto;
   border-block-end: 1px solid var(--secondary-30);
+}
+.work-item__thumb--image {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  background: var(--background);
 }
 .work-item__body { display: flex; flex-direction: column; gap: 6px; padding: 12px 14px; }
 .work-item__title { font-size: 15.5px; font-weight: 600; line-height: 1.35; color: var(--primary); }
