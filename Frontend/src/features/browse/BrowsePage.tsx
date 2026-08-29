@@ -172,7 +172,11 @@ export const BrowsePage = () => {
             {state.loading && !state.loaded ? (
               <p className="panel__lede">{t.browse.loading}</p>
             ) : state.contractors.length === 0 && !message ? (
-              <p className="panel__lede">{t.browse.empty}</p>
+              <p className="panel__lede">
+                {state.filters.minRating === null
+                  ? t.browse.empty
+                  : t.browse.emptyByRating.replace('{stars}', String(state.filters.minRating))}
+              </p>
             ) : (
               <>
                 <p className="results__count">

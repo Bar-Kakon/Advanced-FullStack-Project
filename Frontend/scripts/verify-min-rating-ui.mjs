@@ -9,6 +9,7 @@
  *   npm run verify:min-rating-ui
  */
 import { execFile } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
 import { chromium } from 'playwright';
 
@@ -24,9 +25,11 @@ const check = (label, passed, detail = '') => {
 const section = (title) => console.log(`\n${title}`);
 
 const seed = async () => {
-  const { stdout } = await run$('npm', ['run', '--silent', 'seed:min-rating'], {
-    cwd: new URL('../../Backend', import.meta.url).pathname,
+  const { stdout } = await run$(process.execPath, ['scripts/seed-min-rating.ts'], {
+    // fileURLToPath, not `.pathname`: the repository path contains a space.
+    cwd: fileURLToPath(new URL('../../Backend', import.meta.url)),
     maxBuffer: 4 * 1024 * 1024,
+    env: { ...process.env, NODE_OPTIONS: '--import tsx' },
   });
   const line = stdout.split('\n').find((l) => l.startsWith('SEED '));
   if (!line) throw new Error(`seeding produced no SEED line:\n${stdout}`);
@@ -142,8 +145,11 @@ const run = async () => {
   await page.selectOption('#browse-specialty', 'plumbing');
   await page.waitForTimeout(1800);
   check('a specialty nobody has empties the list', (await rendered()).length === 0);
-  check('and the empty state is shown, not a silent blank',
-    (await page.locator('.panel__lede').count()) >= 1);
+  const emptyText = (await page.locator('.panel__lede').innerText()).trim();
+  check('and the empty state names the rating floor that emptied it',
+    /3 כוכבים ומעלה|3 stars or higher/.test(emptyText), emptyText);
+  check('and says an unrated contractor is not in it',
+    /טרם קיבלו דירוג|nobody has rated/.test(emptyText));
   await page.selectOption('#browse-specialty', '');
   await page.waitForTimeout(1500);
 

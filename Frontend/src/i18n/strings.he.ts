@@ -146,6 +146,8 @@ export const he = {
     loading: 'טוען קבלנים…',
     loadMore: 'טעינת תוצאות נוספות',
     empty: 'לא נמצאו קבלנים התואמים לסינון. אפשר לנקות חלק מהמסננים ולנסות שוב.',
+    /** Says which filter emptied the list, so a correct empty result is not read as a broken one. */
+    emptyByRating: 'לא נמצאו קבלנים עם דירוג של {stars} כוכבים ומעלה. קבלנים שטרם קיבלו דירוג אינם נכללים בסינון הזה.',
     clear: 'ניקוי המסננים',
 
     sort: {

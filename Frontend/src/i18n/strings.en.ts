@@ -132,6 +132,7 @@ export const en: Strings = {
     loading: 'Loading contractors…',
     loadMore: 'Load more results',
     empty: 'No contractors match these filters. Try clearing some of them.',
+    emptyByRating: 'No contractors have a rating of {stars} stars or higher. A contractor nobody has rated yet is not included in this filter.',
     clear: 'Clear filters',
 
     sort: {
