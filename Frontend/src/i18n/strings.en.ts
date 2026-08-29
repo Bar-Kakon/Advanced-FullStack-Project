@@ -1,0 +1,469 @@
+import type { Strings } from './strings.types';
+
+/**
+ * The `: Strings` annotation is the whole safety net: this object is checked against the Hebrew
+ * file's shape, so a key that is renamed on one side and not the other stops the build instead of
+ * rendering an empty label in one language only.
+ *
+ * Copy is verbatim from `screens/register.html`. Where a Hebrew and English pair say different
+ * things, that difference is deliberate and predates this migration.
+ */
+export const en: Strings = {
+  langName: 'EN',
+  otherLangName: 'עב',
+  langSwitchLabel: 'Language / שפה',
+
+  brand: {
+    beta: 'Beta',
+    headline: 'One account. Every project you run.',
+    sub: 'General contractors, subcontractors, and suppliers — all equal users, on one platform.',
+    featuresLabel: 'Platform highlights',
+    features: [
+      'Cascade scheduling with one-click negotiation',
+      'Two actions, start and complete — no progress chasing',
+      'Trust scores built from real behaviour — not self-reported',
+    ],
+    footerNote:
+      'The same contractor can be a GC on one project and a sub on another. Roles follow the work, not the person.',
+  },
+
+  form: {
+    title: 'Create your account',
+    subtitle: "A few details and you're ready to coordinate",
+    optional: 'Optional',
+    submit: 'Create account',
+    dividerOr: 'or',
+    google: 'Sign up with Google',
+    haveAccount: 'Already have an account?',
+    signIn: 'Sign in',
+    secureNote: 'TLS · end-to-end encrypted session',
+    togglePassword: 'Toggle password visibility',
+
+    firstName: { label: 'First name', placeholder: 'John' },
+    lastName: { label: 'Last name', placeholder: 'Smith' },
+    companyName: { label: 'Company name', placeholder: 'Smith Contracting Ltd.' },
+    email: { label: 'Email address', placeholder: 'you@example.com', error: 'Please enter a valid email address' },
+    specialty: { label: 'Primary trade', placeholder: 'Select your trade…', hint: 'You can add or change trades later' },
+    specialtyOther: { label: 'Specify your trade', placeholder: 'e.g. scaffolding, landscaping, elevators' },
+    city: { label: 'City', placeholder: 'Tel Aviv' },
+    region: { label: 'Region', placeholder: 'Select a region…' },
+    officePhone: { label: 'Office phone', placeholder: '03-1234567' },
+    businessPhone: { label: 'Business phone', placeholder: '050-1234567' },
+    availability: { label: 'Availability', hint: 'You can change this at any time from your profile.' },
+    standing: {
+      label: 'How are you joining FieldSync?',
+      placeholder: 'Select…',
+      owner: 'Company owner',
+      employee: 'Company employee',
+      employeeHint: 'Your registration will be matched to the invitation created for you using your full name, company name, and position.',
+    },
+    companyPosition: { label: 'Position in the company', placeholder: 'Select a position…' },
+    password: { label: 'Password', placeholder: '••••••••', hint: 'At least 8 characters', error: 'Password must be at least 8 characters' },
+    confirmPassword: { label: 'Confirm password', placeholder: '••••••••', error: "Passwords don't match" },
+    terms: { before: 'I have read and agree to the ', tos: 'Terms of Service', between: ' and ', privacy: 'Privacy Policy' },
+  },
+
+  trades: {
+    general: 'General contracting',
+    electrical: 'Electrical',
+    plumbing: 'Plumbing',
+    drilling: 'Drilling & foundations',
+    shell: 'Shell',
+    concrete: 'Concrete',
+    saferoom: 'Safe rooms (mamad)',
+    carpentry: 'Carpentry',
+    aluminum: 'Aluminum & glazing',
+    hvac: 'HVAC / air conditioning',
+    painting: 'Painting',
+    tiling: 'Tiling & flooring',
+    plastering: 'Plastering',
+    earthworks: 'Earthworks',
+    waterproofing: 'Waterproofing',
+    supply: 'Supply / materials',
+    development: 'Development & infrastructure',
+    doors: 'Doors',
+    sandpumps: 'Sand pumping',
+    haulage_crane: 'Haulage & crane work',
+    concrete_cutting: 'Concrete cutting',
+    heavy_equipment: 'Heavy equipment',
+    other: 'Other',
+  },
+
+  companyPositions: {
+    main_contractor: 'Main Contractor',
+    construction_manager: 'Construction Manager',
+    regional_construction_manager: 'Regional Construction Manager',
+    site_manager: 'Site Manager',
+    contractor: 'Contractor',
+    employee: 'Employee',
+  },
+
+  regions: {
+    nationwide: 'Nationwide (all Israel)',
+    north: 'North',
+    haifa: 'Haifa & Krayot',
+    sharon: 'Sharon',
+    center: 'Center',
+    telaviv: 'Tel Aviv',
+    jerusalem: 'Jerusalem area',
+    lowlands: 'Lowlands (Shfela)',
+    south: 'South',
+  },
+
+  availability: {
+    open: 'Available for new work',
+    limited: 'Limited availability for new work',
+    closed: 'No availability for new work at the moment',
+  },
+
+  errors: {
+    generic: 'Something went wrong. Please check your details and try again.',
+    emailTaken: 'That email address is already registered. You can sign in instead.',
+    validation: 'Some details are not valid. Please check the highlighted fields and try again.',
+    network: 'We could not reach the server. Check your connection and try again.',
+    noInvitation: 'No invitation matching these details was found. Check the details and try again, or contact the company that invited you.',
+    ambiguousInvitation: 'Registration cannot be completed with these details. Contact the company that invited you.',
+  },
+
+  nav: {
+    home: 'FieldSync — home',
+    label: 'Main',
+    browse: 'Browse',
+    network: 'Network',
+    projects: 'Projects',
+    myTasks: 'My Tasks',
+    notifications: 'Notifications',
+    accountMenu: 'Account menu',
+    employees: 'Employee management',
+  },
+
+  login: {
+    brand: {
+      beta: 'Beta',
+      headline: 'Coordination that moves at the speed of construction.',
+      sub: 'Tasks, dependencies, and reschedules handled inside the platform — not over the phone.',
+      featuresLabel: 'Platform highlights',
+      features: [
+        'Cascade scheduling with one-click negotiation',
+        // Approved 2026-08-29. Replaces "Messaging opens only after a connection is accepted",
+        // the gate D9 reversed; it states the request gate instead and names no delegation.
+        'A first message from someone you are not connected to arrives as a request — approve, decline, or block',
+        'Trust scores built from real behaviour — not self-reported',
+      ],
+      footerNote:
+        'The same contractor can be a GC on one project and a sub on another. Roles follow the work, not the person.',
+    },
+    title: 'Welcome back',
+    subtitle: 'Sign in to your account to continue',
+    email: { label: 'Email address', placeholder: 'you@example.com' },
+    password: { label: 'Password', placeholder: '••••••••' },
+    forgot: 'Forgot password?',
+    submit: 'Sign in',
+    dividerOr: 'or',
+    google: 'Continue with Google',
+    noAccount: "Don't have an account?",
+    createOne: 'Create one',
+    secureNote: 'TLS · end-to-end encrypted session',
+    togglePassword: 'Toggle password visibility',
+    errors: {
+      credentials: 'Invalid email or password. Please try again.',
+      network: 'We could not reach the server. Check your connection and try again.',
+      generic: 'Something went wrong. Please try again.',
+    },
+  },
+
+  forgotPassword: {
+    brand: {
+      beta: 'Beta',
+      headline: "Your projects are waiting — let's get you back in.",
+      sub: 'Secure password reset. We email a single-use link to the address on file — it expires in 30 minutes.',
+      featuresLabel: 'Reset highlights',
+      features: [
+        'Single-use link with a short expiry',
+        'For security, the same message is shown whether or not an account exists for that email address.',
+        'Active sessions are signed out after a reset',
+      ],
+      footerNote: 'For privacy the same message is shown either way, so no one can learn who is registered.',
+    },
+    backToSignIn: 'Back to sign in',
+    title: 'Forgot your password?',
+    subtitle: "Enter the email linked to your account and we'll send you a reset link.",
+    email: { label: 'Email address', placeholder: 'you@example.com', error: 'Please enter a valid email address' },
+    submit: 'Send password reset link',
+    remembered: 'Remembered it?',
+    signIn: 'Sign in',
+    sentTitle: 'Check your inbox',
+    sentSubtitle: 'If an account exists for that address, a reset link is on its way. It expires in 30 minutes.',
+    backButton: 'Back to sign in',
+    noMail: "Didn't get it?",
+    resend: 'Resend link',
+    errors: {
+      network: 'Unable to connect to the server. Check your internet connection and try again.',
+      generic: 'Something went wrong. Please try again.',
+    },
+  },
+
+  resetPassword: {
+    brand: {
+      beta: 'Beta',
+      headline: "One new password and you're back in.",
+      sub: "Choose a strong password you haven't used before. Every active session is signed out after the reset.",
+      featuresLabel: 'Password guidance',
+      features: [
+        'At least 8 characters',
+        'Mixing letters, numbers, and symbols makes it stronger',
+        "Don't reuse a password from another site",
+      ],
+      footerNote: "The reset link is single-use and expires after it's used or after 30 minutes.",
+    },
+    backToSignIn: 'Back to sign in',
+    title: 'Set a new password',
+    subtitle: "Choose a strong password you haven't used before.",
+    newPassword: { label: 'New password', placeholder: '••••••••', error: 'Password must be at least 8 characters' },
+    confirmPassword: { label: 'Confirm password', placeholder: '••••••••', hint: 'Re-enter the same password to confirm.', error: "Passwords don't match" },
+    togglePassword: 'Toggle password visibility',
+    submit: 'Save new password',
+    doneTitle: 'Password updated',
+    doneSubtitle: 'Your password has been changed. You can now sign in with your new password.',
+    continue: 'Continue to sign in',
+    errors: {
+      invalidToken: 'This password reset link is invalid or has expired. You can send a new link.',
+      weakPassword: 'Password must be at least 8 characters.',
+      network: 'Unable to connect to the server. Check your internet connection and try again.',
+      generic: 'Something went wrong. Please try again.',
+    },
+    noLinkLede: 'Enter your email address so we can send you a new password reset link.',
+    sendNewLink: 'Send a new link',
+  },
+
+  dashboard: {
+    title: 'Personal dashboard',
+    welcome: 'Hello, {name}.',
+    notMigrated:
+      'The Personal dashboard is the approved destination after signing in, and the screen itself has not been migrated to React yet.',
+    management: {
+      title: 'Management',
+      employees: { name: 'Employee management', lede: 'Invite employees and approve their company membership.' },
+    },
+  },
+
+  employees: {
+    title: 'Employee management',
+    lede: 'Open a seat for an employee, and approve anyone who has registered and is waiting for the company to approve their membership.',
+
+    invite: {
+      title: 'Open a seat for an employee',
+      lede: 'Only a name and a position are needed. The employee chooses their own email address and password when they register.',
+      fullName: {
+        label: 'Full name',
+        placeholder: 'Alex Levi',
+        hint: 'The full name exactly as the employee will enter it when registering.',
+      },
+      companyPosition: { label: 'Company position', placeholder: 'Choose a position…' },
+      submit: 'Open seat',
+      created: 'The seat is open. The employee can register now using this name and position.',
+    },
+
+    list: {
+      title: 'Employees and invitations',
+      count: '{count} rows',
+      name: 'Full name',
+      position: 'Position',
+      status: 'Status',
+      nameMissing: 'No name',
+      positionMissing: 'No position',
+    },
+
+    status: {
+      invited: 'Invitation open — not registered yet',
+      pending_company_approval: 'Registered, waiting for company approval',
+      active: 'Active',
+      inactive: 'Inactive',
+    },
+
+    actions: {
+      approve: 'Approve membership',
+      approveAll: 'Approve all waiting ({count})',
+      refresh: 'Refresh list',
+    },
+
+    empty: {
+      noEmployees: 'No seats have been opened yet. You can open the first one in the form above.',
+      noPending: 'No memberships are waiting for approval right now.',
+    },
+
+    loading: 'Loading the employee list…',
+
+    onboarding: {
+      title: 'Add your employees',
+      lede: 'You can open seats for employees now, or skip and come back to this whenever you like.',
+      skip: 'Skip for now',
+      finish: 'Finish and continue',
+      note: 'Employee management stays available from the dashboard even if you skip.',
+    },
+
+    errors: {
+      notPermitted: 'You are not permitted to manage this company’s employees. Ask the company owner.',
+      noCompany: 'Your account does not belong to an active company, so there are no employees to manage.',
+      unauthenticated: 'Your session has expired. Sign in again to continue.',
+      nothingToApprove: 'This membership has already been approved, or it is not waiting for approval. Refresh the list.',
+      validation: 'Some of the details are not valid. Check the marked fields and try again.',
+      network: 'We could not reach the server. Check your connection and try again.',
+      generic: 'Something went wrong. Please try again.',
+    },
+  },
+
+  waitingForApproval: {
+    heading: 'Registration complete',
+    body: 'Your account is active, and your company membership is waiting for approval. Once the company approves it, you can continue using the platform normally.',
+    secondary: 'You do not need to register again.',
+    checkStatus: 'Check status',
+    signOut: 'Sign out',
+    stillWaiting: 'The membership is still waiting for the company to approve it.',
+    errors: {
+      network: 'We could not reach the server. Check your connection and try again.',
+      generic: 'Something went wrong. Please try again.',
+    },
+  },
+
+  profile: {
+    title: 'My profile',
+    lede: 'This is how your profile reads. Your rating and flexibility score are calculated for you — they cannot be edited.',
+    edit: 'Edit profile',
+    summary: 'Profile summary',
+    rating: {
+      label: 'Your rating',
+      foot: 'Based on {count} ratings from completed work',
+      empty: 'No ratings yet',
+    },
+    flexibility: {
+      label: 'Your flexibility score',
+      foot: 'Based on {count} responses to date changes · updated {month}',
+      empty: 'No flexibility score yet',
+    },
+    explain: {
+      question: 'How is the flexibility score calculated?',
+      answerOne:
+        'The score is built from how you actually answer requests to change a date — approving, rejecting or proposing an alternative. You do not rate yourself and it cannot be edited, which is what makes it mean something to a contractor reading it.',
+      answerTwo:
+        'While there are not enough responses, no score is shown at all — no score is better than one resting on a single answer.',
+    },
+    about: 'About',
+    work: {
+      title: 'Completed work',
+      lede: 'The "Completed on FieldSync" mark means the completion is recorded on the platform; it is not a judgement of quality.',
+      badge: 'Completed on FieldSync',
+    },
+    details: {
+      title: 'Details and work area',
+      companyName: 'Company name',
+      email: 'Email address',
+      officePhone: 'Office phone',
+      businessPhone: 'Business phone',
+      city: 'City',
+      region: 'Region',
+      travel: 'Travel distance',
+      km: 'km',
+      notProvided: 'Not provided',
+    },
+    scheduling: {
+      title: 'Scheduling preferences',
+      lede: 'These are not hard rules — they tell the other side what works for you before they propose a date.',
+      delay: 'Delay you can absorb',
+      notice: 'Notice you need',
+      days: 'days',
+    },
+    ratings: {
+      title: 'Ratings you received',
+      lede: '{count} ratings from contractors you worked with on shared completed work.',
+      empty: 'No ratings yet',
+    },
+  },
+
+  editProfile: {
+    title: 'Edit profile',
+    lede: 'Update the details other contractors see about you and your coordination preferences. Your rating and flexibility score are calculated for you — they cannot be edited.',
+    identity: {
+      title: 'Identity',
+      lede: 'These are the details other contractors find you by when browsing.',
+    },
+    avatar: {
+      upload: 'Upload photo',
+      remove: 'Remove',
+      hint: 'JPG or PNG, up to 5 MB.',
+    },
+    availabilityLegend: 'Availability for new work',
+    firstName: 'First name',
+    lastName: 'Last name',
+    companyName: { label: 'Company name', placeholder: 'Smith Contracting Ltd.' },
+    officePhone: { label: 'Office phone', placeholder: '03-1234567' },
+    businessPhone: { label: 'Business phone', placeholder: '050-1234567' },
+    optional: 'Optional',
+    phonesHint: 'The office phone belongs to the business and the business phone belongs to you. Each stands on its own — supply one, both, or neither.',
+    bio: {
+      label: 'Bio',
+      placeholder: 'What you do, how long you have done it, and the projects you take on',
+      hint: 'Up to 600 characters.',
+    },
+    specialties: {
+      legend: 'Specialties',
+      hint: 'You may select more than one specialty.',
+      otherLabel: 'Specify the specialty',
+      otherPlaceholder: 'For example: structural steelwork',
+    },
+    equipment: {
+      trigger: 'Select the equipment you operate',
+      title: 'Heavy equipment',
+      lede: 'Select only the equipment you own or operate.',
+      done: 'Done',
+      close: 'Close',
+      items: {
+        excavator: 'Excavator',
+        backhoe: 'Backhoe loader',
+        drill_rig: 'Drilling rigs',
+        mini_excavator: 'Mini excavator',
+        crawler: 'Crawler',
+        jcb: 'JCB backhoe',
+        wheel_loader: 'Wheel loader',
+        bobcat: 'Bobcat + mini',
+        bulldozer: 'Bulldozer',
+        hooklift_truck: 'Truck with articulated crane',
+      },
+    },
+    location: {
+      title: 'Where you work',
+      lede: 'The work area is selected from a fixed list.',
+      city: 'City',
+      cityPlaceholder: 'Haifa',
+      region: 'Region',
+      regionPlaceholder: 'Select a region…',
+      travel: 'Travel distance',
+      km: 'km',
+      travelHint: 'How far you are willing to travel from your city.',
+      travelNa: 'Not relevant when you work nationwide.',
+    },
+    scheduling: {
+      title: 'Scheduling preferences',
+      lede: 'Scheduling preferences are not binding. They show the other party the timing framework that suits you.',
+      notice: 'Your scheduling preferences are shown on your public profile, so other contractors can propose suitable dates in advance.',
+      delay: 'Delay you can absorb',
+      delayHint: 'The number of delay days that can be absorbed without materially affecting the planned schedule.',
+      notice2: 'Notice you need',
+      notice2Hint: 'The advance notice required in order to arrange crew and equipment.',
+      days: 'days',
+    },
+    work: {
+      lede: 'Images from work you have completed, including work from before you joined. Linking an entry to work coordinated on the platform is optional.',
+      add: 'Add image',
+      remove: 'Remove image',
+      notStored: 'Completed work is not stored on the server yet — it has no data model and no file upload — so this change was not saved.',
+    },
+    ratingsLede: '{count} ratings from contractors you worked with on shared completed work. They cannot be edited.',
+    actions: {
+      save: 'Save changes',
+      cancel: 'Cancel',
+      aside: 'To change your email or password, go to Settings.',
+      noEndpoint: 'Saving a profile is not built on the server yet, so nothing was saved.',
+    },
+  },
+};
