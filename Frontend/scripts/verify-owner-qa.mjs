@@ -12,8 +12,10 @@ const API = process.env.API_URL ?? 'http://localhost:3000/api';
 const PASSWORD = 'CorrectHorse42!';
 
 const stamp = Date.now();
-const ME = { first: 'Noam', last: 'Peretz', email: `ownerqa-ui.${stamp}@example.com` };
-const OTHER = { first: 'Dana', last: 'Shalev', email: `ownerqa-ui.other.${stamp}@example.com` };
+// The surname carries the run stamp, because a name is not an identity and earlier runs of this
+// same script are still in the database.
+const ME = { first: 'Noam', last: `Peretz${stamp}`, email: `ownerqa-ui.${stamp}@example.com` };
+const OTHER = { first: 'Dana', last: `Shalev${stamp}`, email: `ownerqa-ui.other.${stamp}@example.com` };
 
 const PNG = Buffer.from(
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
@@ -126,16 +128,36 @@ const run = async () => {
   await page.waitForTimeout(1400);
   check('and 37 is what was saved', (await page.inputValue('#travelRadiusKm')) === '37');
 
-  section('5. Clearing a required location blocks Save rather than silently reverting');
-  const clearLocation = page.locator('.place-field button:has-text("ניקוי"), .place-field button:has-text("Clear")').first();
-  const hadPlace = (await clearLocation.count()) > 0;
-  if (hadPlace) {
-    await clearLocation.click();
-    await page.waitForTimeout(300);
-  } else {
-    await page.fill('#city', '');
-    await page.waitForTimeout(300);
-  }
+  section('5. Clearing a saved location blocks Save rather than silently reverting');
+  // A structured place is written through the API, because the browser Places key is not part of
+  // what this test proves and the defect only exists once a place is actually saved.
+  const token = await page.evaluate(async ([api, email, password]) => {
+    const answer = await fetch(`${api}/auth/login`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include',
+      body: JSON.stringify({ email, password }),
+    });
+    return (await answer.json()).accessToken;
+  }, [API, ME.email, PASSWORD]);
+
+  const placed = await fetch(`${API}/users/me`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({
+      place: {
+        placeId: `owner-qa-place-${stamp}`, displayName: 'חיפה',
+        latitude: 32.794, longitude: 34.9896, city: 'חיפה',
+      },
+    }),
+  });
+  check('a structured place is saved for this account', placed.status === 200, String(placed.status));
+
+  await page.reload({ waitUntil: 'networkidle' });
+  await page.waitForTimeout(1500);
+  const clearLocation = page.locator('.place-field__chosen button').first();
+  check('the saved place is shown with a way to clear it', (await clearLocation.count()) === 1);
+
+  await clearLocation.click();
+  await page.waitForTimeout(400);
 
   await page.click('button[type="submit"]');
   await page.waitForTimeout(1200);
@@ -144,11 +166,20 @@ const run = async () => {
   check('and it is announced as an alert',
     (await page.getAttribute('.form-actions__aside', 'role')) === 'alert');
   check('the field itself is marked invalid',
-    (await page.locator('.place-field .form-input.touched, #city.touched').count()) > 0);
+    (await page.locator('.place-field .form-input.touched').count()) > 0);
+  check('a written reason sits under the field',
+    (await page.locator('.place-field ~ .field-error--visible, .place-field .field-error--visible').count()) > 0
+    || (await page.locator('.field-error--visible').count()) > 0);
   check('no success message is shown', !/נשמרו|have been saved/.test(aside));
 
+  const stillThere = await fetch(`${API}/users/me`, { headers: { Authorization: `Bearer ${token}` } });
+  const stillPlaced = (await stillThere.json()).user.place;
+  check('and nothing was sent, so the saved place is untouched',
+    stillPlaced !== null && stillPlaced.placeId === `owner-qa-place-${stamp}`,
+    stillPlaced?.placeId ?? 'null');
+
   await page.reload({ waitUntil: 'networkidle' });
-  await page.waitForTimeout(1200);
+  await page.waitForTimeout(1500);
 
   /* ── Completed work ─────────────────────────────────────────────────────────────────────── */
   section('6. A completed-work entry can be added with a real photo');
@@ -258,19 +289,51 @@ const run = async () => {
   check('and the slider followed it', sliderValue === '37', sliderValue);
 
   section('14. A cleared origin blocks the save');
-  const clearBase = page.locator('.travel-dialog .place-field button').first();
-  if ((await clearBase.count()) > 0) await clearBase.click();
+  // A confirmed list is written through the API, so the confirm control this guard protects is on
+  // screen without spending a Google call to produce one.
+  const seeded = await fetch(`${API}/location/travel`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify({
+      travelRadiusKm: 50,
+      basePlace: {
+        placeId: `owner-qa-place-${stamp}`, displayName: 'חיפה', city: 'חיפה',
+        latitude: 32.794, longitude: 34.9896, source: 'manual',
+      },
+      approvedTravelLocations: [{
+        placeId: `owner-qa-approved-${stamp}`, displayName: 'עכו',
+        latitude: 32.9281, longitude: 35.0818, source: 'manual',
+      }],
+    }),
+  });
+  check('an approved list is seeded for this account', seeded.status === 200, String(seeded.status));
+
+  await page.keyboard.press('Escape');
   await page.waitForTimeout(300);
+  await page.click('.browse__head-actions .btn--ghost');
+  await page.waitForTimeout(1800);
+
   const confirmButton = page.locator('.travel-dialog__foot .btn--primary');
-  if ((await confirmButton.count()) > 0) {
-    await confirmButton.click();
-    await page.waitForTimeout(800);
-    const warn = await page.locator('.travel-dialog .notice--warn').innerText().catch(() => '');
-    check('it refuses and says why', /נקודת מוצא|starting point/i.test(warn), warn.trim());
-    check('and claims no save', (await page.locator('.travel-saved').count()) === 0);
-  } else {
-    check('the confirm control only exists once there is a list to confirm', true);
-  }
+  check('the confirm control is on screen', (await confirmButton.count()) === 1);
+
+  const clearBase = page.locator('.travel-dialog .place-field__chosen button').first();
+  check('the saved origin can be cleared', (await clearBase.count()) === 1);
+  await clearBase.click();
+  await page.waitForTimeout(400);
+
+  await confirmButton.click();
+  await page.waitForTimeout(1000);
+  const warn = await page.locator('.travel-dialog .notice--warn').innerText().catch(() => '');
+  check('it refuses and says why', /נקודת מוצא|starting point/i.test(warn), warn.trim());
+  check('and claims no save', (await page.locator('.travel-saved').count()) === 0);
+
+  const afterBlocked = await fetch(`${API}/location/travel`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const keptBase = (await afterBlocked.json()).basePlace;
+  check('the stored origin is untouched, because nothing was sent',
+    keptBase !== null && keptBase.placeId === `owner-qa-place-${stamp}`, keptBase?.placeId ?? 'null');
+
   await page.keyboard.press('Escape');
   await page.waitForTimeout(400);
 
