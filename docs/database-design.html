@@ -1001,63 +1001,80 @@ module.exports = mongoose.model('Rating', ratingSchema);`
   id: 'projects', model: 'Project', domain: 'work', stage: 3, hub: true,
   tag: 'container for tasks',
   pos: { x: 550, y: 190 },
-  purpose: 'A construction project: a name, a place, a window of dates, and an owner. Notably thin — almost everything interesting about a project lives in [[memberships]] and [[tasks]], because both of those grow without bound and need their own indexes.',
+  purpose: 'A construction project: a name, a place, a window of dates, and the business it belongs to. Notably thin — almost everything interesting about a project lives in [[memberships]] and [[tasks]], because both grow without bound and need their own indexes. <strong>Built 2026-08-30</strong>, and it differs from the shape drawn here earlier in three ways that were owner decisions, not preferences.',
+  callout: '<strong>The company owns the project; a person only created it.</strong> The earlier design had <code>owner: User</code>, which would have made a project the personal property of one employee — it would leave with them, and two colleagues could not both administer it. Every authorisation surface built since is company-scoped, so the project is too: <code>company</code> is the owning context and <code>createdBy</code> is a record of who filled the form. It grants nothing. There is deliberately <strong>no second GC-membership definition of ownership</strong> to disagree with it.',
   fields: [
     { name: '_id', type: 'ObjectId', note: '' },
+    { name: 'company', type: 'ObjectId', ref: 'companies', req: true, idx: true, note: 'The owning business — the single source of truth for who the project belongs to. Authorisation reads this and nothing else, so a client cannot name a company in a request body and be believed.' },
+    { name: 'createdBy', type: 'ObjectId', ref: 'users', req: true, note: 'Who filled in the form. A record, never a permission: losing this person does not affect the project, and holding it grants no rights their company membership does not already give.' },
     { name: 'name', type: 'String', req: true, note: '' },
     { name: 'description', type: 'String', note: '' },
-    { name: 'location', type: '{ city, region, address }', note: 'Embedded 1:1. No geo index here — nobody searches projects by distance; only contractors are searched that way.' },
-    { name: 'startDate', type: 'Date', note: 'Stored in UTC, like every date in this schema.' },
-    { name: 'targetEndDate', type: 'Date', note: 'The target, not a computed end. The real end is derived from the task graph.' },
-    { name: 'status', type: "'planning' | 'active' | 'completed' | 'archived'", idx: true, note: '' },
-    { name: 'owner', type: 'ObjectId', ref: 'users', req: true, idx: true, note: 'The creator, and the general contractor of record. Duplicated with their `gc` [[memberships]] document — see the reasoning.' },
-    { name: 'photos', type: '[ObjectId]', ref: 'fileassets', note: 'A short bounded array of references. Project photos are few, always shown together, and never queried on their own.' },
-    { name: 'stats', type: '{ taskCount, openProposalCount, memberCount }', denorm: true, note: 'Counters kept up to date on write, so the `My projects` cards can render pending-action badges without an aggregation per card.' },
+    { name: 'location', type: '{ place, city, region, address }', note: 'The <strong>shared structured place</strong> — the same shape Register, the profile and Browse use, carrying a real Google <code>placeId</code> with coordinates. A free-text city is never promoted into one. <code>city</code> / <code>region</code> / <code>address</code> ride alongside for legacy compatibility and display; clearing the location <code>$unset</code>s the whole sub-document, so a stale city can never survive underneath a place that was removed.' },
+    { name: 'startDate', type: 'Date', req: true, note: 'Stored at UTC midnight from a <code>YYYY-MM-DD</code> string, so the 3rd is the 3rd in every timezone. Required: the working-day arithmetic has no anchor without it.' },
+    { name: 'targetEndDate', type: 'Date', req: true, note: 'The current promise. It moves; the two fields below are what make that safe.' },
+    { name: 'originalTargetEndDate', type: 'Date', req: true, note: '<strong>What was promised when the project was created, never rewritten.</strong> Set equal to <code>targetEndDate</code> at creation. The GC can always see the original however many times the target has moved.' },
+    { name: 'overrunAllowanceDays', type: 'Number', req: true, note: '<code>x</code> — the overrun allowance the יזם sets. Written once at creation and <strong>immutable</strong>: the API refuses a request that tries to edit it rather than ignoring it. <code>originalTargetEndDate + x</code> is a ceiling the target may never pass.' },
+    { name: 'targetChanges[]', type: '[{ from, to, overrunDaysFromOriginal, changedAt, changedBy }]', note: 'Every move of the target, with the <strong>actual overrun measured from the original</strong> — which is the number the domain asked to record. Append-only.' },
+    { name: 'startedAt', type: 'Date', note: 'Written when the closed start rule fires: the GC set a date <em>and the first task started on it</em>. Absent until then. <strong>Not the same as the start date arriving</strong> — that is a different rule nobody decided.' },
+    { name: 'completedAt', type: 'Date', note: 'Written when every task is closed and the work finished with quality execution.' },
+    { name: 'pausedAt', type: 'Date', note: 'The frozen/paused state the domain requires. Its full shape is still engineering residue.' },
     { name: 'createdAt / updatedAt', type: 'Date', note: '' }
   ],
   indexes: [
-    { def: '{ owner: 1, status: 1 }', serves: 'My projects — the ones I own', why: 'Owner is the most selective field; status narrows it further inside that set.' },
-    { def: '{ status: 1, targetEndDate: 1 }', serves: 'Upcoming deadlines on the personal dashboard', why: 'Range scan on a date only works efficiently when the equality field (`status`) comes first in the compound index.' }
+    { def: '{ company: 1, createdAt: -1, _id: -1 }', serves: 'My projects — one company\'s list, newest first', why: 'The screen only ever asks for one company\'s projects in creation order, and the <code>_id</code> tiebreaker is what lets the cursor page through them without repeating or skipping a row when two are created in the same millisecond.' },
+    { def: '{ company: 1 }', serves: 'every authorisation check', why: 'Reading one project is always filtered by company as well as id, so another company\'s project is not "found and then refused" — it is simply not found.' }
   ],
   why: [
-    '**Members are not embedded here.** It is tempting — a project has a handful of members. But membership carries a role, an invite state and a responder, it is queried from the *user* side far more often than from the project side (`My projects` is the most-visited screen), and it grows as the project does. All three point at a separate collection: [[memberships]].',
-    '**`owner` is duplicated on purpose.** The owner also has a `gc` membership document. Keeping the id here answers "who owns this?" without a second query on every project card, and it survives a membership row being removed. This is a small, deliberate denormalisation with an obvious invariant.',
-    '**`stats` trades write cost for read cost.** The alternative is a `$lookup` plus a `$count` per project on a list screen. Counters are incremented in the same operation that creates a task or opens a proposal.',
-    '**`photos` is an array of references, not embedded binaries.** File bytes never live in a business document — see [[fileassets]] for the 16 MB reasoning.'
+    '<strong>There is no stored status field.</strong> The closed rule is that statuses follow the working schedule automatically, so status is <strong>derived on every read</strong> from <code>startedAt</code> / <code>completedAt</code> / <code>pausedAt</code> — <code>planned → active → paused → completed</code>. There is no manual control anywhere in the API, and a request that tries to set one is refused. The old <code>planning|active|completed|archived</code> enum is gone: it implied hand-set states the product does not have.',
+    '<strong>The two definitions the model cannot yet evaluate are named, not approximated.</strong> "Started" needs the first task to have begun and "completed" needs every task closed — and Tasks are unbuilt. Both live behind a <code>ProjectExecutionPort</code> that currently answers <em>false</em>. The rule is written down in one place and starts working the day Tasks exist, rather than being quietly replaced by "the start date passed".',
+    '<strong>Cancellation deletes the row.</strong> D24 closed it as <em>נעלם כאילו לא היה</em> — a pre-start cancelled project leaves no record — so there is no cancelled flag and no tombstone. It is available only while the project has not started, which the port also guards.',
+    '<strong>A project you may not see answers exactly like one that does not exist.</strong> Same 404, same code, same body — verified byte-identical in the suite — so the response cannot be used to discover that a project exists (D16).'
   ],
   relations: [
-    { to: 'users', via: 'owner', store: 'ref', card: 'N:1', why: 'The general contractor of record. Deliberately duplicated with the owner `gc` membership so a project card needs no join.' },
-    { to: 'fileassets', via: 'photos[]', store: 'ref', card: '1:N', why: 'Bounded array of ids — always rendered together, never queried alone.' }
+    { to: 'companies', via: 'company', store: 'ref', card: 'N:1', why: 'The owning business. A company has many projects; a project has exactly one, and it never changes hands.' },
+    { to: 'users', via: 'createdBy', store: 'ref', card: 'N:1', why: 'Provenance only. Deliberately not an authorisation edge.' }
   ],
   sample: `{
-  _id: ObjectId("6660c3d0c2b9e30012af1001"),
-  name: "Rothschild 42 — residential tower",
-  description: "18 floors, cast-in-place frame.",
-  location: { city: "Tel Aviv", region: "center", address: "Rothschild 42" },
-  startDate:     ISODate("2026-08-01T00:00:00Z"),
-  targetEndDate: ISODate("2027-11-30T00:00:00Z"),
-  status: "active",
-  owner: ObjectId("6650a0b0c2b9e30012af0b10"),
-  photos: [ ObjectId("6660c4..."), ObjectId("6660c5...") ],
-  stats: { taskCount: 47, openProposalCount: 2, memberCount: 9 },
-  createdAt: ISODate("2026-06-30T10:00:00Z")
+  _id:      ObjectId("6653aa10c2b9e30012af1001"),
+  company:  ObjectId("6650a1f4c2b9e30012af0b90"),
+  createdBy:ObjectId("6650a1f4c2b9e30012af0b21"),
+  name:     "מגדל הצפון",
+  location: { place: { placeId: "ChIJ…", displayName: "רעננה, ישראל",
+                       latitude: 32.1848, longitude: 34.8713 },
+              city: "רעננה", region: "sharon", address: "הרצל 1" },
+  startDate:             ISODate("2027-01-10T00:00:00Z"),
+  targetEndDate:         ISODate("2027-04-30T00:00:00Z"),  // moved
+  originalTargetEndDate: ISODate("2027-04-20T00:00:00Z"),  // never rewritten
+  overrunAllowanceDays:  30,                               // ceiling = 05-20
+  targetChanges: [ { from: ISODate("2027-04-20T00:00:00Z"),
+                     to:   ISODate("2027-04-30T00:00:00Z"),
+                     overrunDaysFromOriginal: 10, … } ],
+  startedAt: undefined                                     // ⇒ status "planned"
 }`,
   schema: `const projectSchema = new Schema({
-  name:        { type: String, required: true, trim: true },
-  description: String,
-  location:    { city: String, region: String, address: String },
-  startDate:     Date,
-  targetEndDate: Date,
-  status: { type: String, enum: ['planning','active','completed','archived'], default: 'planning' },
-  owner:  { type: Schema.Types.ObjectId, ref: 'User', required: true },
-  photos: [{ type: Schema.Types.ObjectId, ref: 'FileAsset' }],
-  stats:  { taskCount: { type: Number, default: 0 },
-            openProposalCount: { type: Number, default: 0 },
-            memberCount: { type: Number, default: 1 } }
+  company:   { type: Schema.Types.ObjectId, ref: 'Company', required: true, index: true },
+  createdBy: { type: Schema.Types.ObjectId, ref: 'User',    required: true },
+
+  name:        { type: String, required: true, trim: true, maxlength: 160 },
+  description: { type: String, trim: true, maxlength: 2000 },
+
+  location: {
+    place:   { type: placeSchema, required: false },   // shared structured place
+    city:    { type: String, trim: true },
+    region:  { type: String, enum: REGIONS },
+    address: { type: String, trim: true, maxlength: 240 }
+  },
+
+  startDate:             { type: Date, required: true },
+  targetEndDate:         { type: Date, required: true },
+  originalTargetEndDate: { type: Date, required: true },   // never rewritten
+  overrunAllowanceDays:  { type: Number, required: true, min: 0, max: 3650 },
+  targetChanges: { type: [targetChangeSchema], default: [] },
+
+  startedAt: Date, completedAt: Date, pausedAt: Date       // status is DERIVED
 }, { timestamps: true });
 
-projectSchema.index({ owner: 1, status: 1 });
-projectSchema.index({ status: 1, targetEndDate: 1 });
+projectSchema.index({ company: 1, createdAt: -1, _id: -1 });
 
 module.exports = mongoose.model('Project', projectSchema);`
 },

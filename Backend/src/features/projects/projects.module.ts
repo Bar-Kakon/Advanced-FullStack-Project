@@ -1,0 +1,46 @@
+import { Router, type RequestHandler } from 'express';
+
+import { validateRequest } from '../../middleware/validateRequest.js';
+import { companyRepository } from '../companies/company.repository.js';
+import { companyMembershipRepository } from '../companies/companyMembership.repository.js';
+import { createCompanyContextService } from '../companies/companyContext.service.js';
+import { createProjectsController } from './projects.controller.js';
+import { projectRepository } from './project.repository.js';
+import { createProjectsService } from './projects.service.js';
+import { unbuiltTasksExecutionPort } from './projectLifecycle.service.js';
+import {
+  createProjectBodySchema,
+  projectListQuerySchema,
+  projectParamsSchema,
+  updateProjectBodySchema,
+} from './projects.validation.js';
+
+export const createProjectsModule = (requireAccessToken: RequestHandler): Router => {
+  const controller = createProjectsController(
+    createProjectsService({
+      projects: projectRepository,
+      companyContext: createCompanyContextService({
+        memberships: companyMembershipRepository,
+        companies: companyRepository,
+      }),
+      execution: unbuiltTasksExecutionPort,
+    }),
+  );
+
+  const router = Router();
+  router.use(requireAccessToken);
+
+  const params = validateRequest({ params: projectParamsSchema });
+
+  router.post('/', validateRequest({ body: createProjectBodySchema }), controller.handleCreate);
+  router.get('/', validateRequest({ query: projectListQuerySchema }), controller.handleList);
+  router.get('/:projectId', params, controller.handleGetOne);
+  router.patch(
+    '/:projectId',
+    validateRequest({ params: projectParamsSchema, body: updateProjectBodySchema }),
+    controller.handleUpdate,
+  );
+  router.delete('/:projectId', params, controller.handleCancel);
+
+  return router;
+};
