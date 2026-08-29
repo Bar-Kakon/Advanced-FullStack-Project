@@ -16,10 +16,7 @@ export interface CompanyRecord {
   readonly name: string;
   readonly officePhone?: string;
   readonly availability: Availability;
-  /**
-   * When this business finished setting up its staff, whether by inviting somebody or by saying it
-   * did not want to. Absent means neither has happened yet.
-   */
+  /** When the business finished employee setup. Absent means it has not happened. */
   readonly employeeSetupCompletedAt?: Date;
 }
 
@@ -34,17 +31,8 @@ const companySchema = new Schema(
       required: true,
     },
 
-    /*
-     * The durable answer to "has this business been through employee setup", and it lives on the
-     * COMPANY because that is what was set up. Putting it on the person would make it a fact about
-     * whoever happened to sign up first, so a second manager joining later would be walked through
-     * the step again for a company whose staff already exists.
-     *
-     * A date rather than a boolean: it says the same thing and also says when, which a support
-     * question about a company that claims it never saw the step cannot otherwise answer. There is
-     * no default and no backfill — absent means it has not happened, which is true of every company
-     * created before this field existed.
-     */
+    // On the COMPANY, because that is what was set up: a second manager joining later must not be
+    // walked through the step again. No default and no backfill — absent means it has not happened.
     employeeSetupCompletedAt: { type: Date },
   },
   { timestamps: true },

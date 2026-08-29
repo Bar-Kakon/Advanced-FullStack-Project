@@ -63,8 +63,7 @@ export const createAuthService = ({
     }
 
     const tokens = await tokenPair.issue(user._id.toString());
-    // The company context travels with the sign-in because the client has to route on it
-    // immediately. Fetching it here costs the one read a `/me` call would have cost anyway.
+    // Travels with the sign-in because the client routes on it immediately.
     const company = await companyContext.forUser(user._id.toString());
     return { ...tokens, user: toSessionUser(user, company) };
   },
@@ -96,12 +95,8 @@ export const createAuthService = ({
   },
 
   /**
-   * Re-reads what Login answered. An Access Token is stateless, so nothing that happened after it
-   * was minted — an employer approving a membership, most of all — can reach the copy the client is
-   * holding. This is how the client asks; it issues nothing and rotates nothing.
-   *
-   * The middleware has already proved the account may hold a session, so the only failure left is
-   * an account that vanished between that check and this read.
+   * Re-reads what Login answered. A stateless Access Token cannot learn that an employer approved
+   * somebody after it was minted, so this is how the client asks. It issues and rotates nothing.
    */
   async currentUser(userId) {
     const user = await users.findById(userId);

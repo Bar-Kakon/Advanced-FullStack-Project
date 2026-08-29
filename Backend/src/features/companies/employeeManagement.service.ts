@@ -73,11 +73,7 @@ export const createEmployeeManagementService = ({
       return memberships.approveAllPending(await requireManager(actorId));
     },
 
-    /*
-     * Skipping and finishing are the same fact — this business has been offered the step and has
-     * dealt with it — so they are one call and one stamp. A separate `skipped` state would be a
-     * distinction nothing downstream asks about.
-     */
+    /** Skipping and finishing are the same fact, so they are one call and one stamp. */
     async completeEmployeeSetup(actorId) {
       await companies.markEmployeeSetupComplete(await requireManager(actorId), new Date());
     },

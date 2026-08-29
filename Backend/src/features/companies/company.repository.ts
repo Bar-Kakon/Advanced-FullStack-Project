@@ -38,11 +38,7 @@ export const companyRepository: CompanyRepository = {
     return CompanyModel.findById(id).lean<CompanyRecord>().exec();
   },
 
-  /**
-   * The date is in the filter as well as the update, so a company that has already been through
-   * employee setup keeps its original stamp. Pressing Skip today must not rewrite the day the
-   * business actually finished the step.
-   */
+  /** The filter keeps the original stamp: a later call must not rewrite the day it happened. */
   async markEmployeeSetupComplete(id, at) {
     await CompanyModel.updateOne(
       { _id: id, employeeSetupCompletedAt: { $exists: false } },

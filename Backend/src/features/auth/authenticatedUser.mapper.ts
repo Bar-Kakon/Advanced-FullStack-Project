@@ -29,13 +29,8 @@ export const toAuthenticatedUser = (user: UserRecord): AuthenticatedUser => ({
 });
 
 /**
- * The same person, plus the company relationship they are currently living in. It is a separate
- * shape rather than two more keys on `AuthenticatedUser` because only a *session* has an answer:
- * Register creates an account and opens no session, so its 201 keeps the plain identity and does
- * not have to describe a company nobody has signed in to yet.
- *
- * `company` is `null` for somebody who holds no relationship at all. That is not the same as
- * holding one that has not been approved — see `CompanyContext.membershipStatus`.
+ * The person plus their company relationship. Separate from `AuthenticatedUser` because only a
+ * session has the second half: Register opens none, so its 201 keeps the plain identity.
  */
 export interface SessionUser extends AuthenticatedUser {
   readonly company: CompanyContext | null;

@@ -35,12 +35,8 @@ export interface CompanyMembershipRepository {
   claimInvitation(id: Types.ObjectId, user: Types.ObjectId, session?: DbSession): Promise<boolean>;
   /** Ids arriving from a request are strings; an unparseable one is "no such row", never a throw. */
   findActiveByUser(userId: string): Promise<CompanyMembershipRecord | null>;
-  /**
-   * The relationship this person is living in, whatever state it is in. `findActiveByUser` cannot
-   * answer this: somebody waiting for their employer to approve them holds no active row, and
-   * reading `null` there would say they belong to no company at all — which is the difference
-   * between "waiting" and "signed out" as far as a screen is concerned.
-   */
+  /** The relationship this person holds, in whatever state. `null` from `findActiveByUser` would
+   *  say somebody waiting for approval belongs to no company at all. */
   findCurrentByUser(userId: string): Promise<CompanyMembershipRecord | null>;
   listByCompany(company: Types.ObjectId): Promise<CompanyMembershipRecord[]>;
   /** `pending_company_approval` → `active`. Returns how many rows actually moved. */
@@ -94,15 +90,7 @@ export const companyMembershipRepository: CompanyMembershipRepository = {
       .exec();
   },
 
-  /**
-   * Active first, then one waiting for approval, then whatever is left. The order is a preference
-   * and not a guess: only activation is exclusive, so a person may hold a pending row against one
-   * company while already working for another, and the live relationship is the one that decides
-   * what they can reach.
-   *
-   * The rows are read rather than ordered in the query because there are at most a handful per
-   * person, and a `$switch` over the status enum would state the same preference far less plainly.
-   */
+  /** Active wins: only activation is exclusive, so a pending row may sit beside a live one. */
   async findCurrentByUser(userId) {
     if (!Types.ObjectId.isValid(userId)) return null;
 

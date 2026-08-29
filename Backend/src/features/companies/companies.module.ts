@@ -27,8 +27,7 @@ export const createCompaniesModule = (requireAccessToken: RequestHandler): Route
   router.post('/employees/approve-all', controller.handleApproveAll);
   router.post('/employees/:membershipId/approve', controller.handleApprove);
 
-  // Not under `/employees`: it is a fact about the company, and it is recorded whether or not an
-  // employee was ever invited.
+  // Not under `/employees`: it is recorded whether or not anybody was ever invited.
   router.post('/employee-setup/complete', controller.handleCompleteSetup);
 
   return router;

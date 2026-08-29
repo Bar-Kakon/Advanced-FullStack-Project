@@ -7,17 +7,9 @@ import type {
 import type { CompanyMembershipRepository } from './companyMembership.repository.js';
 
 /**
- * What a session needs to know about the caller's company, and deliberately nothing else. No name,
- * no phone number and no availability: those belong to the profile feature, and a session payload
- * that grows a copy of them is a second answer waiting to disagree with the first.
- *
- * `membershipStatus` is the whole reason this exists. A person waiting for their employer to
- * approve them is authenticated and holds a real relationship, and no boolean can tell that apart
- * from a relationship that ended — so the status is carried as it is, and the client renders it.
- *
- * `permissions` is the canonical capability list. It is what an interface asks before drawing a
- * control, and it is a copy of the record the server itself checks — never a standing and never a
- * job title.
+ * What a session needs about the caller's company, and nothing else — no name, phone or
+ * availability, which belong to the profile feature. `membershipStatus` stays a code because no
+ * boolean separates waiting for approval from a relationship that ended.
  */
 export interface CompanyContext {
   readonly id: string;
@@ -41,11 +33,7 @@ export const createCompanyContextService = ({
   memberships,
   companies,
 }: CompanyContextDependencies): CompanyContextService => ({
-  /**
-   * `null` means this person holds no company relationship at all, which is a different fact from
-   * holding one that is not active yet. Keeping the two apart is what lets a client route a
-   * waiting employee to a waiting screen rather than treating them as somebody with no company.
-   */
+  /** `null` means no relationship at all — not the same as one that is not active yet. */
   async forUser(userId) {
     const membership = await memberships.findCurrentByUser(userId);
     if (membership === null) return null;
@@ -57,8 +45,7 @@ export const createCompanyContextService = ({
       standing: membership.standing,
       membershipStatus: membership.status,
       permissions: membership.permissions,
-      // A company the read did not find is reported as not set up rather than as set up: the
-      // safe direction is offering the step again, not silently swallowing it.
+      // A missing company reads as not set up: offering the step again is the safe direction.
       employeeSetupComplete: company?.employeeSetupCompletedAt !== undefined,
     };
   },
