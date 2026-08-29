@@ -6,6 +6,7 @@ import { createBlocksModule } from '../features/blocks/blocks.module.js';
 import { createBrowseModule } from '../features/browse/browse.module.js';
 import { createCompaniesModule } from '../features/companies/companies.module.js';
 import { createConnectionsModule } from '../features/connections/connections.module.js';
+import { createDashboardModule } from '../features/dashboard/dashboard.module.js';
 import { createLocationModule } from '../features/location/location.module.js';
 import { createGoogleRoutesAdapter } from '../features/location/routes.adapter.js';
 import { createRatingsModule } from '../features/ratings/ratings.module.js';
@@ -32,6 +33,10 @@ export const createApiRouter = (config: AppConfig): Router => {
   router.use('/companies', createCompaniesModule(auth.requireAccessToken, users.companyProfileRoutes));
   router.use('/blocks', blocks.router);
   router.use('/connections', connections.router);
+  router.use(
+    '/dashboard',
+    createDashboardModule({ requireAccessToken: auth.requireAccessToken, blocks: blocks.service }),
+  );
   router.use('/ratings', createRatingsModule(auth.requireAccessToken));
   router.use('/location', createLocationModule(auth.requireAccessToken, config.googleMaps, routes));
   router.use(
