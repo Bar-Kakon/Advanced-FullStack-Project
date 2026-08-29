@@ -1,0 +1,873 @@
+/* ─────────────────────────────────────────────
+   FieldSync — My network (approved screen #10)
+   Static HTML/CSS prototype for the academic project.
+   Same "luxury blueprint board" language as the other app
+   screens, and the same reusable navbar as browse-contractors.
+
+   Palette: --primary #23384D · --secondary #C7B89D
+            --background #F3F0EA · --surface #FFFDF8
+            --text #1F2428 · --brand-gradient
+   All colors come from the approved palette (+ derived opacity
+   variants). No new colors are introduced on this screen.
+   ───────────────────────────────────────────── */
+
+:root {
+  /* ── Approved brand palette ── */
+  --primary:         #23384D;
+  --secondary:       #C7B89D;
+  --background:      #F3F0EA;
+  --surface:         #FFFDF8;
+  --text:            #1F2428;
+  --brand-gradient:  linear-gradient(135deg, #23384D 0%, #4A5D6E 55%, #C7B89D 100%);
+
+  /* ── Derived: opacity variants of palette colors ── */
+  --primary-08:      rgba(35, 56, 77, 0.08);
+  --primary-12:      rgba(35, 56, 77, 0.12);
+  --primary-20:      rgba(35, 56, 77, 0.20);
+  --primary-30:      rgba(35, 56, 77, 0.30);
+  --primary-45:      rgba(35, 56, 77, 0.45);
+  --secondary-15:    rgba(199, 184, 157, 0.15);
+  --secondary-30:    rgba(199, 184, 157, 0.30);
+  --secondary-45:    rgba(199, 184, 157, 0.45);
+  --secondary-55:    rgba(199, 184, 157, 0.55);
+  --text-mute:       rgba(31, 36, 40, 0.64);
+  --text-soft:       rgba(31, 36, 40, 0.75);
+  --surface-08:      rgba(255, 253, 248, 0.08);
+  --surface-15:      rgba(255, 253, 248, 0.15);
+  --surface-50:      rgba(255, 253, 248, 0.50);
+  --surface-60:      rgba(255, 253, 248, 0.60);
+  --surface-75:      rgba(255, 253, 248, 0.75);
+  --surface-90:      rgba(255, 253, 248, 0.90);
+  --surface-96:      rgba(255, 253, 248, 0.96);
+  --scrim:           rgba(31, 36, 40, 0.62);
+
+  /* Grid lines derived from palette */
+  --grid-light:      rgba(255, 253, 248, 0.06);
+
+  /* ── Typography — Hebrew is the default UI language ── */
+  --font-sans:  'Heebo', 'Inter', system-ui, sans-serif;
+  --font-serif: 'Frank Ruhl Libre', 'Fraunces', serif;
+  --font-mono:  'IBM Plex Mono', ui-monospace, 'SF Mono', monospace;
+
+  /* ── Shape ── */
+  --shadow-lift:     0 18px 36px -24px rgba(31, 36, 40, 0.70);
+  --shadow-card:     14px 14px 0 rgba(199, 184, 157, 0.16),
+                     0 26px 60px -42px rgba(31, 36, 40, 0.90);
+  --board-shadow:    inset 0 0 0 1px rgba(255, 253, 248, 0.08),
+                     inset 0 0 0 12px rgba(199, 184, 157, 0.08),
+                     0 34px 90px -54px rgba(31, 36, 40, 0.90);
+
+  --r-sm:      8px;
+  --r-md:      8px;
+  --nav-h:     66px;
+  --content-max: 1200px;
+}
+
+/* ─────────────────────────────────────────────
+   Reset
+   ───────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { min-height: 100%; }
+
+/* Keeps the anchored list clear of the sticky navbar when the dialog closes. */
+html { scroll-padding-top: calc(var(--nav-h) + 16px); }
+
+body {
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--text);
+  background:
+    radial-gradient(circle at 14% 16%, rgba(199, 184, 157, 0.18) 0 11%, transparent 26%),
+    radial-gradient(circle at 86% 12%, rgba(255, 253, 248, 0.10) 0 9%, transparent 24%),
+    var(--brand-gradient);
+  background-attachment: fixed;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+a { color: inherit; text-decoration: none; }
+button, input, select { font: inherit; color: inherit; }
+button { background: none; border: none; cursor: pointer; }
+ul { list-style: none; }
+
+/* Fixed blueprint board frame behind all content, as on every app screen. */
+body::before,
+body::after {
+  content: '';
+  position: fixed;
+  inset: 18px;
+  z-index: 0;
+  pointer-events: none;
+}
+
+body::before {
+  background:
+    linear-gradient(var(--surface-08) 1px, transparent 1px),
+    linear-gradient(90deg, var(--surface-08) 1px, transparent 1px),
+    linear-gradient(var(--surface-15) 2px, transparent 2px),
+    linear-gradient(90deg, var(--surface-15) 2px, transparent 2px),
+    repeating-linear-gradient(135deg, transparent 0 42px, rgba(199, 184, 157, 0.13) 42px 43px),
+    repeating-linear-gradient(45deg, transparent 0 96px, rgba(255, 253, 248, 0.06) 96px 97px);
+  background-size: 24px 24px, 24px 24px, 120px 120px, 120px 120px, 170px 170px, 220px 220px;
+  border: 1px solid var(--surface-15);
+  box-shadow: var(--board-shadow);
+}
+
+/* Screen-reader-only text, used for the per-group headings. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ─────────────────────────────────────────────
+   App shell wrapper — sibling after the lang radios.
+   Default direction RTL (Hebrew); flipped to LTR on English.
+   ───────────────────────────────────────────── */
+.app {
+  position: relative;
+  z-index: 1;
+  direction: rtl;
+  min-height: 100vh;
+}
+
+/* ─────────────────────────────────────────────
+   REUSABLE APP NAVBAR (.app-nav) — dark blueprint glass bar
+   ───────────────────────────────────────────── */
+.app-nav {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  background:
+    linear-gradient(var(--grid-light) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-light) 1px, transparent 1px),
+    rgba(35, 56, 77, 0.92);
+  background-size: 22px 22px, 22px 22px, auto;
+  border-bottom: 1px solid var(--secondary-45);
+  box-shadow: 0 14px 30px -22px rgba(31, 36, 40, 0.95);
+  backdrop-filter: blur(10px);
+}
+
+.app-nav__inner {
+  max-width: var(--content-max);
+  margin-inline: auto;
+  height: var(--nav-h);
+  padding-inline: 22px;
+  display: flex;
+  align-items: center;
+  gap: 22px;
+}
+
+/* Brand */
+.app-nav__brand { display: inline-flex; align-items: center; gap: 10px; flex-shrink: 0; }
+.app-nav__mark {
+  display: inline-flex;
+  padding: 5px;
+  border-radius: 10px;
+  background: var(--surface-08);
+  border: 1px solid var(--surface-50);
+  box-shadow: inset 0 0 0 4px var(--surface-08), 0 0 0 1px var(--secondary-30);
+}
+.app-nav__name {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.2px;
+  color: var(--surface);
+}
+
+/* Primary links */
+.app-nav__links { display: flex; align-items: center; gap: 4px; }
+.app-nav__link {
+  position: relative;
+  padding: 9px 14px;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--surface-75);
+  border-radius: var(--r-sm);
+  transition: color 0.16s, background 0.16s;
+}
+.app-nav__link:hover { color: var(--surface); background: var(--surface-08); }
+.app-nav__link.is-active { color: var(--surface); background: var(--surface-08); }
+.app-nav__link.is-active::after {
+  content: '';
+  position: absolute;
+  inset-inline: 12px;
+  bottom: -1px;
+  height: 2px;
+  background: var(--secondary);
+}
+
+/* Trailing actions */
+.app-nav__actions { display: flex; align-items: center; gap: 10px; margin-inline-start: auto; }
+
+.nav-icon-btn {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--r-sm);
+  color: var(--surface-75);
+  border: 1px solid var(--surface-15);
+  background: var(--surface-08);
+  transition: color 0.16s, border-color 0.16s, background 0.16s;
+}
+.nav-icon-btn:hover { color: var(--surface); border-color: var(--secondary-55); }
+.nav-icon-btn.has-dot::after {
+  content: '';
+  position: absolute;
+  top: 8px;
+  inset-inline-end: 9px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--secondary);
+  border: 1.5px solid rgba(35, 56, 77, 0.92);
+}
+
+.nav-profile {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  /* Written logically rather than as the four-value shorthand, so the tighter
+     side stays next to the avatar in both directions. */
+  padding-block: 5px;
+  padding-inline-start: 7px;
+  padding-inline-end: 11px;
+  border-radius: 999px;
+  color: var(--surface);
+  border: 1px solid var(--surface-15);
+  background: var(--surface-08);
+  transition: border-color 0.16s, background 0.16s;
+}
+.nav-profile:hover { border-color: var(--secondary-55); background: var(--surface-15); }
+.nav-profile__avatar {
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--surface);
+  background: var(--brand-gradient);
+  border: 1px solid var(--secondary-55);
+}
+.nav-profile__name { font-size: 13px; font-weight: 600; }
+.nav-profile__chevron { color: var(--surface-60); }
+
+/* Language switcher — same pill as the other screens, as a navbar flex item */
+.lang-switch {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  /* Same reason as .nav-profile — the globe keeps the wider side beside it. */
+  padding-block: 5px;
+  padding-inline-start: 10px;
+  padding-inline-end: 8px;
+  background: var(--surface-96);
+  border: 1px solid var(--secondary-55);
+  border-radius: 999px;
+  box-shadow: var(--shadow-lift);
+  outline: 1px solid var(--surface-50);
+  outline-offset: -4px;
+}
+.lang-switch__globe { color: var(--text-mute); flex-shrink: 0; }
+.lang-switch__btn {
+  font-family: var(--font-sans);
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--text-soft);
+  padding: 3px 9px;
+  border-radius: 999px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  transition: color 0.18s, background 0.18s;
+}
+.lang-switch__btn:hover { color: var(--primary); }
+.lang-switch__sep { width: 1px; height: 14px; background: var(--secondary-30); }
+
+/* ─────────────────────────────────────────────
+   Page header
+   ───────────────────────────────────────────── */
+.network {
+  max-width: var(--content-max);
+  margin-inline: auto;
+  padding: 30px 22px 56px;
+}
+
+.network__head { margin-bottom: 22px; }
+
+.network__title {
+  font-family: var(--font-serif);
+  font-size: 34px;
+  font-weight: 700;
+  line-height: 1.15;
+  color: var(--surface);
+}
+
+.network__sub {
+  margin-top: 8px;
+  font-size: 16px;
+  color: var(--surface-90);
+}
+
+/* ─────────────────────────────────────────────
+   Tabs — CSS-only, driven by four hidden radios.
+   Radios rather than :target, because the confirmation dialog
+   below claims :target and a page has only one target at a time.
+   ───────────────────────────────────────────── */
+
+/* Visually hidden but still keyboard-reachable, like the language radios. */
+.tab-radio {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+}
+
+.tabs__bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: -1px;
+  position: relative;
+  z-index: 2;
+}
+
+/* Inactive tabs stay light on the dark board so nothing is navy on navy. */
+.tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  padding: 11px 18px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--surface-90);
+  background: var(--surface-08);
+  border: 1px solid var(--surface-15);
+  border-block-end: none;
+  border-start-start-radius: var(--r-sm);
+  border-start-end-radius: var(--r-sm);
+  cursor: pointer;
+  transition: color 0.16s, background 0.16s, border-color 0.16s;
+}
+.tab:hover { color: var(--surface); background: var(--surface-15); border-color: var(--secondary-55); }
+
+.tab__count {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 500;
+  min-width: 24px;
+  padding: 1px 7px;
+  text-align: center;
+  border-radius: 999px;
+  color: var(--surface);
+  background: var(--surface-15);
+  border: 1px solid var(--surface-15);
+}
+
+/* Panels are hidden by default; the checked radio reveals exactly one. */
+.tab-panel { display: none; }
+
+.tabs__panels {
+  position: relative;
+  padding: 24px;
+  background:
+    linear-gradient(90deg, rgba(35, 56, 77, 0.03) 1px, transparent 1px),
+    linear-gradient(0deg, rgba(35, 56, 77, 0.03) 1px, transparent 1px),
+    linear-gradient(180deg, rgba(255, 253, 248, 0.99), rgba(243, 240, 234, 0.96));
+  background-size: 20px 20px, 20px 20px, auto;
+  border: 1px solid var(--surface-75);
+  border-radius: var(--r-md);
+  border-start-start-radius: 0;
+  box-shadow: var(--shadow-card);
+  outline: 1px solid var(--primary-08);
+  outline-offset: -7px;
+}
+
+/* Each checked radio lights its own tab and shows its own panel. */
+#tab-received:checked    ~ .tabs__bar label[for="tab-received"],
+#tab-connections:checked ~ .tabs__bar label[for="tab-connections"],
+#tab-sent:checked        ~ .tabs__bar label[for="tab-sent"],
+#tab-blocked:checked     ~ .tabs__bar label[for="tab-blocked"] {
+  color: var(--primary);
+  background: var(--surface-96);
+  border-color: var(--surface-75);
+}
+
+#tab-received:checked    ~ .tabs__bar label[for="tab-received"] .tab__count,
+#tab-connections:checked ~ .tabs__bar label[for="tab-connections"] .tab__count,
+#tab-sent:checked        ~ .tabs__bar label[for="tab-sent"] .tab__count,
+#tab-blocked:checked     ~ .tabs__bar label[for="tab-blocked"] .tab__count {
+  color: var(--surface);
+  background: var(--primary);
+  border-color: var(--primary);
+}
+
+#tab-received:checked    ~ .tabs__panels #panel-received,
+#tab-connections:checked ~ .tabs__panels #panel-connections,
+#tab-sent:checked        ~ .tabs__panels #panel-sent,
+#tab-blocked:checked     ~ .tabs__panels #panel-blocked {
+  display: block;
+}
+
+/* ─────────────────────────────────────────────
+   Group lede — one line saying what the gate does in this state
+   ───────────────────────────────────────────── */
+.panel-lede {
+  font-size: 15px;
+  color: var(--text-soft);
+  padding-bottom: 16px;
+  margin-bottom: 4px;
+  border-bottom: 1px dashed var(--secondary-45);
+}
+
+/* ─────────────────────────────────────────────
+   Empty group — one neutral line, deliberately nothing else
+   ───────────────────────────────────────────── */
+.net-empty {
+  font-size: 15px;
+  /* An empty state is metadata, so §3.5 rule 4 puts it on the mute tier rather than the soft one. */
+  color: var(--text-mute);
+  padding: 20px 16px 4px;
+}
+/* The line belongs to its own group and disappears the moment that group has a row. */
+.net-list:has(.net-row) + .net-empty { display: none; }
+
+/* ─────────────────────────────────────────────
+   Connection rows
+   ───────────────────────────────────────────── */
+.net-list { display: flex; flex-direction: column; }
+
+.net-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) 190px auto;
+  align-items: center;
+  gap: 18px;
+  padding: 18px 16px;
+  border-block-end: 1px dashed var(--secondary-45);
+  border-inline-start: 3px solid transparent;
+  transition: background 0.16s, border-color 0.16s;
+}
+.net-row:last-child { border-block-end: none; }
+.net-row:hover { background: var(--secondary-15); }
+
+/* The leading edge carries the connection state, and it mirrors for free. */
+.net-row--received  { border-inline-start-color: var(--secondary); }
+.net-row--connected { border-inline-start-color: var(--primary); }
+.net-row--pending   { border-inline-start-color: var(--secondary-30); }
+.net-row--blocked   { border-inline-start-color: var(--primary-30); }
+
+/* A blocked row shows no trust metrics, so it drops that column. */
+.net-row--blocked { grid-template-columns: auto minmax(0, 1fr) auto; }
+
+.avatar {
+  flex-shrink: 0;
+  /* Sits beside the name rather than floating at the middle of a tall row. */
+  align-self: start;
+  display: inline-grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--surface);
+  background: var(--brand-gradient);
+  border: 1px solid var(--secondary-55);
+  box-shadow: inset 0 0 0 3px var(--surface-08);
+}
+
+/* A blocked contact is deliberately quieter than an active one. */
+.avatar--muted { background: var(--primary-45); border-color: var(--secondary-30); }
+
+.net-row__id { min-width: 0; }
+
+.net-row__name {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--primary);
+  line-height: 1.2;
+}
+
+.net-row__org {
+  font-size: 14px;
+  color: var(--text-soft);
+  margin-top: 2px;
+}
+
+.net-row__stamp {
+  font-family: var(--font-mono);
+  /* A date is exactly the metadata §3.5 rule 4 names, so it stays at 14px. */
+  font-size: 14px;
+  color: var(--text-mute);
+  margin-top: 6px;
+}
+
+/* Trade tags */
+.tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.tag {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: var(--primary);
+  background: var(--secondary-15);
+  border: 1px solid var(--secondary-45);
+  padding: 4px 9px;
+  border-radius: var(--r-sm);
+}
+
+/* Location row */
+.meta-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  font-size: 14px;
+  color: var(--text-soft);
+}
+.meta-row__pin { color: var(--secondary); flex-shrink: 0; }
+
+/* ─────────────────────────────────────────────
+   Trust metrics — same rating and flexibility marks as the
+   browse cards, so one contractor reads the same on both screens
+   ───────────────────────────────────────────── */
+.net-row__metrics { display: flex; flex-direction: column; gap: 10px; }
+
+.rating { display: flex; align-items: center; gap: 8px; }
+.rating__stars {
+  direction: ltr;
+  position: relative;
+  display: inline-block;
+  font-size: 15px;
+  line-height: 1;
+  letter-spacing: 1px;
+  color: var(--secondary-30);
+}
+.rating__stars::before { content: '★★★★★'; }
+.rating__fill {
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: 0;
+  width: calc(var(--rating) / 5 * 100%);
+  overflow: hidden;
+  white-space: nowrap;
+  color: var(--secondary);
+}
+.rating__fill::before { content: '★★★★★'; }
+.rating__value {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.flex-meter { display: flex; flex-direction: column; gap: 6px; }
+.flex-meter__head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.flex-meter__label {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-soft);
+}
+.flex-meter__value {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--primary);
+}
+.flex-meter__track {
+  display: block;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--secondary-15);
+  border: 1px solid var(--secondary-30);
+  overflow: hidden;
+}
+.flex-meter__fill {
+  display: block;
+  height: 100%;
+  width: calc(var(--score) * 1%);
+  border-radius: 999px;
+  background: var(--brand-gradient);
+}
+
+/* ─────────────────────────────────────────────
+   Row actions
+   ───────────────────────────────────────────── */
+.net-row__actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+/* States the request is waiting rather than offering a dead control. */
+.wait-note {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  color: var(--text-mute);
+  padding-inline-end: 4px;
+}
+
+/* ─────────────────────────────────────────────
+   Buttons — same family as the other app screens
+   ───────────────────────────────────────────── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  position: relative;
+  height: 50px;
+  padding: 0 20px;
+  font-family: var(--font-sans);
+  font-size: 14.5px;
+  font-weight: 600;
+  border: 1.5px solid transparent;
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  transition: background 0.16s, box-shadow 0.2s, transform 0.12s, border-color 0.16s, color 0.16s;
+  white-space: nowrap;
+}
+.btn--sm { height: 42px; padding: 0 14px; font-size: 13.5px; }
+
+/* Primary: solid primary, used for the one affirmative action in a row. */
+.btn--primary {
+  color: var(--surface);
+  background: var(--brand-gradient);
+  border-color: var(--primary);
+  box-shadow: 6px 6px 0 var(--secondary-30), 0 14px 28px -16px rgba(35, 56, 77, 0.80);
+}
+.btn--primary:hover {
+  box-shadow: 3px 3px 0 var(--secondary-55), 0 18px 32px -18px rgba(35, 56, 77, 0.90);
+  transform: translate(2px, 2px);
+}
+.btn--primary:active { transform: translateY(1px); }
+
+/* Ghost: outline on surface, for secondary navigation such as View profile. */
+.btn--ghost {
+  color: var(--primary);
+  background: var(--surface);
+  border-color: var(--secondary-45);
+  font-weight: 500;
+  box-shadow: inset 0 -2px 0 var(--secondary-15), 4px 4px 0 var(--primary-08);
+}
+.btn--ghost:hover {
+  border-color: var(--secondary);
+  background: var(--background);
+  transform: translate(2px, 2px);
+  box-shadow: inset 0 -2px 0 var(--secondary-15), 2px 2px 0 var(--primary-12);
+}
+.btn--ghost:active { transform: translateY(1px); }
+
+/* Quiet: the tear-down actions, deliberately the least prominent control. */
+.btn--quiet {
+  color: var(--text-soft);
+  background: transparent;
+  border-color: var(--primary-20);
+  font-weight: 500;
+}
+.btn--quiet:hover { color: var(--primary); border-color: var(--primary-45); background: var(--surface); }
+
+/* ─────────────────────────────────────────────
+   Remove-connection dialog — revealed by :target, closed by a
+   link back to the list. One generic dialog serves every row.
+   ───────────────────────────────────────────── */
+.dialog { display: none; }
+
+.dialog:target {
+  display: grid;
+  place-items: center;
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  padding: 20px;
+}
+
+.dialog__scrim {
+  position: absolute;
+  inset: 0;
+  background: var(--scrim);
+  backdrop-filter: blur(2px);
+}
+
+.dialog__card {
+  position: relative;
+  width: 100%;
+  max-width: 460px;
+  padding: 26px;
+  text-align: start;
+  background:
+    linear-gradient(90deg, rgba(35, 56, 77, 0.03) 1px, transparent 1px),
+    linear-gradient(0deg, rgba(35, 56, 77, 0.03) 1px, transparent 1px),
+    linear-gradient(180deg, rgba(255, 253, 248, 0.99), rgba(243, 240, 234, 0.96));
+  background-size: 20px 20px, 20px 20px, auto;
+  border: 1px solid var(--surface-75);
+  border-block-start: 4px solid var(--secondary);
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow-card);
+  outline: 1px solid var(--primary-08);
+  outline-offset: -7px;
+}
+
+.dialog__title {
+  font-family: var(--font-serif);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.dialog__body {
+  margin-top: 10px;
+  font-size: 15px;
+  color: var(--text-soft);
+}
+
+.dialog__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 22px;
+}
+
+/* ─────────────────────────────────────────────
+   Responsive
+   ───────────────────────────────────────────── */
+@media (max-width: 1000px) {
+  /* Metrics move under the identity so the actions keep their own column. */
+  .net-row {
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: start;
+  }
+  .net-row--blocked { grid-template-columns: auto minmax(0, 1fr); }
+  .net-row__metrics {
+    grid-column: 2 / -1;
+    flex-direction: row;
+    align-items: center;
+    gap: 20px;
+  }
+  .net-row__metrics .flex-meter { min-width: 170px; }
+  .net-row__actions { grid-column: 2 / -1; justify-content: flex-start; }
+}
+
+@media (max-width: 860px) {
+  .app-nav__links { gap: 0; }
+  .app-nav__link { padding: 8px 10px; font-size: 12.5px; }
+  .nav-profile__name { display: none; }
+  .network__title { font-size: 28px; }
+  .tabs__panels { padding: 18px 14px; }
+}
+
+/* The four links stop fitting beside the profile chip well above the small
+   breakpoint, so they take a row of their own from here down. */
+@media (max-width: 800px) {
+  .app-nav__inner {
+    gap: 14px;
+    flex-wrap: wrap;
+    height: auto;
+    padding-block: 10px;
+  }
+  .app-nav__links {
+    order: 3;
+    flex-basis: 100%;
+    justify-content: space-between;
+    border-top: 1px solid var(--surface-15);
+    padding-top: 8px;
+  }
+  html { scroll-padding-top: 120px; }
+}
+
+@media (max-width: 620px) {
+  .app-nav__inner { gap: 12px; padding-inline: 14px; }
+  .network { padding-inline: 14px; }
+
+  /* The identity stacks under the avatar so long English names keep their width. */
+  .net-row { grid-template-columns: 1fr; gap: 12px; }
+  .net-row--blocked { grid-template-columns: 1fr; }
+  .net-row__metrics,
+  .net-row__actions { grid-column: 1 / -1; }
+  .net-row__metrics { flex-direction: column; align-items: stretch; gap: 10px; }
+  .net-row__actions .btn { flex: 1 1 auto; }
+
+  .tab { flex: 1 1 auto; justify-content: center; padding: 10px 12px; font-size: 14px; }
+  .dialog__actions .btn { flex: 1; }
+
+  /* Wrapped tabs stop touching the panel, so they close up as separate pills
+     rather than leaving the active one visually detached from its own panel. */
+  .tabs__bar { margin-bottom: 8px; }
+  .tab {
+    border-block-end-width: 1px;
+    border-block-end-style: solid;
+    border-radius: var(--r-sm);
+  }
+  .tabs__panels { border-start-start-radius: var(--r-md); }
+}
+
+@media (max-width: 420px) {
+  .lang-switch { padding-block: 4px; padding-inline-start: 8px; padding-inline-end: 6px; }
+  .app-nav__name { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn--primary:hover,
+  .btn--ghost:hover { transform: none; }
+}
+
+/* ─────────────────────────────────────────────
+   CSS-only bilingual toggle — radio button hack
+   #lang-he checked = Hebrew + RTL  (DEFAULT)
+   #lang-en checked = English + LTR
+   ───────────────────────────────────────────── */
+
+/* Visually hidden; still keyboard/screen-reader accessible */
+.lang-radio {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+}
+
+/* ── Default: Hebrew shown, English hidden ── */
+.he-text { display: inline; }
+.en-text { display: none; }
+
+/* ── Toggle button active states ── */
+#lang-he:checked ~ .app .lang-switch label[for="lang-he"] { color: var(--surface); background: var(--primary); }
+#lang-he:checked ~ .app .lang-switch label[for="lang-en"] { color: var(--text-soft); background: none; }
+#lang-en:checked ~ .app .lang-switch label[for="lang-en"] { color: var(--surface); background: var(--primary); }
+#lang-en:checked ~ .app .lang-switch label[for="lang-he"] { color: var(--text-soft); background: none; }
+
+/* ── English selected: swap text + direction + fonts ── */
+#lang-en:checked ~ .app .he-text { display: none;   }
+#lang-en:checked ~ .app .en-text { display: inline; }
+
+#lang-en:checked ~ .app {
+  direction: ltr;
+  --font-sans:  'Inter', system-ui, -apple-system, sans-serif;
+  --font-serif: 'Fraunces', 'Georgia', serif;
+}

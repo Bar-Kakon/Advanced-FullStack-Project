@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="he">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>הרשת שלי / My network — FieldSync</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <!--
+    Heebo + Frank Ruhl Libre → Hebrew (default)
+    Inter + Fraunces          → English (on toggle)
+    IBM Plex Mono             → both (technical/monospace accents)
+    Same font stack as the other app screens so they all match.
+  -->
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=IBM+Plex+Mono:wght@400;500&family=Heebo:wght@400;500;600;700&family=Frank+Ruhl+Libre:wght@500;700&display=swap"
+    rel="stylesheet" />
+  <link rel="stylesheet" href="my-network.css" />
+</head>
+<body>
+
+  <!--
+    CSS-only bilingual toggle, identical to every other screen.
+    Two radios at the top of <body> drive all language state through sibling
+    selectors, so one selector family swaps text, direction and fonts at once.
+  -->
+  <input type="radio" name="lang" id="lang-he" class="lang-radio" checked>
+  <input type="radio" name="lang" id="lang-en" class="lang-radio">
+
+  <div class="app">
+
+    <!-- ═══════════════════════════════════════════════
+         REUSABLE APP NAVBAR  (.app-nav)
+         Same markup as browse-contractors.html so both screens keep one
+         navbar; it lifts into a React <Navbar/> once the migration starts.
+         ═══════════════════════════════════════════════ -->
+    <header class="app-nav">
+      <div class="app-nav__inner">
+
+        <!-- Brand points at the Personal dashboard, the reserved home route. -->
+        <a href="personal-dashboard.html" class="app-nav__brand" aria-label="FieldSync — home">
+          <span class="app-nav__mark" aria-hidden="true">
+            <svg width="26" height="26" viewBox="0 0 40 40" fill="none">
+              <circle cx="8"  cy="20" r="6" fill="rgba(199,184,157,0.30)" stroke="rgba(255,253,248,0.92)" stroke-width="2"/>
+              <circle cx="32" cy="8"  r="6" fill="rgba(199,184,157,0.30)" stroke="rgba(255,253,248,0.92)" stroke-width="2"/>
+              <circle cx="32" cy="32" r="6" fill="rgba(199,184,157,0.30)" stroke="rgba(255,253,248,0.92)" stroke-width="2"/>
+              <line x1="14" y1="17" x2="26" y2="11" stroke="rgba(255,253,248,0.55)" stroke-width="1.5" stroke-dasharray="3 2"/>
+              <line x1="14" y1="23" x2="26" y2="29" stroke="rgba(255,253,248,0.55)" stroke-width="1.5" stroke-dasharray="3 2"/>
+              <line x1="32" y1="14" x2="32" y2="26" stroke="rgba(255,253,248,0.40)" stroke-width="1.5" stroke-dasharray="3 2"/>
+            </svg>
+          </span>
+          <span class="app-nav__name">FieldSync</span>
+        </a>
+
+        <!-- Primary navigation -->
+        <nav class="app-nav__links" aria-label="Main">
+          <a href="browse-contractors.html" class="app-nav__link">
+            <span class="he-text">עיון בקבלנים</span>
+            <span class="en-text">Browse</span>
+          </a>
+          <a href="my-network.html" class="app-nav__link is-active" aria-current="page">
+            <span class="he-text">הרשת שלי</span>
+            <span class="en-text">Network</span>
+          </a>
+          <a href="#" class="app-nav__link">
+            <span class="he-text">פרויקטים</span>
+            <span class="en-text">Projects</span>
+          </a>
+          <a href="#" class="app-nav__link">
+            <span class="he-text">המשימות שלי</span>
+            <span class="en-text">My Tasks</span>
+          </a>
+        </nav>
+
+        <!-- Trailing actions: notifications · profile · language -->
+        <div class="app-nav__actions">
+
+          <!-- Notifications bell (visual; opens the notifications popup in Stage 2) -->
+          <button type="button" class="nav-icon-btn has-dot" aria-label="Notifications">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/>
+              <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+            </svg>
+          </button>
+
+          <!-- Profile menu trigger (visual; dropdown wired in Stage 2) -->
+          <button type="button" class="nav-profile" aria-label="Account menu" aria-haspopup="true">
+            <span class="nav-profile__avatar" aria-hidden="true">
+              <span class="he-text">בכ</span><span class="en-text">BK</span>
+            </span>
+            <span class="nav-profile__name">
+              <span class="he-text">בר כאכון</span>
+              <span class="en-text">Bar Kakon</span>
+            </span>
+            <svg class="nav-profile__chevron" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M6 9l6 6 6-6"/>
+            </svg>
+          </button>
+
+          <!-- Language switcher -->
+          <div class="lang-switch" role="group" aria-label="Language / שפה">
+            <svg class="lang-switch__globe" width="15" height="15" viewBox="0 0 24 24"
+                 fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+              <circle cx="12" cy="12" r="9"/>
+              <path d="M3 12h18M12 3c2.5 2.7 2.5 15.3 0 18M12 3c-2.5 2.7-2.5 15.3 0 18"/>
+            </svg>
+            <label for="lang-he" class="lang-switch__btn">עב</label>
+            <span class="lang-switch__sep" aria-hidden="true"></span>
+            <label for="lang-en" class="lang-switch__btn">EN</label>
+          </div>
+
+        </div>
+      </div>
+    </header>
+
+    <!-- ═══════════════════════════════════════════════
+         MY NETWORK — approved screen #10
+         Four groups of the one `connections` collection, told apart by
+         `status` and by which side of `requester`/`recipient` the viewer is on.
+         ═══════════════════════════════════════════════ -->
+    <main class="network">
+
+      <header class="network__head">
+        <h1 class="network__title">
+          <span class="he-text">הרשת שלי</span>
+          <span class="en-text">My network</span>
+        </h1>
+        <p class="network__sub">
+          <span class="he-text">בקשה, אישור, ואז אפשר לשלוח הודעה — התכתבות ישירה נפתחת רק אחרי שהחיבור אושר.</span>
+          <span class="en-text">Request, accept, then message — direct messaging opens only once a connection is accepted.</span>
+        </p>
+      </header>
+
+      <!--
+        CSS-only tabs built on hidden radios rather than :target.
+        The confirmation dialog below needs :target, and a page has only one
+        target at a time, so a dialog opened from a tab would have collapsed
+        the page back to the default tab behind the overlay.
+      -->
+      <div class="tabs">
+        <input type="radio" name="net-tab" id="tab-received" class="tab-radio" checked>
+        <input type="radio" name="net-tab" id="tab-connections" class="tab-radio">
+        <input type="radio" name="net-tab" id="tab-sent" class="tab-radio">
+        <input type="radio" name="net-tab" id="tab-blocked" class="tab-radio">
+
+        <!-- Received opens first because it is the only group asking the viewer to act. -->
+        <div class="tabs__bar" role="group" aria-label="Network groups / קבוצות ברשת">
+          <label for="tab-received" class="tab">
+            <span class="tab__text">
+              <span class="he-text">בקשות שהתקבלו</span>
+              <span class="en-text">Requests received</span>
+            </span>
+            <span class="tab__count">2</span>
+          </label>
+          <label for="tab-connections" class="tab">
+            <span class="tab__text">
+              <span class="he-text">אנשי הקשר שלי</span>
+              <span class="en-text">Connections</span>
+            </span>
+            <span class="tab__count">4</span>
+          </label>
+          <label for="tab-sent" class="tab">
+            <span class="tab__text">
+              <span class="he-text">בקשות שנשלחו</span>
+              <span class="en-text">Requests sent</span>
+            </span>
+            <span class="tab__count">2</span>
+          </label>
+          <label for="tab-blocked" class="tab">
+            <span class="tab__text">
+              <span class="he-text">חסומים</span>
+              <span class="en-text">Blocked</span>
+            </span>
+            <span class="tab__count">0</span>
+          </label>
+        </div>
+
+        <div class="tabs__panels" id="network-list">
+
+          <!-- ══ 1 · Requests received ══════════════════
+               The viewer is `recipient`, so this is the only group that
+               offers accept or decline.
+               ═══════════════════════════════════════════ -->
+          <section class="tab-panel" id="panel-received" aria-labelledby="h-received">
+            <h2 class="sr-only" id="h-received">
+              <span class="he-text">בקשות התחברות שהתקבלו</span>
+              <span class="en-text">Connection requests received</span>
+            </h2>
+            <p class="panel-lede">
+              <span class="he-text">הקבלנים האלה ביקשו להתחבר אליכם. אישור פותח התכתבות ישירה לשני הכיוונים.</span>
+              <span class="en-text">These contractors asked to connect with you. Accepting opens direct messaging both ways.</span>
+            </p>
+
+            <ul class="net-list">
+
+              <li class="net-row net-row--received">
+                <span class="avatar" aria-hidden="true"><span class="he-text">תש</span><span class="en-text">TS</span></span>
+                <div class="net-row__id">
+                  <h3 class="net-row__name">
+                    <span class="he-text" dir="auto">תמר שפירא</span>
+                    <span class="en-text" dir="auto">Tamar Shapira</span>
+                  </h3>
+                  <p class="net-row__org">
+                    <span class="he-text" dir="auto">שפירא חשמל ובקרה</span>
+                    <span class="en-text" dir="auto">Shapira Electrical &amp; Controls</span>
+                  </p>
+                  <div class="tags">
+                    <span class="tag"><span class="he-text">חשמל</span><span class="en-text">Electrical</span></span>
+                  </div>
+                  <p class="meta-row">
+                    <svg class="meta-row__pin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M21 10c0 7-9 12-9 12s-9-5-9-12a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                    <span class="he-text">ירושלים</span><span class="en-text">Jerusalem</span>
+                  </p>
+                  <p class="net-row__stamp">
+                    <span class="he-text">בקשה התקבלה · 17 באוגוסט 2026</span>
+                    <span class="en-text">Request received · 17 August 2026</span>
+                  </p>
+                </div>
+                <div class="net-row__metrics">
+                  <div class="rating" title="4.7">
+                    <span class="rating__stars" style="--rating: 4.7" aria-hidden="true"><span class="rating__fill"></span></span>
+                    <span class="rating__value">4.7</span>
+                  </div>
+                  <div class="flex-meter">
+                    <div class="flex-meter__head">
+                      <span class="flex-meter__label"><span class="he-text">גמישות</span><span class="en-text">Flexibility</span></span>
+                      <span class="flex-meter__value">88</span>
+                    </div>
+                    <span class="flex-meter__track"><span class="flex-meter__fill" style="--score: 88"></span></span>
+                  </div>
+                </div>
+                <div class="net-row__actions">
+                  <a href="browse-contractors.html#profile" class="btn btn--ghost btn--sm">
+                    <span class="he-text">פרופיל</span><span class="en-text">View profile</span>
+                  </a>
+                  <button type="button" class="btn btn--quiet btn--sm">
+                    <span class="he-text">דחייה</span><span class="en-text">Decline</span>
+                  </button>
+                  <button type="button" class="btn btn--primary btn--sm">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 6"/></svg>
+                    <span class="he-text">אישור</span><span class="en-text">Accept</span>
+                  </button>
+                </div>
+              </li>
+
+              <li class="net-row net-row--received">
+                <span class="avatar" aria-hidden="true"><span class="he-text">נז</span><span class="en-text">NZ</span></span>
+                <div class="net-row__id">
+                  <h3 class="net-row__name">
+                    <span class="he-text" dir="auto">נביל זועבי</span>
+                    <span class="en-text" dir="auto">Nabil Zoabi</span>
+                  </h3>
+                  <p class="net-row__org">
+                    <span class="he-text" dir="auto">זועבי איטום ובידוד</span>
+                    <span class="en-text" dir="auto">Zoabi Waterproofing &amp; Insulation</span>
+                  </p>
+                  <div class="tags">
+                    <span class="tag"><span class="he-text">איטום</span><span class="en-text">Waterproofing</span></span>
+                  </div>
+                  <p class="meta-row">
+                    <svg class="meta-row__pin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M21 10c0 7-9 12-9 12s-9-5-9-12a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                    <span class="he-text">צפון</span><span class="en-text">North</span>
+                  </p>
+                  <p class="net-row__stamp">
+                    <span class="he-text">בקשה התקבלה · 14 באוגוסט 2026</span>
+                    <span class="en-text">Request received · 14 August 2026</span>
+                  </p>
+                </div>
+                <div class="net-row__metrics">
+                  <div class="rating" title="4.3">
+                    <span class="rating__stars" style="--rating: 4.3" aria-hidden="true"><span class="rating__fill"></span></span>
+                    <span class="rating__value">4.3</span>
+                  </div>
+                  <div class="flex-meter">
+                    <div class="flex-meter__head">
+                      <span class="flex-meter__label"><span class="he-text">גמישות</span><span class="en-text">Flexibility</span></span>
+                      <span class="flex-meter__value">76</span>
+                    </div>
+                    <span class="flex-meter__track"><span class="flex-meter__fill" style="--score: 76"></span></span>
+                  </div>
+                </div>
+                <div class="net-row__actions">
+                  <a href="browse-contractors.html#profile" class="btn btn--ghost btn--sm">
+                    <span class="he-text">פרופיל</span><span class="en-text">View profile</span>
+                  </a>
+                  <button type="button" class="btn btn--quiet btn--sm">
+                    <span class="he-text">דחייה</span><span class="en-text">Decline</span>
+                  </button>
+                  <button type="button" class="btn btn--primary btn--sm">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 6"/></svg>
+                    <span class="he-text">אישור</span><span class="en-text">Accept</span>
+                  </button>
+                </div>
+              </li>
+
+            </ul>
+            <!-- This line replaces the list when the group is empty, and the CSS hides it whenever a row exists. -->
+            <p class="net-empty">
+              <span class="he-text">אין כרגע בקשות שהתקבלו.</span>
+              <span class="en-text">No requests received right now.</span>
+            </p>
+          </section>
+
+          <!-- ══ 2 · Accepted connections ═══════════════
+               The only group whose rows carry Message, because an accepted
+               connection is exactly what opens the direct-messaging gate.
+               ═══════════════════════════════════════════ -->
+          <section class="tab-panel" id="panel-connections" aria-labelledby="h-connections">
+            <h2 class="sr-only" id="h-connections">
+              <span class="he-text">אנשי הקשר שלי</span>
+              <span class="en-text">My connections</span>
+            </h2>
+            <p class="panel-lede">
+              <span class="he-text">התכתבות ישירה פתוחה עם כל מי שנמצא כאן.</span>
+              <span class="en-text">Direct messaging is open with everyone here.</span>
+            </p>
+
+            <ul class="net-list">
+
+              <li class="net-row net-row--connected">
+                <span class="avatar" aria-hidden="true"><span class="he-text">דל</span><span class="en-text">DL</span></span>
+                <div class="net-row__id">
+                  <h3 class="net-row__name">
+                    <span class="he-text" dir="auto">דנה לוי</span>
+                    <span class="en-text" dir="auto">Dana Levi</span>
+                  </h3>
+                  <p class="net-row__org">
+                    <span class="he-text" dir="auto">לוי אינסטלציה</span>
+                    <span class="en-text" dir="auto">Levi Plumbing</span>
+                  </p>
+                  <div class="tags">
+                    <span class="tag"><span class="he-text">אינסטלציה</span><span class="en-text">Plumbing</span></span>
+                    <span class="tag"><span class="he-text">איטום</span><span class="en-text">Waterproofing</span></span>
+                  </div>
+                  <p class="meta-row">
+                    <svg class="meta-row__pin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M21 10c0 7-9 12-9 12s-9-5-9-12a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                    <span class="he-text">מרכז</span><span class="en-text">Center</span>
+                  </p>
+                  <p class="net-row__stamp">
+                    <span class="he-text">מחוברים מאז · 12 במאי 2026</span>
+                    <span class="en-text">Connected since · 12 May 2026</span>
+                  </p>
+                </div>
+                <div class="net-row__metrics">
+                  <div class="rating" title="4.9">
+                    <span class="rating__stars" style="--rating: 4.9" aria-hidden="true"><span class="rating__fill"></span></span>
+                    <span class="rating__value">4.9</span>
+                  </div>
+                  <div class="flex-meter">
+                    <div class="flex-meter__head">
+                      <span class="flex-meter__label"><span class="he-text">גמישות</span><span class="en-text">Flexibility</span></span>
+                      <span class="flex-meter__value">91</span>
+                    </div>
+                    <span class="flex-meter__track"><span class="flex-meter__fill" style="--score: 91"></span></span>
+                  </div>
+                </div>
+                <div class="net-row__actions">
+                  <a href="browse-contractors.html#profile" class="btn btn--ghost btn--sm">
+                    <span class="he-text">פרופיל</span><span class="en-text">View profile</span>
+                  </a>
+                  <a href="#confirm-remove" class="btn btn--quiet btn--sm">
+                    <span class="he-text">הסרה</span><span class="en-text">Remove</span>
+                  </a>
+                  <a href="inbox.html" class="btn btn--primary btn--sm">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                    <span class="he-text">הודעה</span><span class="en-text">Message</span>
+                  </a>
+                </div>
+              </li>
+
+              <li class="net-row net-row--connected">
+                <span class="avatar" aria-hidden="true"><span class="he-text">רא</span><span class="en-text">RA</span></span>
+                <div class="net-row__id">
+                  <h3 class="net-row__name">
+                    <span class="he-text" dir="auto">רונן אדלר</span>
+                    <span class="en-text" dir="auto">Ronen Adler</span>
+                  </h3>
+                  <p class="net-row__org">
+                    <span class="he-text" dir="auto">אדלר תבניות ויציקה</span>
+                    <span class="en-text" dir="auto">Adler Formwork &amp; Concrete</span>
+                  </p>
+                  <div class="tags">
+                    <span class="tag"><span class="he-text">קבלן שלד</span><span class="en-text">Shell</span></span>
+                  </div>
+                  <p class="meta-row">
+                    <svg class="meta-row__pin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M21 10c0 7-9 12-9 12s-9-5-9-12a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                    <span class="he-text">חיפה</span><span class="en-text">Haifa</span>
+                  </p>
+                  <p class="net-row__stamp">
+                    <span class="he-text">מחוברים מאז · 3 במרץ 2026</span>
+                    <span class="en-text">Connected since · 3 March 2026</span>
+                  </p>
+                </div>
+                <div class="net-row__metrics">
+                  <div class="rating" title="4.6">
+                    <span class="rating__stars" style="--rating: 4.6" aria-hidden="true"><span class="rating__fill"></span></span>
+                    <span class="rating__value">4.6</span>
+                  </div>
+                  <div class="flex-meter">
+                    <div class="flex-meter__head">
+                      <span class="flex-meter__label"><span class="he-text">גמישות</span><span class="en-text">Flexibility</span></span>
+                      <span class="flex-meter__value">84</span>
+                    </div>
+                    <span class="flex-meter__track"><span class="flex-meter__fill" style="--score: 84"></span></span>
+                  </div>
+                </div>
+                <div class="net-row__actions">
+                  <a href="browse-contractors.html#profile" class="btn btn--ghost btn--sm">
+                    <span class="he-text">פרופיל</span><span class="en-text">View profile</span>
+                  </a>
+                  <a href="#confirm-remove" class="btn btn--quiet btn--sm">
+                    <span class="he-text">הסרה</span><span class="en-text">Remove</span>
+                  </a>
+                  <a href="inbox.html" class="btn btn--primary btn--sm">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                    <span class="he-text">הודעה</span><span class="en-text">Message</span>
+                  </a>
+                </div>
+              </li>
+
+              <li class="net-row net-row--connected">
+                <span class="avatar" aria-hidden="true"><span class="he-text">מב</span><span class="en-text">MB</span></span>
+                <div class="net-row__id">
+                  <h3 class="net-row__name">
+                    <span class="he-text" dir="auto">מיכל ברזילי</span>
+                    <span class="en-text" dir="auto">Michal Barzilai</span>
+                  </h3>
+                  <p class="net-row__org">
+                    <span class="he-text" dir="auto">ברזילי עבודות גמר</span>
+                    <span class="en-text" dir="auto">Barzilai Finishing Works</span>
+                  </p>
+                  <div class="tags">
+                    <span class="tag"><span class="he-text">עבודות גמר</span><span class="en-text">Finishing</span></span>
+                  </div>
+                  <p class="meta-row">
+                    <svg class="meta-row__pin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M21 10c0 7-9 12-9 12s-9-5-9-12a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                    <span class="he-text">תל אביב</span><span class="en-text">Tel Aviv</span>
+                  </p>
+                  <p class="net-row__stamp">
+                    <span class="he-text">מחוברים מאז · 28 בינואר 2026</span>
+                    <span class="en-text">Connected since · 28 January 2026</span>
+                  </p>
+                </div>
+                <div class="net-row__metrics">
+                  <div class="rating" title="4.8">
+                    <span class="rating__stars" style="--rating: 4.8" aria-hidden="true"><span class="rating__fill"></span></span>
+                    <span class="rating__value">4.8</span>
+                  </div>
+                  <div class="flex-meter">
+                    <div class="flex-meter__head">
+                      <span class="flex-meter__label"><span class="he-text">גמישות</span><span class="en-text">Flexibility</span></span>
+                      <span class="flex-meter__value">79</span>
+                    </div>
+                    <span class="flex-meter__track"><span class="flex-meter__fill" style="--score: 79"></span></span>
+                  </div>
+                </div>
+                <div class="net-row__actions">
+                  <a href="browse-contractors.html#profile" class="btn btn--ghost btn--sm">
+                    <span class="he-text">פרופיל</span><span class="en-text">View profile</span>
+                  </a>
+                  <a href="#confirm-remove" class="btn btn--quiet btn--sm">
+                    <span class="he-text">הסרה</span><span class="en-text">Remove</span>
+                  </a>
+                  <a href="inbox.html" class="btn btn--primary btn--sm">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                    <span class="he-text">הודעה</span><span class="en-text">Message</span>
+                  </a>
+                </div>
+              </li>
+
+              <li class="net-row net-row--connected">
+                <span class="avatar" aria-hidden="true"><span class="he-text">פח</span><span class="en-text">FH</span></span>
+                <div class="net-row__id">
+                  <h3 class="net-row__name">
+                    <span class="he-text" dir="auto">פאדי חדאד</span>
+                    <span class="en-text" dir="auto">Fadi Haddad</span>
+                  </h3>
+                  <p class="net-row__org">
+                    <span class="he-text" dir="auto">חדאד מסגרות ופלדה</span>
+                    <span class="en-text" dir="auto">Haddad Steel &amp; Metalwork</span>
+                  </p>
+                  <div class="tags">
+                    <span class="tag"><span class="he-text">מסגרות</span><span class="en-text">Steelwork</span></span>
+                  </div>
+                  <p class="meta-row">
+                    <svg class="meta-row__pin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M21 10c0 7-9 12-9 12s-9-5-9-12a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                    <span class="he-text">צפון</span><span class="en-text">North</span>
+                  </p>
+                  <p class="net-row__stamp">
+                    <span class="he-text">מחוברים מאז · 6 ביוני 2026</span>
+                    <span class="en-text">Connected since · 6 June 2026</span>
+                  </p>
+                </div>
+                <div class="net-row__metrics">
+                  <div class="rating" title="4.5">
+                    <span class="rating__stars" style="--rating: 4.5" aria-hidden="true"><span class="rating__fill"></span></span>
+                    <span class="rating__value">4.5</span>
+                  </div>
+                  <div class="flex-meter">
+                    <div class="flex-meter__head">
+                      <span class="flex-meter__label"><span class="he-text">גמישות</span><span class="en-text">Flexibility</span></span>
+                      <span class="flex-meter__value">90</span>
+                    </div>
+                    <span class="flex-meter__track"><span class="flex-meter__fill" style="--score: 90"></span></span>
+                  </div>
+                </div>
+                <div class="net-row__actions">
+                  <a href="browse-contractors.html#profile" class="btn btn--ghost btn--sm">
+                    <span class="he-text">פרופיל</span><span class="en-text">View profile</span>
+                  </a>
+                  <a href="#confirm-remove" class="btn btn--quiet btn--sm">
+                    <span class="he-text">הסרה</span><span class="en-text">Remove</span>
+                  </a>
+                  <a href="inbox.html" class="btn btn--primary btn--sm">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                    <span class="he-text">הודעה</span><span class="en-text">Message</span>
+                  </a>
+                </div>
+              </li>
+
+            </ul>
+            <p class="net-empty">
+              <span class="he-text">אין עדיין אנשי קשר ברשת.</span>
+              <span class="en-text">No connections yet.</span>
+            </p>
+          </section>
+
+          <!-- ══ 3 · Requests sent ══════════════════════
+               The viewer is `requester` here, so the row waits rather than
+               decides, and it deliberately carries no Message control.
+               ═══════════════════════════════════════════ -->
+          <section class="tab-panel" id="panel-sent" aria-labelledby="h-sent">
+            <h2 class="sr-only" id="h-sent">
+              <span class="he-text">בקשות התחברות שנשלחו</span>
+              <span class="en-text">Connection requests sent</span>
+            </h2>
+            <p class="panel-lede">
+              <span class="he-text">ממתינות לתשובה. התכתבות ישירה תיפתח רק אם הבקשה תאושר.</span>
+              <span class="en-text">Waiting for a reply. Direct messaging opens only if the request is accepted.</span>
+            </p>
+
+            <ul class="net-list">
+
+              <li class="net-row net-row--pending">
+                <span class="avatar" aria-hidden="true"><span class="he-text">מח</span><span class="en-text">MK</span></span>
+                <div class="net-row__id">
+                  <h3 class="net-row__name">
+                    <span class="he-text" dir="auto">מוסא חורי</span>
+                    <span class="en-text" dir="auto">Musa Khoury</span>
+                  </h3>
+                  <p class="net-row__org">
+                    <span class="he-text" dir="auto">חורי קידוחים וביסוס</span>
+                    <span class="en-text" dir="auto">Khoury Drilling &amp; Foundations</span>
+                  </p>
+                  <div class="tags">
+                    <span class="tag"><span class="he-text">קידוחים וביסוס</span><span class="en-text">Drilling &amp; foundations</span></span>
+                  </div>
+                  <p class="meta-row">
+                    <svg class="meta-row__pin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M21 10c0 7-9 12-9 12s-9-5-9-12a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                    <span class="he-text">צפון</span><span class="en-text">North</span>
+                  </p>
+                  <p class="net-row__stamp">
+                    <span class="he-text">בקשה נשלחה · 11 באוגוסט 2026</span>
+                    <span class="en-text">Request sent · 11 August 2026</span>
+                  </p>
+                </div>
+                <div class="net-row__metrics">
+                  <div class="rating" title="4.2">
+                    <span class="rating__stars" style="--rating: 4.2" aria-hidden="true"><span class="rating__fill"></span></span>
+                    <span class="rating__value">4.2</span>
+                  </div>
+                  <div class="flex-meter">
+                    <div class="flex-meter__head">
+                      <span class="flex-meter__label"><span class="he-text">גמישות</span><span class="en-text">Flexibility</span></span>
+                      <span class="flex-meter__value">67</span>
+                    </div>
+                    <span class="flex-meter__track"><span class="flex-meter__fill" style="--score: 67"></span></span>
+                  </div>
+                </div>
+                <div class="net-row__actions">
+                  <span class="wait-note">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+                    <span class="he-text">ממתין לתשובה</span><span class="en-text">Awaiting reply</span>
+                  </span>
+                  <a href="browse-contractors.html#profile" class="btn btn--ghost btn--sm">
+                    <span class="he-text">פרופיל</span><span class="en-text">View profile</span>
+                  </a>
+                  <button type="button" class="btn btn--quiet btn--sm">
+                    <span class="he-text">ביטול בקשה</span><span class="en-text">Cancel request</span>
+                  </button>
+                </div>
+              </li>
+
+              <li class="net-row net-row--pending">
+                <span class="avatar" aria-hidden="true"><span class="he-text">שב</span><span class="en-text">SB</span></span>
+                <div class="net-row__id">
+                  <h3 class="net-row__name">
+                    <span class="he-text" dir="auto">שירה בן־עמי</span>
+                    <span class="en-text" dir="auto">Shira Ben-Ami</span>
+                  </h3>
+                  <p class="net-row__org">
+                    <span class="he-text" dir="auto">בן־עמי מיזוג ואוורור</span>
+                    <span class="en-text" dir="auto">Ben-Ami HVAC &amp; Ventilation</span>
+                  </p>
+                  <div class="tags">
+                    <span class="tag"><span class="he-text">מיזוג אוויר</span><span class="en-text">HVAC</span></span>
+                  </div>
+                  <p class="meta-row">
+                    <svg class="meta-row__pin" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M21 10c0 7-9 12-9 12s-9-5-9-12a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                    <span class="he-text">שרון</span><span class="en-text">Sharon</span>
+                  </p>
+                  <p class="net-row__stamp">
+                    <span class="he-text">בקשה נשלחה · 9 באוגוסט 2026</span>
+                    <span class="en-text">Request sent · 9 August 2026</span>
+                  </p>
+                </div>
+                <div class="net-row__metrics">
+                  <div class="rating" title="4.2">
+                    <span class="rating__stars" style="--rating: 4.2" aria-hidden="true"><span class="rating__fill"></span></span>
+                    <span class="rating__value">4.2</span>
+                  </div>
+                  <div class="flex-meter">
+                    <div class="flex-meter__head">
+                      <span class="flex-meter__label"><span class="he-text">גמישות</span><span class="en-text">Flexibility</span></span>
+                      <span class="flex-meter__value">68</span>
+                    </div>
+                    <span class="flex-meter__track"><span class="flex-meter__fill" style="--score: 68"></span></span>
+                  </div>
+                </div>
+                <div class="net-row__actions">
+                  <span class="wait-note">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
+                    <span class="he-text">ממתין לתשובה</span><span class="en-text">Awaiting reply</span>
+                  </span>
+                  <a href="browse-contractors.html#profile" class="btn btn--ghost btn--sm">
+                    <span class="he-text">פרופיל</span><span class="en-text">View profile</span>
+                  </a>
+                  <button type="button" class="btn btn--quiet btn--sm">
+                    <span class="he-text">ביטול בקשה</span><span class="en-text">Cancel request</span>
+                  </button>
+                </div>
+              </li>
+
+            </ul>
+            <p class="net-empty">
+              <span class="he-text">אין בקשות שנשלחו וממתינות לתשובה.</span>
+              <span class="en-text">No sent requests are waiting for a response.</span>
+            </p>
+          </section>
+
+          <!-- ══ 4 · Blocked ════════════════════════════
+               `connections.status` already carries 'blocked' and the public
+               profile can set it, so this group is where it can be undone.
+               ═══════════════════════════════════════════ -->
+          <section class="tab-panel" id="panel-blocked" aria-labelledby="h-blocked">
+            <h2 class="sr-only" id="h-blocked">
+              <span class="he-text">קבלנים חסומים</span>
+              <span class="en-text">Blocked contractors</span>
+            </h2>
+            <p class="panel-lede">
+              <span class="he-text">קבלנים חסומים אינם יכולים לשלוח לכם בקשת התחברות או הודעה. הסרת החסימה מחזירה אותם למצב של אדם שאינו מחובר אליכם.</span>
+              <span class="en-text">Blocked contractors cannot send you a connection request or a message. Unblocking returns them to being simply someone you are not connected to.</span>
+            </p>
+
+            <!-- This group ships empty so one real empty state is visible on the screen. -->
+            <ul class="net-list"></ul>
+            <p class="net-empty">
+              <span class="he-text">אין קבלנים חסומים.</span>
+              <span class="en-text">No blocked contractors.</span>
+            </p>
+          </section>
+
+        </div>
+      </div>
+    </main>
+
+    <!-- ═══════════════════════════════════════════════
+         REMOVE-CONNECTION CONFIRMATION
+         One generic dialog rather than one per row, for the same reason the
+         public profile carries one generic panel: static HTML/CSS cannot put
+         the clicked person's name into it. Revealed by :target, closed by a
+         link back to the list. `aria-modal` is deliberately absent, because
+         nothing here can trap focus without JavaScript.
+         ═══════════════════════════════════════════════ -->
+    <div class="dialog" id="confirm-remove" role="dialog" aria-labelledby="confirm-remove-title">
+      <a class="dialog__scrim" href="#network-list" tabindex="-1" aria-hidden="true"></a>
+      <div class="dialog__card">
+        <h2 class="dialog__title" id="confirm-remove-title">
+          <span class="he-text">להסיר את איש הקשר?</span>
+          <span class="en-text">Remove this connection?</span>
+        </h2>
+        <p class="dialog__body">
+          <span class="he-text">איש הקשר לא יופיע יותר ברשת שלכם, וההתכתבות הישירה ביניכם תיסגר.</span>
+          <span class="en-text">They will no longer appear in your network, and direct messaging between you will close.</span>
+        </p>
+        <div class="dialog__actions">
+          <a href="#network-list" class="btn btn--ghost btn--sm">
+            <span class="he-text">ביטול</span><span class="en-text">Cancel</span>
+          </a>
+          <a href="#network-list" class="btn btn--primary btn--sm">
+            <span class="he-text">הסרה</span><span class="en-text">Remove</span>
+          </a>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Keeps the chosen language across page loads; every bilingual screen loads it. -->
+  <script src="lang.js"></script>
+</body>
+</html>
