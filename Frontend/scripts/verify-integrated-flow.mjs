@@ -230,10 +230,16 @@ const run = async () => {
   check('Nationwide is its own region',
     (await page.$$eval('.c-card__name', (n) => n.map((x) => x.textContent))).some((n) => n.includes('Gina')));
   await page.selectOption('#browse-region', '');
-  await page.selectOption('#browse-availability', 'closed');
+  // Availability is three checkboxes, as the approved rail has always had it.
+  await page.check('#browse-availability-closed');
   await page.waitForTimeout(1200);
   check('availability filter works', (await page.locator('.avail--closed').count()) >= 1);
-  await page.selectOption('#browse-availability', '');
+  await page.check('#browse-availability-open');
+  await page.waitForTimeout(1200);
+  check('and more than one state can be chosen at once',
+    (await page.locator('.avail-option__input:checked').count()) === 2);
+  await page.uncheck('#browse-availability-closed');
+  await page.uncheck('#browse-availability-open');
   await page.waitForTimeout(1200);
 
   await page.locator('.c-card .btn--ghost').first().click();
@@ -299,7 +305,11 @@ const run = async () => {
   const baseOptions = page.locator('.travel-dialog .place-field__list [role="option"]');
   check('the base place resolves', (await baseOptions.count()) > 0);
   if ((await baseOptions.count()) > 0) await baseOptions.first().click();
-  await page.locator('#travel-radius').fill('25');
+  // The radius is a free number box now, and the slider mirrors whatever it holds.
+  await page.locator('#travel-radius-km').fill('25');
+  await page.waitForTimeout(300);
+  check('the slider follows the number box',
+    (await page.inputValue('.travel-slider')) === '25', await page.inputValue('.travel-slider'));
   await page.locator('.travel-dialog .btn--primary').first().click();
   await page.waitForSelector('.travel-list__item', { timeout: 40000 });
   const proposed = await page.$$eval('.travel-list__name', (n) => n.map((x) => x.textContent.trim()));
