@@ -10,7 +10,7 @@ import {
   type UserWithPasswordHash,
 } from './user.model.js';
 
-const IDENTITY_FIELDS = 'email status firstName lastName language profileComplete';
+const IDENTITY_FIELDS = 'email status firstName lastName language profileComplete security.passwordChangedAt';
 
 /**
  * The write shape, deliberately separate from `UserRecord`. A caller can only supply what it lists,
@@ -32,12 +32,25 @@ export interface NewUser {
   readonly termsAcceptances: readonly TermsAcceptance[];
 }
 
+/** What a protected route needs to know about a token holder, and nothing more. */
+export interface CredentialState {
+  readonly passwordChangedAt: Date | null;
+}
+
+export interface PasswordUpdate {
+  readonly passwordHash: string;
+  readonly passwordChangedAt: Date;
+}
+
 export interface UserRepository {
   findByEmailWithPasswordHash(email: string): Promise<UserWithPasswordHash | null>;
   /** Identity only. Password reset never needs the hash it is about to replace. */
   findByEmail(email: string): Promise<UserRecord | null>;
   findById(id: string): Promise<UserRecord | null>;
-  updatePasswordHash(id: Types.ObjectId, passwordHash: string, session?: DbSession): Promise<void>;
+  /** The narrowest read the auth middleware can make: `null` when no such user exists. */
+  findCredentialState(id: string): Promise<CredentialState | null>;
+  /** The hash and the change stamp move together, so one call writes both. */
+  updatePassword(id: Types.ObjectId, update: PasswordUpdate, session?: DbSession): Promise<void>;
   existsByEmail(email: string): Promise<boolean>;
   create(user: NewUser, session?: DbSession): Promise<UserRecord>;
 }
@@ -58,8 +71,23 @@ export const userRepository: UserRepository = {
     return UserModel.findOne({ email }).select(IDENTITY_FIELDS).lean<UserRecord>().exec();
   },
 
-  async updatePasswordHash(id, passwordHash, session) {
-    const query = UserModel.updateOne({ _id: id }, { $set: { passwordHash } });
+  async findCredentialState(id) {
+    if (!Types.ObjectId.isValid(id)) return null;
+
+    const found = await UserModel.findById(id)
+      .select('security.passwordChangedAt')
+      .lean<{ security?: { passwordChangedAt?: Date } }>()
+      .exec();
+
+    if (found === null) return null;
+    return { passwordChangedAt: found.security?.passwordChangedAt ?? null };
+  },
+
+  async updatePassword(id, { passwordHash, passwordChangedAt }, session) {
+    const query = UserModel.updateOne(
+      { _id: id },
+      { $set: { passwordHash, 'security.passwordChangedAt': passwordChangedAt } },
+    );
     if (session) query.session(session);
     await query.exec();
   },

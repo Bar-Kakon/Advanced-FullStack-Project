@@ -106,7 +106,7 @@ src/
 │       ├── refreshToken.model.ts       stored Refresh Tokens (SHA-256 hashes, TTL-expired)
 │       ├── refreshToken.repository.ts  save / look up / retire / revoke a family
 │       ├── refreshTokenCookie.ts       HttpOnly cookie transport policy
-│       ├── requireAccessToken.middleware.ts  who is making this request — and nothing else
+│       ├── requireAccessToken.middleware.ts  who is making this request, and is the token still current
 │       └── tokens/
 │           ├── token.types.ts          claims, and the `typ` purpose marker
 │           ├── accessToken.service.ts  issue + verify Access Tokens
@@ -237,6 +237,11 @@ POST /api/auth/reset-password         { token, newPassword }
   └─ 200 { status: 'ok' }            no token, no cookie — the person signs in
 ```
 
+**The email is written in the account's own `users.language`** — Hebrew for a Hebrew account,
+English for an English one, never both. There is no second email-language setting, and the language
+is read well away from the response: the answer this endpoint gives is identical whether or not the
+account exists, so it can carry no such fact.
+
 **Why the email is not awaited.** Reaching an SMTP relay takes far longer than any database work on
 this path. Awaiting it would make a known address answer measurably slower than an unknown one,
 which is an account-enumeration oracle by stopwatch — the same class of leak the unified
@@ -263,12 +268,41 @@ intercepted email is useful in.
 **Every reset failure answers `401 INVALID_RESET_TOKEN`** — unknown, expired, superseded and
 already-spent alike. The person holding a dead link learns it is dead and nothing else.
 
-**After a reset, every Refresh Token that user holds is revoked**, through the same
-`refreshtokens` rows the rotation and replay-detection logic already uses. There is no second
-session mechanism. **The Access Token is a different matter and is not revoked** — it is a stateless
-JWT with no server-side record, so one issued before the reset stays valid until it expires
-(900s by default). Closing that window needs a `passwordChangedAt` check in the auth middleware,
-which is designed in `docs/database-design.html` and is **not built**.
+**After a reset, both credentials stop working, and they stop for different reasons.**
+
+*Refresh Tokens* are rows, so they are revoked: every un-revoked row that user holds is stamped
+inside the same transaction, through the `refreshtokens` collection the rotation and
+replay-detection logic already uses. There is no second session mechanism.
+
+*Access Tokens* are stateless JWTs with no server-side record, so there is nothing to revoke. They
+are invalidated instead — the reset writes **`users.security.passwordChangedAt`**, and
+`requireAccessToken` refuses any token whose `iat` predates it:
+
+```
+Authorization: Bearer …
+      │
+      ├─ 1. signature + `typ: access`        the token is genuine
+      ├─ 2. look the account up               ONE indexed read, projected to one field
+      ├─ 3. no such account?          ──────► 401 UNAUTHENTICATED
+      ├─ 4. iat < security.passwordChangedAt? 401 UNAUTHENTICATED
+      └─ 5. res.locals.auth = { userId }
+```
+
+**The cost is one indexed `findById` per authenticated request**, projected to
+`security.passwordChangedAt` alone. That is the price of making a stateless token revocable, and it
+is paid on every protected route rather than only after a reset — there is no way to know a token
+is stale without asking. If it ever matters, the answer is a short-lived cache keyed by user id,
+not a weaker check.
+
+**One second of granularity, stated rather than hidden.** A JWT's `iat` is whole seconds, so
+`passwordChangedAt` is stored truncated to the second and compared in the same unit. A token minted
+in the *same second* as the reset therefore survives. Rounding the other way closes that window and
+opens a worse one: it rejects the token Login mints moments later, which is a legitimate sign-in
+failing. The sub-second window needs an attacker who already has the password and hits the same
+second as the victim's reset.
+
+**Register does not set it.** Absent means the password has never been changed, which is exactly
+what a new account means.
 
 ## Outgoing mail
 
@@ -454,7 +488,7 @@ ahead of the conditions that need it. Everything this branch actually implements
 | `REQUEST_BODY_TOO_LARGE` | 413 | The body exceeded the 100kb limit |
 | `EMAIL_ALREADY_REGISTERED` | 409 | Register: the email already holds an account |
 | `INVALID_CREDENTIALS` | 401 | Login failed — for **any** reason |
-| `UNAUTHENTICATED` | 401 | The Access Token was missing, malformed, expired, or was not an Access Token |
+| `UNAUTHENTICATED` | 401 | The Access Token was missing, malformed, expired, was not an Access Token, belongs to no account, or was issued before the account's password last changed |
 | `INVALID_REFRESH_TOKEN` | 401 | The Refresh Token was missing, malformed, expired, unknown, already spent, revoked, or was not a Refresh Token |
 | `INVALID_RESET_TOKEN` | 401 | The reset link was unknown, expired, superseded by a newer request, or already spent |
 | `INTERNAL_SERVER_ERROR` | 500 | Anything unexpected |

@@ -2,6 +2,7 @@ import type { DbSession } from '../../db/mongoose.js';
 import { buildPasswordResetEmail } from '../../mail/passwordResetEmail.js';
 import type { Mailer } from '../../mail/mailer.js';
 import { logger } from '../../shared/logger.js';
+import type { UserLanguage } from '../users/user.model.js';
 import type { UserRepository } from '../users/user.repository.js';
 import { invalidResetToken } from './auth.errors.js';
 import { isSessionPermitted } from './auth.service.js';
@@ -53,11 +54,12 @@ export const createPasswordResetService = ({
    * work here, so awaiting it would make a known address answer measurably slower than an unknown
    * one — the enumeration oracle the identical response exists to close.
    */
-  const dispatch = (to: string, rawToken: string): void => {
+  const dispatch = (to: string, rawToken: string, language: UserLanguage): void => {
     const resetUrl = buildResetUrl(frontendUrl, rawToken);
     const message = buildPasswordResetEmail(to, {
       resetUrl,
       expiryMinutes: RESET_TOKEN_TTL_MINUTES,
+      language,
     });
 
     // Only when no SMTP is configured, and only because there is then no mailbox to read the link
@@ -87,7 +89,9 @@ export const createPasswordResetService = ({
       const expiresAt = new Date(Date.now() + RESET_TOKEN_TTL_MINUTES * 60 * 1000);
       const { rawToken } = await resetTokens.issueFor(user._id, expiresAt);
 
-      dispatch(user.email, rawToken);
+      // `users.language` is read here and nowhere near the response: the answer this endpoint
+      // gives is identical whether or not the account exists, so it can carry no such fact.
+      dispatch(user.email, rawToken, user.language);
     },
 
     /**
@@ -113,8 +117,12 @@ export const createPasswordResetService = ({
       // Outside the transaction: bcrypt is ~250ms of CPU and must not hold one open.
       const passwordHash = await passwords.hash(password);
 
+      // Truncated to the whole second the JWT `iat` claim is measured in, so the two are compared
+      // in the same unit. Rounding up instead would reject the token Login mints moments later.
+      const passwordChangedAt = new Date(Math.floor(Date.now() / 1000) * 1000);
+
       await transactions.run(async (session) => {
-        await users.updatePasswordHash(user._id, passwordHash, session);
+        await users.updatePassword(user._id, { passwordHash, passwordChangedAt }, session);
         await resetTokens.markUsed(stored._id, session);
         await refreshTokenStore.revokeAllForUser(user._id, session);
       });

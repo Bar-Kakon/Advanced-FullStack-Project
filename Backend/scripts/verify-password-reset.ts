@@ -9,6 +9,13 @@ import { connectToDatabase, disconnectFromDatabase } from '../src/db/mongoose.js
 import { loadConfig } from '../src/config/env.js';
 import { PasswordResetTokenModel } from '../src/features/auth/passwordResetToken.model.js';
 import { passwordResetTokenRepository } from '../src/features/auth/passwordResetToken.repository.js';
+import { createPasswordResetService } from '../src/features/auth/passwordReset.service.js';
+import { passwordService } from '../src/features/auth/password.service.js';
+import { refreshTokenRepository } from '../src/features/auth/refreshToken.repository.js';
+import { buildPasswordResetEmail } from '../src/mail/passwordResetEmail.js';
+import type { MailMessage } from '../src/mail/mailer.js';
+import { runInTransaction } from '../src/db/mongoose.js';
+import { userRepository } from '../src/features/users/user.repository.js';
 import { RefreshTokenModel } from '../src/features/auth/refreshToken.model.js';
 import { CompanyMembershipModel } from '../src/features/companies/companyMembership.model.js';
 import { CompanyModel } from '../src/features/companies/company.model.js';
@@ -170,6 +177,9 @@ const run = async (): Promise<void> => {
 
   console.log('\nRESET PASSWORD — the successful path');
   const beforeReset = await RefreshTokenModel.countDocuments({ user: userId, revokedAt: null });
+  // Access Token A, minted before the reset and proven working, is the one that must stop.
+  const tokenA = accessToken;
+  check('before the reset, Access Token A opens a protected route', (await getHealthAuth(tokenA)) === 200);
   const reset = await post('/auth/reset-password', { token: liveToken, password: NEW_PASSWORD });
   check('a valid token and a valid password answer 200', reset.status === 200, JSON.stringify(reset.body));
   check('the response issues nothing', !('accessToken' in reset.body) && reset.setCookie === null);
@@ -182,6 +192,79 @@ const run = async (): Promise<void> => {
   check('the old password no longer works', withOld.status === 401, String(withOld.status));
   const withNew = await post('/auth/login', { email: EMAIL, password: NEW_PASSWORD });
   check('the new password works', withNew.status === 200 && !!withNew.body['accessToken']);
+
+  console.log('\nACCESS TOKEN INVALIDATION — a signature is no longer sufficient');
+  const changedAt = (await UserModel.findById(userId).select('security.passwordChangedAt').lean())
+    ?.security?.passwordChangedAt as Date | undefined;
+  check('the reset stamped security.passwordChangedAt', !!changedAt, String(changedAt));
+  check('it is stored on a whole second, matching the unit `iat` uses',
+    !!changedAt && changedAt.getTime() % 1000 === 0);
+  check('Access Token A is rejected immediately after the reset', (await getHealthAuth(tokenA)) === 401);
+  const tokenB = withNew.body['accessToken'] as string;
+  check('Access Token B, minted after the reset, works', (await getHealthAuth(tokenB)) === 200);
+  check('a request with no token is still refused', (await getHealthAuth()) === 401);
+
+  console.log('\nEMAIL LANGUAGE — one language per account, never both');
+  const captured: MailMessage[] = [];
+  const languageService = createPasswordResetService({
+    users: userRepository,
+    passwords: passwordService,
+    resetTokens: passwordResetTokenRepository,
+    refreshTokenStore: refreshTokenRepository,
+    mailer: { mode: 'log', send: async (m) => { captured.push(m); } },
+    frontendUrl: config.frontendUrl,
+    transactions: { run: runInTransaction },
+  });
+
+  const requestAs = async (language: 'he' | 'en'): Promise<MailMessage> => {
+    await UserModel.updateOne({ _id: userId }, { $set: { language } });
+    captured.length = 0;
+    await languageService.requestReset({ email: EMAIL });
+    // dispatch is deliberately not awaited, so give the microtask a turn.
+    await new Promise((resolve) => setTimeout(resolve, 60));
+    const message = captured[0];
+    if (!message) throw new Error(`no message captured for ${language}`);
+    return message;
+  };
+
+  const hebrew = await requestAs('he');
+  check('a Hebrew account gets a Hebrew subject', hebrew.subject === 'איפוס סיסמה — FieldSync', hebrew.subject);
+  check('the Hebrew body carries no English wording',
+    hebrew.text.includes('איפוס סיסמה') && !hebrew.text.includes('Reset your password'));
+  check('the Hebrew HTML is marked lang=he dir=rtl',
+    hebrew.html.includes('lang="he"') && hebrew.html.includes('dir="rtl"'));
+
+  const english = await requestAs('en');
+  check('an English account gets an English subject', english.subject === 'Reset your password — FieldSync', english.subject);
+  check('the English body carries no Hebrew wording',
+    english.text.includes('Reset your password') && !english.text.includes('איפוס סיסמה'));
+  check('the English HTML is marked lang=en dir=ltr',
+    english.html.includes('lang="en"') && english.html.includes('dir="ltr"'));
+  check('neither message is bilingual', hebrew.subject !== english.subject && hebrew.text !== english.text);
+
+  for (const [label, language] of [['Hebrew', 'he'], ['English', 'en']] as const) {
+    const message = buildPasswordResetEmail('x@example.com', {
+      resetUrl: 'http://localhost:5173/reset-password?token=abc',
+      expiryMinutes: 30,
+      language,
+    });
+    check(`the ${label} email states the 30-minute expiry`, message.text.includes('30'));
+    check(`the ${label} email says to ignore it if unrequested`,
+      /ignore|להתעלם/.test(message.text));
+    check(`the ${label} email leaks no id, hash or password`,
+      !/[0-9a-f]{24}\b/.test(message.text) && !/hash|passwordHash/i.test(message.text));
+  }
+
+  console.log('\nFORGOT PASSWORD — language must not reach the requester');
+  await UserModel.updateOne({ _id: userId }, { $set: { language: 'he' } });
+  const asHebrew = await post('/auth/forgot-password', { email: EMAIL });
+  await UserModel.updateOne({ _id: userId }, { $set: { language: 'en' } });
+  const asEnglish = await post('/auth/forgot-password', { email: EMAIL });
+  const asUnknown = await post('/auth/forgot-password', { email: 'no-such-person@example.com' });
+  check('the answer is identical for a Hebrew account, an English one and an unknown address',
+    JSON.stringify(asHebrew) === JSON.stringify(asEnglish) &&
+      JSON.stringify(asHebrew) === JSON.stringify(asUnknown),
+    JSON.stringify(asHebrew.body));
 
   console.log('\nSESSION SECURITY — the reset closed the sessions that existed before it');
   const liveAfter = await RefreshTokenModel.countDocuments({

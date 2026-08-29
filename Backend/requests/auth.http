@@ -326,6 +326,23 @@ Content-Type: application/json
 ### After a successful reset the pre-reset Refresh cookie is dead — 401 INVALID_REFRESH_TOKEN
 POST {{host}}/auth/refresh
 
+### And the pre-reset Access Token is dead too — 401 UNAUTHENTICATED.
+### It is a stateless JWT, so it is not revoked: the reset stamped users.security.passwordChangedAt
+### and this token's `iat` predates it. Use the token from the Login BEFORE the reset.
+GET {{host}}/health-auth
+Authorization: Bearer {{login.response.body.accessToken}}
+
+### A token from a Login AFTER the reset works normally — 200
+# @name loginAfterReset
+POST {{host}}/auth/login
+Content-Type: application/json
+
+{ "email": "{{email}}", "password": "BrandNewHorse99!" }
+
+###
+GET {{host}}/health-auth
+Authorization: Bearer {{loginAfterReset.response.body.accessToken}}
+
 ### Health — 200
 GET {{host}}/health
 

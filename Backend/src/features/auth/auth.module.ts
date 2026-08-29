@@ -84,6 +84,6 @@ export const createAuthModule = (config: AppConfig): AuthModule => {
     router: createAuthRouter(
       createAuthController({ authService, registrationService, passwordResetService, cookie }),
     ),
-    requireAccessToken: createRequireAccessToken(accessTokens),
+    requireAccessToken: createRequireAccessToken(accessTokens, userRepository),
   };
 };
