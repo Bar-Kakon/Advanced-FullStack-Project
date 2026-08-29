@@ -885,3 +885,6 @@ html[data-lang="en"] {
   --font-sans:  'Inter', system-ui, -apple-system, sans-serif;
   --font-serif: 'Fraunces', 'Georgia', serif;
 }
+
+.account-menu__paper { min-width: 208px; }
+.account-menu__note { font-size: 12.5px; }

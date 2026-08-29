@@ -134,6 +134,12 @@ export const en: Strings = {
     myTasks: 'My Tasks',
     notifications: 'Notifications',
     accountMenu: 'Account menu',
+    account: {
+      myProfile: 'My profile',
+      settings: 'Settings',
+      settingsUnavailable: 'The settings screen has not been built yet.',
+      logOut: 'Log out',
+    },
     employees: 'Employee management',
   },
 

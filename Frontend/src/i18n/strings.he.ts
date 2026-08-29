@@ -148,6 +148,12 @@ export const he = {
     myTasks: 'המשימות שלי',
     notifications: 'התראות',
     accountMenu: 'תפריט חשבון',
+    account: {
+      myProfile: 'הפרופיל שלי',
+      settings: 'הגדרות',
+      settingsUnavailable: 'מסך ההגדרות עדיין לא נבנה.',
+      logOut: 'התנתקות',
+    },
     employees: 'ניהול עובדים',
   },
 

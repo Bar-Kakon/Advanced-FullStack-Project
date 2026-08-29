@@ -10,12 +10,14 @@
     "preview": "vite preview",
     "typecheck": "tsc -p tsconfig.json",
     "build:screens": "tsc -p tsconfig.screens.json",
-    "watch:screens": "tsc -p tsconfig.screens.json --watch"
+    "watch:screens": "tsc -p tsconfig.screens.json --watch",
+    "verify:account-menu": "node scripts/verify-account-menu.mjs"
   },
   "devDependencies": {
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.5",
     "@vitejs/plugin-react": "^6.1.1",
+    "playwright": "^1.62.1",
     "typescript": "^5.4.0",
     "vite": "^8.2.2"
   },
