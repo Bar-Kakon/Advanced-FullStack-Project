@@ -8,6 +8,7 @@ import { createCompaniesModule } from '../features/companies/companies.module.js
 import { createConnectionsModule } from '../features/connections/connections.module.js';
 import { createDashboardModule } from '../features/dashboard/dashboard.module.js';
 import { createLocationModule } from '../features/location/location.module.js';
+import { createNetworkModule } from '../features/network/network.module.js';
 import { createGoogleRoutesAdapter } from '../features/location/routes.adapter.js';
 import { createRatingsModule } from '../features/ratings/ratings.module.js';
 import { createUsersModule } from '../features/users/users.module.js';
@@ -37,6 +38,7 @@ export const createApiRouter = (config: AppConfig): Router => {
     '/dashboard',
     createDashboardModule({ requireAccessToken: auth.requireAccessToken, blocks: blocks.service }),
   );
+  router.use('/network', createNetworkModule(auth.requireAccessToken));
   router.use('/ratings', createRatingsModule(auth.requireAccessToken));
   router.use('/location', createLocationModule(auth.requireAccessToken, config.googleMaps, routes));
   router.use(

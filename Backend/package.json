@@ -22,6 +22,7 @@
     "verify:blocks-connections-ratings": "tsx scripts/verify-blocks-connections-ratings.ts",
     "verify:browse": "tsx scripts/verify-browse.ts",
     "verify:dashboard": "tsx scripts/verify-dashboard.ts",
+    "verify:network": "tsx scripts/verify-network.ts",
     "verify:travel-exclusions": "tsx scripts/verify-travel-exclusions.ts",
     "verify:google-adapters": "tsx scripts/verify-google-adapters.ts",
     "verify:google-live": "tsx scripts/verify-google-live.ts",
