@@ -155,7 +155,7 @@ const run = async (): Promise<void> => {
   let cursor: string | null = first.body['nextCursor'];
   let pages = 1;
   seen.push(...ids(first));
-  while (cursor && pages < 50) {
+  while (cursor && pages < 400) {
     const next: Reply = await send('GET',
       `/browse/contractors?limit=2&cursor=${encodeURIComponent(cursor)}`, undefined, viewer.token);
     seen.push(...ids(next));
