@@ -651,11 +651,13 @@ const COLLECTIONS = [
     { name: 'lastName', type: 'String', req: true, note: '' },
     { name: 'phone', type: 'String', note: 'Collected in onboarding step 3. **Whether the public profile shows it, or withholds it until a connection is accepted, is an open decision (D15, reopened 2026-08-20; renumbered from D13, which was already taken)** — briefly recorded as a rule and reopened by the owner before it was settled. The argument for gating: the [[connections]] gate exists so the platform does not become a sales-spam channel, and a number printed on every profile would make that gate decorative. The argument against: a phone number on a profile is how contractors actually reach each other on a site. **The serializer must not assume either** until D15 closes; the prototype currently shows the number as a placeholder.' },
     { name: 'bio', type: 'String', note: 'Max 600 characters.' },
-    { name: 'avatar', type: '{ fileId: ObjectId, url: String }', ref: 'fileassets', note: 'Embedded 1:1 pointer. Kept as a sub-object rather than a bare id so the URL can be denormalised and rendered without a second lookup.' },
+    { name: 'avatar', type: '{ fileId: ObjectId }', ref: 'fileassets', note: 'Embedded 1:1 pointer, **and a pointer only. Built 2026-08-29, and the denormalised `url` this row used to carry was removed rather than implemented.** A stored URL is a second source of truth for the same file: it goes stale the moment the serving path changes, it has to be rewritten on every avatar replacement, and it leaks the storage layout to the client. The API instead derives the address at response time — `avatarUrl` on the profile payload is `/api/users/me/assets/<fileId>`, built from this id — so there is nothing to keep in step and the byte store stays private. The sub-object is kept rather than collapsed to a bare `fileId` so a later per-avatar attribute has somewhere to live.' },
     { name: 'specialties', type: '[String]', idx: true, note: 'Enum of trades, reused from the register screen list. An embedded array of primitives — small, bounded, and directly filterable through a multikey index.' },
     { name: 'location', type: '{ city, region, country, geo: { type: "Point", coordinates: [lng, lat] } }', idx: true, note: 'Embedded 1:1. GeoJSON so a `2dsphere` index can answer travel-radius searches. `city` is free text; `region` is a **code**, because it is what browse-contractors filters on — free text can never populate the index below. **`nationwide` added 2026-08-18** for contractors working across the country: a regional filter must therefore match `region === selected OR region === "nationwide"`, or a nationwide contractor disappears from every regional search. When `region` is `nationwide`, `travelRadiusKm` carries no meaning. **2026-08-19:** browse now also filters on `location.city` and on `travelRadiusKm`, so the compound index below no longer covers every directory query — extend it when the query is written.' },
-    { name: 'travelRadiusKm', type: 'Number', note: 'How far this contractor will travel. Onboarding step 2.' },
-    { name: 'schedulingPrefs', type: '{ delayToleranceDays, noticeRequiredDays }', note: 'Embedded 1:1. Feeds the tolerance signal shown on a reschedule proposal, and later the rules engine. **Public (decided 2026-08-18):** both numbers are serialized onto the public profile, so a GC can propose a workable date first time instead of learning the constraint from a rejected proposal. Edited on My profile; bounds (0–30 and 0–14 days) are provisional.' },
+    { name: 'location.travelRadiusKm', type: 'Number', note: 'How far this contractor will travel. Onboarding step 2. **Built 2026-08-29 nested inside `location`, not beside it** — this row was designed as a top-level field and the implementation moved it, because it is a property of where somebody works and is written by the same profile update as `city` and `region`. Bounds 0–500, provisional. Still meaningless when `region` is `nationwide`, and the Edit profile form disables it there.' },
+    { name: 'specialtyOther', type: 'String', note: 'Free text, max 60 characters, required exactly when `specialties` contains `other` and refused otherwise — so the enum and the free text can never describe two different things. **Descriptive only:** it never becomes a browse filter value, because `specialties` stays the indexed enum. Written by Register and editable on Edit profile.' },
+    { name: 'businessPhone', type: 'String', note: 'The individual\'s own business number, editable on Edit profile (**D27**). It is **not** the company office number — that is `companies.officePhone` on a different document — and neither is a fallback for the other. It is also not `phone` above, which is the personal/login number D15 governs. Three separate concepts, deliberately.' },
+    { name: 'schedulingPrefs', type: '{ delayToleranceDays, noticeRequiredDays }', note: 'Embedded 1:1. Feeds the tolerance signal shown on a reschedule proposal, and later the rules engine. **Public (decided 2026-08-18):** both numbers are serialized onto the public profile, so a GC can propose a workable date first time instead of learning the constraint from a rejected proposal. Edited on My profile; bounds (0–30 and 0–14 days) are provisional. **Built 2026-08-29 with those bounds enforced in the schema and validated again at the request boundary — and with no defaults.** The design below wrote `default: 2` and `default: 1`; the implementation stores nothing until somebody chooses, because a default here is a claim about a contractor that the contractor never made, and the profile has to be able to say *not set*.' },
 
     { group: 'Computed trust signals', groupNote: 'denormalised on purpose — see the reasoning below' },
     { name: 'ratingSummary', type: '{ average: Number, count: Number }', denorm: true, idx: true, note: 'Recomputed whenever a [[ratings]] document is written. Never edited by hand.' },
@@ -679,6 +681,7 @@ const COLLECTIONS = [
   ],
   why: [
     '**`location`, `avatar`, `schedulingPrefs` and `security` are embedded** because each is exactly one per user, is always loaded with the user, and is never queried on its own. Splitting them into collections would add a lookup for zero benefit.',
+    '**`avatar` embeds a reference, not a rendered URL** (revised 2026-08-29, when it was built). The original design denormalised the URL beside the id so an avatar could render without a second lookup. The implementation dropped it, and the saving it offered turned out not to exist: the client never fetches the [[fileassets]] row either way — the API derives `/api/users/me/assets/<fileId>` from the id it already holds. What the stored copy would have added is a second source of truth that has to be rewritten on every replacement and goes silently stale the day the serving route changes. This is the same rule as everywhere else in this schema: **denormalise a value that is expensive to compute, never one that is merely a formatting of a value you already have.**',
     '**`specialties` is an embedded array, not a `specialties` collection.** The list of trades is small, bounded, and read-only from the app perspective. A multikey index makes `find({ specialties: "concrete" })` as fast as a join would have been, without the join.',
     '**`ratingSummary` and `flexibility` are deliberate denormalisation** — the one place this schema stores a value that could be derived. Browse contractors filters on *minimum* rating and *minimum* flexibility and then paginates. Computing an average across [[ratings]] per candidate on every page load is an aggregation that cannot use an index, so the sort would have to happen in memory over every user in the system. Storing the number and recomputing it on write moves that cost to the rare event instead of the common one.',
     '**Secrets are opt-in, not opt-out.** `passwordHash` and `security` carry `select: false`. The biggest risk in this project is an endpoint that returns more than it should; making the dangerous fields absent by default means a mistake has to be made twice before it leaks.',
@@ -702,13 +705,14 @@ const COLLECTIONS = [
   lastName: "Aviv",
   phone: "+972-52-555-0123",
   bio: "Concrete and formwork. 14 years, mostly residential towers.",
-  avatar: { fileId: ObjectId("6650a2..."), url: "/files/6650a2..." },
+  avatar: { fileId: ObjectId("6650a2...") },     // no stored url — it is derived on read
   specialties: ["concrete", "formwork"],
+  businessPhone: "+972-52-555-0123",            // the person's own; not companies.officePhone
   location: {
     city: "Haifa", region: "north", country: "IL",
+    travelRadiusKm: 70,
     geo: { type: "Point", coordinates: [34.9896, 32.7940] }
   },
-  travelRadiusKm: 70,
   schedulingPrefs: { delayToleranceDays: 3, noticeRequiredDays: 2 },
 
   ratingSummary: { average: 4.6, count: 23 },   // denormalised from ratings
@@ -732,18 +736,23 @@ const userSchema = new Schema({
 
   firstName: { type: String, required: true, trim: true },
   lastName:  { type: String, required: true, trim: true },
-  phone:     String,
-  bio:       { type: String, maxlength: 600 },
-  avatar:    { fileId: { type: Schema.Types.ObjectId, ref: 'FileAsset' }, url: String },
+  phone:     String,                              // designed; not built
+  bio:       { type: String, trim: true, maxlength: 600 },
+  // Pointer only. The URL is derived at response time, so there is no second copy to go stale
+  avatar:    { fileId: { type: Schema.Types.ObjectId, ref: 'FileAsset' } },
 
-  specialties: [{ type: String, enum: TRADES }],
+  specialties:    [{ type: String, enum: TRADES }],
+  specialtyOther: { type: String, trim: true, maxlength: 60 },
+  businessPhone:  { type: String, trim: true },   // the person's own number, never the company's
   location: {
-    city: String, region: String, country: String,
-    geo: { type: { type: String, enum: ['Point'], default: 'Point' }, coordinates: [Number] }
+    city:   { type: String, trim: true },
+    region: { type: String, enum: REGIONS },
+    travelRadiusKm: { type: Number, min: 0, max: 500 },   // built inside location, not beside it
+    // country + geo are designed for the 2dsphere search and are not built yet
   },
-  travelRadiusKm: Number,
-  schedulingPrefs: { delayToleranceDays: { type: Number, default: 2 },
-                     noticeRequiredDays:  { type: Number, default: 1 } },
+  // No defaults: an unset preference must be able to read as unset
+  schedulingPrefs: { delayToleranceDays: { type: Number, min: 0, max: 30 },
+                     noticeRequiredDays:  { type: Number, min: 0, max: 14 } },
 
   // Derived values — written only by their recompute helpers, never by a controller
   ratingSummary: { average: { type: Number, default: 0 }, count: { type: Number, default: 0 } },
@@ -1171,72 +1180,182 @@ module.exports = mongoose.model('Task', taskSchema);`
   id: 'fileassets', model: 'FileAsset', domain: 'work', stage: 3,
   tag: 'versioned uploads, byte-store metadata',
   pos: { x: 290, y: 350 },
-  purpose: 'Metadata for every uploaded file — work plans, project photos, message attachments, avatars. The bytes themselves live outside the document, in a byte store **still to be chosen under decision D1**; this collection is the business-level record that points at them and carries the version and visibility that no byte store knows anything about.',
-  callout: 'A MongoDB document is capped at **16 MB** and the product allows uploads up to 30 MB, so where the bytes go is a real question — it is **open decision D1 and nothing here selects an answer**. The candidate that keeps the full 30 MB is **GridFS**, which splits a file into 255 KB chunks across `fs.chunks` and keeps a header in `fs.files`; the candidate that avoids it is a **capped Buffer in the document**, which is simpler but bad practice and only works if uploads are capped below 16 MB. Heroku filesystem is also ephemeral, so local disk is not an option either way. This collection is written so that it does not care: see the `storage` sub-object below.',
+  purpose: 'Metadata for every uploaded file — avatars and Completed Work photos today, work plans and message attachments later. The bytes live outside the document, in **GridFS**, which decision D1 selected on 2026-08-29; this collection is the business-level record that points at them and carries the ownership, scope and (later) version and visibility that no byte store knows anything about. **Built 2026-08-29** with the My Profile / Edit Profile backend, and the fields below are split into what exists and what is still only designed.',
+  callout: '**D1 is CLOSED (2026-08-29): Multer for multipart parsing and validation, GridFS for persistent storage, and this collection as the metadata and ownership layer.** The reasoning is the one that was already on the table and is now decided. A MongoDB document stops at **16 MB** and the product allows uploads of roughly **30 MB**, so inline `Buffer` bytes are unusable; the Heroku and local filesystems are ephemeral, so durable local disk is not an option; and GridFS is MongoDB own answer for files past the document limit, splitting each into 255 KB chunks across `uploads.chunks` with a header in `uploads.files`. **No competing store may be introduced** — not local durable disk, not S3, not Cloudinary. The `storage` sub-object below still exists and still earns its keep: `driver` now reads `"gridfs"` instead of nothing, and it is what lets the choice be revisited later without a schema change.',
   fields: [
-    { name: '_id', type: 'ObjectId', note: '' },
-    { name: 'owner', type: 'ObjectId', ref: 'users', req: true, idx: true, note: 'Who uploaded it.' },
-    { name: 'scope', type: "{ type: 'task'|'project'|'message'|'avatar', id: ObjectId }", req: true, idx: true, note: 'What the file is attached to. Polymorphic — acceptable precisely because nothing ever joins *through* this field; it is only ever filtered on.' },
-    { name: 'filename', type: 'String', req: true, note: 'Original name as uploaded, for the download header.' },
-    { name: 'mimeType', type: 'String', req: true, note: 'Validated against an allow-list on upload — PDF and images only.' },
-    { name: 'sizeBytes', type: 'Number', req: true, note: '' },
-    { name: 'versionGroup', type: 'ObjectId', req: true, idx: true, note: 'All versions of the same work plan share this id. Version 1 uses its own `_id` as the group id.' },
-    { name: 'version', type: 'Number', req: true, note: 'Increments per upload within a group.' },
-    { name: 'isCurrent', type: 'Boolean', idx: true, note: 'Exactly one true per `versionGroup`. Denormalised so "show me the current plan" is a filter, not a sort-and-take-first.' },
-    { name: 'visibility', type: "'shared' | 'private'", req: true, note: '`private` is a **delegation-private upload** — a file the delegator and delegate exchange that the general contractor never sees.' },
-    { name: 'storage', type: "{ driver: String, fileId: ObjectId }", req: true, note: 'Points at wherever the bytes actually live. **`driver` has no approved value yet — that is open decision D1**; if GridFS closes it, the pointer is the `fs.files` document id. Kept as a sub-object precisely so the collection survives that decision either way, and so a later move to object storage changes one value, not the schema.' },
-    { name: 'uploadedAt', type: 'Date', note: '' }
+    { group: 'Built 2026-08-29', groupNote: 'these fields exist in `fileAsset.model.ts` and are written by the profile upload routes' },
+    { name: '_id', type: 'ObjectId', note: 'The id the client is given — as `/api/users/me/assets/<_id>`, never a storage path. **Knowing it grants nothing:** every lookup filters on `_id` **and** `owner` together, so another person asset answers exactly as a missing one does.' },
+    { name: 'owner', type: 'ObjectId', ref: 'users', req: true, idx: true, note: 'Who uploaded it, taken from the verified Access Token and **never from the request body**. It is the authorization key for reading, replacing and deleting the file.' },
+    { name: 'scope', type: "{ type: 'avatar'|'work_entry', id: ObjectId | null }", req: true, idx: true, note: 'What the file is attached to. Polymorphic — acceptable precisely because nothing ever joins *through* this field; it is only ever filtered on. **The enum is narrower than the original design** (`task`/`project`/`message`/`avatar`): it lists what is actually uploadable today, and `task`, `project` and `message` return when Stage 3 and Stage 6 build them. **`id` is nullable**, which the design did not allow: an avatar has no second document to point at, and a Completed Work photo is uploaded in the same request that creates the entry, so the id does not exist yet at insert time.' },
+    { name: 'filename', type: 'String', req: true, note: 'Original name as uploaded, for the download header. Kept as metadata only — it is never used to decide anything, because a filename is whatever the uploader typed.' },
+    { name: 'mimeType', type: 'String', req: true, note: 'Validated against an allow-list **before the bytes are stored**, and on the declared MIME type rather than the extension. Today that list is `image/jpeg`, `image/png`, `image/webp` — the profile screens upload nothing else. PDF joins it with the Stage-3 work-plan uploads.' },
+    { name: 'sizeBytes', type: 'Number', req: true, note: '**Counted by the store as the bytes land**, never read from a client-supplied header. The upload is also capped at 5 MB by Multer own limit on these routes, well inside the ~30 MB the product allows.' },
+    { name: 'storage', type: "{ driver: String, fileId: ObjectId }", req: true, note: 'Points at where the bytes actually live. **`driver` now reads `"gridfs"` (D1, closed 2026-08-29)** and `fileId` is the `uploads.files` document id. The sub-object is kept exactly as designed, because its whole purpose was to survive this decision: a later move to another store changes one recorded value rather than the collection.' },
+    { name: 'uploadedAt', type: 'Date', req: true, note: 'Defaults to now on insert. `timestamps: true` is also on, so `createdAt` / `updatedAt` exist alongside it.' },
+
+    { group: 'Designed, not built', groupNote: 'these arrive with the Stage-3 versioned work-plan uploads — they are design, and the collection does not carry them today' },
+    { name: 'versionGroup', type: 'ObjectId', note: 'All versions of the same work plan share this id. Version 1 uses its own `_id` as the group id. **Not implemented:** an avatar and a Completed Work photo have no version history — replacing either deletes what it replaced.' },
+    { name: 'version', type: 'Number', note: 'Increments per upload within a group. **Not implemented.**' },
+    { name: 'isCurrent', type: 'Boolean', note: 'Exactly one true per `versionGroup`, denormalised so "show me the current plan" is a filter rather than a sort-and-take-first. **Not implemented.**' },
+    { name: 'visibility', type: "'shared' | 'private'", note: '`private` is a **delegation-private upload** — a file the delegator and delegate exchange that the general contractor never sees. **Not implemented, and deliberately not defaulted in:** today every asset is private to its owner and reachable only by them, which is stricter than either value would be. The field becomes load-bearing when files are shared at all, in Stage 3, and it must be added *with* the viewer-aware serializer rather than before it.' }
   ],
   indexes: [
-    { def: "{ 'scope.type': 1, 'scope.id': 1, isCurrent: 1 }", serves: 'The file list on a task or project', why: 'Fetches only the current version of each plan without loading and discarding the history.' },
-    { def: '{ versionGroup: 1, version: -1 }', opts: 'unique', serves: 'Version history for one work plan', why: 'Unique because two uploads must never claim the same version number in the same group.' },
-    { def: '{ owner: 1, uploadedAt: -1 }', serves: 'A user own uploads', why: '' }
+    { def: '{ owner: 1 }', serves: 'Every read, replace and delete of a file', why: '**Built.** Ownership is part of the query rather than a check after it, so this index serves the authorization path itself, not just a listing.' },
+    { def: "{ 'scope.type': 1, 'scope.id': 1 }", serves: 'The files attached to one thing', why: '**Built.** Narrower than the designed three-key version below because `isCurrent` does not exist yet.' },
+    { def: "{ 'scope.type': 1, 'scope.id': 1, isCurrent: 1 }", opts: 'designed — not built', serves: 'The file list on a task or project', why: 'Fetches only the current version of each plan without loading and discarding the history. Arrives with versioning.' },
+    { def: '{ versionGroup: 1, version: -1 }', opts: 'unique — designed, not built', serves: 'Version history for one work plan', why: 'Unique because two uploads must never claim the same version number in the same group.' },
+    { def: '{ owner: 1, uploadedAt: -1 }', opts: 'designed — not built', serves: 'A user own uploads', why: 'The built `{ owner: 1 }` index covers the current queries; this one is its extension once there is a personal uploads list to page through.' }
   ],
   why: [
-    '**Metadata and bytes are separated**, and this holds whichever way D1 closes. A byte store gives you storage and streaming but no business fields — no version, no visibility, no scope — and GridFS in particular keeps its own metadata in a form that is not comfortably indexable. Putting the business fields in a normal collection keeps them indexable and keeps them independent of the store underneath.',
+    '**Metadata and bytes are separated**, and closing D1 on GridFS is what made that separation earn its keep rather than merely anticipate a need. GridFS gives storage and streaming but no business fields — no owner, no scope, no version, no visibility — and it keeps its own metadata in `uploads.files` in a form that is not comfortably indexable. Putting the business fields in a normal collection keeps them indexable and keeps them independent of the store underneath.',
     '**Versions are new documents, not overwrites.** The audit story depends on it: "which revision of the plan was current when this date was agreed?" is unanswerable if uploading replaces the bytes. Old versions stay; `isCurrent` marks the live one.',
     '**`visibility` is the delegation privacy model applied to files.** A single flag here is what lets a delegator share a marked-up plan with their delegate without it appearing in the general contractor file list.',
-    '**Polymorphic `scope` is safe here because it is a leaf.** The general warning about polymorphic references is that you cannot `populate` them. This collection is only ever *filtered* by scope, never traversed through it, so the warning does not apply.'
+    '**Polymorphic `scope` is safe here because it is a leaf.** The general warning about polymorphic references is that you cannot `populate` them. This collection is only ever *filtered* by scope, never traversed through it, so the warning does not apply.',
+    '**An asset id is not authorization** (built 2026-08-29). The serving route looks a row up by `_id` **and** `owner` in one query, so a wrong owner and a wrong id are literally the same code path and produce the same 404. The alternative — fetch by id, then compare the owner — is the same rule written as an `if`, and an `if` can be forgotten in the next route that needs it.',
+    '**Nothing is ever held whole in memory, in either direction.** An upload is piped from the request straight into GridFS by a custom Multer storage engine, and a download is piped from GridFS straight to the response. Neither of Multer shipped engines would do: disk storage is ephemeral on Heroku, and memory storage would hold an entire file in the process — at ~30 MB per file that is a denial of service anyone can trigger.',
+    '**Every failure takes its bytes with it.** There is no transaction spanning a byte store and a collection, so the code compensates explicitly: a rejected upload aborts the partial GridFS write, a request that fails after the bytes landed deletes them, and removal deletes the row *before* the bytes — losing the row leaves unreferenced bytes a sweep can find, while losing the bytes with the row still there leaves a reference that renders as a broken image.'
   ],
   relations: [
-    { to: 'users', via: 'owner', store: 'ref', card: 'N:1', why: 'Uploader, for permissions and the personal uploads list.' }
+    { to: 'users', via: 'owner', store: 'ref', card: 'N:1', why: 'Uploader, and the authorization key for every read and delete.' }
   ],
-  sample: `{
+  sample: `// As built. A Completed Work photo:
+{
   _id: ObjectId("6661e0aac2b9e30012af1301"),
   owner: ObjectId("6650a0b0c2b9e30012af0b10"),
-  scope: { type: "task", id: ObjectId("6661d7e0c2b9e30012af1201") },
-  filename: "slab-rev-C.pdf",
-  mimeType: "application/pdf",
-  sizeBytes: 24118374,                      // 24 MB — far past the 16 MB doc limit
-  versionGroup: ObjectId("6661dfff..."),
-  version: 3,
-  isCurrent: true,
-  visibility: "shared",
-  storage: { driver: "<pending D1>", fileId: ObjectId("6661e0ab...") },  // driver unchosen
-  uploadedAt: ISODate("2026-08-20T13:05:00Z")
+  scope: { type: "work_entry", id: ObjectId("6661d7e0c2b9e30012af1201") },
+  filename: "rothschild-42.png",
+  mimeType: "image/png",
+  sizeBytes: 418223,                        // counted by GridFS, not sent by the client
+  storage: { driver: "gridfs", fileId: ObjectId("6661e0ab...") },   // D1, closed 2026-08-29
+  uploadedAt: ISODate("2026-08-29T13:05:00Z")
+}
+
+// An avatar. scope.id is null: there is no second document to point at
+{
+  _id: ObjectId("6661e0aac2b9e30012af1399"),
+  owner: ObjectId("6650a0b0c2b9e30012af0b10"),
+  scope: { type: "avatar", id: null },
+  filename: "avatar.jpg",
+  mimeType: "image/jpeg",
+  sizeBytes: 88214,
+  storage: { driver: "gridfs", fileId: ObjectId("6661e0ac...") },
+  uploadedAt: ISODate("2026-08-29T13:07:00Z")
 }`,
-  schema: `const fileAssetSchema = new Schema({
-  owner: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+  schema: `// As built — src/features/files/fileAsset.model.ts
+const FILE_SCOPES = ['avatar', 'work_entry'];
+const ALLOWED_IMAGE_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+
+const fileAssetSchema = new Schema({
+  owner: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
   scope: {
-    type: { type: String, enum: ['task','project','message','avatar'], required: true },
-    id:   { type: Schema.Types.ObjectId, required: true }
+    type: { type: String, enum: FILE_SCOPES, required: true },
+    // Null while the asset exists but the row it decorates does not yet
+    id:   { type: Schema.Types.ObjectId, default: null }
   },
-  filename:  { type: String, required: true },
-  mimeType:  { type: String, required: true, enum: ALLOWED_MIME },
-  sizeBytes: { type: Number, required: true, max: 30 * 1024 * 1024 },
-  versionGroup: { type: Schema.Types.ObjectId, required: true },
-  version:   { type: Number, required: true, default: 1 },
-  isCurrent: { type: Boolean, default: true },
-  visibility:{ type: String, enum: ['shared','private'], default: 'shared' },
-  storage:   { driver: { type: String, required: true },  // value set by D1
-               fileId: { type: Schema.Types.ObjectId, required: true } }
-}, { timestamps: { createdAt: 'uploadedAt', updatedAt: false } });
+  filename:  { type: String, required: true, trim: true },
+  mimeType:  { type: String, required: true },   // allow-list enforced before the bytes are stored
+  sizeBytes: { type: Number, required: true },   // counted by the store
+  storage: {
+    driver: { type: String, required: true },    // 'gridfs' — D1, closed 2026-08-29
+    fileId: { type: Schema.Types.ObjectId, required: true }   // the uploads.files _id
+  },
+  uploadedAt: { type: Date, required: true, default: Date.now }
+}, { timestamps: true });
 
-fileAssetSchema.index({ 'scope.type': 1, 'scope.id': 1, isCurrent: 1 });
-fileAssetSchema.index({ versionGroup: 1, version: -1 }, { unique: true });
-fileAssetSchema.index({ owner: 1, uploadedAt: -1 });
+fileAssetSchema.index({ 'scope.type': 1, 'scope.id': 1 });
 
-module.exports = mongoose.model('FileAsset', fileAssetSchema);`
+module.exports = mongoose.model('FileAsset', fileAssetSchema);
+
+/* Designed for Stage 3 and NOT built: versionGroup, version, isCurrent, visibility,
+   the { scope.type, scope.id, isCurrent } and { versionGroup, version } indexes,
+   and the 'task' | 'project' | 'message' scope types. See the fields above. */`
+},
+
+/* ─────────── workentries ─────────── */
+{
+  id: 'workentries', model: 'WorkEntry', domain: 'identity', stage: 2,
+  tag: 'the Completed Work portfolio',
+  pos: { x: 550, y: 580 },
+  purpose: 'One document per Completed Work entry on a contractor profile — the tiles My Profile shows and Edit Profile manages. **Built 2026-08-29** with the profile backend. Two kinds of entry are legitimate and this collection requires neither link: a **FieldSync-linked** entry references work coordinated on the platform, and a **free-standing** entry is portfolio work done anywhere else, including work that predates the account.',
+  callout: '**No schema and no endpoint here may require a link (D13, entry types closed 2026-08-29).** `project` and `task` are optional by rule, validation accepts an entry carrying neither, and a free-standing entry is **never** presented as FieldSync-verified — the badge would be the platform vouching for work it has no record of. The corollary is the field that is *not* here: there is no client-settable `verified` flag anywhere in the request contract. `fieldSyncVerifiedAt` is written by the server or not at all. **This collection is one of the two shapes D13 names, and D13 storage half is still formally open** — see the decisions tab.',
+  fields: [
+    { name: '_id', type: 'ObjectId', note: 'The id the Edit Profile remove control sends back.' },
+    { name: 'owner', type: 'ObjectId', ref: 'users', req: true, idx: true, note: 'Whose portfolio this entry belongs to, taken from the verified Access Token and **never from the request body**. It is in the filter of every single query — list, fetch and delete — so another person entry is not refused, it is not found.' },
+    { name: 'title', type: 'String', req: true, note: 'What the work was. Max 120 characters. Free text, and deliberately so: a contractor describes their own work in their own words, in either language.' },
+    { name: 'scope', type: 'String', note: 'Optional second line — the part of the job this entry covers. Max 160 characters. **Unrelated to `fileassets.scope`**, which is a storage concept; here it is the professional scope of work.' },
+    { name: 'meta', type: 'String', req: true, note: 'The tile caption line — in practice year and place, as the screens render it. Max 120 characters. **Stored as one string on purpose:** the approved tile shows it as one line, and splitting it into a date and a city would invent structure the product never asked for and could not fill from an entry about work done fifteen years ago.' },
+    { name: 'project', type: 'ObjectId', ref: 'projects', note: '**Optional by rule.** Present only on a FieldSync-linked entry. Absent on a free-standing one, which is a complete and valid entry, not a degraded one. [[projects]] does not exist yet, so today nothing can be stored here — see `fieldSyncVerifiedAt`.' },
+    { name: 'task', type: 'ObjectId', ref: 'tasks', note: '**Optional by rule**, and independent of `project`. Storing the task rather than only the project is what lets a task-scoped entry render without implying responsibility for the whole project — the distinction D13 asked for. [[tasks]] does not exist yet either.' },
+    { name: 'fieldSyncVerifiedAt', type: 'Date', note: '**The `Completed on FieldSync` badge, and the single most sensitive field in this collection.** `null` or absent means *not verified*; a timestamp means the server proved the completed FieldSync relationship at that moment. **It is server-derived and there is no request field for it** — a client cannot claim it, because the contract has nowhere to put the claim. It can only ever be set for a linked entry whose work the server proved complete, so a free-standing entry can never carry it.' },
+    { name: 'image', type: 'ObjectId', ref: 'fileassets', note: 'Optional photo of the work. A reference to a [[fileassets]] row owned by the same person, uploaded in the same multipart request that creates the entry. Deleting the entry deletes this file, so a removed tile leaves nothing orphaned in the byte store.' },
+    { name: 'createdAt / updatedAt', type: 'Date', note: 'Mongoose `timestamps: true`. `createdAt` is what the profile list sorts on.' }
+  ],
+  indexes: [
+    { def: '{ owner: 1 }', serves: 'Every fetch and delete of a single entry', why: 'Ownership is part of the query rather than a check afterwards, so this index serves the authorization path itself.' },
+    { def: '{ owner: 1, createdAt: -1 }', serves: 'The Completed Work list on My Profile and Edit Profile', why: 'The profile reads one contractor entries newest first, which is exactly this compound key — the sort is served by the index rather than done in memory.' }
+  ],
+  why: [
+    '**A collection rather than an embedded array on [[users]]** — one of the two shapes D13 names, chosen because the feature had to be built and because the read pattern argues for it. Entries are added and removed one at a time by a manager screen, each one may reference a [[fileassets]] row and will later reference [[projects]] and [[tasks]], and the list is unbounded over a career. An embedded array would make every profile read carry the whole portfolio and every add a rewrite of the user document. **The owner has not formally closed D13 storage half**, and this row records what was built rather than claiming the decision.',
+    '**Verification is derived, never declared.** The badge is a claim *the platform* makes about work it coordinated, so accepting it from a request body would let anyone assert it for outside work. `workEntryVerification.service` is the one place allowed to produce a timestamp, and it is the boundary Stage 3 will fill in.',
+    '**Refusing an unprovable link beats storing it quietly.** [[projects]] and [[tasks]] do not exist, so today no link can be verified. An entry that names one is rejected outright rather than saved with the link dropped, because a silently dropped link leaves an entry claiming a relationship nothing backs. A free-standing entry is unaffected and is stored normally.',
+    '**Refusing is also what protects confidential delegation.** §3.3 keeps a delegate invisible to the party above, and D13 sharpened it for this exact surface: a delegate must not receive the badge for delegated work, no project or task linkage may be published for it, and there is never a "delegated" label of any kind. The component that could tell delegated work from the rest is the Stage-5 viewer-aware serializer. Granting a badge before that exists would risk publishing the relationship the whole visibility model exists to hide.',
+    '**Deletion is ownership-scoped and takes the photo with it.** The delete filters on `_id` and `owner` together and reports a foreign entry as not found; if the entry carried an `image`, the [[fileassets]] row and its GridFS bytes are removed in the same operation.',
+    '**Nothing user-visible is stored as a label.** `title`, `scope` and `meta` are the contractor own words and are stored verbatim in whichever language they typed. The enums this schema translates at render time — trades, regions, statuses — do not appear here at all, and the badge is a boolean-shaped date rather than a stored piece of copy.'
+  ],
+  relations: [
+    { to: 'users', via: 'owner', store: 'ref', card: 'N:1', why: 'Whose portfolio the entry is on, and the authorization key for reading and deleting it.' },
+    { to: 'fileassets', via: 'image', store: 'ref', card: 'N:1', why: 'The optional photo. Deleted with the entry.' },
+    { to: 'projects', via: 'project', store: 'ref', card: 'N:1', why: 'Optional FieldSync link. Absent on a free-standing entry, and unusable until Stage 3 builds projects.' },
+    { to: 'tasks', via: 'task', store: 'ref', card: 'N:1', why: 'Optional FieldSync link, independent of the project one, so a task-scoped entry does not imply the whole project.' }
+  ],
+  sample: `// A free-standing portfolio entry — no link, no badge. Completely valid
+{
+  _id: ObjectId("6662a1b0c2b9e30012af1401"),
+  owner: ObjectId("6650a1f4c2b9e30012af0b21"),
+  title: "מגדל הראשונים",
+  scope: "קידוח יסודות ודיפון",
+  meta: "2025 · תל אביב",
+  image: ObjectId("6661e0aac2b9e30012af1301"),
+  // no project, no task, no fieldSyncVerifiedAt
+  createdAt: ISODate("2026-08-29T13:05:00Z"),
+  updatedAt: ISODate("2026-08-29T13:05:00Z")
+}
+
+// A FieldSync-linked entry — the shape Stage 3 will be able to produce.
+// The server writes fieldSyncVerifiedAt itself, after proving the task complete
+{
+  _id: ObjectId("6662a1b0c2b9e30012af1402"),
+  owner: ObjectId("6650a1f4c2b9e30012af0b21"),
+  title: "Rothschild 42 — slab pour",
+  meta: "2026 · Tel Aviv",
+  project: ObjectId("6661d7e0c2b9e30012af1200"),
+  task:    ObjectId("6661d7e0c2b9e30012af1201"),
+  fieldSyncVerifiedAt: ISODate("2026-09-14T10:00:00Z"),
+  createdAt: ISODate("2026-09-14T10:00:00Z"),
+  updatedAt: ISODate("2026-09-14T10:00:00Z")
+}`,
+  schema: `// As built — src/features/workentries/workEntry.model.ts
+const workEntrySchema = new Schema({
+  owner: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
+  title: { type: String, required: true, trim: true, maxlength: 120 },
+  scope: { type: String, trim: true, maxlength: 160 },
+  meta:  { type: String, required: true, trim: true, maxlength: 120 },
+
+  // Optional by rule (D13). A portfolio entry needs no platform link
+  project: { type: Schema.Types.ObjectId, ref: 'Project' },
+  task:    { type: Schema.Types.ObjectId, ref: 'Task' },
+
+  // Written by the server when it has proved the linked work complete, and by nothing else.
+  // There is no request field for this, so a client cannot claim it
+  fieldSyncVerifiedAt: { type: Date },
+
+  image: { type: Schema.Types.ObjectId, ref: 'FileAsset' }
+}, { timestamps: true });
+
+// The profile reads one contractor's entries, newest first
+workEntrySchema.index({ owner: 1, createdAt: -1 });
+
+module.exports = mongoose.model('WorkEntry', workEntrySchema);`
 },
 
 /* ─────────── rescheduleproposals ─────────── */
@@ -2455,6 +2574,80 @@ await User.updateOne({ _id: user._id }, { $set: {
   ]
 },
 {
+  title: 'Profile upload → GridFS', subtitle: 'Stage 2 · fileassets, workentries, users · built 2026-08-29',
+  steps: [
+    { title: 'The browser posts multipart/form-data', touches: [],
+      body: 'One request carries the file part and, for a Completed Work entry, the text fields beside it. Nothing about the file is trusted: not the filename, not the extension, not any size the client declares.',
+      code: `PUT /api/users/me/avatar
+Authorization: Bearer <access token>
+Content-Type: multipart/form-data; boundary=...
+
+--...
+Content-Disposition: form-data; name="avatar"; filename="site.png"
+Content-Type: image/png
+<bytes>`,
+      note: 'The route names no user. The caller is whoever the Access Token proves, so there is no id in the path for anyone to tamper with.' },
+
+    { title: 'Multer parses and validates before anything is stored', touches: [],
+      body: 'Multer reads the multipart body. The filter runs on the **declared MIME type**, not the extension, and the limits are Multer own rather than an application check that could be forgotten. A part failing any of these never reaches storage at all.',
+      code: `multer({
+  storage: gridFsStorage,        // the custom engine below
+  fileFilter,                    // image/jpeg | image/png | image/webp
+  limits: { fileSize: 5 * 1024 * 1024, files: 1 }
+}).single('avatar');`,
+      note: 'LIMIT_FILE_SIZE becomes 413 FILE_TOO_LARGE, LIMIT_UNEXPECTED_FILE becomes 400 UNEXPECTED_FILE_FIELD, and a wrong type becomes 400 UNSUPPORTED_FILE_TYPE. Library errors are translated at the boundary, never leaked to a handler.' },
+
+    { title: 'A custom storage engine streams the bytes into GridFS', touches: [],
+      body: 'Neither of Multer shipped engines is usable: disk storage is ephemeral on Heroku, and memory storage would hold a whole file in the process. The third option — a storage engine of our own — pipes the file part straight into GridFS, so **no part of the upload is ever held whole in application memory**. The size recorded is the one the store counted.',
+      code: `const upload = bucket.openUploadStream(filename, { metadata: { contentType } });
+try {
+  await pipeline(file.stream, upload);          // request → uploads.chunks, streamed
+} catch (err) {
+  await upload.abort();                         // a cut-off upload leaves no chunks behind
+  throw err;
+}
+return { fileId: upload.id, sizeBytes: upload.length };`,
+      note: 'D1 closed on GridFS on 2026-08-29 because the product allows ~30 MB files, a document stops at 16 MB, and the filesystem is ephemeral. This function is the only place in the codebase that knows GridFS exists.' },
+
+    { title: 'A fileassets row records who owns the bytes', touches: ['w:fileassets'],
+      body: 'The byte store knows nothing about ownership, scope or MIME allow-lists, so a business-level row is written next. `owner` comes from the verified token and never from the body.',
+      code: `await FileAsset.create({
+  owner, scope: { type: 'avatar', id: null },
+  filename, mimeType, sizeBytes,
+  storage: { driver: 'gridfs', fileId }         // driver recorded, so the store can change later
+});`,
+      note: 'Two writes to two places with no transaction between them. Every failure path therefore compensates explicitly — see the last step.' },
+
+    { title: 'The owning document points at the row', touches: ['w:users', 'w:workentries'],
+      body: 'An avatar sets `users.avatar.fileId`; a Completed Work photo sets `workentries.image`. **Neither stores a URL.** The API derives one at response time from the id it already holds, so there is no second copy to go stale when the serving route changes.',
+      code: `// avatar
+await User.updateOne({ _id: userId }, { $set: { 'avatar.fileId': asset._id } });
+
+// and on the way out, derived — never stored
+avatarUrl = '/api/users/me/assets/' + asset._id;`,
+      note: 'Replacing an avatar deletes the file it replaced, so a profile never accumulates dead avatars.' },
+
+    { title: 'Serving checks ownership inside the query', touches: ['fileassets'],
+      body: 'The asset route looks a row up by **id and owner together** and pipes the GridFS download stream to the response. Knowing an id is not authorization: another person file answers exactly as a missing one does.',
+      code: `const asset = await FileAsset.findOne({ _id: assetId, owner: me });   // the guard is IN the filter
+if (!asset) throw fileNotAvailable();                                // 404, same as absent
+
+res.type(asset.mimeType);
+bucket.openDownloadStream(asset.storage.fileId).pipe(res);           // streamed, never buffered`,
+      note: 'The same shape as the connection-gate update below: the authorisation condition lives in the filter, not in an `if` above it.' },
+
+    { title: 'Every failure takes its bytes with it', touches: ['w:fileassets'],
+      body: 'There is no transaction spanning a byte store and a collection, so the code compensates by hand. A request that fails after the bytes landed discards them; a removal deletes the row first and the bytes second.',
+      code: `// row first, then bytes:
+//   losing the row  → unreferenced bytes, which a sweep can find
+//   losing the bytes → a reference that renders as a broken image
+await FileAsset.deleteOne({ _id: assetId });
+await bucket.delete(gridFsFileId);              // "File not found" counts as success`,
+      note: 'Verified end to end: uploads rejected for type, size and field name all leave the bucket file count unchanged, and deleting a Completed Work entry deletes its photo with it.' }
+  ]
+},
+
+{
   title: 'Connection → messaging gate', subtitle: 'Stage 2 & 6 · connections, threads',
   steps: [
     { title: 'Send the request', touches: ['w:connections'],
@@ -2746,7 +2939,7 @@ const MODEL_RULES = [
     } },
 
   { kicker: 'The hard limit', title: '16 MB per document — and what it forces',
-    body: 'A single MongoDB document cannot exceed 16 MB. It is not a tuning parameter. Two decisions in this schema follow directly from it: messages are their own collection rather than an array on the thread, and audit entries store a **diff** rather than a full document snapshot. It also frames a third that is **still open** — the product allows 30 MB uploads, so keeping file bytes in a field would mean capping uploads below the limit; which store the bytes go to instead is **decision D1** and is not answered anywhere on this page. The general rule: any array that grows with *time* rather than with a bounded quantity has to become a collection.' },
+    body: 'A single MongoDB document cannot exceed 16 MB. It is not a tuning parameter. Two decisions in this schema follow directly from it: messages are their own collection rather than an array on the thread, and audit entries store a **diff** rather than a full document snapshot. It also forced a third, which is now **answered**: the product allows roughly 30 MB uploads, so keeping file bytes in a field would mean capping uploads below the limit, and **decision D1 closed on 2026-08-29 on GridFS** — the bytes are chunked into `uploads.chunks` and [[fileassets]] holds the business record pointing at them. The general rule: any array that grows with *time* rather than with a bounded quantity has to become a collection.' },
 
   { kicker: 'What MongoDB will not do for you', title: 'No foreign keys, no cascade deletes',
     body: 'The database will happily store a `assignee` pointing at a user that no longer exists. Referential integrity is entirely the application job here, and that has one large consequence: **removal has to be soft** (decision D8). A user appears in other people [[auditentries]], [[ratings]] and [[messages]]; deleting the document would leave histories that no longer resolve. So `users.status` becomes `deleted`, the personal fields are scrubbed, and every reference still points at a real document.',
@@ -2797,8 +2990,8 @@ throw new AppError('INVALID_CREDENTIALS', 401);   // not 'Incorrect email or pas
 ];
 
 const OPEN_DECISIONS = [
-  { id: 'D1', title: 'File storage', affects: ['fileassets'],
-    impact: '**Open — no storage driver has been approved.** The two documented options are **GridFS**, which streams the full 30 MB the product allows at the cost of more work, and **a capped Buffer held in the document**, which is simpler but bloats documents and is bad practice. A MongoDB document stops at 16 MB, so the Buffer option only works if uploads are capped below that — a product trade-off to weigh, not a settled disqualification. Heroku ephemeral filesystem rules out local disk. The model does **not** depend on the answer: `storage` is a sub-object carrying a `driver` and a `fileId`, so whichever option closes — including a later move to object storage — changes one value rather than the collection.' },
+  { id: 'D1', title: 'File storage', affects: ['fileassets', 'workentries', 'users'], closed: true,
+    impact: '**CLOSED 2026-08-29 by owner decision: Multer for multipart parsing and validation, GridFS-backed persistent storage, with [[fileassets]] as the metadata and ownership layer.** The reasoning is the one that was already on the table: the project supports files that may reach roughly **30 MB**; MongoDB caps a document at **16 MB**, so ordinary inline `Buffer` storage is unsuitable; the Heroku and local filesystems are ephemeral and cannot be used as durable storage; GridFS is the appropriate MongoDB mechanism for files beyond the document-size limit; and the storage implementation stays encapsulated behind the file-storage service boundary. **No competing mechanism may be introduced** — not local durable disk, not S3, not Cloudinary. The rejected alternative was the capped in-document `Buffer`, which is simpler but only works if uploads are capped below 16 MB, which the product does not allow. **The model did not have to change to absorb this**, which was the point of writing it the way it was written: `storage.driver` now reads `"gridfs"` instead of nothing, and a later move to object storage still changes one recorded value rather than the collection. Built the same day with the profile backend — see the **Profile upload → GridFS** flow.' },
   { id: 'D2', title: 'Cascade negotiation semantics', affects: ['rescheduleproposals'],
     impact: 'Bundled versus per-task proposals. The schema models **bundled**: one document, one embedded item per affected task. Per-task collapses `items` to a single object and adds a shared `cascadeId`. Still unsettled either way: what "one round" means, whether a counter can re-trigger its own cascade, and whether `partially_applied` is a legal end state.' },
   { id: 'D3', title: 'Notification delivery', affects: ['notifications'],
@@ -2817,10 +3010,10 @@ const OPEN_DECISIONS = [
     impact: 'The **storage** side was already settled — `users.language`, language-neutral enum codes, and structured rather than pre-rendered payloads. **The client mechanism closed 2026-08-28: the hand-rolled option**, a shared `LanguageContext` plus centralized Hebrew/English string resources, one field per logical value, with RTL/LTR derived from the selected language. `react-i18next` was rejected on cost rather than capability. The static prototypes render every string twice and hide one with CSS — `he-text`/`en-text` spans and twin inputs — and that mechanism is explicitly **not** carried into React: it exists only because a prototype with no JavaScript cannot swap an attribute. **None of this changes a field.** Two sub-questions still reach the server and add none either: which language **outbound email** uses (the stored `users.language`, or the request `Accept-Language`), and whether the URL carries the locale.' },
   { id: 'D11', title: 'Subscription data model & quota enforcement', affects: ['plans', 'subscriptions', 'usagecounters', 'users'],
     impact: 'The **storage shape is now designed**: a seeded [[plans]] catalogue, one [[subscriptions]] document per period with a partial unique index permitting exactly one active row per user, a [[usagecounters]] document per user per metric per week, and a denormalised `users.planCode` for the authorization check. What remains open is **product, not shape** — every limit and price carries `provisional: true` and is expected to move; no payment provider has been chosen, so `provider.name` is `none` on every document; what a *read-only* project concretely forbids after a downgrade is unspecified; and whether the account country that selects `currency` becomes a field on [[users]] or is derived at checkout is undecided. None of this is an agreed price or a required feature — it is the structure that lets those answers land later without a migration.' },
-  { id: 'D13', title: 'Completed-work storage shape', affects: ['users', 'fileassets', 'tasks', 'projects'],
-    impact: 'Opened 2026-08-18 by the profile refinement pass. **Nothing has been added to the collections above for it yet, deliberately** — this row records the gap rather than closing it. The *product* model is decided: an entry may stand free or be optionally linked to work coordinated on the platform, and only a linked entry whose specific work is complete carries the `Completed on FieldSync` badge. What is **not** decided is where the data lives: a `workentries` collection of its own **versus** an embedded array on [[users]] referencing [[fileassets]]; whether a linked entry stores the [[tasks]] id, the [[projects]] id, or both, so that a task-scoped entry can be rendered without implying responsibility for the whole project; and whether the badge is recomputed on read — is the task still complete? — or frozen at link time. Whatever shape is chosen must be able to enforce the delegation rule sharpened on 2026-08-19: an image from work done through confidential delegation **may** appear, because forbidding it outright was itself a signal, but a **delegate must not receive the badge** for delegated work, no project or task linkage may be published for it, and there is never a "delegated" label of any kind. **Half of this row closed 2026-08-29 by owner decision, and it constrains every shape above.** A Completed Work entry **may be added for work that was not completed inside FieldSync**. Two entry types are legitimate: a **FieldSync-linked** entry, and a **free-standing** entry with no project or task link at all — a valid professional portfolio entry in its own right, including work predating the account. **So no schema and no endpoint here may require a link:** any `project` or `task` reference is optional by rule, validation must accept an entry carrying neither, and a free-standing entry **must never** be presented as FieldSync-verified — the badge would be the platform vouching for work it has no record of. The corollary for the API is that the verification flag is **derived server-side from a link the server proved complete**, never accepted from a request body. This settles what an entry *is* and nothing about where an entry lives: the storage question above is untouched, and one new question arrives with it — **what a free-standing entry validates as**, since it has no [[tasks]] row to prove completion against.' },
+  { id: 'D13', title: 'Completed-work storage shape', affects: ['workentries', 'users', 'fileassets', 'tasks', 'projects'],
+    impact: '**Built 2026-08-29 as a [[workentries]] collection — one of the two shapes this row names — and the owner has not formally closed the storage half.** The feature had to be built, so a shape was chosen rather than invented: entries are added and removed one at a time, each may carry a [[fileassets]] photo and will later reference [[projects]] and [[tasks]], and the list is unbounded over a career, all of which argue against an embedded array that every profile read would carry whole. The sub-questions this row raised are answered *by the implementation, not by decision*: a linked entry stores **both** the project and the task, so a task-scoped entry can render without implying the whole project; and the badge is a stored `fieldSyncVerifiedAt` timestamp — frozen at link time — rather than recomputed on read. **The one question the build does not touch is what a free-standing entry validates as**, since it has no [[tasks]] row to prove completion against; today it validates as itself and simply carries no badge. The original text follows, with its one superseded sentence marked. Opened 2026-08-18 by the profile refinement pass. *(Superseded: "nothing has been added to the collections above for it yet, deliberately" — a collection now exists.)* This row recorded the gap rather than closing it. The *product* model is decided: an entry may stand free or be optionally linked to work coordinated on the platform, and only a linked entry whose specific work is complete carries the `Completed on FieldSync` badge. What is **not** decided is where the data lives: a `workentries` collection of its own **versus** an embedded array on [[users]] referencing [[fileassets]]; whether a linked entry stores the [[tasks]] id, the [[projects]] id, or both, so that a task-scoped entry can be rendered without implying responsibility for the whole project; and whether the badge is recomputed on read — is the task still complete? — or frozen at link time. Whatever shape is chosen must be able to enforce the delegation rule sharpened on 2026-08-19: an image from work done through confidential delegation **may** appear, because forbidding it outright was itself a signal, but a **delegate must not receive the badge** for delegated work, no project or task linkage may be published for it, and there is never a "delegated" label of any kind. **Half of this row closed 2026-08-29 by owner decision, and it constrains every shape above.** A Completed Work entry **may be added for work that was not completed inside FieldSync**. Two entry types are legitimate: a **FieldSync-linked** entry, and a **free-standing** entry with no project or task link at all — a valid professional portfolio entry in its own right, including work predating the account. **So no schema and no endpoint here may require a link:** any `project` or `task` reference is optional by rule, validation must accept an entry carrying neither, and a free-standing entry **must never** be presented as FieldSync-verified — the badge would be the platform vouching for work it has no record of. The corollary for the API is that the verification flag is **derived server-side from a link the server proved complete**, never accepted from a request body. This settles what an entry *is* and nothing about where an entry lives: the storage question above is untouched, and one new question arrives with it — **what a free-standing entry validates as**, since it has no [[tasks]] row to prove completion against.' },
   { id: 'D14', title: 'Availability status and heavy-equipment selection', affects: ['users'],
-    impact: 'Opened 2026-08-19. Two fields reached the profile UI that this schema **does not define, so no schema was written for either.** **Availability** is a three-state status (`open` / `limited` / `closed`) shown as a dot plus its written label. Open: is it a plain enum on [[users]], does it carry an "until" date so a contractor can mark themselves unavailable for a fortnight, and does it feed the browse filter? It now appears in four places — chosen during registration, editable on the profile, displayed on the profile and on browse result cards, filterable in the browse rail, and since 2026-08-23 inside a Personal-dashboard counterparty chip — so the shape has to serve a **filter**, not only a display, and the enum needs **two label lengths per state**. The labels are gender-neutral in Hebrew by requirement, which rules out storing display strings on the document but does not otherwise constrain the shape; rendering them is a concern of **D10**, not a stored one. **Heavy equipment:** selecting `heavy_equipment` as a specialty opens a picker of ten machine types, because a contractor typically operates only part of the category. Open: a second array on [[users]] (`equipment: [String]`), a sub-document keyed by specialty, or a generalisation of "specialty attributes" that other trades would also reuse later. Decide before either is built.' },
+    impact: '**Reconfirmed 2026-08-29 while building the profile backend: the heavy-equipment half is still unwritten, and it was deliberately left out of the implementation rather than designed on the way past.** The Edit Profile screen has offered a ten-machine picker since 2026-08-19; there is no approved schema for it anywhere, so `PATCH /api/users/me` accepts no `equipment` field, nothing is persisted, and the picker still saves nothing. That is now **implementation debt with a screen already depending on it**, not merely an open question. The three shapes named below — a second array on [[users]], a sub-document keyed by specialty, or a general "specialty attributes" mechanism — are unchanged and none has been chosen. Availability, the other half, was settled onto `companies.availability` on 2026-08-28. Opened 2026-08-19. Two fields reached the profile UI that this schema **does not define, so no schema was written for either.** **Availability** is a three-state status (`open` / `limited` / `closed`) shown as a dot plus its written label. Open: is it a plain enum on [[users]], does it carry an "until" date so a contractor can mark themselves unavailable for a fortnight, and does it feed the browse filter? It now appears in four places — chosen during registration, editable on the profile, displayed on the profile and on browse result cards, filterable in the browse rail, and since 2026-08-23 inside a Personal-dashboard counterparty chip — so the shape has to serve a **filter**, not only a display, and the enum needs **two label lengths per state**. The labels are gender-neutral in Hebrew by requirement, which rules out storing display strings on the document but does not otherwise constrain the shape; rendering them is a concern of **D10**, not a stored one. **Heavy equipment:** selecting `heavy_equipment` as a specialty opens a picker of ten machine types, because a contractor typically operates only part of the category. Open: a second array on [[users]] (`equipment: [String]`), a sub-document keyed by specialty, or a generalisation of "specialty attributes" that other trades would also reuse later. Decide before either is built.' },
   { id: 'D15', title: 'Phone visibility on the public profile', affects: ['users', 'connections'],
     impact: 'Opened 2026-08-20, and **renumbered from `D13`, which was already taken**. Is `users.phone` public to anyone viewing a profile, or withheld until a [[connections]] edge is accepted? Gating it makes the connection gate mean something and keeps the platform from becoming a sales-spam channel; publishing it matches how contractors actually reach each other on a job site, where a number on a profile is the point. Briefly written up as a decided rule on 2026-08-20 and **reopened the same day by the owner before it was settled** — the prototype currently shows the number, which is a placeholder and not the decision. No field changes either way; what changes is the public-profile projection, and the `.fact__value--gated` state is already built for either answer. **The serializer must not assume either** until this closes.' },
   { id: 'D17', title: 'How a connection edge is torn down', affects: ['connections'],
