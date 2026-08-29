@@ -12,6 +12,7 @@ import { PersonalDashboardPage } from './features/dashboard/PersonalDashboardPag
 import { MyProfilePage } from './features/profile/MyProfilePage';
 import { EditProfilePage } from './features/profile/EditProfilePage';
 import { BrowsePage } from './features/browse/BrowsePage';
+import { MyNetworkPage } from './features/network/MyNetworkPage';
 import { EmployeeManagementPage } from './features/employees/EmployeeManagementPage';
 import { EmployeeOnboardingPage } from './features/employees/EmployeeOnboardingPage';
 import { WaitingForApprovalPage } from './features/employees/WaitingForApprovalPage';
@@ -51,6 +52,7 @@ export const App = () => (
               <Route path="/onboarding/employees" element={<EmployeeOnboardingPage />} />
               <Route path="/employees" element={<EmployeeManagementPage />} />
               <Route path="/browse" element={<BrowsePage />} />
+              <Route path="/network" element={<MyNetworkPage />} />
             </Route>
           </Route>
 
