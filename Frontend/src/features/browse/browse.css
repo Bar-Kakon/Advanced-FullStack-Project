@@ -278,6 +278,19 @@
 .travel-list__name { font-size: 14.5px; overflow-wrap: anywhere; }
 .travel-list__km { color: var(--text-mute); font-family: var(--font-mono); font-size: 13px; }
 .travel-list__outside { margin-inline-start: 8px; }
+.travel-removed { margin-block-start: 18px; }
+.travel-removed__title { font-size: 15px; font-weight: 600; color: var(--text); margin-block-end: 4px; }
+.travel-removed__list { list-style: none; display: flex; flex-wrap: wrap; gap: 8px; }
+.travel-removed__item {
+  padding: 6px 10px;
+  font-size: 14px;
+  color: var(--text-soft);
+  background: var(--background);
+  border: 1px dashed var(--secondary-30);
+  border-radius: var(--r-sm);
+  overflow-wrap: anywhere;
+}
+
 .travel-add { margin-block-start: 14px; }
 
 @media (max-width: 560px) {

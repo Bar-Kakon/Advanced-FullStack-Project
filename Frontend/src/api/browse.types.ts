@@ -114,6 +114,8 @@ export interface TravelProposal {
   readonly travelRadiusKm: number;
   readonly suggested: readonly TravelCandidate[];
   readonly excluded: readonly TravelCandidate[];
+  /** Rediscovered by Google, but removed before. Never pre-selected, however near it is. */
+  readonly previouslyRemoved: readonly TravelCandidate[];
   /** True when a candidate could not be routed, so the proposal is known to be incomplete. */
   readonly partial: boolean;
 }
@@ -121,4 +123,17 @@ export interface TravelProposal {
 export interface ApprovedTravelLocationPayload extends StructuredPlace {
   readonly source: 'suggested' | 'manual';
   readonly drivingDistanceMeters?: number;
+}
+
+export interface RemovedTravelLocationPayload {
+  readonly placeId: string;
+  readonly displayName: string;
+}
+
+/** The editor's own saved answers. `previouslyRemoved` is private to the person it belongs to. */
+export interface MyTravelPreferences {
+  readonly travelRadiusKm: number | null;
+  readonly basePlace: StructuredPlace | null;
+  readonly approvedTravelLocations: readonly ApprovedTravelLocationPayload[];
+  readonly previouslyRemoved: readonly RemovedTravelLocationPayload[];
 }

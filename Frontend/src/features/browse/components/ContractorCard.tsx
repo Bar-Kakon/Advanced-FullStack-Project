@@ -1,5 +1,3 @@
-import { Link } from 'react-router-dom';
-
 import { ButtonSpinner } from '../../../components/ButtonSpinner';
 import { useLanguage } from '../../../i18n/useLanguage';
 import type { ContractorSummary } from '../../../api/browse.types';
@@ -105,10 +103,12 @@ export const ContractorCard = ({
           </button>
         ) : null}
 
+        {/* `#` because My network is not migrated yet, as in the navbar. A router link would send
+            an authenticated person to the login screen, which is where an unknown path lands. */}
         {contractor.relationship === 'outgoing_request' || contractor.relationship === 'incoming_request' ? (
-          <Link to="/network" className="btn btn--quiet btn--sm">
+          <a href="#" className="btn btn--quiet btn--sm">
             {t.browse.card.manageInNetwork}
-          </Link>
+          </a>
         ) : null}
       </div>
     </article>

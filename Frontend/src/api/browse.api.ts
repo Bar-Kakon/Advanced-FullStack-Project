@@ -6,7 +6,9 @@ import type {
   ApprovedTravelLocationPayload,
   BrowseFilters,
   BrowsePage,
+  MyTravelPreferences,
   PublicProfile,
+  RemovedTravelLocationPayload,
   TravelProposal,
 } from './browse.types';
 
@@ -57,6 +59,16 @@ export const requestConnection = async (userId: string): Promise<void> => {
   await api.post(`/connections/${userId}/request`);
 };
 
+export const fetchMyTravelPreferences = async (
+  signal?: AbortSignal,
+): Promise<MyTravelPreferences> => {
+  const { data } = await api.get<MyTravelPreferences>(
+    '/location/travel',
+    signal ? { signal } : {},
+  );
+  return data;
+};
+
 export const proposeTravelLocations = async (
   originPlaceId: string,
   travelRadiusKm: number,
@@ -72,6 +84,7 @@ export const saveTravelPreferences = async (payload: {
   travelRadiusKm?: number;
   basePlace?: ApprovedTravelLocationPayload;
   approvedTravelLocations: readonly ApprovedTravelLocationPayload[];
+  removedTravelLocations?: readonly RemovedTravelLocationPayload[];
 }): Promise<void> => {
   await api.put('/location/travel', payload);
 };
