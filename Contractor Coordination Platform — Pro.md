@@ -583,11 +583,27 @@ own feature branch, so deleting it removes a stale copy, not a record. **The che
 Browse's unmigrated Sort control — and it is written up in [§8](#8-known-issues--risks) and being restored rather than
 lost with the file.**
 
-**Retained, because no React replacement exists in `develop`:** `my-network.html` + `my-network.css`, and the shared
-`lang.ts` / `lang.js` that screen still loads. Its navbar link to the deleted `browse-contractors.html` became `#`,
-which is what the two links beside it — to a `personal-dashboard.html` and an `inbox.html` that were only ever
-reserved filenames — have always effectively been. **Still awaiting migration and never written as static here:** the
-landing page, personal dashboard, my-projects, my-tasks, create/edit-project, subscriptions and the error screens.
+**Retained, because no React replacement exists in `develop`:** `my-network.html` + `my-network.css`,
+`personal-dashboard.html` + `personal-dashboard.css`, and the shared `lang.ts` / `lang.js` that both screens load.
+
+**`personal-dashboard.html` arrived late, and how it arrived is the point (2026-08-29).** It was the one approved
+prototype that had never been moved out of the pre-reorganisation **root `screens/`** directory: it existed only on
+`feature/personal-dashboard`, whose two commits touch nothing else, and it was therefore invisible to every audit that
+looked under `Frontend/screens/`. Merging that branch would have **recreated the deleted root `screens/`** — the exact
+migration fault that Browse hit once already. It was reconciled instead: the two files were read out of the branch and
+written to `Frontend/screens/`, the CSS **byte-identical** (`73552cd`), the HTML differing only in the three navbar
+links whose targets no longer exist (`browse-contractors.html`, `my-projects.html`, `my-tasks.html` → `#`) — the same
+treatment `my-network.html` received. Root `screens/` was **not** recreated. `my-network.html`'s long-dangling link to
+`personal-dashboard.html` now resolves for the first time.
+
+**The prototype is historical evidence, not a specification.** Its eight widgets read Tasks, Projects, reschedule
+proposals, agreement forms and a notifications digest — **five domains the backend does not have** — so every number on
+it is mock, and its Hebrew addresses a plural *you* (`ממתינות לכם`, `הצעתם`, `לאישורכם` — 15 occurrences) against the
+[§3.x](#37-static-prototypes-and-the-environment-conventions-the-client-depends-on) single-user copy rule. None of that
+may be carried into React.
+
+**Still awaiting migration and never written as static here:** the landing page, my-projects, my-tasks,
+create/edit-project, subscriptions and the error screens.
 
 #### Google Maps Platform keys — two credentials, never one
 
