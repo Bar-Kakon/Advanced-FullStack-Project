@@ -375,6 +375,50 @@ export const en: Strings = {
     sendNewLink: 'Send a new link',
   },
 
+  network: {
+    title: 'My network',
+    lede: 'Professional connections, open requests and the blocks you created — all in one place.',
+    loading: 'Loading your network…',
+    loadMore: 'Show more',
+    retry: 'Try again',
+
+    tabs: {
+      connected: 'Connected',
+      incoming: 'Requests received',
+      outgoing: 'Requests sent',
+      blocked: 'Blocks you created',
+    },
+
+    empty: {
+      connected: 'No active connections yet. You can find people through Browse contractors.',
+      incoming: 'No connection requests are waiting for an answer.',
+      outgoing: 'No connection requests of yours are open.',
+      blocked: 'You have not blocked anyone.',
+    },
+
+    since: {
+      connected: 'Connected since {date}',
+      incoming: 'Requested on {date}',
+      outgoing: 'Requested on {date}',
+      blocked: 'Blocked on {date}',
+    },
+
+    actions: {
+      viewProfile: 'View profile',
+      accept: 'Accept',
+      decline: 'Decline',
+      withdraw: 'Withdraw request',
+      remove: 'Remove connection',
+      unblock: 'Unblock',
+    },
+
+    errors: {
+      network: 'We could not reach the server. Check your connection and try again.',
+      stale: 'That was already done, or the state changed. The list has been refreshed.',
+      unknown: 'We could not complete that just now.',
+    },
+  },
+
   dashboard: {
     title: 'Personal dashboard',
     welcome: 'Hello, {name}.',

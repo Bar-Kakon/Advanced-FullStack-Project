@@ -15,6 +15,7 @@
     "verify:profile-data": "node scripts/verify-profile-real-data.mjs",
     "verify:invitation-ui": "node scripts/verify-invitation-ui.mjs",
     "verify:account-menu": "node scripts/verify-account-menu.mjs",
+    "verify:network-ui": "node scripts/verify-network-ui.mjs",
     "verify:integrated": "node scripts/verify-integrated-flow.mjs",
     "verify:owner-qa": "node scripts/verify-owner-qa.mjs",
     "verify:min-rating-ui": "node scripts/verify-min-rating-ui.mjs"
