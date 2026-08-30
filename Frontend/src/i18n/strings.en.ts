@@ -446,6 +446,68 @@ export const en: Strings = {
     },
   },
 
+  tasks: {
+    title: 'My tasks',
+    lede: 'Project tasks and standalone work in one place.',
+    loading: 'Loading tasks…',
+    loadMore: 'Show more',
+    retry: 'Try again',
+
+    start: 'Start',
+    complete: 'Complete',
+
+    state: {
+      not_started: 'Not started',
+      in_progress: 'In progress',
+      completed: 'Completed',
+    },
+    overdue: 'Overdue',
+    overdueBy: '{days} days overdue',
+    overdueByOne: 'One day overdue',
+    overdueByTwo: 'Two days overdue',
+
+    kind: {
+      project: 'Project task',
+      standalone: 'Standalone work',
+    },
+
+    groups: {
+      overdue: { title: 'Overdue', lede: 'Work whose target date has passed and which is not complete. Overdue is calculated from the date and is not a stored status.', empty: 'Nothing is overdue right now.' },
+      open: { title: 'Open work', lede: 'Everything still open and not overdue, by how near the target is.', empty: 'There is no open work right now.' },
+      done: { title: 'Completed', lede: 'Work marked complete. It stays here for reference.', empty: 'Nothing has been marked complete yet.' },
+    },
+
+    row: {
+      due: 'Target {date}',
+      from: 'From {name}',
+      selfOpened: 'Opened by me',
+      delegated: 'Handed to someone else to perform',
+      performing: 'Received to perform',
+      orphaned: 'This work has no responsible party right now',
+      noProject: 'No project',
+      completedOn: 'Completed on {date}',
+    },
+
+    filters: {
+      title: 'Filter and sort',
+      project: { label: 'Project', all: 'All projects', none: 'No project' },
+      state: { label: 'Status', all: 'Any status' },
+      kind: { label: 'Type of work', all: 'All' },
+      sort: { label: 'Sort', due_asc: 'Soonest first', due_desc: 'Latest first' },
+    },
+
+    empty: 'No project tasks have been assigned to me and I have not opened any standalone work. When a task is assigned to me, or I open work of my own, it will appear here.',
+
+    errors: {
+      notFound: 'That work was not found, or it is not accessible.',
+      notPerformer: 'Only the person performing the work can report on it.',
+      already: 'That work has already been updated. The list has been refreshed.',
+      orphaned: 'That work has no responsible party right now, so it cannot be reported on.',
+      network: 'We could not reach the server. Check the connection and try again.',
+      unknown: 'We could not complete that just now.',
+    },
+  },
+
   projectDashboard: {
     title: 'Project dashboard',
     lede: 'The working context of this project.',
