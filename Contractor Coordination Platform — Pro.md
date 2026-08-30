@@ -1338,6 +1338,43 @@ into a proper section or the logs below._
 > - Notes: anything to remember / how to avoid it next time
 > ```
 
+### [2026-08-30] Google Places autocomplete returns zero options in a headless run, intermittently — OPEN, under investigation
+
+**Symptom.** Browser suites that drive the structured location field see the Places autocomplete
+list stay empty: `0 options`, `none`. In one run the browser console also carried
+`Access to fetch at 'https://places.googleapis.com/v1/places:autocomplete' … blocked by CORS
+policy: No 'Access-Control-Allow-Origin' header` and `net::ERR_FAILED`.
+
+**Suites affected.** `verify:integrated` — the four checks in *Browse Places autocomplete* and
+*Places localization* — and `verify:create-task-ui` on one occasion, through its shared registration
+helper.
+
+**Observed sequence.** First appeared with 5 failures across `create-task-ui` and `integrated` while
+ten browser suites ran back to back; both suites then passed clean on an immediate re-run
+(66/0 and 64/0). It returned later the same day: `integrated` aborted early once with the
+registration helper timing out, then scored 60/4, then passed **64/0** when run in isolation with
+nothing else competing. It did **not** reappear on the post-merge run.
+
+**What is not the cause.** The API key is fine. Probed directly with the browser's own referer
+(`http://localhost:5173/`) it answered `5 suggestions` on three consecutive calls while the browser
+run was failing. Without a referer it correctly answers `API_KEY_HTTP_REFERRER_BLOCKED`, which is
+the restriction working as configured, not a fault.
+
+**Working hypothesis, unproven.** Rate or quota pressure from many headless suites calling Places in
+quick succession, or a transient network failure inside headless Chromium. **The product feature is
+not classified as broken** — no evidence yet says a real user is affected.
+
+**No product change was made in response.** The key was not rotated and the Places integration was
+not altered.
+
+**New consequence worth knowing (2026-08-30).** Since Register became two steps, a Places failure is
+no longer worth one assertion: the city never fills, so Step 1 never completes, `#register-next`
+stays disabled, and the suite can time out on the click and lose everything after it. A suite that
+used to degrade now aborts.
+
+**Next step.** Investigate later with request-level logging from inside the browser context, and
+consider a retry-with-backoff in the shared registration helper rather than in product code.
+
 ### [2026-08-30] A grant edit answered an invitation on the invitee's behalf
 
 **Problem.** `projectGrantRepository.upsert` wrote `status` on every call. Editing a pending person's
@@ -1699,7 +1736,7 @@ My projects, and a row that acts inside an `Invited` project fails.
 >
 > **Format:** `[YYYY-MM-DD] What changed — why.`
 
-- `[2026-08-30]` **Rating eligibility corrected — evidence, not directory presence, and no longer Task-only by definition.** Owner correction to the wording integrated hours earlier, built on `fix/rating-eligibility-project-participation`. **This was not a documentation fix:** the port it corrects was still wired to a stub that refused every rating.
+- `[2026-08-30]` **Rating eligibility corrected — evidence, not directory presence, and no longer Task-only by definition.** Owner correction to the wording integrated hours earlier, built on `fix/rating-eligibility-project-participation` (`4b5b577`) and **merged into develop as `e92ba95`**. **This was not a documentation fix:** the port it corrects was still wired to a stub that refused every rating.
 
   **The rule.** The gate asks one question: **does the platform hold evidence that these two people completed real professional work together?** **Browse presence is never evidence** — discoverability is not a working relationship. **Membership alone is not evidence either:** being listed on the same Project proves two people were listed, and it is refused. **Actual professional participation in a shared Project can be evidence.** A **completed shared Project Task is the one source provable today**, and it is explicitly **not** the permanent definition of shared work — a later source answers through the same `RatingEligibilityPort` without the ratings rules moving.
 
@@ -1707,7 +1744,7 @@ My projects, and a row that acts inside an `Invited` project fails.
 
   **The stub was the real defect.** `noTaskDomainEligibility` refused everything, written when `tasks` was unbuilt and never revisited after Create Task shipped — so no rating could be written at all, and the Public Profile hard-coded `canRate: false` for every viewer with the reason `no_shared_completed_task`, which encoded *Task only* in a user-facing string. The port is now the real adapter, the profile asks it, and the reason is **`no_shared_completed_work`** — it names the missing evidence, never which kind of record would supply it.
 
-  **Unchanged, and asserted:** self-rating prevention, one rating per shared completed work relationship, no separate supplier-rating model, and **no pricing, payment terms, invoices or money flow** — the delivery commitment is a Task, never a purchase order. **No schema field changed.** New suite `verify:rating-eligibility` (19 checks) covers all seven required cases; backend **1,261** checks / 23 suites and browser **807** / 16 pass. **Standalone supplier ordering outside a Project stays a future shared Task/Agreement dependency**, and standalone self-assignment was not touched.
+  **Unchanged, and asserted:** self-rating prevention, one rating per shared completed work relationship, no separate supplier-rating model, and **no pricing, payment terms, invoices or money flow** — the delivery commitment is a Task, never a purchase order. **No schema field changed.** New suite `verify:rating-eligibility` (19 checks) covers all seven required cases; **re-run after the merge**, backend **1,261** checks / 23 suites and browser **807** / 16 pass, both typechecks clean and the Vite build green. **The Public Profile now resolves `canRate` through the eligibility port itself** rather than hard-coding a refusal, and reports **`no_shared_completed_work`** when there is nothing to show. **Standalone supplier ordering outside a Project stays a future shared Task/Agreement dependency**, and standalone self-assignment was not touched. **Future schema residue:** `ratings.task` is a required task reference, so the first non-Task evidence source approved will need that field reconsidered — flagged, not built. **Owner manual QA remains pending.**
 
 - `[2026-08-30]` **Register reworked and integrated — three registration routes, the father's taxonomy, and an explicit email choice.** Merged `feature/register-taxonomy-notifications.backend` (`2c94412`) → develop as **`4d1d91b`**, then `feature/register-taxonomy-notifications-react` (`5e0f821`) → develop as **`bf478ed`**. **No conflicts, and no reverse merge** — both branches were cut from `3903376` and merged forward only.
 
