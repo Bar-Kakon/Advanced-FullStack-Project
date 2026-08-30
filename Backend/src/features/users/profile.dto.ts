@@ -7,6 +7,7 @@ import type {
   RegistrationCategory,
   Specialty,
 } from './user.model.js';
+import type { FlexibilityView } from '../flexibility/flexibility.service.js';
 import type { StructuredPlace } from '../location/place.types.js';
 
 export interface WorkEntryDto {
@@ -69,7 +70,7 @@ export interface ProfileDto {
 
   /** Cold start: no rating domain exists, so these are honestly empty rather than invented. */
   readonly rating: null;
-  readonly flexibility: null;
+  readonly flexibility: FlexibilityView | null;
   readonly ratings: readonly never[];
 
   readonly work: readonly WorkEntryDto[];

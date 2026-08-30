@@ -47,6 +47,8 @@ export const TrustPanel = ({
   const fullName = `${profile.firstName} ${profile.lastName}`.trim();
   const regionLabel = profile.region === null ? null : t.regions[profile.region];
   const place = [profile.city, regionLabel].filter(Boolean).join(' · ');
+  // Only the schedule dimension can be computed today; scope has no evidence and stays absent.
+  const schedule = profile.flexibility?.schedule ?? null;
 
   return (
     <section className="trust" aria-labelledby="trust-title">
@@ -101,24 +103,49 @@ export const TrustPanel = ({
           )}
         </div>
 
-        <div className={`metric ${profile.flexibility ? 'metric--score' : 'metric--pending'}`}>
+        <div className={`metric ${schedule ? 'metric--score' : 'metric--pending'}`}>
           <p className="metric__label">{t.profile.flexibility.label}</p>
-          {profile.flexibility ? (
+          {schedule ? (
             <>
               <div className="flex-meter">
                 <div className="flex-meter__head">
-                  <span className="flex-meter__value"><bdi>{profile.flexibility.score}</bdi></span>
+                  <span className="flex-meter__value"><bdi>{schedule.score}</bdi></span>
                   <span className="flex-meter__scale"><bdi>100</bdi></span>
                 </div>
                 <span className="flex-meter__track" aria-hidden="true">
-                  <span className="flex-meter__fill" style={{ '--score': profile.flexibility.score } as React.CSSProperties} />
+                  <span className="flex-meter__fill" style={{ '--score': schedule.score } as React.CSSProperties} />
                 </span>
               </div>
               <p className="metric__foot metric__foot--score">
-                {t.profile.flexibility.foot
-                  .replace('{count}', String(profile.flexibility.responses))
-                  .replace('{month}', profile.flexibility.updatedMonth)}
+                {t.profile.flexibility.foot.replace('{count}', String(schedule.context.events))}
               </p>
+              {/* This contractor's own aggregate pattern, in counts. No name, project, date or
+                  counterparty reaches it, and there is no High/Medium/Low judgement. */}
+              <ul className="flex-context">
+                <li className="flex-context__item">
+                  {t.profile.flexibility.context.workable
+                    .replace('{workable}', String(schedule.context.workableResolutions))
+                    .replace('{events}', String(schedule.context.events))}
+                </li>
+                {schedule.context.alternativesAgreed > 0 ? (
+                  <li className="flex-context__item">
+                    {t.profile.flexibility.context.alternatives
+                      .replace('{count}', String(schedule.context.alternativesAgreed))}
+                  </li>
+                ) : null}
+                {schedule.context.withAdvanceNotice > 0 ? (
+                  <li className="flex-context__item">
+                    {t.profile.flexibility.context.notice
+                      .replace('{count}', String(schedule.context.withAdvanceNotice))}
+                  </li>
+                ) : null}
+                {schedule.context.justifiedDeclines > 0 ? (
+                  <li className="flex-context__item">
+                    {t.profile.flexibility.context.justified
+                      .replace('{count}', String(schedule.context.justifiedDeclines))}
+                  </li>
+                ) : null}
+              </ul>
             </>
           ) : (
             <EmptyMark label={t.profile.flexibility.empty} />

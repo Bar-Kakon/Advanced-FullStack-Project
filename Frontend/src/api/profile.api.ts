@@ -11,6 +11,7 @@ import type {
   RegistrationCategory,
   Specialty,
 } from './types';
+import type { Flexibility } from './browse.types';
 import type { StructuredPlace } from '../location/place.types';
 
 export interface ReceivedRatingDto {
@@ -72,11 +73,7 @@ export interface Profile {
    * against the real contract; a `null` is what makes them show their empty mark.
    */
   readonly rating: { readonly value: number; readonly count: number } | null;
-  readonly flexibility: {
-    readonly score: number;
-    readonly responses: number;
-    readonly updatedMonth: string;
-  } | null;
+  readonly flexibility: Flexibility | null;
   readonly ratings: readonly ReceivedRatingDto[];
   readonly work: readonly WorkEntry[];
 }

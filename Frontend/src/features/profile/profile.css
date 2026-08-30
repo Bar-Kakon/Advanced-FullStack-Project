@@ -909,3 +909,21 @@ html[data-lang="en"] {
 
 .account-menu__paper { min-width: 208px; }
 .account-menu__note { font-size: 12.5px; }
+
+/* ═══ Flexibility context ═══ */
+/* This contractor's own aggregate pattern, under the number it explains. Counts only: no name,
+   project, counterparty or date can reach it, and there is no judgement label above it. */
+.flex-context {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.flex-context__item {
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text-soft);
+}
+.metric--pending .flex-context { display: none; }

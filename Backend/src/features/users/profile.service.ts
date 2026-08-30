@@ -5,6 +5,7 @@ import type { CompanyMembershipRepository } from '../companies/companyMembership
 import type { CompanyMembershipRecord } from '../companies/companyMembership.model.js';
 import type { FileAssetRecord } from '../files/fileAsset.model.js';
 import type { FileAssetService, StoredUpload } from '../files/fileAsset.service.js';
+import type { FlexibilityService } from '../flexibility/flexibility.service.js';
 import type { WorkEntryRecord } from '../workentries/workEntry.model.js';
 import type { WorkEntryRepository } from '../workentries/workEntry.repository.js';
 import type { ProfileDto, WorkEntryDto } from './profile.dto.js';
@@ -63,6 +64,7 @@ export interface ProfileDependencies {
   readonly workEntries: WorkEntryRepository;
   readonly files: FileAssetService;
   readonly verification: WorkVerificationService;
+  readonly flexibility: FlexibilityService;
 }
 
 const assetUrl = (fileId: Types.ObjectId | undefined): string | null =>
@@ -112,6 +114,7 @@ export const createProfileService = ({
   workEntries,
   files,
   verification,
+  flexibility,
 }: ProfileDependencies): ProfileService => {
   /** The caller's live company relationship, or null. Never trusted for authority on its own. */
   const activeMembership = async (userId: string): Promise<CompanyMembershipRecord | null> =>
@@ -132,6 +135,7 @@ export const createProfileService = ({
     // this read cheaper — a copy is a second place for the truth to live.
     const company = membership === null ? null : await companies.findById(membership.company);
     const entries = await workEntries.listByOwner(user._id);
+    const flexibilityView = await flexibility.forUser(userId);
 
     return {
       firstName: user.firstName,
@@ -165,7 +169,7 @@ export const createProfileService = ({
       companyMembershipActive: membership !== null,
 
       rating: null,
-      flexibility: null,
+      flexibility: flexibilityView,
       ratings: [],
 
       work: entries.map(toWorkEntryDto),

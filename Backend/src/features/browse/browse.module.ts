@@ -20,6 +20,8 @@ import {
   workImageParamsSchema,
 } from './browse.validation.js';
 import { createPhoneVisibilityService } from './phoneVisibility.service.js';
+import { unbuiltCoordinationOutcomePort } from '../flexibility/coordinationOutcome.port.js';
+import { createFlexibilityService } from '../flexibility/flexibility.service.js';
 import { workEvidenceAdapter } from '../tasks/workEvidence.adapter.js';
 import { createPublicProfileService } from './publicProfile.service.js';
 
@@ -51,6 +53,7 @@ export const createBrowseModule = ({
       workEntries: workEntryRepository,
       ratings: ratingRepository,
       eligibility: workEvidenceAdapter,
+      flexibility: createFlexibilityService(unbuiltCoordinationOutcomePort),
       relationships,
       blocks,
       phones: createPhoneVisibilityService(),

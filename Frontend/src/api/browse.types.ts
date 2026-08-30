@@ -31,9 +31,35 @@ export interface ContractorSummary {
   readonly relationship: RelationshipState;
   /** `null` until enough history exists. Rendered as `—`, never as zero. */
   readonly rating: { readonly average: number; readonly count: number } | null;
-  /** Always `null`: no approved arithmetic exists, so no number is invented. */
-  readonly flexibility: null;
+  /** `null` until resolved coordination outcomes exist. Never a zero standing in for no data. */
+  readonly flexibility: Flexibility | null;
   readonly drivingDistanceMeters: number | null;
+}
+
+/** Aggregate counts only. Nothing identifying can travel in this shape. */
+export interface FlexibilityContextCounts {
+  readonly events: number;
+  readonly workableResolutions: number;
+  readonly directAcceptances: number;
+  readonly alternativesAgreed: number;
+  readonly unresolvedFailures: number;
+  readonly justifiedDeclines: number;
+  readonly changesRequestedByCounterparty: number;
+  readonly changesRequestedBySelf: number;
+  readonly withAdvanceNotice: number;
+  readonly noticeUnknown: number;
+}
+
+export interface FlexibilityDimension {
+  /** 0-100, server-derived. There is no field a client can submit. */
+  readonly score: number;
+  readonly context: FlexibilityContextCounts;
+}
+
+export interface Flexibility {
+  readonly schedule: FlexibilityDimension | null;
+  /** `null` while no resolved scope-change evidence exists. Never rendered as a zero. */
+  readonly scope: FlexibilityDimension | null;
 }
 
 export interface PublicWorkEntry {

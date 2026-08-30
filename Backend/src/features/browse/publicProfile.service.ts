@@ -1,5 +1,6 @@
 import type { BlocksService } from '../blocks/blocks.service.js';
 import type { RelationshipService } from '../connections/relationship.service.js';
+import type { FlexibilityService } from '../flexibility/flexibility.service.js';
 import type { RatingEligibilityPort } from '../ratings/ratings.service.js';
 import type { RatingRepository } from '../ratings/rating.repository.js';
 import type { CompanyRepository } from '../companies/company.repository.js';
@@ -30,6 +31,7 @@ export interface PublicProfileDependencies {
   readonly workEntries: WorkEntryRepository;
   readonly ratings: RatingRepository;
   readonly eligibility: RatingEligibilityPort;
+  readonly flexibility: FlexibilityService;
   readonly relationships: RelationshipService;
   readonly blocks: BlocksService;
   readonly phones: PhoneVisibilityService;
@@ -43,6 +45,7 @@ export const createPublicProfileService = ({
   workEntries,
   ratings,
   eligibility,
+  flexibility,
   relationships,
   blocks,
   phones,
@@ -66,13 +69,15 @@ export const createPublicProfileService = ({
     const membership = await memberships.findActiveByUser(subjectUserId);
     const company = membership ? await companies.findById(membership.company) : null;
 
-    const [relationship, ratingSummary, entries, phoneVisibility, canRate] = await Promise.all([
-      relationships.between(viewerId, subjectUserId),
-      ratings.summaryFor(subjectUserId),
-      workEntries.listByOwner(subject._id),
-      phones.decide({ viewerId, subjectId: subjectUserId }),
-      eligibility.hasAnyWorkEvidence(viewerId, subjectUserId),
-    ]);
+    const [relationship, ratingSummary, entries, phoneVisibility, canRate, flexibilityView] =
+      await Promise.all([
+        relationships.between(viewerId, subjectUserId),
+        ratings.summaryFor(subjectUserId),
+        workEntries.listByOwner(subject._id),
+        phones.decide({ viewerId, subjectId: subjectUserId }),
+        eligibility.hasAnyWorkEvidence(viewerId, subjectUserId),
+        flexibility.forUser(subjectUserId),
+      ]);
 
     const isSelf = viewerId === subjectUserId;
     const showPhones = phoneVisibility === 'self'
@@ -106,7 +111,7 @@ export const createPublicProfileService = ({
       availability: company?.availability ?? null,
       relationship,
       rating: ratingSummary ? { average: ratingSummary.average, count: ratingSummary.count } : null,
-      flexibility: null,
+      flexibility: flexibilityView,
       drivingDistanceMeters: null,
 
       bio: subject.bio ?? null,
