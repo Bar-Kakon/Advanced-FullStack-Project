@@ -51,6 +51,12 @@ export interface ProjectDto {
   readonly status: ProjectStatus;
   /** Whether the pre-start cancellation is available to this project right now. */
   readonly cancellable: boolean;
+  /**
+   * Whether THIS viewer holds management authority here — from their company's grant on its own
+   * project, or from a project grant if they were invited in. It is never derived from who created
+   * the project, so My projects can group by the real current relationship.
+   */
+  readonly viewerManages: boolean;
   readonly createdAt: string;
   readonly updatedAt: string;
 }

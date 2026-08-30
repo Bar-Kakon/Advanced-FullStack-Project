@@ -5,6 +5,8 @@ import { ProjectMembershipModel, type ProjectMembershipRecord } from './projectM
 export interface ProjectAccessRepository {
   findActiveMembership(project: Types.ObjectId, user: Types.ObjectId): Promise<ProjectMembershipRecord | null>;
   listActiveProjectIdsForUser(user: Types.ObjectId): Promise<Types.ObjectId[]>;
+  /** One read for a whole page, so a row never costs a query of its own. */
+  listActiveMembershipsForUser(user: Types.ObjectId): Promise<ProjectMembershipRecord[]>;
   listMembers(project: Types.ObjectId): Promise<ProjectMembershipRecord[]>;
 }
 
@@ -21,6 +23,12 @@ export const projectAccessRepository: ProjectAccessRepository = {
       .lean<{ project: Types.ObjectId }[]>()
       .exec();
     return rows.map((row) => row.project);
+  },
+
+  async listActiveMembershipsForUser(user) {
+    return ProjectMembershipModel.find({ user, status: 'active' })
+      .lean<ProjectMembershipRecord[]>()
+      .exec();
   },
 
   async listMembers(project) {

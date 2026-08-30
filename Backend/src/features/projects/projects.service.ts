@@ -54,6 +54,10 @@ export interface ProjectsDependencies {
   readonly access: ProjectAccessRepository;
 }
 
+/** Management authority for this viewer, from either grant source. Never from `createdBy`. */
+const manages = (resolved: { fullAuthority: boolean; projectPermissions: readonly string[] }): boolean =>
+  resolved.fullAuthority || resolved.projectPermissions.includes('project.edit');
+
 const encodeCursor = ({ createdAt, id }: ProjectCursor): string =>
   Buffer.from(`${createdAt.toISOString()}|${id.toString()}`, 'utf8').toString('base64url');
 
@@ -70,7 +74,11 @@ const decodeCursor = (raw: string | undefined): ProjectCursor | null => {
   }
 };
 
-const toDto = (project: ProjectRecord, baseConfig?: WorkingCalendarConfig): ProjectDto => ({
+const toDto = (
+  project: ProjectRecord,
+  viewerManages: boolean,
+  baseConfig?: WorkingCalendarConfig,
+): ProjectDto => ({
   id: project._id.toString(),
   companyId: project.company.toString(),
   name: project.name,
@@ -105,6 +113,7 @@ const toDto = (project: ProjectRecord, baseConfig?: WorkingCalendarConfig): Proj
   },
   status: deriveStatus(project),
   cancellable: isCancellable(project),
+  viewerManages,
   createdAt: project.createdAt.toISOString(),
   updatedAt: project.updatedAt.toISOString(),
 });
@@ -185,12 +194,17 @@ export const createProjectsService = ({
         calendarVersion: pinned._id,
       });
 
-      return toDto(created);
+      return toDto(created, true);
     },
 
     async list(userId, limit, cursor) {
-      const { authority } = await contextFor(userId);
-      const memberOf = await access.listActiveProjectIdsForUser(new Types.ObjectId(userId));
+      const { context, authority } = await contextFor(userId);
+      const memberships = await access.listActiveMembershipsForUser(new Types.ObjectId(userId));
+      const memberOf = memberships.map((m) => m.project);
+      const grantByProject = new Map(memberships.map((m) => [m.project.toString(), m]));
+      const companyManages =
+        context?.permissions.includes('project.create') === true;
+
       const rows = await projects.listAccessible(
         new Types.ObjectId(authority.companyId),
         memberOf,
@@ -201,7 +215,15 @@ export const createProjectsService = ({
       const page = rows.slice(0, limit);
       const last = page.at(-1);
       return {
-        projects: page.map((row) => toDto(row)),
+        projects: page.map((row) => {
+          const grant = grantByProject.get(row._id.toString());
+          const owns = row.company.toString() === authority.companyId;
+          const viewerManages =
+            (owns && companyManages) ||
+            grant?.fullAuthority === true ||
+            grant?.permissions.includes('project.edit') === true;
+          return toDto(row, viewerManages);
+        }),
         nextCursor:
           rows.length > limit && last !== undefined
             ? encodeCursor({ createdAt: last.createdAt, id: last._id })
@@ -210,9 +232,9 @@ export const createProjectsService = ({
     },
 
     async getOne(userId, projectId) {
-      const { project } = await load(userId, projectId);
-      const pinned = await calendars.findById(project.calendarVersion);
-      return toDto(project, configOrDefault(pinned));
+      const { project: p, resolved } = await load(userId, projectId);
+      const pinned = await calendars.findById(p.calendarVersion);
+      return toDto(p, manages(resolved), configOrDefault(pinned));
     },
 
     async update(userId, projectId, body) {
@@ -256,7 +278,7 @@ export const createProjectsService = ({
 
       const updated = await projects.update(project._id, update, targetChange, { clearLocation });
       if (updated === null) throw projectNotFound();
-      return toDto(updated);
+      return toDto(updated, manages(resolved));
     },
 
     /** The only way a project moves to a newer company version. Never automatic. */
@@ -280,7 +302,7 @@ export const createProjectsService = ({
         !keepOverrides,
       );
       if (updated === null) throw projectNotFound();
-      return toDto(updated);
+      return toDto(updated, manages(resolved));
     },
 
     async setCalendarOverrides(userId, projectId, overrides) {
@@ -293,7 +315,7 @@ export const createProjectsService = ({
         null,
       );
       if (updated === null) throw projectNotFound();
-      return toDto(updated);
+      return toDto(updated, manages(resolved));
     },
 
     /** How many of this company's projects still sit on an older pinned version. */
