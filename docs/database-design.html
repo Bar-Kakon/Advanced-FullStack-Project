@@ -530,6 +530,19 @@ footer.foot { margin-top: 56px; padding-top: 22px; border-top: 1px solid var(--p
     </p>
 
     <div class="note" style="margin-bottom:22px">
+      <b>Field names here are the earlier design; the rules are what was built (2026-08-30).</b> This lab
+      still walks the visibility model using <code>publicStatus</code>, <code>privateStatus</code>,
+      <code>actualStartAt</code> and an embedded <code>subTasks</code> array. The built model is narrower:
+      <strong>one</strong> pair of timestamps, <code>startedAt</code> / <code>completedAt</code>, set by the
+      performer — so there is no second hidden status pair to diverge from the first — and the private layer
+      lives in <a href="#" data-goto="privateworkitems">privateworkitems</a> rather than inside the task
+      document. <strong>Every visibility rule this lab demonstrates is exactly what ships</strong>: the
+      delegate is served no <code>project</code>, no <code>createdBy</code>, no stage and no sequence; the
+      party above is served no delegation at all; and file authorship is normalised upward. The walkthrough
+      is kept because it is the clearest statement of the rules; only the field names have moved on.
+    </div>
+
+    <div class="note" style="margin-bottom:22px">
       <b>The scenario.</b> A general contractor assigned <i>“Pour ground-floor slab”</i> to <b>Dana</b> (the
       assignee, and therefore the delegator). Dana quietly handed the actual work to <b>Ronen</b> (the delegate).
       The GC must never learn that Ronen exists; Ronen must never learn that the GC exists.
