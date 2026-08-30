@@ -1338,6 +1338,38 @@ into a proper section or the logs below._
 > - Notes: anything to remember / how to avoid it next time
 > ```
 
+### [2026-08-30] An Access Token minted in the same second as a password reset survives it — OPEN, fix proposed and awaiting approval
+
+**Failing assertion.** `verify:password-reset` →
+`Access Token A is rejected immediately after the reset`.
+
+**Symptom.** Intermittent. The check demands that a token issued before a reset is refused straight
+after it. It failed twice in a row on one branch, then passed three consecutive reruns on that same
+branch, and has passed and failed on `develop` as well. Nothing in the failing runs touched auth
+code.
+
+**Root cause, and it is already written into the code.** Both sides of the comparison are whole
+seconds *by design*. `requireAccessToken` rejects a token when
+`claims.iat * 1000 < passwordChangedAt`, and `passwordReset.service` deliberately truncates:
+`new Date(Math.floor(Date.now() / 1000) * 1000)`. The comment there says why — rounding **up**
+would reject the token Login mints moments after a reset. The consequence is the gap this test
+falls into: **a token issued in the same whole second as the reset is not `<` it, so it survives.**
+JWT `iat` has no sub-second resolution, so no amount of precision on the stored side can close it.
+
+**Not a test-timing bug, and it must not be papered over with a sleep.** The window is real: a token
+minted in the same second as a reset stays valid for the remainder of its TTL. The test is
+reporting the product behaviour accurately, and it only fails when the suite happens to run fast
+enough to land both events in one second.
+
+**Scope, for honesty about severity.** Refresh Tokens are unaffected — the reset revokes every
+family for the user inside the same transaction (`revokeAllForUser`), so the session cannot be
+extended. The exposure is one already-issued Access Token, for the remainder of its short TTL, and
+only for a token minted inside that one-second window.
+
+**Status: OPEN.** No auth or product code has been changed. A version-based invalidation design has
+been audited and proposed to the owner and is **awaiting explicit approval before implementation**.
+Later passing reruns do **not** resolve it — the window is structural, not flaky.
+
 ### [2026-08-30] Google Places autocomplete returns zero options in a headless run, intermittently — OPEN, under investigation
 
 **Symptom.** Browser suites that drive the structured location field see the Places autocomplete
@@ -1736,7 +1768,7 @@ My projects, and a row that acts inside an `Invited` project fails.
 >
 > **Format:** `[YYYY-MM-DD] What changed — why.`
 
-- `[2026-08-30]` **Flexibility Score — the arithmetic is closed and built, and it is honest about having no evidence to run on yet.** Owner decision, built on `feature/flexibility-score`. **D6's arithmetic half closes here.**
+- `[2026-08-30]` **Flexibility Score — the arithmetic is closed and built, and it is honest about having no evidence to run on yet.** Owner decision, built on `feature/flexibility-score` (`211b061`) and **merged into develop as `3ad02f8`**. **D6's arithmetic half closes here.**
 
   **The formula.** `score = round(100 × successful flexible resolutions ÷ score-relevant resolved events)`, 0–100. **POSITIVE, all at the same base value:** direct acceptance, a counter that reached an agreed workable solution, an accepted alternative date, and any other accepted practical solution that kept the commitment. **A Counter is never worth less for being a Counter** — what is measured is whether the work survived. **NEUTRAL:** a justified decline is excluded from the numerator **and the denominator**; leaving it in the denominator alone would lower the score, which is exactly what the closed rule forbids. The justified-reason list belongs to the approved domain findings and is supplied by the evidence source — this module holds no list of its own and never inspects a reason. **NEGATIVE:** a resolved event with no justification, no workable solution, and the commitment falling through. **Pending proposals are not events** and never reach the arithmetic.
 
@@ -1747,7 +1779,7 @@ My projects, and a row that acts inside an `Invited` project fails.
   **The honest limit.** **Every score is `null` today.** The proposal and reschedule domain that produces resolved outcomes is unbuilt — `unbuiltCoordinationOutcomePort` answers `available: false` and an empty list — so the surfaces keep their existing empty mark rather than showing a zero. **Nothing is stored:** the score is derived on read, so there is no field a client can submit, proved by a test that PATCHes a score and reads `null` back. **The second dimension, `גמישות בסדר גודל של העבודה`, is modelled and not computable** — no resolved scope-change evidence exists anywhere in the model, so it returns `null` rather than a fabricated zero. **Concrete dependency:** both dimensions need the proposal/reschedule domain; scope additionally needs a resolved record of a change in the size of the work.
 
   **Verification.** `verify:flexibility`, 43 checks over the formula, the classification, cold start, ordering, notice and requester neutrality, both dimensions, delegator attribution, the privacy of the context, and the server-derived guarantee end to end. Backend **1,304** checks pass. **Owner manual QA remains pending.**
-- `[2026-08-30]` **Ratings work context — the model stops saying a Task is the only possible evidence.** Owner decision closing the ratings evidence/context model, built on `fix/ratings-work-context`. **A schema change, not a rewording.**
+- `[2026-08-30]` **Ratings work context — the model stops saying a Task is the only possible evidence.** Owner decision closing the ratings evidence/context model, built on `fix/ratings-work-context` (`69cd5b6`) and **merged into develop as `ed44ade`**. **A schema change, not a rewording.**
 
   **The closed rule.** Eligibility rests on real completed professional work between two parties, and **two contexts may prove it: completed professional participation at Project level, and a completed shared Task.** A Task is therefore **not** the permanent exclusive evidence type. Unchanged and re-asserted: **Browse presence never creates eligibility**; **being listed as a Project member never creates it**; project-level eligibility would mean *completed real professional participation between those two parties inside that project*, never `both accounts belong to Project X`; a supplier who actually supplied is eligible under the same system; a completed supplier Task remains one valid proof; there is **no separate supplier ratings model**; self-rating stays forbidden in the backend; and **a delegate is never exposed as the counterparty** — the delegator stays responsible and keeps the relationship.
 
