@@ -67,6 +67,7 @@ export const GrantRow = ({
               <label className="perm-check">
                 <input
                   type="checkbox"
+                  value={permission}
                   checked={grant.permissions.includes(permission)}
                   disabled={busyId !== null || inactive}
                   onChange={() => togglePermission(permission)}

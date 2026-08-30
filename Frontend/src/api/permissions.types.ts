@@ -3,6 +3,7 @@ export const PROJECT_PERMISSIONS = [
   'project.edit',
   'project.cancel',
   'project.calendar.manage',
+  'project.stage.manage',
   'project.member.invite',
   'project.member.manage',
   'project.permission.grant',

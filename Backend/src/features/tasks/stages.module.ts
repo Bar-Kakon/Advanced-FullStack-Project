@@ -26,9 +26,9 @@ const stageParamsSchema = projectScopeParamsSchema.keys({
 /**
  * The stages of one project, and the edges between them.
  *
- * Owner decision (2026-08-30): dependencies run between stages, never between individual tasks.
- * Only somebody with project-edit authority may change the order, because the stages of a project
- * are the GC's to set.
+ * Owner decision (2026-08-30): dependencies run between stages, never between individual tasks, and
+ * sequencing is governed by `project.stage.manage` — its own grant. `project.edit` is project
+ * metadata only and carries no authority over the construction sequence.
  */
 export const createStagesModule = (requireAccessToken: RequestHandler): Router => {
   const stages = createStagesService();
@@ -74,7 +74,7 @@ export const createStagesModule = (requireAccessToken: RequestHandler): Router =
       const { dependsOn } = getValidated<{ dependsOn: string[] }>(res, 'body');
 
       const { project, resolved } = await reachProject(getAuthenticatedUserId(res), projectId);
-      requireProjectPermission(resolved, 'project.edit');
+      requireProjectPermission(resolved, 'project.stage.manage');
 
       res.json({ stage: await stages.setDependencies(project._id, stageId, dependsOn) });
     },
