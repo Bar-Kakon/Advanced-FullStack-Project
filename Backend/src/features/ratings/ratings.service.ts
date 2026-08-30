@@ -1,9 +1,19 @@
 import { Types } from 'mongoose';
 
 import type { UserRepository } from '../users/user.repository.js';
-import type { RatingWorkContext } from './rating.model.js';
+import {
+  conflictsWithParticipation,
+  isContextSuperseded,
+  type RatingWorkContext,
+} from './rating.model.js';
 import type { RatingRepository } from './rating.repository.js';
-import { alreadyRated, cannotRateSelf, notEligibleToRate, rateeNotFound } from './rating.errors.js';
+import {
+  alreadyRated,
+  cannotRateSelf,
+  notEligibleToRate,
+  rateeNotFound,
+  ratingContextSuperseded,
+} from './rating.errors.js';
 import type { CreateRatingBody } from './ratings.validation.js';
 
 /** Does the platform hold evidence that these two completed real professional work together? */
@@ -12,6 +22,8 @@ export interface RatingEligibilityPort {
   findWorkEvidence(raterId: string, rateeId: string, workId: string): Promise<RatingWorkContext | null>;
   /** The same question asked of the pair rather than of one named piece of work. */
   hasAnyWorkEvidence(raterId: string, rateeId: string): Promise<boolean>;
+  /** Whether a completed Task already represents work between the pair inside one project. */
+  hasCompletedTaskWorkIn(raterId: string, rateeId: string, projectId: string): Promise<boolean>;
 }
 
 export interface RatingsService {
@@ -41,6 +53,14 @@ export const createRatingsService = ({
 
     const context = await eligibility.findWorkEvidence(actorId, rateeUserId, workId);
     if (context === null) throw notEligibleToRate();
+
+    const project = context.project.toString();
+    const [taskWork, participation] = await Promise.all([
+      eligibility.hasCompletedTaskWorkIn(actorId, rateeUserId, project),
+      ratings.hasParticipationRating(actorId, rateeUserId, project),
+    ]);
+    if (isContextSuperseded(context, taskWork)) throw ratingContextSuperseded();
+    if (conflictsWithParticipation(context, participation)) throw ratingContextSuperseded();
 
     const created = await ratings.create({
       rater: new Types.ObjectId(actorId),

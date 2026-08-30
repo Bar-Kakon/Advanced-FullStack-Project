@@ -44,6 +44,17 @@ export const workEvidenceAdapter: RatingEligibilityPort = {
     return { kind: 'project_task', project: completed.project, task: completed._id };
   },
 
+  async hasCompletedTaskWorkIn(raterId, rateeId, projectId) {
+    if (![raterId, rateeId, projectId].every((id) => Types.ObjectId.isValid(id))) return false;
+    if (raterId === rateeId) return false;
+
+    const completed = await TaskModel.exists({
+      project: new Types.ObjectId(projectId),
+      ...completedTogether(raterId, rateeId),
+    }).exec();
+    return completed !== null;
+  },
+
   async hasAnyWorkEvidence(raterId, rateeId) {
     if (![raterId, rateeId].every((id) => Types.ObjectId.isValid(id))) return false;
     if (raterId === rateeId) return false;

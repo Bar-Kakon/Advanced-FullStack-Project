@@ -54,4 +54,22 @@ ratingSchema.index(
 // A profile reads everything written about one person.
 ratingSchema.index({ ratee: 1, createdAt: -1 });
 
+/**
+ * One real completed piece of work is one rating opportunity.
+ *
+ * Where the work is represented by a completed Task, the Task context owns the rating. A
+ * `project_participation` context covers only work inside a project that no suitable completed Task
+ * already represents, so within one project a pair holds either Task-context ratings or a single
+ * participation rating, never both.
+ */
+export const isContextSuperseded = (
+  context: RatingWorkContext,
+  pairAlreadyHasTaskWorkInProject: boolean,
+): boolean => context.kind === 'project_participation' && pairAlreadyHasTaskWorkInProject;
+
+export const conflictsWithParticipation = (
+  context: RatingWorkContext,
+  pairAlreadyHasParticipationInProject: boolean,
+): boolean => context.kind === 'project_task' && pairAlreadyHasParticipationInProject;
+
 export const RatingModel = model('Rating', ratingSchema);
