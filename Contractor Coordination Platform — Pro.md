@@ -604,6 +604,25 @@ lost with the file.**
 `personal-dashboard.html` + `personal-dashboard.css`, `my-projects.html` + `my-projects.css`,
 `create-project.html` + `create-project.css`, and the shared `lang.ts` / `lang.js` that they load.
 
+**`landing` and `404` were reconciled in on 2026-08-30, and this time the files are byte-identical.** Both
+existed **only** under the pre-reorganisation root `screens/`, on `feature/landing-page` (`3a9fd52`) and
+`feature/error-screens` (`901c3e1`) — never migrated, no ref in the repository has ever held them under
+`Frontend/screens/`, and merging either branch would have recreated the deleted root directory. So all four
+files were copied out of the branch tips instead: `landing.html` (`c9ac7dd`), `landing.css` (`14c57aa`),
+`404.html` (`bf6ac1b`), `error.css` (`79b0f69`), each verified against its source blob hash. **The tip
+matters for Landing:** `3a9fd52` is the commit that removed the public confidential-delegation card, so
+sourcing the first commit would have restored a disclosure [§3.3](#33-delegation-visibility-model-depth--1)
+constraint 5 forbids — the reconciled file carries **two** value cards, not three. `error.css` is the same
+blob at both of its commits; the canonical branch state was used anyway rather than reconstructed.
+
+**Unlike `my-projects` and `create-project`, nothing inside these files was repointed.** Those two had their
+dead navbar links changed to `#`; here the owner instruction was explicit — do not modernise a prototype
+during reconciliation. So `landing.html` still links to `subscriptions.html`, `help.html` and `contact.html`,
+and `404.html` still links to `personal-dashboard.html`, none of which exist beside them. **That is the
+intended state:** these files are manual-QA evidence of what was approved, not a working site, and the React
+screens are the product. Root `screens/` was **not** recreated, `vite.config.ts` keeps `screens/` outside the
+build, and no import, route or test in `Frontend/src` references any of the four.
+
 **`my-projects` and `create-project` were reconciled in on 2026-08-30, the same way and for the same reason.**
 Both existed **only** under the pre-reorganisation root `screens/`, on `feature/my-projects` (`a791231`) and
 `feature/create-project` (`36c3d82`) — one commit each, touching nothing else, and **never migrated**: no ref
@@ -1861,6 +1880,7 @@ My projects, and a row that acts inside an `Invited` project fails.
 >
 > **Format:** `[YYYY-MM-DD] What changed — why.`
 
+- `[2026-08-30]` **The canonical Landing and 404 static prototypes are reconciled into `Frontend/screens/`.** Built on `fix/reconcile-landing-404-static`. Both pairs existed **only** on their old feature branches under the obsolete root `screens/`, so they were **copied out of the branch tips, not merged** — merging would have recreated a directory this project deliberately deleted. Sources: `feature/landing-page` **`3a9fd52`** and `feature/error-screens` **`901c3e1`**; destinations `Frontend/screens/landing.html`, `landing.css`, `404.html`, `error.css`; **all four byte-identical to their source blobs**, verified by hash. **Using the Landing tip is the point** — `3a9fd52` removed the public confidential-delegation card, and the earlier commit would have restored a disclosure that is forbidden on any surface a non-delegate can read. **Nothing inside the files was altered**, including links to screens that do not exist: they are manual-QA evidence of what was approved, not a working site. The old static branches stay unmerged and are source history only. See [§3.7](#37-static-prototypes-and-the-environment-conventions-the-client-depends-on).
 - `[2026-08-30]` **404 migrated to React, and an unknown address stopped being treated as a sign-in problem.** Built on `feature/404-react`. **Not merged.** A migration of approved screen #28, not a redesign, and **no 403 feature was invented alongside it.**
 
   **The routing correction is the substance.** `<Route path="*">` rendered `<Navigate to="/login">`, and the code comment said why: *no 404 screen is migrated yet*. So a **typo in an address signed-in people were already using sent them to the authentication boundary** — the same trap [§8](#8-known-issues--risks) records for a contractor card and for the disabled Settings entry, still live at the router level. The catch-all now renders `NotFoundPage`, and it sits **outside `PrivateRoute`** deliberately: an unmatched address is not an authentication failure. Nothing redirects, so the address stays in the bar, **a signed-out visitor sees the screen** and **an authenticated one sees the same screen and keeps their session**.

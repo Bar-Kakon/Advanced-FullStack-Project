@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="he">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="FieldSync — a coordination platform for construction professionals: assign work, link the tasks that depend on each other, and manage dates and changes in one place." />
+  <title>FieldSync — תיאום עבודה באתר / Construction coordination</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <!-- Same font stack and same requested weights as every other screen: Heebo + Frank Ruhl (he), Inter + Fraunces (en), Plex Mono (both) -->
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=IBM+Plex+Mono:wght@400;500&family=Heebo:wght@400;500;600;700&family=Frank+Ruhl+Libre:wght@500;700&display=swap"
+    rel="stylesheet" />
+  <link rel="stylesheet" href="landing.css" />
+</head>
+<body>
+
+  <!-- CSS-only bilingual toggle, Hebrew default — the project's one bilingual mechanism, shared with every other screen -->
+  <input type="radio" name="lang" id="lang-he" class="lang-radio" checked>
+  <input type="radio" name="lang" id="lang-en" class="lang-radio">
+
+  <div class="app">
+
+    <!-- The skip link is the first focusable control, so a keyboard user can pass the navbar. -->
+    <a href="#main" class="skip-link">
+      <span class="he-text">דילוג לתוכן</span>
+      <span class="en-text">Skip to content</span>
+    </a>
+
+    <!-- ═══ PUBLIC NAVBAR (.site-nav) ═══
+         Deliberately not the app navbar: this page is reached signed out, so it
+         carries no notifications bell and no profile chip. -->
+    <header class="site-nav">
+      <div class="site-nav__inner">
+
+        <!-- Identity mark only, deliberately not a link, because this is the page it would point at. -->
+        <div class="site-nav__brand">
+          <span class="site-nav__mark" aria-hidden="true">
+            <svg width="26" height="26" viewBox="0 0 40 40" fill="none">
+              <circle cx="8"  cy="20" r="6" fill="rgba(199,184,157,0.30)" stroke="rgba(255,253,248,0.92)" stroke-width="2"/>
+              <circle cx="32" cy="8"  r="6" fill="rgba(199,184,157,0.30)" stroke="rgba(255,253,248,0.92)" stroke-width="2"/>
+              <circle cx="32" cy="32" r="6" fill="rgba(199,184,157,0.30)" stroke="rgba(255,253,248,0.92)" stroke-width="2"/>
+              <line x1="14" y1="17" x2="26" y2="11" stroke="rgba(255,253,248,0.55)" stroke-width="1.5" stroke-dasharray="3 2"/>
+              <line x1="14" y1="23" x2="26" y2="29" stroke="rgba(255,253,248,0.55)" stroke-width="1.5" stroke-dasharray="3 2"/>
+              <line x1="32" y1="14" x2="32" y2="26" stroke="rgba(255,253,248,0.40)" stroke-width="1.5" stroke-dasharray="3 2"/>
+            </svg>
+          </span>
+          <span class="site-nav__name">FieldSync</span>
+        </div>
+
+        <nav class="site-nav__links" aria-label="Public">
+          <a href="subscriptions.html" class="site-nav__link">
+            <span class="he-text">תוכניות</span>
+            <span class="en-text">Plans</span>
+          </a>
+        </nav>
+
+        <div class="site-nav__actions">
+
+          <a href="login.html" class="site-nav__signin">
+            <span class="he-text">כניסה</span>
+            <span class="en-text">Sign in</span>
+          </a>
+
+          <!-- Register is the primary public action, so it is the only filled control in the navbar. -->
+          <a href="register.html" class="btn btn--sm btn--onboard">
+            <span class="he-text">יצירת חשבון</span>
+            <span class="en-text">Create account</span>
+          </a>
+
+          <!-- The language pill lives in the navbar only, by owner instruction. -->
+          <div class="lang-switch" role="group" aria-label="Language / שפה">
+            <svg class="lang-switch__globe" width="15" height="15" viewBox="0 0 24 24"
+                 fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+              <circle cx="12" cy="12" r="9"/>
+              <path d="M3 12h18M12 3c2.5 2.7 2.5 15.3 0 18M12 3c-2.5 2.7-2.5 15.3 0 18"/>
+            </svg>
+            <label for="lang-he" class="lang-switch__btn">עב</label>
+            <span class="lang-switch__sep" aria-hidden="true"></span>
+            <label for="lang-en" class="lang-switch__btn">EN</label>
+          </div>
+
+        </div>
+      </div>
+    </header>
+
+    <main id="main">
+
+      <!-- ═══ HERO — value proposition beside the dependency visual ═══ -->
+      <section class="hero" aria-labelledby="hero-title">
+
+        <div class="hero__text">
+          <h1 class="hero__title" id="hero-title">
+            <span class="he-text" dir="auto">משימות, תאריכים ותלויות — מתואמים במקום אחד, לא בטלפון.</span>
+            <span class="en-text" dir="auto">Tasks, dates and dependencies — coordinated in one place, not over the phone.</span>
+          </h1>
+
+          <p class="hero__lede">
+            <span class="he-text" dir="auto">FieldSync היא פלטפורמת תיאום לאנשי מקצוע בענף הבנייה: הקצאת עבודה, קישור בין משימות שתלויות זו בזו, וניהול תאריכים ושינויים — הכול במקום אחד.</span>
+            <span class="en-text" dir="auto">FieldSync is a coordination platform for construction professionals: assign work, link the tasks that depend on each other, and manage dates and changes — all in one place.</span>
+          </p>
+
+          <!-- Two actions only: the primary one and its alternative for people who already have an account. -->
+          <div class="hero__actions">
+            <a href="register.html" class="btn btn--onboard hero__cta">
+              <span class="he-text">יצירת חשבון</span>
+              <span class="en-text">Create account</span>
+            </a>
+            <a href="login.html" class="btn btn--outline">
+              <span class="he-text">כניסה</span>
+              <span class="en-text">Sign in</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- ── Dependency / timeline visual ──
+             A placeholder slot for the real project-dashboard screenshot, which
+             cannot exist yet because approved screen #13 has not been built. -->
+        <figure class="hero__visual depviz">
+
+          <span class="reg-mark reg-mark--tl" aria-hidden="true"></span>
+          <span class="reg-mark reg-mark--br" aria-hidden="true"></span>
+
+          <h2 class="depviz__title">
+            <span class="he-text" dir="auto">כך שינוי תאריך אחד עובר בשרשרת</span>
+            <span class="en-text" dir="auto">How one date change moves through the chain</span>
+          </h2>
+
+          <!-- The legend states the two bar treatments in words, so the chart never depends on fill alone. -->
+          <ul class="depviz__legend">
+            <li class="depviz__key depviz__key--was">
+              <span class="he-text" dir="auto">התכנון המקורי</span>
+              <span class="en-text" dir="auto">Original plan</span>
+            </li>
+            <li class="depviz__key depviz__key--now">
+              <span class="he-text" dir="auto">אחרי השינוי</span>
+              <span class="en-text" dir="auto">After the change</span>
+            </li>
+          </ul>
+
+          <div class="depviz__chart">
+
+            <!-- The ruler counts working days, never weeks, so no working week is implied. -->
+            <div class="depviz__ruler" aria-hidden="true">
+              <span class="depviz__tick"><span class="he-text">יום <bdi>1</bdi></span><span class="en-text">Day <bdi>1</bdi></span></span>
+              <span class="depviz__tick"><span class="he-text">יום <bdi>5</bdi></span><span class="en-text">Day <bdi>5</bdi></span></span>
+              <span class="depviz__tick"><span class="he-text">יום <bdi>9</bdi></span><span class="en-text">Day <bdi>9</bdi></span></span>
+              <span class="depviz__tick"><span class="he-text">יום <bdi>13</bdi></span><span class="en-text">Day <bdi>13</bdi></span></span>
+            </div>
+
+            <!-- 1 · The gate. Foundational work that downstream trades wait on. -->
+            <div class="deprow deprow--pile">
+              <div class="deprow__label">
+                <span class="deprow__name">
+                  <span class="he-text" dir="auto">קידוח כלונסאות</span>
+                  <span class="en-text" dir="auto">Piling &amp; drilling</span>
+                </span>
+                <span class="deprow__meta">
+                  <span class="he-text" dir="auto">נמשך יומיים נוספים</span>
+                  <span class="en-text" dir="auto">Takes two more days</span>
+                </span>
+                <span class="sr-only">
+                  <span class="he-text">בתכנון המקורי: ימים 1 עד 4. אחרי השינוי: ימים 1 עד 6.</span>
+                  <span class="en-text">Originally days 1 to 4. After the change, days 1 to 6.</span>
+                </span>
+              </div>
+              <div class="deprow__track" aria-hidden="true">
+                <span class="depbar depbar--was"></span>
+                <span class="depbar depbar--now depbar--source"></span>
+              </div>
+            </div>
+
+            <!-- 2 · Sequential dependant. Cannot start until the gate above is finished. -->
+            <div class="deprow deprow--found">
+              <div class="deprow__label">
+                <span class="deprow__name">
+                  <span class="he-text" dir="auto">יציקת יסודות</span>
+                  <span class="en-text" dir="auto">Foundation pour</span>
+                </span>
+                <span class="deprow__meta">
+                  <span class="he-text" dir="auto">תלויה בקידוח · נדחית ביומיים</span>
+                  <span class="en-text" dir="auto">Depends on piling · pushed 2 days</span>
+                </span>
+                <span class="sr-only">
+                  <span class="he-text">בתכנון המקורי: ימים 5 עד 8. אחרי השינוי: ימים 7 עד 10.</span>
+                  <span class="en-text">Originally days 5 to 8. After the change, days 7 to 10.</span>
+                </span>
+              </div>
+              <div class="deprow__track" aria-hidden="true">
+                <span class="depbar depbar--was"></span>
+                <span class="depbar depbar--now"></span>
+              </div>
+            </div>
+
+            <!-- 3 · Second link in the same chain. -->
+            <div class="deprow deprow--frame">
+              <div class="deprow__label">
+                <span class="deprow__name">
+                  <span class="he-text" dir="auto">שלד קומה 1</span>
+                  <span class="en-text" dir="auto">Level 1 frame</span>
+                </span>
+                <span class="deprow__meta">
+                  <span class="he-text" dir="auto">תלוי ביסודות · נדחה ביומיים</span>
+                  <span class="en-text" dir="auto">Depends on foundation · pushed 2 days</span>
+                </span>
+                <span class="sr-only">
+                  <span class="he-text">בתכנון המקורי: ימים 9 עד 12. אחרי השינוי: ימים 11 עד 14.</span>
+                  <span class="en-text">Originally days 9 to 12. After the change, days 11 to 14.</span>
+                </span>
+              </div>
+              <div class="deprow__track" aria-hidden="true">
+                <span class="depbar depbar--was"></span>
+                <span class="depbar depbar--now"></span>
+              </div>
+            </div>
+
+            <!-- 4 · A second trade depending on the same predecessor, so the chain is not a single file. -->
+            <div class="deprow deprow--elec">
+              <div class="deprow__label">
+                <span class="deprow__name">
+                  <span class="he-text" dir="auto">הכנת תשתיות חשמל</span>
+                  <span class="en-text" dir="auto">Electrical rough-in</span>
+                </span>
+                <span class="deprow__meta">
+                  <span class="he-text" dir="auto">תלויה ביסודות · נדחית ביומיים</span>
+                  <span class="en-text" dir="auto">Depends on foundation · pushed 2 days</span>
+                </span>
+                <span class="sr-only">
+                  <span class="he-text">בתכנון המקורי: ימים 9 עד 11. אחרי השינוי: ימים 11 עד 13.</span>
+                  <span class="en-text">Originally days 9 to 11. After the change, days 11 to 13.</span>
+                </span>
+              </div>
+              <div class="deprow__track" aria-hidden="true">
+                <span class="depbar depbar--was"></span>
+                <span class="depbar depbar--now"></span>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- The slot says what it is. Nothing here may be read as an existing product screen. -->
+          <figcaption class="depviz__note">
+            <span class="he-text" dir="auto">המחשה של רעיון התלויות בלבד — נתוני דוגמה, ולא צילום מסך מהמוצר. פרויקט לדוגמה אחד; לכל פרויקט שרשרת תלויות משלו. כשמסך לוח הפרויקט ייבנה, צילום מסך אמיתי ממנו יחליף את ההמחשה הזו.</span>
+            <span class="en-text" dir="auto">An illustration of the dependency concept only — example data, not a product screenshot. One example project; every project has its own chain. Once the project dashboard screen is built, a real screenshot from it replaces this illustration.</span>
+          </figcaption>
+
+        </figure>
+      </section>
+
+      <!-- ═══ CORE VALUE — three blocks, kept deliberately quieter than the visual above ═══ -->
+      <section class="values" aria-labelledby="values-title">
+        <h2 class="section-title" id="values-title">
+          <span class="he-text" dir="auto">מה שונה כאן</span>
+          <span class="en-text" dir="auto">What is different here</span>
+        </h2>
+
+        <ul class="values__grid">
+
+          <li class="vcard">
+            <span class="vcard__icon" aria-hidden="true">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                   stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="8" cy="9" r="3"/>
+                <circle cx="17" cy="9" r="3"/>
+                <path d="M2.5 19v-1a4 4 0 0 1 4-4h3a4 4 0 0 1 4 4v1"/>
+                <path d="M14.5 14.2a4 4 0 0 1 3-1.2h1a4 4 0 0 1 4 4V19"/>
+              </svg>
+            </span>
+            <h3 class="vcard__title">
+              <span class="he-text" dir="auto">כולם משתמשים שווים</span>
+              <span class="en-text" dir="auto">Everyone is a first-class user</span>
+            </h3>
+            <p class="vcard__body">
+              <span class="he-text" dir="auto">אותו קבלן יכול להיות קבלן ראשי בפרויקט אחד וקבלן משנה באחר. התפקיד עוקב אחר העבודה, לא אחרי האדם — והפלטפורמה מתווכת בין הצדדים במקום לשרת צד אחד.</span>
+              <span class="en-text" dir="auto">The same contractor can be a GC on one project and a sub on another. Roles follow the work, not the person — and the platform mediates between the parties instead of serving one side.</span>
+            </p>
+          </li>
+
+          <li class="vcard">
+            <span class="vcard__icon" aria-hidden="true">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                   stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 3l7.5 3v5.4c0 4.3-3.1 7.9-7.5 9.1-4.4-1.2-7.5-4.8-7.5-9.1V6z"/>
+                <path d="M9 12.2l2.1 2.1L15.4 10"/>
+              </svg>
+            </span>
+            <h3 class="vcard__title">
+              <span class="he-text" dir="auto">סימני אמון שקשה לשחק בהם</span>
+              <span class="en-text" dir="auto">Trust signals that aren't easily gamed</span>
+            </h3>
+            <p class="vcard__body">
+              <span class="he-text" dir="auto">ציון הגמישות נגזר מהתנהגות בפועל כשתאריכים זזים — לא מדיווח עצמי ולא מרמת הפעילות בפלטפורמה.</span>
+              <span class="en-text" dir="auto">The flexibility score is derived from how a contractor actually behaves when dates move — not from anything self-reported, and not from how active they are on the platform.</span>
+            </p>
+          </li>
+
+        </ul>
+      </section>
+
+      <!-- ═══ HOW IT WORKS — the coordination sequence, stated conceptually ═══ -->
+      <section class="flow" aria-labelledby="flow-title">
+        <h2 class="section-title" id="flow-title">
+          <span class="he-text" dir="auto">איך זה עובד</span>
+          <span class="en-text" dir="auto">How it works</span>
+        </h2>
+
+        <ol class="flow__steps">
+
+          <li class="flow__step">
+            <span class="flow__num" aria-hidden="true">1</span>
+            <span class="flow__label">
+              <span class="he-text" dir="auto">הקצאת עבודה</span>
+              <span class="en-text" dir="auto">Assign work</span>
+            </span>
+          </li>
+
+          <li class="flow__arrow" aria-hidden="true">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M5 12h13M13 6.5l5.5 5.5L13 17.5"/>
+            </svg>
+          </li>
+
+          <li class="flow__step">
+            <span class="flow__num" aria-hidden="true">2</span>
+            <span class="flow__label">
+              <span class="he-text" dir="auto">קישור התלויות</span>
+              <span class="en-text" dir="auto">Link dependencies</span>
+            </span>
+          </li>
+
+          <li class="flow__arrow" aria-hidden="true">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M5 12h13M13 6.5l5.5 5.5L13 17.5"/>
+            </svg>
+          </li>
+
+          <li class="flow__step">
+            <span class="flow__num" aria-hidden="true">3</span>
+            <span class="flow__label">
+              <span class="he-text" dir="auto">תאריך משתנה</span>
+              <span class="en-text" dir="auto">A date changes</span>
+            </span>
+          </li>
+
+          <li class="flow__arrow" aria-hidden="true">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M5 12h13M13 6.5l5.5 5.5L13 17.5"/>
+            </svg>
+          </li>
+
+          <li class="flow__step">
+            <span class="flow__num" aria-hidden="true">4</span>
+            <span class="flow__label">
+              <span class="he-text" dir="auto">ההשפעה עוברת בשרשרת התלויות הרלוונטית</span>
+              <span class="en-text" dir="auto">The effect moves through the relevant dependency chain</span>
+            </span>
+          </li>
+
+          <li class="flow__arrow" aria-hidden="true">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M5 12h13M13 6.5l5.5 5.5L13 17.5"/>
+            </svg>
+          </li>
+
+          <li class="flow__step">
+            <span class="flow__num" aria-hidden="true">5</span>
+            <span class="flow__label">
+              <span class="he-text" dir="auto">הצדדים הרלוונטיים מתאמים ומסכמים בסבב אחד</span>
+              <span class="en-text" dir="auto">The relevant participants coordinate and agree in one round</span>
+            </span>
+          </li>
+
+        </ol>
+
+        <p class="flow__note">
+          <span class="he-text" dir="auto">הכול נשמר בתוך הפלטפורמה, כך שמה שסוכם על תאריך נשאר מתועד.</span>
+          <span class="en-text" dir="auto">All of it stays inside the platform, so what was agreed about a date remains on the record.</span>
+        </p>
+      </section>
+
+      <!-- ═══ PLANS / REGISTRATION DIRECTION — one band, not a repeated CTA block ═══ -->
+      <section class="direct" aria-labelledby="direct-title">
+        <div class="direct__text">
+          <h2 class="direct__title" id="direct-title">
+            <span class="he-text" dir="auto">מוכנים להתחיל?</span>
+            <span class="en-text" dir="auto">Ready to start?</span>
+          </h2>
+          <p class="direct__lede">
+            <span class="he-text" dir="auto">אפשר לפתוח חשבון עכשיו, או לעבור קודם על התוכניות.</span>
+            <span class="en-text" dir="auto">Create an account now, or look through the plans first.</span>
+          </p>
+        </div>
+        <div class="direct__actions">
+          <a href="register.html" class="btn btn--primary">
+            <span class="he-text">יצירת חשבון</span>
+            <span class="en-text">Create account</span>
+          </a>
+          <a href="subscriptions.html" class="btn btn--ghost">
+            <span class="he-text">התוכניות</span>
+            <span class="en-text">See the plans</span>
+          </a>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- ═══ FOOTER — restrained, and the language pill is deliberately not repeated here ═══ -->
+    <footer class="site-foot">
+      <div class="site-foot__inner">
+
+        <div class="site-foot__brand">
+          <span class="site-foot__mark" aria-hidden="true">
+            <svg width="22" height="22" viewBox="0 0 40 40" fill="none">
+              <circle cx="8"  cy="20" r="6" fill="rgba(199,184,157,0.30)" stroke="rgba(255,253,248,0.92)" stroke-width="2"/>
+              <circle cx="32" cy="8"  r="6" fill="rgba(199,184,157,0.30)" stroke="rgba(255,253,248,0.92)" stroke-width="2"/>
+              <circle cx="32" cy="32" r="6" fill="rgba(199,184,157,0.30)" stroke="rgba(255,253,248,0.92)" stroke-width="2"/>
+              <line x1="14" y1="17" x2="26" y2="11" stroke="rgba(255,253,248,0.55)" stroke-width="1.5" stroke-dasharray="3 2"/>
+              <line x1="14" y1="23" x2="26" y2="29" stroke="rgba(255,253,248,0.55)" stroke-width="1.5" stroke-dasharray="3 2"/>
+              <line x1="32" y1="14" x2="32" y2="26" stroke="rgba(255,253,248,0.40)" stroke-width="1.5" stroke-dasharray="3 2"/>
+            </svg>
+          </span>
+          <span class="site-foot__name">FieldSync</span>
+        </div>
+
+        <nav class="site-foot__links" aria-label="Footer">
+          <a href="subscriptions.html" class="site-foot__link">
+            <span class="he-text">תוכניות</span>
+            <span class="en-text">Plans</span>
+          </a>
+          <a href="help.html" class="site-foot__link">
+            <span class="he-text">עזרה ותמיכה</span>
+            <span class="en-text">Help &amp; support</span>
+          </a>
+          <a href="contact.html" class="site-foot__link">
+            <span class="he-text">יצירת קשר</span>
+            <span class="en-text">Contact</span>
+          </a>
+        </nav>
+
+        <!-- Stated plainly so the page is never mistaken for a live commercial service. -->
+        <p class="site-foot__note">
+          <span class="he-text" dir="auto">FieldSync — אב־טיפוס אקדמי בפיתוח.</span>
+          <span class="en-text" dir="auto">FieldSync — an academic prototype in development.</span>
+        </p>
+
+      </div>
+    </footer>
+
+  </div>
+
+  <!-- Shared across screens: remembers the language choice in localStorage -->
+  <script src="lang.js"></script>
+
+</body>
+</html>
