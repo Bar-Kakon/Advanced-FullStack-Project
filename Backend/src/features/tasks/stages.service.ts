@@ -15,8 +15,15 @@ export const dependencyOutsideProject = (): AppError =>
 export const selfDependency = (): AppError =>
   new AppError('A stage cannot depend on itself.', 409, 'STAGE_SELF_DEPENDENCY');
 
+export interface NewStage {
+  readonly name: string;
+  readonly isGate: boolean;
+  readonly order?: number;
+}
+
 export interface StagesService {
   list(project: Types.ObjectId): Promise<ProjectStageRecord[]>;
+  create(project: Types.ObjectId, stage: NewStage): Promise<ProjectStageRecord>;
   setDependencies(
     project: Types.ObjectId,
     stageId: string,
@@ -55,6 +62,28 @@ export const createStagesService = (): StagesService => ({
       .sort({ order: 1 })
       .lean<ProjectStageRecord[]>()
       .exec();
+  },
+
+  /** A stage with no order given is appended, so a fresh project can be built one stage at a time. */
+  async create(project, stage) {
+    const order =
+      stage.order ??
+      (await ProjectStageModel.find({ project })
+        .sort({ order: -1 })
+        .limit(1)
+        .lean<ProjectStageRecord[]>()
+        .exec()
+        .then((rows) => (rows[0]?.order ?? -1) + 1));
+
+    const created = new ProjectStageModel({
+      project,
+      name: stage.name,
+      order,
+      isGate: stage.isGate,
+      dependsOn: [],
+    });
+    await created.save();
+    return created.toObject() as ProjectStageRecord;
   },
 
   async setDependencies(project, stageId, dependsOn) {

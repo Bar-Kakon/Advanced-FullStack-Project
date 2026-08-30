@@ -94,10 +94,15 @@ export const resolveProjectAccess = async ({
 export const mayManage = (resolved: ResolvedProjectAccess): boolean =>
   resolved.fullAuthority || resolved.projectPermissions.includes('project.edit');
 
+/** The predicate behind the guard, so a caller that raises its own error still asks this one place. */
+export const hasProjectPermission = (
+  resolved: ResolvedProjectAccess,
+  permission: ProjectPermission,
+): boolean => resolved.fullAuthority || resolved.projectPermissions.includes(permission);
+
 export const requireProjectPermission = (
   resolved: ResolvedProjectAccess,
   permission: ProjectPermission,
 ): void => {
-  if (resolved.fullAuthority) return;
-  if (!resolved.projectPermissions.includes(permission)) throw notPermittedToCreate();
+  if (!hasProjectPermission(resolved, permission)) throw notPermittedToCreate();
 };

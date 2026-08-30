@@ -28,6 +28,7 @@ export interface DashboardViewerDto {
   readonly canInvite: boolean;
   readonly canManageMembers: boolean;
   readonly canGrantPermissions: boolean;
+  readonly canCreateTasks: boolean;
 }
 
 export interface ProjectDashboardDto {

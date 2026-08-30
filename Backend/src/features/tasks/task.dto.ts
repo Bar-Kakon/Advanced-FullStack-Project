@@ -51,3 +51,65 @@ export interface MyTasksPageDto {
   readonly tasks: readonly MyTaskDto[];
   readonly nextCursor: string | null;
 }
+
+/**
+ * Advisory, never a refusal. The weekly pattern is stored and approved; holidays are not, so a
+ * warning is the most this can honestly say about a date.
+ */
+export interface TaskWarning {
+  readonly code: 'NON_WORKING_DAY';
+  readonly field: 'startDate' | 'dueDate';
+  readonly date: string;
+}
+
+export interface CreatedTaskDto {
+  readonly id: string;
+  readonly kind: TaskKind;
+  readonly projectId: string | null;
+  readonly stageId: string | null;
+  readonly title: string;
+  readonly description: string | null;
+  readonly assigneeId: string | null;
+  readonly startDate: string;
+  readonly dueDate: string;
+  readonly ownCrewOnly: boolean;
+  readonly delegatorOnSiteRequired: boolean;
+}
+
+export interface CreatableProjectDto {
+  readonly id: string;
+  readonly name: string;
+  /** Whether this account may name somebody other than itself here. */
+  readonly canAssignOthers: boolean;
+}
+
+export interface CreateOptionsDto {
+  readonly projects: readonly CreatableProjectDto[];
+  readonly canCreateStandalone: boolean;
+}
+
+export interface StageOptionDto {
+  readonly id: string;
+  readonly name: string;
+  readonly order: number;
+  readonly isGate: boolean;
+}
+
+/** Only active members. An unanswered invitation is not somebody work can be handed to. */
+export interface AssignableMemberDto {
+  readonly userId: string;
+  readonly name: string;
+  readonly companyName: string | null;
+}
+
+export interface ProjectCreateOptionsDto {
+  readonly projectId: string;
+  readonly name: string;
+  readonly startDate: string;
+  /** The overrun ceiling. Work may never be scheduled past it. */
+  readonly endDate: string;
+  readonly stages: readonly StageOptionDto[];
+  readonly assignees: readonly AssignableMemberDto[];
+  readonly canAssignOthers: boolean;
+  readonly canManageStages: boolean;
+}

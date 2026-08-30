@@ -49,3 +49,58 @@ export const privateItemParamsSchema = taskParamsSchema.keys({
 export const stageDependenciesBodySchema = Joi.object({
   dependsOn: Joi.array().items(Joi.string().trim()).required(),
 });
+
+export const createStageBodySchema = Joi.object({
+  name: Joi.string().trim().min(1).max(120).required(),
+  isGate: Joi.boolean().default(false),
+  order: Joi.number().integer().min(0).optional(),
+});
+
+const CALENDAR_DATE = /^\d{4}-\d{2}-\d{2}$/;
+const calendarDate = Joi.string().trim().pattern(CALENDAR_DATE).required();
+
+/**
+ * The two kinds ask for different things, so the body is discriminated rather than made of
+ * everything-optional fields that a service would then have to re-check.
+ */
+export const createTaskBodySchema = Joi.object({
+  kind: Joi.string()
+    .valid(...TASK_KINDS)
+    .required(),
+  title: Joi.string().trim().min(1).max(200).required(),
+  description: Joi.string().trim().max(2000).optional(),
+  startDate: calendarDate,
+  dueDate: calendarDate,
+
+  projectId: Joi.when('kind', {
+    is: 'project',
+    then: Joi.string().trim().required(),
+    otherwise: Joi.forbidden(),
+  }),
+  // A project task must belong to a stage — owner decision, not a shortcut to relax later.
+  stageId: Joi.when('kind', {
+    is: 'project',
+    then: Joi.string().trim().required(),
+    otherwise: Joi.forbidden(),
+  }),
+  // Standalone work is always its creator's own, so naming an assignee is refused rather than ignored.
+  assigneeId: Joi.when('kind', {
+    is: 'project',
+    then: Joi.string().trim().required(),
+    otherwise: Joi.forbidden(),
+  }),
+  ownCrewOnly: Joi.when('kind', {
+    is: 'project',
+    then: Joi.boolean().default(false),
+    otherwise: Joi.forbidden(),
+  }),
+  delegatorOnSiteRequired: Joi.when('kind', {
+    is: 'project',
+    then: Joi.boolean().default(false),
+    otherwise: Joi.forbidden(),
+  }),
+});
+
+export const projectOptionsParamsSchema = Joi.object({
+  projectId: Joi.string().trim().required(),
+});
