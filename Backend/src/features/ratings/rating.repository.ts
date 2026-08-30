@@ -2,13 +2,15 @@ import { Types } from 'mongoose';
 
 import { RatingModel, type RatingRecord } from './rating.model.js';
 
+export type NewRating = Omit<RatingRecord, '_id' | 'createdAt'>;
+
 export interface RatingSummary {
   readonly average: number;
   readonly count: number;
 }
 
 export interface RatingRepository {
-  create(rating: Omit<RatingRecord, '_id' | 'createdAt'>): Promise<Types.ObjectId | null>;
+  create(rating: NewRating): Promise<Types.ObjectId | null>;
   listForRatee(rateeUserId: string): Promise<RatingRecord[]>;
   /** `null` when nobody has rated them, which the profile renders as an honest blank. */
   summaryFor(rateeUserId: string): Promise<RatingSummary | null>;

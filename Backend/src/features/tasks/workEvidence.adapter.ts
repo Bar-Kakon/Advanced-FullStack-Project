@@ -1,7 +1,7 @@
 import { Types } from 'mongoose';
 
 import type { RatingEligibilityPort } from '../ratings/ratings.service.js';
-import { TaskModel } from './task.model.js';
+import { TaskModel, type TaskRecord } from './task.model.js';
 
 /**
  * The Tasks domain answering the evidence question the Ratings feature asks through a port.
@@ -32,12 +32,16 @@ export const workEvidenceAdapter: RatingEligibilityPort = {
     const ids = [raterId, rateeId, workId];
     if (!ids.every((id) => Types.ObjectId.isValid(id))) return null;
 
-    const completed = await TaskModel.exists({
+    const completed = await TaskModel.findOne({
       _id: new Types.ObjectId(workId),
       ...completedTogether(raterId, rateeId),
-    }).exec();
+    })
+      .select('project')
+      .lean<Pick<TaskRecord, '_id' | 'project'>>()
+      .exec();
 
-    return completed === null ? null : { source: 'completed_project_task' };
+    if (completed === null || completed.project === undefined) return null;
+    return { kind: 'project_task', project: completed.project, task: completed._id };
   },
 
   async hasAnyWorkEvidence(raterId, rateeId) {

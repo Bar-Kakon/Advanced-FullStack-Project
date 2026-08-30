@@ -319,7 +319,8 @@ const run = async (): Promise<never> => {
 
   const rate = (ratee: typeof rated, score: number) =>
     RatingModel.create({
-      rater: stranger.userId, ratee: ratee.userId, score, task: new Types.ObjectId(),
+      rater: stranger.userId, ratee: ratee.userId, score,
+      context: { kind: 'project_task', project: new Types.ObjectId(), task: new Types.ObjectId() },
     });
   await rate(rated, 5);
   await rate(alsoRated, 3);
