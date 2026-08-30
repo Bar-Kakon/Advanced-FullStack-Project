@@ -51,7 +51,7 @@ export type PhoneVisibilityReason =
   | 'visible_work_commitment'
   | 'hidden_no_approved_case';
 
-export type RateabilityReason = 'self' | 'no_shared_completed_task' | 'eligible';
+export type RateabilityReason = 'self' | 'no_shared_completed_work' | 'eligible';
 
 export interface PublicProfile extends ContractorSummary {
   readonly bio: string | null;

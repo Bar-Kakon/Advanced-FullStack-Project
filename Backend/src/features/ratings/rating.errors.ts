@@ -7,11 +7,11 @@ import { AppError } from '../../shared/errors.js';
 export const cannotRateSelf = (): AppError =>
   new AppError('You cannot rate yourself', 403, 'CANNOT_RATE_SELF');
 
-/** No shared completed task entitles this caller to rate that person. */
+/** The platform holds no evidence that these two completed real work together. */
 export const notEligibleToRate = (): AppError =>
   new AppError('You are not eligible to rate this person', 403, 'RATING_NOT_ELIGIBLE');
 
-/** One peer rating per shared completed task. */
+/** One peer rating per shared completed work relationship. */
 export const alreadyRated = (): AppError =>
   new AppError('You have already rated this person for that work', 409, 'ALREADY_RATED');
 

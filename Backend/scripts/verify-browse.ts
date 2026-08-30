@@ -244,7 +244,7 @@ const run = async (): Promise<void> => {
 
   console.log('\n10. Rating eligibility is backend-decided');
   check('Public Profile does not claim a viewer may rate', profile.rateable.canRate === false);
-  check('and states why', profile.rateable.reason === 'no_shared_completed_task', profile.rateable.reason);
+  check('and states why', profile.rateable.reason === 'no_shared_completed_work', profile.rateable.reason);
   check('your own profile reports self, not eligibility',
     ownProfile.body['profile'].rateable.reason === 'self');
 

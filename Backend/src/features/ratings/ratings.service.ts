@@ -5,23 +5,20 @@ import type { RatingRepository } from './rating.repository.js';
 import { alreadyRated, cannotRateSelf, notEligibleToRate, rateeNotFound } from './rating.errors.js';
 import type { CreateRatingBody } from './ratings.validation.js';
 
-/**
- * Whether a shared completed task entitles one person to rate another.
- *
- * It is a port because the task domain does not exist yet: `tasks` and `projects` are unbuilt, so
- * nothing can prove shared completed work today. The rule is not invented here — the seam is, so
- * the tasks feature can supply it later without the rating rules moving.
- */
-export interface RatingEligibilityPort {
-  canRate(raterId: string, rateeId: string, taskId: string): Promise<boolean>;
+/** Open by design: a source added here needs no change to the rating rules. */
+export const WORK_EVIDENCE_SOURCES = ['completed_project_task'] as const;
+export type WorkEvidenceSource = (typeof WORK_EVIDENCE_SOURCES)[number];
+
+export interface WorkEvidence {
+  readonly source: WorkEvidenceSource;
 }
 
-/** Refuses every rating, because no shared completed task can exist while `tasks` is unbuilt. */
-export const noTaskDomainEligibility: RatingEligibilityPort = {
-  async canRate() {
-    return false;
-  },
-};
+/** Does the platform hold evidence that these two completed real professional work together? */
+export interface RatingEligibilityPort {
+  findWorkEvidence(raterId: string, rateeId: string, workId: string): Promise<WorkEvidence | null>;
+  /** The same question asked of the pair rather than of one named piece of work. */
+  hasAnyWorkEvidence(raterId: string, rateeId: string): Promise<boolean>;
+}
 
 export interface RatingsService {
   rate(actorId: string, input: CreateRatingBody): Promise<void>;
@@ -48,7 +45,8 @@ export const createRatingsService = ({
     // The same identity reached by another route is still the same identity.
     if (ratee._id.toString() === actorId) throw cannotRateSelf();
 
-    if (!(await eligibility.canRate(actorId, rateeUserId, taskId))) throw notEligibleToRate();
+    const evidence = await eligibility.findWorkEvidence(actorId, rateeUserId, taskId);
+    if (evidence === null) throw notEligibleToRate();
 
     const created = await ratings.create({
       rater: new Types.ObjectId(actorId),

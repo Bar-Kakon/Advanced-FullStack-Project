@@ -1,5 +1,6 @@
 import type { BlocksService } from '../blocks/blocks.service.js';
 import type { RelationshipService } from '../connections/relationship.service.js';
+import type { RatingEligibilityPort } from '../ratings/ratings.service.js';
 import type { RatingRepository } from '../ratings/rating.repository.js';
 import type { CompanyRepository } from '../companies/company.repository.js';
 import type { CompanyMembershipRepository } from '../companies/companyMembership.repository.js';
@@ -28,6 +29,7 @@ export interface PublicProfileDependencies {
   readonly memberships: CompanyMembershipRepository;
   readonly workEntries: WorkEntryRepository;
   readonly ratings: RatingRepository;
+  readonly eligibility: RatingEligibilityPort;
   readonly relationships: RelationshipService;
   readonly blocks: BlocksService;
   readonly phones: PhoneVisibilityService;
@@ -40,6 +42,7 @@ export const createPublicProfileService = ({
   memberships,
   workEntries,
   ratings,
+  eligibility,
   relationships,
   blocks,
   phones,
@@ -63,11 +66,12 @@ export const createPublicProfileService = ({
     const membership = await memberships.findActiveByUser(subjectUserId);
     const company = membership ? await companies.findById(membership.company) : null;
 
-    const [relationship, ratingSummary, entries, phoneVisibility] = await Promise.all([
+    const [relationship, ratingSummary, entries, phoneVisibility, canRate] = await Promise.all([
       relationships.between(viewerId, subjectUserId),
       ratings.summaryFor(subjectUserId),
       workEntries.listByOwner(subject._id),
       phones.decide({ viewerId, subjectId: subjectUserId }),
+      eligibility.hasAnyWorkEvidence(viewerId, subjectUserId),
     ]);
 
     const isSelf = viewerId === subjectUserId;
@@ -123,7 +127,9 @@ export const createPublicProfileService = ({
       },
       rateable: isSelf
         ? { canRate: false, reason: 'self' }
-        : { canRate: false, reason: 'no_shared_completed_task' },
+        : canRate
+          ? { canRate: true, reason: 'eligible' }
+          : { canRate: false, reason: 'no_shared_completed_work' },
       isSelf,
     };
   },

@@ -20,6 +20,7 @@ import {
   workImageParamsSchema,
 } from './browse.validation.js';
 import { createPhoneVisibilityService } from './phoneVisibility.service.js';
+import { workEvidenceAdapter } from '../tasks/workEvidence.adapter.js';
 import { createPublicProfileService } from './publicProfile.service.js';
 
 export interface BrowseModuleDependencies {
@@ -49,6 +50,7 @@ export const createBrowseModule = ({
       memberships: companyMembershipRepository,
       workEntries: workEntryRepository,
       ratings: ratingRepository,
+      eligibility: workEvidenceAdapter,
       relationships,
       blocks,
       phones: createPhoneVisibilityService(),
