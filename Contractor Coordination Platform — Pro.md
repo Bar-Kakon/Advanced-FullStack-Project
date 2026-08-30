@@ -1386,6 +1386,21 @@ Logout stays per-family and advances no version, so it never becomes an account-
 `passwordChangedAt` is kept as **security history** and is no longer truncated, because nothing
 compares it against a token any more.
 
+**Deployment: nothing to do, and that is a finding rather than an omission.** There is **no production
+deployment of this project**, so there are no old and new instances to overlap and nothing to
+coordinate. **No migration, no backfill, and no forced logout** — an absent `security.tokenVersion`
+reads as `0` and a token with no `ver` claim reads as `0`, so existing accounts and existing tokens
+both behave correctly with no preparatory step at all.
+
+**One note kept only for a future rolling deploy.** `passwordChangedAt` is now stored at full
+precision rather than truncated to a whole second. Old code compared `iat * 1000 < passwordChangedAt`,
+which with a full-precision stamp effectively rounds *up* — so if this backend were ever rolled out
+with old and new auth instances serving simultaneously, an old instance could briefly refuse an
+Access Token a new instance had just minted in the same second as a reset. It is bounded to that
+sub-second window, resolves on the next refresh, and disappears once every instance is new. **It is
+not a current blocker and no code exists for it**, because inventing deployment machinery for a
+deployment that does not exist would be the larger mistake.
+
 **Proof the race is gone, and that the test can still catch it.** `verify:token-version`, 55 checks,
 does not wait for the race — it signs Access Tokens with an `iat` chosen adversarially: the exact
 second of the reset, and five seconds *after* it. Both are refused. Run unchanged against the
