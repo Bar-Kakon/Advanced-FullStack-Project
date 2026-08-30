@@ -23,6 +23,7 @@
     "verify:browse": "tsx scripts/verify-browse.ts",
     "verify:dashboard": "tsx scripts/verify-dashboard.ts",
     "verify:network": "tsx scripts/verify-network.ts",
+    "verify:projects": "tsx scripts/verify-projects.ts",
     "verify:travel-exclusions": "tsx scripts/verify-travel-exclusions.ts",
     "verify:google-adapters": "tsx scripts/verify-google-adapters.ts",
     "verify:google-live": "tsx scripts/verify-google-live.ts",
@@ -33,7 +34,12 @@
     "migrate:owner-main-contractor": "tsx scripts/migrate-owner-main-contractor.ts",
     "verify:owner-qa": "tsx scripts/verify-owner-qa.ts",
     "verify:min-rating": "tsx scripts/verify-min-rating.ts",
-    "seed:min-rating": "tsx scripts/seed-min-rating.ts"
+    "seed:min-rating": "tsx scripts/seed-min-rating.ts",
+    "verify:project-members": "tsx scripts/verify-project-members.ts",
+    "verify:project-dashboard": "tsx scripts/verify-project-dashboard.ts",
+    "verify:my-tasks": "tsx scripts/verify-my-tasks.ts",
+    "seed:my-tasks": "tsx scripts/seed-my-tasks.ts",
+    "verify:task-detail": "tsx scripts/verify-task-detail.ts"
   },
   "dependencies": {
     "@types/nodemailer": "^8.0.1",
