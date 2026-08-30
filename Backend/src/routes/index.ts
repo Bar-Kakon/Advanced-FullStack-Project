@@ -23,6 +23,7 @@ import { createRatingsModule } from '../features/ratings/ratings.module.js';
 import { createTasksModule } from '../features/tasks/tasks.module.js';
 import { createStagesModule } from '../features/tasks/stages.module.js';
 import { createUsersModule } from '../features/users/users.module.js';
+import { createCoordinationModule } from '../features/coordination/coordination.module.js';
 import { createHealthRouter } from './health.routes.js';
 import { createHealthAuthRouter } from './healthAuth.routes.js';
 
@@ -51,6 +52,7 @@ export const createApiRouter = (config: AppConfig): Router => {
   );
   router.use('/network', createNetworkModule(auth.requireAccessToken));
   router.use('/work-plans', createWorkPlansModule(auth.requireAccessToken));
+  router.use('/coordination', createCoordinationModule(auth.requireAccessToken));
   router.use('/projects/:projectId/stages', createStagesModule(auth.requireAccessToken));
   router.use('/projects/:projectId/dashboard', createProjectDashboardModule(auth.requireAccessToken));
   router.use(

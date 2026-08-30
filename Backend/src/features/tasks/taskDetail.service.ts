@@ -16,7 +16,6 @@ import {
   notDelegated,
   ownCrewOnly,
   partNeedsDescription,
-  rescheduleUnavailable,
 } from './taskDetail.errors.js';
 import type { TaskRepository } from './task.repository.js';
 import { deriveTaskState, isOverdue, overdueDays } from './taskState.js';
@@ -76,7 +75,6 @@ export interface TaskDetailService {
   addPrivate(userId: string, taskId: string, kind: PrivateItemKind, body: string): Promise<PrivateWorkItemRecord>;
   togglePrivate(userId: string, taskId: string, itemId: string, done: boolean): Promise<PrivateWorkItemRecord>;
   removePrivate(userId: string, taskId: string, itemId: string): Promise<void>;
-  requestDateChange(userId: string, taskId: string): Promise<never>;
 }
 
 export interface TaskDetailDependencies {
@@ -316,12 +314,6 @@ export const createTaskDetailService = ({
         owner: new Types.ObjectId(userId),
       }).exec();
       if (result.deletedCount === 0) throw taskNotFound();
-    },
-
-    /** The entry point exists; the domain behind it does not, and it says so rather than pretending. */
-    async requestDateChange(userId, taskId) {
-      await load(userId, taskId);
-      throw rescheduleUnavailable();
     },
   };
 };

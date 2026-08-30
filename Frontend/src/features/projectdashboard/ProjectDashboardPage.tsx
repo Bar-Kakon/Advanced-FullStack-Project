@@ -11,6 +11,7 @@ import { adoptCurrentCalendar } from '../../api/projects.api';
 import { initialsOf } from '../profile/profileModel';
 import { ProjectCalendarPanel } from '../projects/components/ProjectCalendarPanel';
 import { CalendarVersionPanel } from './components/CalendarVersionPanel';
+import { CoordinationPanel } from './components/CoordinationPanel';
 import { ProjectPermissionsPanel } from './components/ProjectPermissionsPanel';
 import { useProjectDashboard } from './useProjectDashboard';
 import profileCss from '../profile/profile.css?inline';
@@ -18,6 +19,7 @@ import projectsCss from '../projects/projects.css?inline';
 import permissionsCss from '../permissions/permissions.css?inline';
 import membersCss from '../members/members.css?inline';
 import projectDashboardCss from './project-dashboard.css?inline';
+import coordinationCss from '../coordination/coordination.css?inline';
 
 const displayDate = (iso: string, lang: 'he' | 'en'): string => {
   const [year, month, day] = iso.split('-').map(Number);
@@ -48,6 +50,7 @@ export const ProjectDashboardPage = () => {
     { id: 'permissions.css', css: permissionsCss },
     { id: 'members.css', css: membersCss },
     { id: 'project-dashboard.css', css: projectDashboardCss },
+    { id: 'coordination.css', css: coordinationCss },
   );
   useDocumentTitle('לוח הפרויקט / Project dashboard — FieldSync');
 
@@ -202,6 +205,14 @@ export const ProjectDashboardPage = () => {
               busy={busy}
               canManage={viewer.canManageCalendar}
               onAdopt={(keepOverrides) => void adopt(keepOverrides)}
+            />
+
+            <CoordinationPanel
+              openProposals={data.coordination.openProposals}
+              awaitingMe={data.coordination.awaitingMe}
+              proposals={data.coordination.proposals}
+              audit={data.coordination.audit}
+              seesEverything={viewer.canManageSchedule}
             />
 
             <CalendarVersionPanel calendar={data.calendar} />

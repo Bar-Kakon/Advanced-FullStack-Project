@@ -42,6 +42,7 @@ export const PROJECT_PERMISSIONS = [
    * own parties, who may upload against their own task without holding it.
    */
   'workplan.manage',
+  'schedule.change.manage',
 ] as const;
 export type ProjectPermission = (typeof PROJECT_PERMISSIONS)[number];
 

@@ -40,6 +40,9 @@ export const TaskRow = ({ task, busy, busyId, onStart, onComplete }: TaskRowProp
           <span className={`task-chip task-chip--${task.kind}`}>{t.tasks.kind[task.kind]}</span>
           <span className={`task-chip task-chip--${task.state}`}>{t.tasks.state[task.state]}</span>
           {task.overdue ? <span className="task-chip task-chip--overdue">{t.tasks.overdue}</span> : null}
+          {task.pendingProposal === true ? (
+            <span className="task-chip task-chip--proposal">{t.tasks.row.pendingProposal}</span>
+          ) : null}
         </span>
       </div>
 

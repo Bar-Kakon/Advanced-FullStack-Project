@@ -23,6 +23,7 @@ import { ProjectDashboardPage } from './features/projectdashboard/ProjectDashboa
 import { MyTasksPage } from './features/tasks/MyTasksPage';
 import { CreateTaskPage } from './features/tasks/CreateTaskPage';
 import { TaskDetailPage } from './features/tasks/TaskDetailPage';
+import { ProposalReviewPage } from './features/coordination/ProposalReviewPage';
 import { EmployeeManagementPage } from './features/employees/EmployeeManagementPage';
 import { EmployeeOnboardingPage } from './features/employees/EmployeeOnboardingPage';
 import { WaitingForApprovalPage } from './features/employees/WaitingForApprovalPage';
@@ -77,6 +78,7 @@ export const App = () => (
               {/* Ahead of `:taskId`, or the literal path would be read as a task id. */}
               <Route path="/tasks/new" element={<CreateTaskPage />} />
               <Route path="/tasks/:taskId" element={<TaskDetailPage />} />
+              <Route path="/proposals/:proposalId" element={<ProposalReviewPage />} />
             </Route>
           </Route>
 

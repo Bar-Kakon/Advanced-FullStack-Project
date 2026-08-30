@@ -1,3 +1,5 @@
+import type { AuditEntry, ProposalListRow } from './coordination.types';
+
 import type { Project } from './projects.types';
 
 export interface CalendarAdoption {
@@ -26,6 +28,15 @@ export interface DashboardViewer {
   readonly canManageMembers: boolean;
   readonly canGrantPermissions: boolean;
   readonly canCreateTasks: boolean;
+  readonly canManageSchedule: boolean;
+  readonly canPartialRelease: boolean;
+}
+
+export interface ProjectCoordination {
+  readonly openProposals: number;
+  readonly awaitingMe: number;
+  readonly proposals: readonly ProposalListRow[];
+  readonly audit: readonly AuditEntry[];
 }
 
 export interface ProjectTaskSummary {
@@ -42,4 +53,5 @@ export interface ProjectDashboard {
   readonly members: { readonly active: number; readonly pending: number };
   /** `null` while the Tasks domain does not exist. Never rendered as a zero. */
   readonly tasks: ProjectTaskSummary | null;
+  readonly coordination: ProjectCoordination;
 }

@@ -9,6 +9,7 @@ import { useScreenStylesheet } from '../../styles/useScreenStylesheet';
 import { initialsOf } from '../profile/profileModel';
 import { DelegationPanel } from './components/DelegationPanel';
 import { PrivateWorkPanel } from './components/PrivateWorkPanel';
+import { DateChangePanel } from './components/DateChangePanel';
 import { WorkPlansPanel } from './components/WorkPlansPanel';
 import { useTaskDetail } from './useTaskDetail';
 import profileCss from '../profile/profile.css?inline';
@@ -180,17 +181,11 @@ export const TaskDetailPage = () => {
               />
             ) : null}
 
-            <section className="panel" aria-labelledby="date-change-title">
-              <h2 id="date-change-title" className="panel__title">{copy.dateChange.title}</h2>
-              {/* The cascade is closed as policy and unbuilt, so the screen says so and offers nothing. */}
-              {task.rescheduleAvailable ? (
-                <button type="button" className="btn btn--ghost btn--sm" disabled={busy}>
-                  {copy.dateChange.request}
-                </button>
-              ) : (
-                <p className="panel__lede">{copy.dateChange.unavailable}</p>
-              )}
-            </section>
+            <DateChangePanel
+              taskId={task.id}
+              available={task.rescheduleAvailable && task.viewer.canRequestDateChange}
+              impact={task.rescheduleImpact}
+            />
 
             <WorkPlansPanel
               taskId={task.id}

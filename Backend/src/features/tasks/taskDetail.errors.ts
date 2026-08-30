@@ -20,5 +20,3 @@ export const ownCrewOnly = (): AppError =>
 export const partNeedsDescription = (): AppError =>
   new AppError('Delegating part of the work needs that part described.', 400, 'PART_NEEDS_DESCRIPTION');
 
-export const rescheduleUnavailable = (): AppError =>
-  new AppError('Date-change requests are not available yet.', 503, 'RESCHEDULE_UNAVAILABLE');

@@ -13,8 +13,16 @@ import { parseCalendarDate } from '../projects/projectDates.js';
 import { createMyTasksService, type MyTasksFilters } from './myTasks.service.js';
 import { createTaskCreationService, type CreateTaskInput } from './taskCreation.service.js';
 import { invalidCalendarDate } from './taskCreation.errors.js';
-import { unbuiltProposalMarkerPort } from './proposals.port.js';
-import { unbuiltReschedulePort } from './reschedule.port.js';
+import {
+  buildCoordinationService,
+  toRequestedChanges,
+  type DateChangeBody,
+} from '../coordination/coordination.module.js';
+import { dateChangeBodySchema } from '../coordination/coordination.validation.js';
+import {
+  createProposalMarkerAdapter,
+  createReschedulePortAdapter,
+} from '../coordination/taskCoordination.adapter.js';
 import { taskRepository } from './task.repository.js';
 import { createTaskDetailService } from './taskDetail.service.js';
 import type { DelegationScope } from './task.model.js';
@@ -57,11 +65,13 @@ interface CreateTaskBody {
  * no route can forget it.
  */
 export const createTasksModule = (requireAccessToken: RequestHandler): Router => {
+  const coordination = buildCoordinationService();
+
   const myTasks = createMyTasksService({
     tasks: taskRepository,
     projects: projectRepository,
     participants: participantRepository,
-    proposals: unbuiltProposalMarkerPort,
+    proposals: createProposalMarkerAdapter(coordination),
   });
 
   const detail = createTaskDetailService({
@@ -69,7 +79,7 @@ export const createTasksModule = (requireAccessToken: RequestHandler): Router =>
     projects: projectRepository,
     access: projectAccessRepository,
     participants: participantRepository,
-    reschedule: unbuiltReschedulePort,
+    reschedule: createReschedulePortAdapter(coordination),
   });
 
   const creation = createTaskCreationService({
@@ -146,7 +156,9 @@ export const createTasksModule = (requireAccessToken: RequestHandler): Router =>
 
   router.post('/:taskId/complete', params, async (req, res) => {
     const { taskId } = getValidated<{ taskId: string }>(res, 'params');
-    res.json({ task: await myTasks.complete(me(res), taskId) });
+    const task = await myTasks.complete(me(res), taskId);
+    await coordination.recordEarlyCompletion(taskId);
+    res.json({ task });
   });
 
   router.get('/:taskId', params, async (req, res) => {
@@ -200,11 +212,31 @@ export const createTasksModule = (requireAccessToken: RequestHandler): Router =>
     res.status(204).send();
   });
 
-  // The entry point exists so the screen has somewhere to point; the cascade behind it does not.
-  router.post('/:taskId/date-change', params, async (req, res) => {
-    const { taskId } = getValidated<{ taskId: string }>(res, 'params');
-    await detail.requestDateChange(me(res), taskId);
-  });
+  router.post(
+    '/:taskId/date-change',
+    validateRequest({ params: taskParamsSchema, body: dateChangeBodySchema }),
+    async (req, res) => {
+      const { taskId } = getValidated<{ taskId: string }>(res, 'params');
+      const body = getValidated<DateChangeBody>(res, 'body');
+      res.status(201).json({
+        proposal: await coordination.request(me(res), taskId, {
+          changes: toRequestedChanges(body),
+          ...(body.reason === undefined ? {} : { reason: body.reason }),
+          ...(body.responseHours === undefined ? {} : { responseHours: body.responseHours }),
+        }),
+      });
+    },
+  );
+
+  router.post(
+    '/:taskId/date-change/preview',
+    validateRequest({ params: taskParamsSchema, body: dateChangeBodySchema }),
+    async (req, res) => {
+      const { taskId } = getValidated<{ taskId: string }>(res, 'params');
+      const body = getValidated<DateChangeBody>(res, 'body');
+      res.json({ preview: await coordination.preview(me(res), taskId, toRequestedChanges(body)) });
+    },
+  );
 
   return router;
 };
