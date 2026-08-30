@@ -1,3 +1,5 @@
+import { Link } from 'react-router-dom';
+
 import { ButtonSpinner } from '../../../components/ButtonSpinner';
 import { useLanguage } from '../../../i18n/useLanguage';
 import type { MyTask } from '../../../api/tasks.types';
@@ -73,6 +75,10 @@ export const TaskRow = ({ task, busy, busyId, onStart, onComplete }: TaskRowProp
       {task.orphaned ? <p className="task-row__note">{t.tasks.row.orphaned}</p> : null}
 
       {/* Only what the server said this viewer may do. Nothing is offered that would be refused. */}
+      <div className="task-row__actions">
+        <Link to={`/tasks/${task.id}`} className="btn btn--ghost btn--sm">{t.tasks.detail.title}</Link>
+      </div>
+
       {task.canStart || task.canComplete ? (
         <div className="task-row__actions">
           {task.canStart ? (

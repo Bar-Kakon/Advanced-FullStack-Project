@@ -498,6 +498,68 @@ export const en: Strings = {
 
     empty: 'No project tasks have been assigned to me and I have not opened any standalone work. When a task is assigned to me, or I open work of my own, it will appear here.',
 
+    detail: {
+      title: 'Work detail',
+      back: 'Back to tasks',
+      loading: 'Loading the work…',
+      notFound: 'That work was not found, or it is not accessible.',
+      dates: '{start} to {due}',
+
+      stage: {
+        title: 'Stage in the project',
+        inStage: 'This work belongs to the {name} stage',
+        none: 'No stage has been set for this work.',
+        gate: 'Blocking stage',
+        blockedBy: 'Stages that must finish first',
+        noBlockers: 'No stage comes before this one.',
+        partialRelease: 'Partially released',
+        note: 'Dependencies in a project run between stages, not between individual tasks.',
+      },
+
+      delegation: {
+        title: 'Hand over performance',
+        lede: 'Hand the performance to somebody else. Responsibility stays with me, and the party above still sees me as the performer.',
+        performedBy: 'Performance handed to {name}',
+        scopeWhole: 'All of the work',
+        scopePart: 'Part of the work',
+        partLabel: 'The part handed over',
+        partPlaceholder: 'The conduit run only',
+        who: { label: 'Hand it to', placeholder: 'Search by name' },
+        scope: { label: 'How much' },
+        send: 'Hand it over',
+        end: 'End the hand-over',
+        endedNote: 'Ending it returns performance to me.',
+        receivedNote: 'This work was received to perform. The wider project is not shown here.',
+        ownCrewOnly: 'The party above required your own crew, so this work cannot be handed over.',
+        onSite: 'I am required on site even after handing the performance over.',
+        noRedelegate: 'Work received to perform cannot be handed on again.',
+      },
+
+      privateWork: {
+        title: 'My own organisation',
+        lede: 'Sub-tasks and notes for my use only. Nobody else can see them, and they do not change the state of the work.',
+        subtask: 'Sub-task',
+        note: 'Note',
+        addLabel: 'Add an item',
+        addPlaceholder: 'Mark out the route',
+        add: 'Add',
+        remove: 'Delete',
+        none: 'Nothing in my own organisation yet.',
+        noEffect: 'Ticking a sub-task does not change how the work appears to anybody else.',
+      },
+
+      dateChange: {
+        title: 'Request a date change',
+        unavailable: 'The date-change mechanism has not been built yet, so no request can be raised here. No count of affected tasks is shown.',
+        request: 'Request a date change',
+      },
+
+      workPlans: {
+        title: 'Work plans',
+        unavailable: 'Uploading work plans has not been built into this screen yet.',
+      },
+    },
+
     errors: {
       notFound: 'That work was not found, or it is not accessible.',
       notPerformer: 'Only the person performing the work can report on it.',
@@ -580,7 +642,11 @@ export const en: Strings = {
 
     tasks: {
       title: 'Tasks',
-      unavailable: 'Task management has not been built yet. No task figure is shown here, and no zero is shown in its place.',
+      unavailable: 'No tasks have been opened on this project yet. No zero is shown in place of a figure that does not exist.',
+      total: 'Total tasks: {count}',
+      open: 'Open: {count}',
+      overdue: 'Overdue: {count}',
+      completed: 'Completed: {count}',
     },
   },
 

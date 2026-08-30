@@ -209,10 +209,16 @@ export const ProjectDashboardPage = () => {
             {/* Tasks are unbuilt. The section says so rather than rendering zeros. */}
             <section className="panel" aria-labelledby="tasks-title">
               <h2 id="tasks-title" className="panel__title">{copy.tasks.title}</h2>
+              {/* Real counts from the Task domain, or nothing at all — never zeros standing in. */}
               {data.tasks === null ? (
                 <p className="panel__lede">{copy.tasks.unavailable}</p>
               ) : (
-                <p className="dash-note">{String(data.tasks.total)}</p>
+                <>
+                  <p className="dash-note">{copy.tasks.total.replace('{count}', String(data.tasks.total))}</p>
+                  <p className="dash-note">{copy.tasks.open.replace('{count}', String(data.tasks.open))}</p>
+                  <p className="dash-note">{copy.tasks.overdue.replace('{count}', String(data.tasks.overdue))}</p>
+                  <p className="dash-note">{copy.tasks.completed.replace('{count}', String(data.tasks.completed))}</p>
+                </>
               )}
             </section>
           </>

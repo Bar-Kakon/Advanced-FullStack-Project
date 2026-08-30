@@ -19,6 +19,7 @@ import { PermissionsPage } from './features/permissions/PermissionsPage';
 import { ProjectMembersPage } from './features/members/ProjectMembersPage';
 import { ProjectDashboardPage } from './features/projectdashboard/ProjectDashboardPage';
 import { MyTasksPage } from './features/tasks/MyTasksPage';
+import { TaskDetailPage } from './features/tasks/TaskDetailPage';
 import { EmployeeManagementPage } from './features/employees/EmployeeManagementPage';
 import { EmployeeOnboardingPage } from './features/employees/EmployeeOnboardingPage';
 import { WaitingForApprovalPage } from './features/employees/WaitingForApprovalPage';
@@ -66,6 +67,7 @@ export const App = () => (
               <Route path="/projects/:projectId" element={<ProjectDashboardPage />} />
               <Route path="/permissions" element={<PermissionsPage />} />
               <Route path="/tasks" element={<MyTasksPage />} />
+              <Route path="/tasks/:taskId" element={<TaskDetailPage />} />
             </Route>
           </Route>
 

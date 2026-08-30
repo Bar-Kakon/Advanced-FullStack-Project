@@ -89,3 +89,46 @@
 @media (max-width: 640px) {
   .task-row__actions > .btn { flex: 1 1 auto; }
 }
+
+/* ═══ The private execution layer ═══ */
+
+.private-list {
+  list-style: none;
+  margin: 0 0 12px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.private-item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 14px;
+  padding: 10px 14px;
+  border: 1px solid var(--secondary-45);
+  border-radius: var(--r-md);
+  background: var(--surface);
+}
+
+.private-item__note {
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--text-soft);
+  overflow-wrap: anywhere;
+}
+
+.private-add {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px;
+}
+
+.private-add .form-group { flex: 1 1 200px; margin-block-end: 0; }
+
+@media (max-width: 640px) {
+  .private-add > .btn { flex: 1 1 auto; }
+}
