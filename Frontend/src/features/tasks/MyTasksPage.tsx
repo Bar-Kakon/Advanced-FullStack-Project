@@ -1,3 +1,5 @@
+import { Link } from 'react-router-dom';
+
 import { AppNav } from '../../components/AppNav';
 import { FormAlert } from '../../components/FormAlert';
 import { useAuth } from '../../auth/useAuth';
@@ -76,6 +78,7 @@ export const MyTasksPage = () => {
             <h1 className="profile__title">{t.tasks.title}</h1>
             <p className="profile__sub">{t.tasks.lede}</p>
           </div>
+          <Link to="/tasks/new" className="btn btn--primary btn--sm">{t.tasks.create.entry}</Link>
         </header>
 
         <section className="panel" aria-labelledby="task-filters-title">
@@ -164,6 +167,8 @@ export const MyTasksPage = () => {
         {!loading && rows.length === 0 && failure === null ? (
           <section className="panel">
             <p className="panel__lede">{t.tasks.empty}</p>
+            {/* The empty state now points somewhere — the gap the source-of-truth document flagged. */}
+            <Link to="/tasks/new" className="btn btn--primary btn--sm">{t.tasks.create.entry}</Link>
           </section>
         ) : null}
 

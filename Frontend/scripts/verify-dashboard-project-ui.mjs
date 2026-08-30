@@ -225,8 +225,10 @@ const run = async () => {
   // rather than rendering four zeros, which would claim work exists and none of it is done.
   check('A project with no work says so, rather than showing zeros',
     (await owner.textContent('main')).includes('עדיין לא נפתחו משימות'));
-  const numbers = await owner.textContent('#tasks-title ~ p');
-  check('And renders no count at all', !/\d/.test(numbers ?? ''), numbers ?? '');
+  // Scoped to the panel rather than to the heading's siblings: the panel now carries a header
+  // action, so the copy is no longer a sibling of the title.
+  const numbers = await owner.locator('section[aria-labelledby="tasks-title"] p').allTextContents();
+  check('And renders no count at all', !/\d/.test(numbers.join(' ')), numbers.join(' | '));
 
   section('11. A member with no authority sees no management control');
   await owner.goto(`${APP}/projects/${projectId}/members`, { waitUntil: 'networkidle' });

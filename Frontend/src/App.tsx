@@ -19,6 +19,7 @@ import { PermissionsPage } from './features/permissions/PermissionsPage';
 import { ProjectMembersPage } from './features/members/ProjectMembersPage';
 import { ProjectDashboardPage } from './features/projectdashboard/ProjectDashboardPage';
 import { MyTasksPage } from './features/tasks/MyTasksPage';
+import { CreateTaskPage } from './features/tasks/CreateTaskPage';
 import { TaskDetailPage } from './features/tasks/TaskDetailPage';
 import { EmployeeManagementPage } from './features/employees/EmployeeManagementPage';
 import { EmployeeOnboardingPage } from './features/employees/EmployeeOnboardingPage';
@@ -67,6 +68,8 @@ export const App = () => (
               <Route path="/projects/:projectId" element={<ProjectDashboardPage />} />
               <Route path="/permissions" element={<PermissionsPage />} />
               <Route path="/tasks" element={<MyTasksPage />} />
+              {/* Ahead of `:taskId`, or the literal path would be read as a task id. */}
+              <Route path="/tasks/new" element={<CreateTaskPage />} />
               <Route path="/tasks/:taskId" element={<TaskDetailPage />} />
             </Route>
           </Route>

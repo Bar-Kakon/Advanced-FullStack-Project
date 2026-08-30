@@ -206,9 +206,16 @@ export const ProjectDashboardPage = () => {
 
             <CalendarVersionPanel calendar={data.calendar} />
 
-            {/* Tasks are unbuilt. The section says so rather than rendering zeros. */}
             <section className="panel" aria-labelledby="tasks-title">
-              <h2 id="tasks-title" className="panel__title">{copy.tasks.title}</h2>
+              <div className="panel__head">
+                <h2 id="tasks-title" className="panel__title">{copy.tasks.title}</h2>
+                {/* Offered only where the API would accept it — the grant decides, not the role. */}
+                {viewer.canCreateTasks ? (
+                  <Link to={`/tasks/new?projectId=${projectId}`} className="btn btn--primary btn--sm">
+                    {t.tasks.create.entry}
+                  </Link>
+                ) : null}
+              </div>
               {/* Real counts from the Task domain, or nothing at all — never zeros standing in. */}
               {data.tasks === null ? (
                 <p className="panel__lede">{copy.tasks.unavailable}</p>

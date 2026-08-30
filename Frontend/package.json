@@ -24,7 +24,8 @@
     "verify:members-ui": "node scripts/verify-members-ui.mjs",
     "verify:project-dashboard-ui": "node scripts/verify-dashboard-project-ui.mjs",
     "verify:my-tasks-ui": "node scripts/verify-my-tasks-ui.mjs",
-    "verify:task-detail-ui": "node scripts/verify-task-detail-ui.mjs"
+    "verify:task-detail-ui": "node scripts/verify-task-detail-ui.mjs",
+    "verify:create-task-ui": "node scripts/verify-create-task-ui.mjs"
   },
   "devDependencies": {
     "@types/react": "^19.2.18",
