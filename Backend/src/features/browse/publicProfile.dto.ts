@@ -85,8 +85,8 @@ export interface RateabilityDto {
   readonly reason: RateabilityReason;
 }
 
-/** `no_shared_completed_task` is what every viewer gets until the Tasks domain exists. */
-export const RATEABILITY_REASONS = ['self', 'no_shared_completed_task', 'eligible'] as const;
+/** `no_shared_completed_work` names the missing evidence, never one particular kind of it. */
+export const RATEABILITY_REASONS = ['self', 'no_shared_completed_work', 'eligible'] as const;
 export type RateabilityReason = (typeof RATEABILITY_REASONS)[number];
 
 export interface BrowsePageDto {
