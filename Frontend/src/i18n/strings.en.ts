@@ -568,6 +568,88 @@ export const en: Strings = {
       network: 'We could not reach the server. Check the connection and try again.',
       unknown: 'We could not complete that just now.',
     },
+
+    create: {
+      entry: 'Open work',
+      title: 'Open work',
+      lede: 'Open a task inside a project, or standalone work that belongs to no project.',
+      loading: 'Loading the options…',
+      loadingProject: 'Loading the project…',
+      back: 'Back to my tasks',
+      submit: 'Open the work',
+      cancel: 'Cancel',
+
+      kind: {
+        label: 'Kind of work',
+        project: 'Project task',
+        standalone: 'Standalone work',
+        standaloneNote: 'Standalone work is always opened in your own name and belongs to no project.',
+      },
+
+      project: { label: 'Project', placeholder: 'Choose a project' },
+      stage: {
+        label: 'Project stage',
+        placeholder: 'Choose a stage',
+        gate: 'Gate stage',
+        note: 'A project task always belongs to a stage. Dependencies run between stages, not between individual tasks.',
+        none: 'No stages have been set for this project yet.',
+        addTitle: 'Add a stage to the project',
+        addLabel: 'Stage name',
+        addPlaceholder: 'Structure',
+        addGate: 'Gate stage — everything after it waits for it to finish',
+        add: 'Add stage',
+        cannotAdd: 'Adding a stage is done by somebody authorised to edit the project.',
+      },
+
+      assignee: {
+        label: 'Who the work goes to',
+        placeholder: 'Choose a member',
+        note: 'Active project members only. An unanswered invitation is not included.',
+        selfOnly: 'The current permission allows opening work in your own name only.',
+        me: 'In my name',
+      },
+
+      titleField: { label: 'Name of the work', placeholder: 'Pour columns on the second floor' },
+      description: { label: 'Description', placeholder: 'What exactly needs doing' },
+      startDate: { label: 'Start date' },
+      dueDate: { label: 'Due date' },
+      window: 'Work is scheduled inside the project window: {start} to {end}.',
+
+      terms: {
+        title: 'Commitment terms',
+        lede: 'Terms agreed with whoever takes the work, and shown to them.',
+        ownCrewOnly: 'Own crew only',
+        ownCrewOnlyHint: 'The work cannot be handed on to anybody else.',
+        onSite: 'On-site presence required',
+        onSiteHint: 'Presence on site is required even if performance is handed on.',
+      },
+
+      warning: {
+        title: 'Worth knowing',
+        nonWorkingStart: 'The start date {date} is not a working day on the project calendar.',
+        nonWorkingDue: 'The due date {date} is not a working day on the project calendar.',
+        note: 'The work was opened. Holidays are not checked here.',
+      },
+
+      noProjects: 'There is no project you can open work in right now. Permission to open work is granted per project.',
+      noStandalone: 'This account may not open standalone work.',
+      nothing: 'There is no way to open work from this account right now.',
+
+      errors: {
+        required: 'Required',
+        dueBeforeStart: 'The due date cannot precede the start date.',
+        outsideWindow: 'That date falls outside the project window, which ends at the overrun date.',
+        createDenied: 'This account may not open work in this project.',
+        assignDenied: 'Assigning work to another person needs a separate permission.',
+        standaloneDenied: 'This account may not open standalone work.',
+        assigneeNotMember: 'Work can only be assigned to an active member of the project.',
+        stageNotFound: 'The chosen stage does not exist in this project.',
+        invalidDate: 'That is not a real calendar date.',
+        notFound: 'The project was not found, or it is not accessible.',
+        network: 'We could not reach the server. Check the connection and try again.',
+        unknown: 'We could not open the work just now.',
+      },
+    },
   },
 
   projectDashboard: {
