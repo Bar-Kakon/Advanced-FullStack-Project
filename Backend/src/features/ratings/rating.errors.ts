@@ -11,6 +11,14 @@ export const cannotRateSelf = (): AppError =>
 export const notEligibleToRate = (): AppError =>
   new AppError('You are not eligible to rate this person', 403, 'RATING_NOT_ELIGIBLE');
 
+/** The same completed work is already rateable through the other context. */
+export const ratingContextSuperseded = (): AppError =>
+  new AppError(
+    'That work is already covered by another rating context',
+    409,
+    'RATING_CONTEXT_SUPERSEDED',
+  );
+
 /** One peer rating per shared completed work relationship. */
 export const alreadyRated = (): AppError =>
   new AppError('You have already rated this person for that work', 409, 'ALREADY_RATED');

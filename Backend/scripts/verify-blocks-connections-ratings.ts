@@ -275,40 +275,40 @@ const run = async (): Promise<void> => {
 
   console.log('\n10. Ratings — self-rating is refused by the BACKEND');
   const task = new Types.ObjectId().toString();
-  const rateSelf = await send('POST', '/ratings', { rateeUserId: a.id, taskId: task, score: 5 }, a.token);
+  const rateSelf = await send('POST', '/ratings', { rateeUserId: a.id, workId: task, score: 5 }, a.token);
   check('a direct API self-rating answers 403 CANNOT_RATE_SELF',
     rateSelf.status === 403 && rateSelf.body['code'] === 'CANNOT_RATE_SELF',
     `${rateSelf.status} ${String(rateSelf.body['code'])}`);
   check('and it wrote nothing', (await RatingModel.countDocuments({ rater: a.id })) === 0);
 
-  const rateSelfMax = await send('POST', '/ratings', { rateeUserId: a.id, taskId: task, score: 1 }, a.token);
+  const rateSelfMax = await send('POST', '/ratings', { rateeUserId: a.id, workId: task, score: 1 }, a.token);
   check('the refusal does not depend on the score sent', rateSelfMax.status === 403);
 
   console.log('\n11. Ratings — eligibility is backend-authoritative');
-  const rateOther = await send('POST', '/ratings', { rateeUserId: b.id, taskId: task, score: 5 }, a.token);
+  const rateOther = await send('POST', '/ratings', { rateeUserId: b.id, workId: task, score: 5 }, a.token);
   check('rating a real person with no shared completed task is refused',
     rateOther.status === 403 && rateOther.body['code'] === 'RATING_NOT_ELIGIBLE',
     `${rateOther.status} ${String(rateOther.body['code'])}`);
   check('and it wrote nothing', (await RatingModel.countDocuments({ ratee: b.id })) === 0);
 
   const rateGhost = await send('POST', '/ratings',
-    { rateeUserId: new Types.ObjectId().toString(), taskId: task, score: 5 }, a.token);
+    { rateeUserId: new Types.ObjectId().toString(), workId: task, score: 5 }, a.token);
   check('rating a user who does not exist answers 404', rateGhost.status === 404, String(rateGhost.status));
 
-  const rateUnauth = await send('POST', '/ratings', { rateeUserId: b.id, taskId: task, score: 5 });
+  const rateUnauth = await send('POST', '/ratings', { rateeUserId: b.id, workId: task, score: 5 });
   check('an unauthenticated rating is refused', rateUnauth.status === 401, String(rateUnauth.status));
 
-  const rateBadScore = await send('POST', '/ratings', { rateeUserId: b.id, taskId: task, score: 9 }, a.token);
+  const rateBadScore = await send('POST', '/ratings', { rateeUserId: b.id, workId: task, score: 9 }, a.token);
   check('a score outside 1..5 is refused by validation', rateBadScore.status === 400, String(rateBadScore.status));
 
   console.log('\n12. The unique index enforces one rating per shared task');
   const rater = new Types.ObjectId(a.id);
   const ratee = new Types.ObjectId(b.id);
-  const taskId = new Types.ObjectId();
-  await RatingModel.create([{ rater, ratee, score: 4, task: taskId }]);
+  const context = { kind: 'project_task', project: new Types.ObjectId(), task: new Types.ObjectId() };
+  await RatingModel.create([{ rater, ratee, score: 4, context }]);
   let second = 'REJECTED';
   try {
-    await RatingModel.create([{ rater, ratee, score: 5, task: taskId }]);
+    await RatingModel.create([{ rater, ratee, score: 5, context }]);
     second = 'ACCEPTED';
   } catch { /* the unique index refused it */ }
   check('a second rating for the same rater+ratee+task is refused', second === 'REJECTED', second);

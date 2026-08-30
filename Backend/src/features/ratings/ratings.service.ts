@@ -1,23 +1,29 @@
 import { Types } from 'mongoose';
 
 import type { UserRepository } from '../users/user.repository.js';
+import {
+  conflictsWithParticipation,
+  isContextSuperseded,
+  type RatingWorkContext,
+} from './rating.model.js';
 import type { RatingRepository } from './rating.repository.js';
-import { alreadyRated, cannotRateSelf, notEligibleToRate, rateeNotFound } from './rating.errors.js';
+import {
+  alreadyRated,
+  cannotRateSelf,
+  notEligibleToRate,
+  rateeNotFound,
+  ratingContextSuperseded,
+} from './rating.errors.js';
 import type { CreateRatingBody } from './ratings.validation.js';
-
-/** Open by design: a source added here needs no change to the rating rules. */
-export const WORK_EVIDENCE_SOURCES = ['completed_project_task'] as const;
-export type WorkEvidenceSource = (typeof WORK_EVIDENCE_SOURCES)[number];
-
-export interface WorkEvidence {
-  readonly source: WorkEvidenceSource;
-}
 
 /** Does the platform hold evidence that these two completed real professional work together? */
 export interface RatingEligibilityPort {
-  findWorkEvidence(raterId: string, rateeId: string, workId: string): Promise<WorkEvidence | null>;
+  /** The context to record, or `null` when nothing proves the relationship. */
+  findWorkEvidence(raterId: string, rateeId: string, workId: string): Promise<RatingWorkContext | null>;
   /** The same question asked of the pair rather than of one named piece of work. */
   hasAnyWorkEvidence(raterId: string, rateeId: string): Promise<boolean>;
+  /** Whether a completed Task already represents work between the pair inside one project. */
+  hasCompletedTaskWorkIn(raterId: string, rateeId: string, projectId: string): Promise<boolean>;
 }
 
 export interface RatingsService {
@@ -35,7 +41,7 @@ export const createRatingsService = ({
   users,
   eligibility,
 }: RatingsDependencies): RatingsService => ({
-  async rate(actorId, { rateeUserId, taskId, score, comment }) {
+  async rate(actorId, { rateeUserId, workId, score, comment }) {
     // First, and before anything that could be satisfied another way.
     if (actorId === rateeUserId) throw cannotRateSelf();
 
@@ -45,14 +51,22 @@ export const createRatingsService = ({
     // The same identity reached by another route is still the same identity.
     if (ratee._id.toString() === actorId) throw cannotRateSelf();
 
-    const evidence = await eligibility.findWorkEvidence(actorId, rateeUserId, taskId);
-    if (evidence === null) throw notEligibleToRate();
+    const context = await eligibility.findWorkEvidence(actorId, rateeUserId, workId);
+    if (context === null) throw notEligibleToRate();
+
+    const project = context.project.toString();
+    const [taskWork, participation] = await Promise.all([
+      eligibility.hasCompletedTaskWorkIn(actorId, rateeUserId, project),
+      ratings.hasParticipationRating(actorId, rateeUserId, project),
+    ]);
+    if (isContextSuperseded(context, taskWork)) throw ratingContextSuperseded();
+    if (conflictsWithParticipation(context, participation)) throw ratingContextSuperseded();
 
     const created = await ratings.create({
       rater: new Types.ObjectId(actorId),
       ratee: ratee._id,
       score,
-      task: new Types.ObjectId(taskId),
+      context,
       ...(comment === undefined ? {} : { comment }),
     });
     if (created === null) throw alreadyRated();

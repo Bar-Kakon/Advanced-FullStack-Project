@@ -2,13 +2,17 @@ import { Types } from 'mongoose';
 
 import { RatingModel, type RatingRecord } from './rating.model.js';
 
+export type NewRating = Omit<RatingRecord, '_id' | 'createdAt'>;
+
 export interface RatingSummary {
   readonly average: number;
   readonly count: number;
 }
 
 export interface RatingRepository {
-  create(rating: Omit<RatingRecord, '_id' | 'createdAt'>): Promise<Types.ObjectId | null>;
+  create(rating: NewRating): Promise<Types.ObjectId | null>;
+  /** Either direction: the pair holds one participation rating per project at most. */
+  hasParticipationRating(raterId: string, rateeId: string, projectId: string): Promise<boolean>;
   listForRatee(rateeUserId: string): Promise<RatingRecord[]>;
   /** `null` when nobody has rated them, which the profile renders as an honest blank. */
   summaryFor(rateeUserId: string): Promise<RatingSummary | null>;
@@ -29,6 +33,23 @@ export const ratingRepository: RatingRepository = {
       if ((error as { code?: number }).code === DUPLICATE_KEY_CODE) return null;
       throw error;
     }
+  },
+
+  async hasParticipationRating(raterId, rateeId, projectId) {
+    const rater = toObjectId(raterId);
+    const ratee = toObjectId(rateeId);
+    const project = toObjectId(projectId);
+    if (rater === null || ratee === null || project === null) return false;
+
+    const found = await RatingModel.exists({
+      'context.kind': 'project_participation',
+      'context.project': project,
+      $or: [
+        { rater, ratee },
+        { rater: ratee, ratee: rater },
+      ],
+    }).exec();
+    return found !== null;
   },
 
   async listForRatee(rateeUserId) {

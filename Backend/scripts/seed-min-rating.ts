@@ -53,7 +53,7 @@ const run = async (): Promise<never> => {
         rater: position === 0 ? raterOne.userId : raterTwo.userId,
         ratee: account.userId,
         score,
-        task: new Types.ObjectId(),
+        context: { kind: 'project_task', project: new Types.ObjectId(), task: new Types.ObjectId() },
       });
     }
 

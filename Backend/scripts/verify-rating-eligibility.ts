@@ -16,6 +16,11 @@ import { CompanyModel } from '../src/features/companies/company.model.js';
 import { CompanyMembershipModel } from '../src/features/companies/companyMembership.model.js';
 import { ProjectModel } from '../src/features/projects/project.model.js';
 import { ProjectMembershipModel } from '../src/features/projectaccess/projectMembership.model.js';
+import {
+  conflictsWithParticipation,
+  isContextSuperseded,
+} from '../src/features/ratings/rating.model.js';
+import { workEvidenceAdapter } from '../src/features/tasks/workEvidence.adapter.js';
 import { check, finish, request, section, startHarness } from './support/harness.js';
 
 const MARKER = `rateelig-${Date.now()}`;
@@ -61,6 +66,7 @@ const run = async (): Promise<void> => {
 
   const gc = await register('Gc');
   const worker = await register('Worker');
+  const delegate = await register('Deleg');
   const supplier = await register('Sup', {
     registrationCategory: 'supplier', specialty: 'concrete_plant',
   });
@@ -86,6 +92,7 @@ const run = async (): Promise<void> => {
   };
 
   await join(worker, 'subcontractor');
+  await join(delegate, 'subcontractor');
   await join(supplier, 'supplier');
   await join(bystander, 'professional');
 
@@ -109,11 +116,12 @@ const run = async (): Promise<void> => {
   const workerTask = await makeTask(worker, 'יציקת עמודים');
   const supplierTask = await makeTask(supplier, 'אספקת בטון ליציקה');
   const openTask = await makeTask(worker, 'עבודה שטרם הושלמה');
+  const delegatedTask = await makeTask(worker, 'עבודה שהואצלה');
 
-  const rate = (from: Account, rateeUserId: string, taskId: string) =>
+  const rate = (from: Account, rateeUserId: string, workId: string) =>
     request(baseUrl, 'POST', '/api/ratings', {
       token: from.token,
-      json: { rateeUserId, taskId, score: 5 },
+      json: { rateeUserId, workId, score: 5 },
     });
 
   section('1. Self-rating is refused, whatever the evidence says');
@@ -216,7 +224,76 @@ const run = async (): Promise<void> => {
     'and a viewer without it is told what is missing, not which kind of record proves it',
     `${notEligible.rateable.canRate} ${notEligible.rateable.reason}`);
 
-  const users = await UserModel.find({ email: { $regex: `^${MARKER}` } }).distinct('_id');
+  section('9. The stored context names the work, not just a task id');
+  const written = await RatingModel.findOne({
+    rater: new Types.ObjectId(gc.id), ratee: new Types.ObjectId(supplier.id),
+  }).lean();
+  check(written?.context?.kind === 'project_task', 'the rating records which context proved it',
+    written?.context?.kind);
+  check(String(written?.context?.project) === projectId,
+    'and the project the work sat in', String(written?.context?.project));
+  check(String(written?.context?.task) === supplierTask, 'and the task itself',
+    String(written?.context?.task));
+  check(!('task' in (written ?? {})), 'the flat task field is gone from the model',
+    Object.keys(written ?? {}).join(','));
+
+  section('10. Delegation stays confidential, and the delegator keeps the relationship');
+  const delegated = await request(baseUrl, 'POST', `/api/tasks/${delegatedTask}/delegation`, {
+    token: worker.token,
+    json: { userId: delegate.id, scope: 'whole' },
+  });
+  check(delegated.status === 201, 'the responsible party may delegate the work', delegated.status);
+  // The delegate performs; the delegator stays the responsible party on the task.
+  const started = await request(baseUrl, 'POST', `/api/tasks/${delegatedTask}/start`, { token: delegate.token });
+  const finished = await request(baseUrl, 'POST', `/api/tasks/${delegatedTask}/complete`, { token: delegate.token });
+  check(finished.status === 200, 'the delegate performs and completes it',
+    `${started.status}/${finished.status}`);
+
+  const ratedDelegator = await rate(gc, worker.id, delegatedTask);
+  check(ratedDelegator.status === 201,
+    'the delegator is still the party the counterparty rates',
+    `${ratedDelegator.status} ${JSON.stringify(ratedDelegator.body)}`);
+
+  const ratedDelegate = await rate(gc, delegate.id, delegatedTask);
+  check(ratedDelegate.body['code'] === 'RATING_NOT_ELIGIBLE',
+    'and the confidential delegate is never exposed as the counterparty',
+    `${ratedDelegate.status} ${String(ratedDelegate.body['code'])}`);
+  check((await RatingModel.countDocuments({ ratee: new Types.ObjectId(delegate.id) })) === 0,
+    'so nothing is written about them from that work');
+
+    section('11. One real piece of work is one rating opportunity');
+  const secondTask = await makeTask(worker, 'עבודה שנייה באותו פרויקט');
+  await request(baseUrl, 'POST', `/api/tasks/${secondTask}/start`, { token: worker.token });
+  await request(baseUrl, 'POST', `/api/tasks/${secondTask}/complete`, { token: worker.token });
+  const secondRating = await rate(gc, worker.id, secondTask);
+  check(secondRating.status === 201,
+    'a genuinely different completed task is a separate opportunity',
+    `${secondRating.status} ${JSON.stringify(secondRating.body)}`);
+  const repeatSecond = await rate(gc, worker.id, secondTask);
+  check(repeatSecond.body['code'] === 'ALREADY_RATED',
+    'but the same task cannot be rated twice',
+    `${repeatSecond.status} ${String(repeatSecond.body['code'])}`);
+
+  // The pair really did complete work in this project, which is what closes the participation path.
+  check(await workEvidenceAdapter.hasCompletedTaskWorkIn(gc.id, worker.id, projectId),
+    'the adapter can tell that a completed Task already represents work between the pair');
+  check(!(await workEvidenceAdapter.hasCompletedTaskWorkIn(gc.id, stranger.id, projectId)),
+    'and says so honestly when it does not');
+
+  const taskContext = { kind: 'project_task' as const, project: new Types.ObjectId(projectId) };
+  const participationContext = { kind: 'project_participation' as const, project: new Types.ObjectId(projectId) };
+  check(isContextSuperseded(participationContext, true),
+    'Task-first: a participation rating is refused where a completed Task already covers the work');
+  check(!isContextSuperseded(participationContext, false),
+    'and permitted where no Task represents it');
+  check(!isContextSuperseded(taskContext, true), 'a Task rating is never superseded by its own kind');
+  check(conflictsWithParticipation(taskContext, true),
+    'and the reverse is closed too — no Task rating on top of a participation rating');
+  check(!conflictsWithParticipation(taskContext, false), 'with nothing to conflict with, it proceeds');
+  check(!conflictsWithParticipation(participationContext, true),
+    'the participation path is governed by the Task rule, not by itself');
+
+    const users = await UserModel.find({ email: { $regex: `^${MARKER}` } }).distinct('_id');
   await RatingModel.deleteMany({ $or: [{ rater: { $in: users } }, { ratee: { $in: users } }] });
   await TaskModel.deleteMany({ project: new Types.ObjectId(projectId) });
   await ProjectStageModel.deleteMany({ project: new Types.ObjectId(projectId) });
