@@ -9,6 +9,7 @@ import { useScreenStylesheet } from '../../styles/useScreenStylesheet';
 import { initialsOf } from '../profile/profileModel';
 import { DelegationPanel } from './components/DelegationPanel';
 import { PrivateWorkPanel } from './components/PrivateWorkPanel';
+import { WorkPlansPanel } from './components/WorkPlansPanel';
 import { useTaskDetail } from './useTaskDetail';
 import profileCss from '../profile/profile.css?inline';
 import projectsCss from '../projects/projects.css?inline';
@@ -191,10 +192,10 @@ export const TaskDetailPage = () => {
               )}
             </section>
 
-            <section className="panel" aria-labelledby="work-plans-title">
-              <h2 id="work-plans-title" className="panel__title">{copy.workPlans.title}</h2>
-              <p className="panel__lede">{copy.workPlans.unavailable}</p>
-            </section>
+            <WorkPlansPanel
+              taskId={task.id}
+              canExchangePrivately={task.delegation !== null || task.viewerIsDelegate}
+            />
           </>
         ) : null}
       </main>

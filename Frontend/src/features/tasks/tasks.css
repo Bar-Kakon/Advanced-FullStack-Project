@@ -132,3 +132,43 @@
 @media (max-width: 640px) {
   .private-add > .btn { flex: 1 1 auto; }
 }
+
+/* ── Work plans ──
+   The same list furniture the private layer uses, so a panel that shares a screen with it does
+   not introduce a second visual language for a list of rows. */
+.plan-list { list-style: none; display: flex; flex-direction: column; gap: 10px; margin-block-end: 16px; }
+
+.plan-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 14px;
+  background: var(--surface);
+  border: 1px solid var(--secondary-30);
+  border-radius: var(--r-sm);
+}
+
+.plan-item__head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 12px; }
+.plan-item__name { font-weight: 600; color: var(--primary); text-decoration: underline; overflow-wrap: anywhere; }
+.plan-item__meta { font-size: 13.5px; color: var(--text-mute); }
+.plan-item__actions { display: flex; flex-wrap: wrap; gap: 8px; }
+
+.plan-history {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-block-start: 8px;
+  border-block-start: 1px dashed var(--secondary-30);
+}
+
+.plan-history__row { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; font-size: 14px; }
+.plan-history__current { font-size: 13.5px; font-weight: 600; color: var(--primary); }
+
+.plan-upload { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.plan-upload__visibility { display: flex; flex-wrap: wrap; gap: 12px; border: 0; padding: 0; }
+.plan-upload .btn { cursor: pointer; }
+
+@media (max-width: 640px) {
+  .plan-upload > .btn { flex: 1 1 auto; }
+}

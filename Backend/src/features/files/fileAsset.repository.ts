@@ -19,6 +19,9 @@ export interface FileAssetRepository {
   attachToScopeId(id: Types.ObjectId, scopeId: Types.ObjectId): Promise<void>;
 }
 
+/** Everything except a work plan, whose history is append-only and whose reads have their own rules. */
+const UNVERSIONED = { versionGroup: { $exists: false } } as const;
+
 export const fileAssetRepository: FileAssetRepository = {
   async create(asset) {
     const created = await FileAssetModel.create({ ...asset, uploadedAt: new Date() });
@@ -28,13 +31,13 @@ export const fileAssetRepository: FileAssetRepository = {
   async findOwnedById(id, owner) {
     if (!Types.ObjectId.isValid(id)) return null;
 
-    return FileAssetModel.findOne({ _id: new Types.ObjectId(id), owner })
+    return FileAssetModel.findOne({ _id: new Types.ObjectId(id), owner, ...UNVERSIONED })
       .lean<FileAssetRecord>()
       .exec();
   },
 
   async deleteById(id) {
-    await FileAssetModel.deleteOne({ _id: id }).exec();
+    await FileAssetModel.deleteOne({ _id: id, ...UNVERSIONED }).exec();
   },
 
   async attachToScopeId(id, scopeId) {

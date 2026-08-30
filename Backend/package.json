@@ -45,7 +45,9 @@
     "verify:task-detail": "tsx scripts/verify-task-detail.ts",
     "verify:create-task": "tsx scripts/verify-create-task.ts",
     "verify:register-taxonomy": "tsx scripts/verify-register-taxonomy.ts",
-    "verify:token-version": "tsx scripts/verify-token-version.ts"
+    "verify:token-version": "tsx scripts/verify-token-version.ts",
+    "verify:work-plans": "tsx scripts/verify-work-plans.ts",
+    "migrate:work-plan-indexes": "tsx scripts/migrate-work-plan-indexes.ts"
   },
   "dependencies": {
     "@types/nodemailer": "^8.0.1",
