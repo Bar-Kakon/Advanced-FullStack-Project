@@ -429,6 +429,7 @@ export const en: Strings = {
       'task.create': 'Create tasks',
       'task.assign': 'Assign tasks',
       'schedule.exception.approve': 'Approve calendar exceptions',
+      'schedule.partial_release.manage': 'Release work partially to the next trade',
     },
 
     roles: {

@@ -10,6 +10,7 @@ export const PROJECT_PERMISSIONS = [
   'task.create',
   'task.assign',
   'schedule.exception.approve',
+  'schedule.partial_release.manage',
 ] as const;
 export type ProjectPermission = (typeof PROJECT_PERMISSIONS)[number];
 

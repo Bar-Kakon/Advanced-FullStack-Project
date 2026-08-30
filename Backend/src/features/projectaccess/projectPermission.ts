@@ -2,6 +2,10 @@
  * What may be done inside one project. Deliberately separate from `COMPANY_PERMISSIONS`: a company
  * grant says what somebody may do for their business, a project grant says what they may do on one
  * job, and the two are not the same list.
+ *
+ * A code here answers ONE question: has this person been granted the capability. It never answers
+ * whether a particular exercise of it is lawful — the closed domain authority chains constrain that
+ * separately, and a grant may not override one. The two are not interchangeable.
  */
 export const PROJECT_PERMISSIONS = [
   /** Project METADATA only. It confers no authority over the construction sequence. */
@@ -21,6 +25,17 @@ export const PROJECT_PERMISSIONS = [
   'task.create',
   'task.assign',
   'schedule.exception.approve',
+  /**
+   * שחרור חלקי — releasing downstream work before the stage it waits on is fully complete. Owner
+   * decision 2026-08-30, and its own code: it is NOT `schedule.exception.approve`, which answers a
+   * different question, and NOT `project.stage.manage`, which shapes the sequence rather than
+   * releasing against it.
+   *
+   * Holding this grants the CAPABILITY only. The closed domain chain still governs each exercise —
+   * the GC originates, a מנהל אתרים / סמנכ״ל acts only on the GC's instruction, and a מנהל עבודה
+   * only where that chain reaches him. No endpoint reads this yet.
+   */
+  'schedule.partial_release.manage',
 ] as const;
 export type ProjectPermission = (typeof PROJECT_PERMISSIONS)[number];
 
