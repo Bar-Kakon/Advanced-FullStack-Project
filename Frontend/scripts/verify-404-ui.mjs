@@ -92,15 +92,29 @@ const run = async () => {
     (await page.locator('.err__reasons-list li').count()) === 3);
   check('no uncaught page error', pageErrors.length === 0, pageErrors.join(' | '));
 
-  section('3. One recovery action, and it fits a signed-out viewer');
+  section('3. One recovery action, and signed out it is the public Home');
   check('exactly one call to action', (await page.locator('.err__card a.btn').count()) === 1);
   check('the brand mark is deliberately not a link',
     (await page.locator('.err__brand a').count()) === 0);
-  check('signed out, it points at the authentication boundary',
-    (await page.locator('.err__cta').getAttribute('href')) === '/login');
+  check('signed out, it points at the public Home and never at Login',
+    (await page.locator('.err__cta').getAttribute('href')) === '/',
+    String(await page.locator('.err__cta').getAttribute('href')));
   await page.locator('.err__cta').click();
   await page.waitForLoadState('networkidle');
-  check('and it really lands on Login', new URL(page.url()).pathname === '/login', page.url());
+  check('and it really lands on /', new URL(page.url()).pathname === '/', page.url());
+
+  // Landing is a separate branch. Until it reaches develop, `/` is itself unmatched — so the
+  // strong assertion is made only where there is something at `/` to assert about, and the
+  // pre-integration state is reported rather than passed off as success.
+  const landingPresent = (await page.locator('#hero-title').count()) === 1;
+  if (landingPresent) {
+    check('/ resolves to the Landing screen', true);
+    check('so the recovery does not return to the 404', (await page.locator('.err__card').count()) === 0);
+  } else {
+    console.log('  NOTE  / is not a route on this branch yet — Landing is integrated separately.');
+    check('the recovery still points at the approved destination, not a stopgap',
+      (await page.locator('.err__cta').getAttribute('href')) === '/');
+  }
 
   section('4. Hebrew — default, RTL, singular');
   await page.goto(`${APP}/nonsense`, { waitUntil: 'networkidle' });
@@ -150,9 +164,12 @@ const run = async () => {
   // to be one of the three addresses it can produce — never a fourth this screen invented.
   const SESSION_HOMES = ['/dashboard', '/onboarding/employees', '/waiting-for-approval'];
   const href = await page.locator('.err__cta').getAttribute('href');
-  check('it is no longer Login', href !== '/login', String(href));
+  check('it is neither Login nor the public Home', href !== '/login' && href !== '/', String(href));
   check('it is one of the addresses the session model resolves to',
     SESSION_HOMES.includes(String(href)), String(href));
+  check('the label is the same one the signed-out viewer sees',
+    (await page.locator('.err__cta').innerText()).trim() === 'חזרה לדף הבית',
+    await page.locator('.err__cta').innerText());
   await page.locator('.err__cta').click();
   await page.waitForLoadState('networkidle');
   const landed = new URL(page.url()).pathname;

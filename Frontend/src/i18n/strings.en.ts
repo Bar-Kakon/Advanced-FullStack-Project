@@ -1353,6 +1353,5 @@ export const en: Strings = {
       'The content requested cannot be reached right now',
     ],
     ctaHome: 'Back to Home',
-    ctaSignIn: 'Go to sign-in',
   },
 };

@@ -39,10 +39,9 @@ export const NotFoundPage = () => {
   useDocumentTitle(notFound.documentTitle);
   useNoIndex();
 
-  // One recovery action, pointed at the one address that means "home" for this viewer.
-  const recovery = isAuthenticated
-    ? { to: destinationFor(user), label: notFound.ctaHome }
-    : { to: '/login', label: notFound.ctaSignIn };
+  // One recovery action and one label. Home is the public Landing for a visitor with no session,
+  // and the address that session resolves to for everybody else.
+  const home = isAuthenticated ? destinationFor(user) : '/';
 
   return (
     <div className="app">
@@ -84,7 +83,7 @@ export const NotFoundPage = () => {
             </ul>
           </div>
 
-          <Link to={recovery.to} className="btn btn--primary err__cta">{recovery.label}</Link>
+          <Link to={home} className="btn btn--primary err__cta">{notFound.ctaHome}</Link>
         </section>
       </main>
     </div>
