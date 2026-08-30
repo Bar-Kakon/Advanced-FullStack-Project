@@ -7,12 +7,13 @@
  *   npm run verify:task-detail-ui
  */
 import { execFileSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
 
 const APP = process.env.APP_URL ?? 'http://localhost:5173';
 const API = process.env.API_URL ?? 'http://localhost:3000/api';
-const API_DIR = process.env.API_DIR ??
-  '/private/tmp/claude-501/-Users-barrebeccakakon-Desktop-Advanced-FullStack-Project/35586ef7-529a-491b-939a-e377882a3d85/scratchpad/api/Backend';
+// Resolved from this script, so it works wherever the repository is checked out.
+const API_DIR = process.env.API_DIR ?? fileURLToPath(new URL('../../Backend', import.meta.url));
 const PASSWORD = 'CorrectHorse42!';
 const FORBIDDEN_HE = ['בחרו', 'הזינו', 'אישרתם', 'הסרתם', 'ברצונכם', 'בחר/י', 'הזן/י', 'לכם', 'שלכם'];
 
