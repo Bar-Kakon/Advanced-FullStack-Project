@@ -348,6 +348,8 @@ export const createProjectsService = ({
 
       const removed = await projects.deleteOwnedById(projectId, project.company);
       if (!removed) throw projectNotFound();
+
+      await grants.deleteByProject(project._id);
     },
   };
 };

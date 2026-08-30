@@ -630,7 +630,10 @@ const run = async (): Promise<void> => {
   check((startedRead.body as unknown as ProjectBody).project.cancellable === false, 'And reports itself uncancellable');
 
   const companies = [alice.companyId, bob.companyId, carol.companyId];
-  await ProjectMembershipModel.deleteMany({ company: { $in: companies } }).exec();
+  const owned = await ProjectModel.find({ company: { $in: companies } }).select('_id').lean().exec();
+  await ProjectMembershipModel.deleteMany({
+    $or: [{ company: { $in: companies } }, { project: { $in: owned.map((row) => row._id) } }],
+  }).exec();
   await PermissionTemplateModel.deleteMany({ company: { $in: companies } }).exec();
   await ProjectModel.deleteMany({ company: { $in: companies } }).exec();
   await CompanyMembershipModel.deleteMany({ company: { $in: [alice.companyId, bob.companyId] } }).exec();

@@ -7,6 +7,7 @@ import { requireActiveCompany, resolveProjectAccess } from '../projects/projectA
 import type { ProjectAccessRepository } from './projectAccess.repository.js';
 import type { GrantUpdate, ProjectGrantRepository } from './projectGrant.repository.js';
 import type { PermissionTemplateRepository } from './permissionTemplate.repository.js';
+import { resolveGrantSource, type GrantSource } from './grantResolution.js';
 import { PROJECT_PERMISSIONS, type ProjectPermission } from './projectPermission.js';
 import type { ProjectRole } from './projectMembership.model.js';
 import { cannotRemoveOwnAuthority, templateNameTaken, templateNotFound } from './permissions.errors.js';
@@ -47,16 +48,10 @@ export interface PermissionsService {
   deleteTemplate(userId: string, templateId: string): Promise<void>;
 }
 
-export interface GrantInput {
+export interface GrantInput extends GrantSource {
   readonly projectId: string;
   readonly userId: string;
   readonly projectRole: ProjectRole;
-  readonly permissions?: readonly ProjectPermission[];
-  readonly fullAuthority?: boolean;
-  /** Apply a saved template. Its grants are COPIED now; editing it later changes nothing here. */
-  readonly templateId?: string;
-  /** Copy the grants another person currently holds on the same project, as a starting point. */
-  readonly copyFromGrantId?: string;
 }
 
 export interface PermissionsDependencies {
@@ -161,38 +156,30 @@ export const createPermissionsService = ({
       const projectId = new Types.ObjectId(input.projectId);
       const { authority, project } = await requireGrantAuthority(userId, projectId);
 
-      let permissions = input.permissions ?? [];
-      let fullAuthority = input.fullAuthority ?? false;
+      const { permissions, fullAuthority } = await resolveGrantSource(input, {
+        companyId: authority.companyId,
+        projectId,
+        templates,
+        grants,
+      });
 
-      // A template is COPIED at this moment. Editing it later never reaches back into this row.
-      if (input.templateId !== undefined) {
-        const template = await templates.findOwnedById(
-          input.templateId,
-          new Types.ObjectId(authority.companyId),
-        );
-        if (template === null) throw templateNotFound();
-        permissions = template.permissions;
-        fullAuthority = template.fullAuthority;
-      }
-
-      // `copy permissions from …` is also a snapshot, for the same reason.
-      if (input.copyFromGrantId !== undefined) {
-        const source = await grants.findById(input.copyFromGrantId);
-        if (source === null || source.project.toString() !== input.projectId) throw templateNotFound();
-        permissions = source.permissions;
-        fullAuthority = source.fullAuthority;
-      }
-
-      const created = await grants.upsert({
+      const user = new Types.ObjectId(input.userId);
+      const shared = {
         project: projectId,
-        user: new Types.ObjectId(input.userId),
-        company: project.company,
+        user,
         projectRole: input.projectRole,
         permissions,
         fullAuthority,
         invitedBy: new Types.ObjectId(userId),
-        status: 'active',
-      });
+      };
+
+      // Somebody who refused or was removed comes back through an invitation they answer
+      // themselves, so a grant can never quietly put a person back on a project.
+      const existing = await access.findMembership(projectId, user);
+      const created =
+        existing !== null && (existing.status === 'declined' || existing.status === 'removed')
+          ? await grants.invite(shared)
+          : await grants.upsert({ ...shared, status: 'active' });
 
       return toGrantDto(created, project.name);
     },

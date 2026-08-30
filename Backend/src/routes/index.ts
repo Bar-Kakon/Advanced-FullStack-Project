@@ -12,6 +12,10 @@ import { createNetworkModule } from '../features/network/network.module.js';
 import { createProjectsModule } from '../features/projects/projects.module.js';
 import { createCalendarModule } from '../features/calendar/calendar.module.js';
 import { createPermissionsModule } from '../features/projectaccess/permissions.module.js';
+import {
+  createProjectInvitationsModule,
+  createProjectMembersModule,
+} from '../features/projectmembers/projectMembers.module.js';
 import { createGoogleRoutesAdapter } from '../features/location/routes.adapter.js';
 import { createRatingsModule } from '../features/ratings/ratings.module.js';
 import { createUsersModule } from '../features/users/users.module.js';
@@ -42,6 +46,11 @@ export const createApiRouter = (config: AppConfig): Router => {
     createDashboardModule({ requireAccessToken: auth.requireAccessToken, blocks: blocks.service }),
   );
   router.use('/network', createNetworkModule(auth.requireAccessToken));
+  router.use(
+    '/projects/:projectId/members',
+    createProjectMembersModule(auth.requireAccessToken, blocks.service),
+  );
+  router.use('/project-invitations', createProjectInvitationsModule(auth.requireAccessToken));
   router.use('/projects', createProjectsModule(auth.requireAccessToken));
   router.use('/calendar', createCalendarModule(auth.requireAccessToken));
   router.use('/permissions', createPermissionsModule(auth.requireAccessToken));

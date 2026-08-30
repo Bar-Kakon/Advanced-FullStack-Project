@@ -72,6 +72,8 @@ export interface ProjectRepository {
     options?: ProjectUpdateOptions,
   ): Promise<ProjectRecord | null>;
   deleteOwnedById(id: string, company: Types.ObjectId): Promise<boolean>;
+  /** Unfiltered by design — the caller already holds the rows that named these projects. */
+  listByIds(ids: readonly Types.ObjectId[]): Promise<ProjectRecord[]>;
 }
 
 const toObjectId = (id: string): Types.ObjectId | null =>
@@ -82,6 +84,11 @@ export const projectRepository: ProjectRepository = {
     const created = new ProjectModel(project);
     await created.save();
     return created.toObject() as ProjectRecord;
+  },
+
+  async listByIds(ids) {
+    if (ids.length === 0) return [];
+    return ProjectModel.find({ _id: { $in: [...ids] } }).lean<ProjectRecord[]>().exec();
   },
 
   async findOwnedById(id, company) {

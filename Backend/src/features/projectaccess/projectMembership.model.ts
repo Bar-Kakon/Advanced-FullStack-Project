@@ -16,7 +16,8 @@ import { PROJECT_PERMISSIONS, type ProjectPermission } from './projectPermission
  *
  * Work delegation (D7) is a seventh mechanism and lives nowhere near this document.
  */
-export const PROJECT_MEMBERSHIP_STATUSES = ['invited', 'active', 'removed'] as const;
+/** A refusal is `declined` and is not permanent — the same person may be invited again. */
+export const PROJECT_MEMBERSHIP_STATUSES = ['invited', 'active', 'declined', 'removed'] as const;
 export type ProjectMembershipStatus = (typeof PROJECT_MEMBERSHIP_STATUSES)[number];
 
 /** Descriptive only. It grants nothing — every capability comes from the two grant fields. */
@@ -34,6 +35,9 @@ export interface ProjectMembershipRecord {
   readonly permissions: readonly ProjectPermission[];
   readonly fullAuthority: boolean;
   readonly invitedBy: Types.ObjectId;
+  /** Refreshed when a declined or removed person is invited again, so the card dates the offer. */
+  readonly invitedAt: Date;
+  readonly respondedAt?: Date;
   readonly createdAt: Date;
   readonly updatedAt: Date;
 }
@@ -52,10 +56,13 @@ const projectMembershipSchema = new Schema(
     fullAuthority: { type: Boolean, required: true, default: false },
 
     invitedBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+    invitedAt: { type: Date, required: true, default: () => new Date() },
+    respondedAt: { type: Date },
   },
   { timestamps: true },
 );
 
 projectMembershipSchema.index({ project: 1, user: 1 }, { unique: true });
+projectMembershipSchema.index({ user: 1, status: 1 });
 
 export const ProjectMembershipModel = model('ProjectMembership', projectMembershipSchema);
