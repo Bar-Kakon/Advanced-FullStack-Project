@@ -59,6 +59,7 @@ export const createNetworkService = ({ network, ratings }: NetworkDependencies):
         firstName: person.firstName,
         lastName: person.lastName,
         companyName: person.companyName ?? null,
+        registrationCategory: person.registrationCategory,
         specialties: person.specialties ?? [],
         specialtyOther: person.specialtyOther ?? null,
         city: person.location?.city ?? null,

@@ -53,10 +53,12 @@ const account = (first: string, last: string, extra: Record<string, unknown>) =>
   email: `${MARKER}-${first.toLowerCase()}-${last.toLowerCase()}@example.com`,
   password: PASSWORD,
   confirmPassword: PASSWORD,
+  registrationCategory: 'contractor',
   specialty: 'electrical',
   city: 'חיפה',
   region: 'haifa',
   acceptedTerms: true,
+  operationalEmail: true,
   ...extra,
 });
 

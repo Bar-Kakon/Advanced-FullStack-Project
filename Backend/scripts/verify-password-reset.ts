@@ -82,10 +82,12 @@ const registerBody = (password: string) => ({
   email: EMAIL,
   password,
   confirmPassword: password,
+  registrationCategory: 'contractor',
   specialty: 'drilling',
   city: 'חיפה',
   region: 'haifa',
   acceptedTerms: true,
+  operationalEmail: true,
 });
 
 const wipe = async (): Promise<void> => {
@@ -132,7 +134,8 @@ const run = async (): Promise<void> => {
     firstName: 'Sneak', lastName: 'In', standing: 'employee', companyName: COMPANY,
     companyPosition: 'employee',
     email: `${MARKER}-sneak@example.com`, password: OLD_PASSWORD, confirmPassword: OLD_PASSWORD,
-    specialty: 'drilling', city: 'חיפה', region: 'haifa', acceptedTerms: true,
+    registrationCategory: 'contractor', specialty: 'drilling', city: 'חיפה', region: 'haifa',
+    acceptedTerms: true, operationalEmail: true,
   });
   check('typing a real company name with no invitation waiting creates nothing',
     namedCompany.status === 409 && namedCompany.body['code'] === 'INVITATION_NOT_FOUND',
@@ -144,14 +147,16 @@ const run = async (): Promise<void> => {
     firstName: 'A', lastName: 'B', standing: 'employee', companyName: COMPANY,
     companyPosition: 'employee', availability: 'open',
     email: `${MARKER}-avail@example.com`, password: OLD_PASSWORD, confirmPassword: OLD_PASSWORD,
-    specialty: 'drilling', city: 'חיפה', region: 'haifa', acceptedTerms: true,
+    registrationCategory: 'contractor', specialty: 'drilling', city: 'חיפה', region: 'haifa',
+    acceptedTerms: true, operationalEmail: true,
   });
   check('an employee still cannot set the business availability', employeeAvailability.status === 400);
 
   const noStanding = await post('/auth/register', {
     firstName: 'A', lastName: 'B', companyName: 'X',
     email: `${MARKER}-nostanding@example.com`, password: OLD_PASSWORD, confirmPassword: OLD_PASSWORD,
-    specialty: 'drilling', city: 'חיפה', region: 'haifa', acceptedTerms: true,
+    registrationCategory: 'contractor', specialty: 'drilling', city: 'חיפה', region: 'haifa',
+    acceptedTerms: true, operationalEmail: true,
   });
   check('omitting standing is refused — there is no silent owner default',
     noStanding.status === 400 && noStanding.body['code'] === 'REQUEST_VALIDATION_FAILED',
@@ -160,7 +165,8 @@ const run = async (): Promise<void> => {
   const badStanding = await post('/auth/register', {
     firstName: 'A', lastName: 'B', standing: 'admin', companyName: 'X',
     email: `${MARKER}-bad@example.com`, password: OLD_PASSWORD, confirmPassword: OLD_PASSWORD,
-    specialty: 'drilling', city: 'חיפה', region: 'haifa', acceptedTerms: true,
+    registrationCategory: 'contractor', specialty: 'drilling', city: 'חיפה', region: 'haifa',
+    acceptedTerms: true, operationalEmail: true,
   });
   check('an unknown standing is rejected', badStanding.status === 400 &&
     badStanding.body['code'] === 'REQUEST_VALIDATION_FAILED', String(badStanding.status));

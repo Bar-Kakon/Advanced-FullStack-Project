@@ -5,14 +5,16 @@ import type { RelationshipService } from '../connections/relationship.service.js
 import type { RatingRepository } from '../ratings/rating.repository.js';
 import type { RoutesAdapter } from '../location/routes.adapter.js';
 import type { Availability } from '../companies/company.model.js';
-import type { Region, Trade } from '../users/user.model.js';
+import type { Region, RegistrationCategory, Specialty } from '../users/user.model.js';
 import { decodeCursor, encodeCursor } from './browse.cursor.js';
 import type { BrowseCandidate, BrowseRepository, BrowseSort } from './browse.repository.js';
 import type { BrowsePageDto, ContractorSummaryDto } from './publicProfile.dto.js';
 
 export interface BrowseFilters {
   readonly text?: string;
-  readonly specialties?: readonly Trade[];
+  /** Which registration routes to search. Absent searches all three. */
+  readonly categories?: readonly RegistrationCategory[];
+  readonly specialties?: readonly Specialty[];
   readonly regions?: readonly Region[];
   readonly availability?: readonly Availability[];
   /** Explicit willingness: matched against the contractor's own approved list. */
@@ -68,6 +70,7 @@ export const createBrowseService = ({
     const candidates = await browse.find({
       excludeUserIds,
       ...(filters.text === undefined ? {} : { text: filters.text }),
+      ...(filters.categories === undefined ? {} : { categories: filters.categories }),
       ...(filters.specialties === undefined ? {} : { specialties: filters.specialties }),
       ...(filters.regions === undefined ? {} : { regions: filters.regions }),
       ...(filters.availability === undefined ? {} : { availability: filters.availability }),
@@ -117,6 +120,7 @@ export const createBrowseService = ({
         firstName: candidate.firstName,
         lastName: candidate.lastName,
         companyName: candidate.companyName,
+        registrationCategory: candidate.registrationCategory,
         specialties: candidate.specialties ?? [],
         specialtyOther: candidate.specialtyOther ?? null,
         city: candidate.location?.city ?? null,

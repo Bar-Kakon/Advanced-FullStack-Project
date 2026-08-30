@@ -28,11 +28,13 @@ export const createAccount = async (baseUrl: string, marker: string, index: numb
       email,
       password: 'CorrectHorse42!',
       confirmPassword: 'CorrectHorse42!',
+      registrationCategory: 'contractor',
       specialty: 'drilling',
       city: 'חיפה',
       region: 'haifa',
       availability: 'open',
       acceptedTerms: true,
+      operationalEmail: true,
     },
   });
 

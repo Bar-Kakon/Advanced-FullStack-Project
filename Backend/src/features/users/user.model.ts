@@ -3,32 +3,104 @@ import { Schema, model, type Types } from 'mongoose';
 export type UserStatus = 'active' | 'deactivated' | 'banned' | 'deleted';
 export type UserLanguage = 'he' | 'en';
 
-/** The 23 approved trade codes, identical on `register.html`, `edit-profile.html` and browse. */
-export const TRADES = [
-  'general',
-  'electrical',
-  'plumbing',
-  'drilling',
+export const REGISTRATION_CATEGORIES = ['contractor', 'architectural', 'supplier'] as const;
+export type RegistrationCategory = (typeof REGISTRATION_CATEGORIES)[number];
+
+/** קבלנים / בעלי מקצוע מבצעים. */
+export const CONTRACTOR_SPECIALTIES = [
   'shell',
-  'concrete',
-  'saferoom',
-  'carpentry',
-  'aluminum',
-  'hvac',
-  'painting',
+  'development_infrastructure',
+  'drilling',
+  'concrete_cutting',
+  'door_installation',
+  'waterproofing',
   'tiling',
   'plastering',
-  'earthworks',
-  'waterproofing',
-  'supply',
-  'development',
-  'doors',
-  'sandpumps',
+  'painting',
+  'electrical',
+  'plumbing',
+  'metalwork',
+  'carpentry',
+  'stonework',
+  'grouting',
+  'concrete_pumps',
+  'sand_pumps',
   'haulage_crane',
-  'concrete_cutting',
   'heavy_equipment',
-  'other',
+  'contractor_other',
 ] as const;
+
+/** קטגוריה אדריכלית / בעלי מקצוע. */
+export const ARCHITECTURAL_SPECIALTIES = [
+  'structural_engineer',
+  'construction_supervisor',
+  'soil_consultant',
+  'architect',
+  'architectural_other',
+] as const;
+
+/** ספקים. */
+export const SUPPLIER_SPECIALTIES = [
+  'stone_supplier',
+  'building_materials_supplier',
+  'steel_plant',
+  'concrete_plant',
+  'ceramics_supplier',
+  'carpentry_supplier',
+  'colored_render_plant',
+  'aluminum_supplier',
+  'doors_supplier',
+  'drainage_pipe_supplier',
+  'concrete_pump_supplier',
+  'supplier_other',
+] as const;
+
+export const SPECIALTIES_BY_CATEGORY = {
+  contractor: CONTRACTOR_SPECIALTIES,
+  architectural: ARCHITECTURAL_SPECIALTIES,
+  supplier: SUPPLIER_SPECIALTIES,
+} as const;
+
+export const SPECIALTIES = [
+  ...CONTRACTOR_SPECIALTIES,
+  ...ARCHITECTURAL_SPECIALTIES,
+  ...SUPPLIER_SPECIALTIES,
+] as const;
+export type Specialty = (typeof SPECIALTIES)[number];
+
+export const OTHER_SPECIALTY: Readonly<Record<RegistrationCategory, Specialty>> = {
+  contractor: 'contractor_other',
+  architectural: 'architectural_other',
+  supplier: 'supplier_other',
+};
+
+export const OTHER_SPECIALTIES: readonly Specialty[] = Object.values(OTHER_SPECIALTY);
+
+const CATEGORY_BY_SPECIALTY = new Map<Specialty, RegistrationCategory>(
+  REGISTRATION_CATEGORIES.flatMap((category) =>
+    SPECIALTIES_BY_CATEGORY[category].map((specialty): [Specialty, RegistrationCategory] => [
+      specialty,
+      category,
+    ]),
+  ),
+);
+
+export const categoryOfSpecialty = (specialty: Specialty): RegistrationCategory => {
+  const category = CATEGORY_BY_SPECIALTY.get(specialty);
+  if (category === undefined) throw new Error(`Specialty ${specialty} belongs to no category.`);
+  return category;
+};
+
+export const isSpecialtyInCategory = (
+  specialty: Specialty,
+  category: RegistrationCategory,
+): boolean => CATEGORY_BY_SPECIALTY.get(specialty) === category;
+
+export const DRILLING_SPECIALTY = 'drilling';
+
+/** קידוחי החדרה וצנרת PVC. */
+export const DRILLING_TYPES = ['injection_pvc'] as const;
+export type DrillingType = (typeof DRILLING_TYPES)[number];
 
 /** The region codes browse-contractors filters on. Free text can never populate this. */
 export const REGIONS = [
@@ -57,9 +129,12 @@ export const HEAVY_EQUIPMENT = [
   'hooklift_truck',
 ] as const;
 
-export type Trade = (typeof TRADES)[number];
 export type Region = (typeof REGIONS)[number];
 export type HeavyEquipment = (typeof HEAVY_EQUIPMENT)[number];
+
+export interface NotificationPreferences {
+  readonly operationalEmail: boolean;
+}
 
 /**
  * One recorded consent. The version is what makes it provable: a timestamp alone cannot say *what*
@@ -73,9 +148,12 @@ export interface TermsAcceptance {
 /** The authentication identity. `passwordHash` is absent by default — see `UserWithPasswordHash`. */
 export interface UserProfileFields {
   readonly bio?: string;
-  readonly specialties: readonly Trade[];
+  readonly registrationCategory: RegistrationCategory;
+  readonly specialties: readonly Specialty[];
   readonly specialtyOther?: string;
   readonly heavyEquipment?: readonly HeavyEquipment[];
+  readonly drillingTypes?: readonly DrillingType[];
+  readonly notificationPreferences?: NotificationPreferences;
   readonly businessPhone?: string;
   readonly location?: {
     readonly city?: string;
@@ -180,12 +258,23 @@ const userSchema = new Schema(
     // A person carries no company fields. Which business they belong to, on what terms, in what
     // position and with what permissions is a *relationship* and lives in `companymemberships` —
     // so a User is never an "owner account" or an "employee account", only a person.
-    specialties: [{ type: String, enum: TRADES }],
+    // Which of the three registration routes opened this account. Never derived from a specialty.
+    registrationCategory: { type: String, enum: REGISTRATION_CATEGORIES, required: true, index: true },
+
+    specialties: [{ type: String, enum: SPECIALTIES }],
     // Descriptive only. It never becomes a browse filter value — `specialties` stays the enum.
     specialtyOther: { type: String, trim: true, maxlength: 60 },
 
-    // Refines the `heavy_equipment` trade the way `specialtyOther` refines `other`.
+    // Refines the `heavy_equipment` specialty the way `specialtyOther` refines an `other` code.
     heavyEquipment: [{ type: String, enum: HEAVY_EQUIPMENT }],
+
+    // Refines the `drilling` specialty.
+    drillingTypes: [{ type: String, enum: DRILLING_TYPES }],
+
+    // Chosen explicitly at registration, with no default: neither answer may be assumed.
+    notificationPreferences: {
+      operationalEmail: { type: Boolean, required: true },
+    },
 
     // The individual's own business number. Never a fallback for the company office number, which
     // lives on a different document entirely, and never the personal/login `phone`.

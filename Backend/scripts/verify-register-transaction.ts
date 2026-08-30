@@ -43,11 +43,13 @@ const body: RegisterBody = {
   email: EMAIL,
   password: 'CorrectHorse42!',
   confirmPassword: 'CorrectHorse42!',
+  registrationCategory: 'contractor',
   specialty: 'drilling',
   city: 'חיפה',
   region: 'haifa',
   availability: 'open',
   acceptedTerms: true,
+  operationalEmail: true,
 };
 
 const baseDeps = (): Omit<RegistrationDependencies, 'memberships' | 'users'> => ({

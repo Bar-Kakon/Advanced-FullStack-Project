@@ -50,8 +50,8 @@ const makeAccount = async (
   const registered = await send('POST', '/auth/register', {
     firstName: first, lastName: last, standing: 'owner', companyName: company,
     email, password: PASSWORD, confirmPassword: PASSWORD,
-    specialty: 'electrical', city: 'חיפה', region: 'haifa',
-    availability: 'open', acceptedTerms: true, ...extra,
+    registrationCategory: 'contractor', specialty: 'electrical', city: 'חיפה', region: 'haifa',
+    availability: 'open', acceptedTerms: true, operationalEmail: true, ...extra,
   });
   if (registered.status !== 201) throw new Error(`register ${first}: ${JSON.stringify(registered.body)}`);
 
@@ -81,7 +81,7 @@ const run = async (): Promise<void> => {
   const beta = await makeAccount('Bar', 'Beta', `${MARKER} Beta Plumbing Ltd`,
     { specialty: 'plumbing', region: 'center', city: 'תל אביב', availability: 'limited' });
   const gamma = await makeAccount('גיא', 'גמא', `${MARKER} גמא בנייה בעמ`,
-    { specialty: 'concrete', region: 'nationwide', availability: 'closed' });
+    { specialty: 'shell', region: 'nationwide', availability: 'closed' });
 
   console.log('\n1. Discovery basics');
   const all = await send('GET', '/browse/contractors?limit=48', undefined, viewer.token);

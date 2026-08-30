@@ -3,12 +3,15 @@ import Joi from 'joi';
 import { structuredPlaceSchema, type StructuredPlaceBody } from '../location/place.validation.js';
 
 import {
+  DRILLING_TYPES,
   HEAVY_EQUIPMENT,
+  OTHER_SPECIALTIES,
   REGIONS,
-  TRADES,
+  SPECIALTIES,
+  type DrillingType,
   type HeavyEquipment,
   type Region,
-  type Trade,
+  type Specialty,
 } from './user.model.js';
 import { AVAILABILITY_STATUSES, type Availability } from '../companies/company.model.js';
 
@@ -27,9 +30,10 @@ export interface ProfileUpdateBody {
   readonly firstName?: string;
   readonly lastName?: string;
   readonly bio?: string;
-  readonly specialties?: readonly Trade[];
+  readonly specialties?: readonly Specialty[];
   readonly specialtyOther?: string | null;
   readonly heavyEquipment?: readonly HeavyEquipment[];
+  readonly drillingTypes?: readonly DrillingType[];
   readonly businessPhone?: string | null;
   readonly city?: string;
   readonly region?: Region;
@@ -49,17 +53,20 @@ export const profileUpdateBodySchema = Joi.object<ProfileUpdateBody>({
   lastName: Joi.string().trim().min(1).max(MAX_NAME_LENGTH),
   bio: Joi.string().trim().allow('').max(MAX_BIO_LENGTH),
 
-  specialties: Joi.array().items(Joi.string().valid(...TRADES)).min(1).unique(),
-  // Required exactly when `other` is among the specialties, and refused otherwise, so the enum and
-  // the free text can never describe two different things.
+  // The route the account was opened through is not editable here, and the service refuses any
+  // specialty outside it — this list only proves the codes exist.
+  specialties: Joi.array().items(Joi.string().valid(...SPECIALTIES)).min(1).unique(),
+  // Required exactly when the route's `other` code is among the specialties, and refused otherwise,
+  // so the enum and the free text can never describe two different things.
   specialtyOther: Joi.when('specialties', {
     // `required()` is what makes an absent `specialties` fail the condition rather than match it.
-    is: Joi.array().items(Joi.string()).has(Joi.string().valid('other')).required(),
+    is: Joi.array().items(Joi.string()).has(Joi.string().valid(...OTHER_SPECIALTIES)).required(),
     then: Joi.string().trim().min(1).max(MAX_SPECIALTY_OTHER_LENGTH).required(),
     otherwise: clearableString(MAX_SPECIALTY_OTHER_LENGTH),
   }),
 
   heavyEquipment: Joi.array().items(Joi.string().valid(...HEAVY_EQUIPMENT)).unique(),
+  drillingTypes: Joi.array().items(Joi.string().valid(...DRILLING_TYPES)).unique(),
 
   businessPhone: clearableString(MAX_PHONE_LENGTH),
 

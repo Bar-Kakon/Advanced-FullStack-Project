@@ -12,6 +12,7 @@ import {
   noActiveCompany,
   notPermittedToEditCompany,
   profileNotFound,
+  specialtyOutsideCategory,
   workEntryNotFound,
   workLinkNotVerifiable,
 } from './profile.errors.js';
@@ -21,7 +22,12 @@ import type {
   WorkEntryBody,
   WorkEntryUpdateBody,
 } from './profile.validation.js';
-import type { Trade } from './user.model.js';
+import {
+  DRILLING_SPECIALTY,
+  isSpecialtyInCategory,
+  type RegistrationCategory,
+  type Specialty,
+} from './user.model.js';
 import type { UserRepository } from './user.repository.js';
 import type { WorkVerificationService } from './workEntryVerification.service.js';
 
@@ -62,17 +68,31 @@ export interface ProfileDependencies {
 const assetUrl = (fileId: Types.ObjectId | undefined): string | null =>
   fileId === undefined ? null : `/api/users/me/assets/${fileId.toString()}`;
 
-const HEAVY_EQUIPMENT_TRADE = 'heavy_equipment';
+const HEAVY_EQUIPMENT_SPECIALTY = 'heavy_equipment';
 
-/** Machines are stored only while the trade that carries them is held. */
-const withHeavyEquipmentRule = (
+/** A refinement is stored only while the specialty that carries it is held. */
+const withRefinementRules = (
   patch: ProfileUpdateBody,
-  storedSpecialties: readonly Trade[],
+  storedSpecialties: readonly Specialty[],
 ): ProfileUpdateBody => {
   const effective = patch.specialties ?? storedSpecialties;
-  if (effective.includes(HEAVY_EQUIPMENT_TRADE)) return patch;
 
-  return { ...patch, heavyEquipment: [] };
+  return {
+    ...patch,
+    ...(effective.includes(HEAVY_EQUIPMENT_SPECIALTY) ? {} : { heavyEquipment: [] }),
+    ...(effective.includes(DRILLING_SPECIALTY) ? {} : { drillingTypes: [] }),
+  };
+};
+
+/** The registration route decides which taxonomy this account may hold, for life of the account. */
+const requireSpecialtiesInCategory = (
+  specialties: readonly Specialty[] | undefined,
+  category: RegistrationCategory,
+): void => {
+  if (specialties === undefined) return;
+  if (!specialties.every((specialty) => isSpecialtyInCategory(specialty, category))) {
+    throw specialtyOutsideCategory();
+  }
 };
 
 const toWorkEntryDto = (entry: WorkEntryRecord): WorkEntryDto => ({
@@ -121,9 +141,12 @@ export const createProfileService = ({
       profileComplete: user.profileComplete,
 
       bio: user.bio ?? '',
+      registrationCategory: user.registrationCategory,
       specialties: user.specialties ?? [],
       specialtyOther: user.specialtyOther ?? '',
       heavyEquipment: user.heavyEquipment ?? [],
+      drillingTypes: user.drillingTypes ?? [],
+      operationalEmail: user.notificationPreferences?.operationalEmail ?? false,
       businessPhone: user.businessPhone ?? '',
       city: user.location?.city ?? '',
       region: user.location?.region ?? null,
@@ -169,7 +192,8 @@ export const createProfileService = ({
       const user = await users.findProfileById(userId);
       if (user === null) throw profileNotFound();
 
-      await users.updateProfile(user._id, withHeavyEquipmentRule(patch, user.specialties ?? []));
+      requireSpecialtiesInCategory(patch.specialties, user.registrationCategory);
+      await users.updateProfile(user._id, withRefinementRules(patch, user.specialties ?? []));
       return assemble(userId);
     },
 

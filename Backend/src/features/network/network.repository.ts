@@ -4,7 +4,12 @@ import { BlockModel } from '../blocks/block.model.js';
 import { CompanyModel, type Availability } from '../companies/company.model.js';
 import { CompanyMembershipModel } from '../companies/companyMembership.model.js';
 import { ConnectionModel } from '../connections/connection.model.js';
-import { UserModel, type Region, type Trade } from '../users/user.model.js';
+import {
+  UserModel,
+  type Region,
+  type RegistrationCategory,
+  type Specialty,
+} from '../users/user.model.js';
 import type { NetworkCursor } from './network.cursor.js';
 import type { NetworkGroup } from './network.dto.js';
 
@@ -20,7 +25,8 @@ export interface NetworkPerson {
   readonly _id: Types.ObjectId;
   readonly firstName: string;
   readonly lastName: string;
-  readonly specialties?: readonly Trade[];
+  readonly registrationCategory: RegistrationCategory;
+  readonly specialties?: readonly Specialty[];
   readonly specialtyOther?: string;
   readonly avatar?: { readonly fileId?: Types.ObjectId };
   readonly location?: { readonly city?: string; readonly region?: Region };
@@ -152,6 +158,7 @@ export const networkRepository: NetworkRepository = {
         $project: {
           firstName: 1,
           lastName: 1,
+          registrationCategory: 1,
           specialties: 1,
           specialtyOther: 1,
           avatar: 1,

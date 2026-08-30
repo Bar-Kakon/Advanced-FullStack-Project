@@ -55,8 +55,8 @@ const makeAccount = async (name: string): Promise<Account> => {
     firstName: name, lastName: 'Tester', standing: 'owner',
     companyName: `${MARKER} ${name} Ltd`,
     email, password: PASSWORD, confirmPassword: PASSWORD,
-    specialty: 'electrical', city: 'חיפה', region: 'haifa',
-    availability: 'open', acceptedTerms: true,
+    registrationCategory: 'contractor', specialty: 'electrical', city: 'חיפה', region: 'haifa',
+    availability: 'open', acceptedTerms: true, operationalEmail: true,
   });
   if (registered.status !== 201) throw new Error(`register ${name}: ${JSON.stringify(registered.body)}`);
 

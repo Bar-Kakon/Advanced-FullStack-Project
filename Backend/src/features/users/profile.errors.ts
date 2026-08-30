@@ -18,6 +18,14 @@ export const noActiveCompany = (): AppError =>
 export const workEntryNotFound = (): AppError =>
   new AppError('Work entry not found', 404, 'WORK_ENTRY_NOT_FOUND');
 
+/** A specialty from a registration route this account did not open through. */
+export const specialtyOutsideCategory = (): AppError =>
+  new AppError(
+    'That specialty does not belong to your registration category',
+    422,
+    'SPECIALTY_OUTSIDE_CATEGORY',
+  );
+
 /** A linked entry named work the server cannot see, or cannot confirm belongs to this person. */
 export const workLinkNotVerifiable = (): AppError =>
   new AppError('The referenced work could not be verified', 422, 'WORK_LINK_NOT_VERIFIABLE');

@@ -62,7 +62,8 @@ const run = async (): Promise<never> => {
       companyName, companyPosition: 'site_manager',
       email: `${MARKER}.claim.${Date.now()}@example.com`,
       password: PASSWORD, confirmPassword: PASSWORD,
-      specialty: 'drilling', city: 'חיפה', region: 'haifa', acceptedTerms: true,
+      registrationCategory: 'contractor', specialty: 'drilling', city: 'חיפה', region: 'haifa',
+    acceptedTerms: true, operationalEmail: true,
     },
   });
   check(claimant.status !== 201, 'a withdrawn seat cannot be claimed', claimant.status);
@@ -92,7 +93,8 @@ const run = async (): Promise<never> => {
       firstName: 'Joining', lastName: 'Person', standing: 'employee',
       companyName, companyPosition: 'employee',
       email: employeeEmail, password: PASSWORD, confirmPassword: PASSWORD,
-      specialty: 'drilling', city: 'חיפה', region: 'haifa', acceptedTerms: true,
+      registrationCategory: 'contractor', specialty: 'drilling', city: 'חיפה', region: 'haifa',
+    acceptedTerms: true, operationalEmail: true,
     },
   });
   check(joined.status === 201, 'the employee claimed their seat', joined.body);
