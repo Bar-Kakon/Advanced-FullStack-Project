@@ -4,6 +4,7 @@ import { AuthProvider } from './auth/AuthContext';
 import { LanguageProvider } from './i18n/LanguageContext';
 import { PrivateRoute } from './routes/PrivateRoute';
 import { MembershipRoute } from './routes/MembershipRoute';
+import { LandingPage } from './features/landing/LandingPage';
 import { LoginPage } from './features/login/LoginPage';
 import { ForgotPasswordPage } from './features/password-reset/ForgotPasswordPage';
 import { ResetPasswordPage } from './features/password-reset/ResetPasswordPage';
@@ -43,6 +44,10 @@ export const App = () => (
     <AuthProvider>
       <BrowserRouter>
         <Routes>
+          {/* The public face of the platform, and the only address reachable with no session at
+              all. It never redirects: a visitor who has not chosen anything yet is exactly who
+              it is for. */}
+          <Route path="/" element={<LandingPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/login" element={<LoginPage />} />
           {/* Both stay unauthenticated: a person who cannot sign in is exactly who needs them. */}
