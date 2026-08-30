@@ -5,7 +5,9 @@ import type { CompanyCalendarRepository } from '../calendar/companyCalendar.repo
 import { configOrDefault } from '../calendar/companyCalendar.repository.js';
 import { resolveEffectiveCalendar, type WorkingCalendarConfig } from '../calendar/workingCalendar.types.js';
 import type { ProjectAccessRepository } from '../projectaccess/projectAccess.repository.js';
+import type { ProjectGrantRepository } from '../projectaccess/projectGrant.repository.js';
 import {
+  mayManage,
   requireActiveCompany,
   requireMayCreateProject,
   requireProjectPermission,
@@ -52,11 +54,8 @@ export interface ProjectsDependencies {
   readonly execution: ProjectExecutionPort;
   readonly calendars: CompanyCalendarRepository;
   readonly access: ProjectAccessRepository;
+  readonly grants: ProjectGrantRepository;
 }
-
-/** Management authority for this viewer, from either grant source. Never from `createdBy`. */
-const manages = (resolved: { fullAuthority: boolean; projectPermissions: readonly string[] }): boolean =>
-  resolved.fullAuthority || resolved.projectPermissions.includes('project.edit');
 
 const encodeCursor = ({ createdAt, id }: ProjectCursor): string =>
   Buffer.from(`${createdAt.toISOString()}|${id.toString()}`, 'utf8').toString('base64url');
@@ -124,12 +123,14 @@ export const createProjectsService = ({
   execution,
   calendars,
   access,
+  grants,
 }: ProjectsDependencies): ProjectsService => {
   /** The caller's company is read from their session, never from the request body. */
   const contextFor = async (userId: string) => {
     const context = await companyContext.forUser(userId);
     return { context, authority: requireActiveCompany(context, userId) };
   };
+
 
   /**
    * Loads a project the caller may reach, and works out what they may do with it. Not reachable and
@@ -149,8 +150,8 @@ export const createProjectsService = ({
     const resolved = await resolveProjectAccess({
       projectId: project._id,
       projectCompany: project.company,
+      userId: new Types.ObjectId(userId),
       authority,
-      companyContext: context as CompanyContext,
       access,
     });
 
@@ -194,16 +195,27 @@ export const createProjectsService = ({
         calendarVersion: pinned._id,
       });
 
+      // The creator's power is a ROW, not an inference. It can be read, reduced or revoked like
+      // anyone else's — nothing anywhere derives authority from having created a project.
+      await grants.upsert({
+        project: created._id,
+        user: new Types.ObjectId(userId),
+        company: new Types.ObjectId(context.companyId),
+        projectRole: 'main_contractor',
+        permissions: [],
+        fullAuthority: true,
+        invitedBy: new Types.ObjectId(userId),
+        status: 'active',
+      });
+
       return toDto(created, true);
     },
 
     async list(userId, limit, cursor) {
-      const { context, authority } = await contextFor(userId);
+      const { authority } = await contextFor(userId);
       const memberships = await access.listActiveMembershipsForUser(new Types.ObjectId(userId));
       const memberOf = memberships.map((m) => m.project);
       const grantByProject = new Map(memberships.map((m) => [m.project.toString(), m]));
-      const companyManages =
-        context?.permissions.includes('project.create') === true;
 
       const rows = await projects.listAccessible(
         new Types.ObjectId(authority.companyId),
@@ -217,11 +229,8 @@ export const createProjectsService = ({
       return {
         projects: page.map((row) => {
           const grant = grantByProject.get(row._id.toString());
-          const owns = row.company.toString() === authority.companyId;
           const viewerManages =
-            (owns && companyManages) ||
-            grant?.fullAuthority === true ||
-            grant?.permissions.includes('project.edit') === true;
+            grant?.fullAuthority === true || grant?.permissions.includes('project.edit') === true;
           return toDto(row, viewerManages);
         }),
         nextCursor:
@@ -234,7 +243,7 @@ export const createProjectsService = ({
     async getOne(userId, projectId) {
       const { project: p, resolved } = await load(userId, projectId);
       const pinned = await calendars.findById(p.calendarVersion);
-      return toDto(p, manages(resolved), configOrDefault(pinned));
+      return toDto(p, mayManage(resolved), configOrDefault(pinned));
     },
 
     async update(userId, projectId, body) {
@@ -278,7 +287,7 @@ export const createProjectsService = ({
 
       const updated = await projects.update(project._id, update, targetChange, { clearLocation });
       if (updated === null) throw projectNotFound();
-      return toDto(updated, manages(resolved));
+      return toDto(updated, mayManage(resolved));
     },
 
     /** The only way a project moves to a newer company version. Never automatic. */
@@ -302,7 +311,7 @@ export const createProjectsService = ({
         !keepOverrides,
       );
       if (updated === null) throw projectNotFound();
-      return toDto(updated, manages(resolved));
+      return toDto(updated, mayManage(resolved));
     },
 
     async setCalendarOverrides(userId, projectId, overrides) {
@@ -315,7 +324,7 @@ export const createProjectsService = ({
         null,
       );
       if (updated === null) throw projectNotFound();
-      return toDto(updated, manages(resolved));
+      return toDto(updated, mayManage(resolved));
     },
 
     /** How many of this company's projects still sit on an older pinned version. */

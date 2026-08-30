@@ -8,6 +8,7 @@ import { createProjectsController } from './projects.controller.js';
 import { projectRepository } from './project.repository.js';
 import { companyCalendarRepository } from '../calendar/companyCalendar.repository.js';
 import { projectAccessRepository } from '../projectaccess/projectAccess.repository.js';
+import { projectGrantRepository } from '../projectaccess/projectGrant.repository.js';
 import { createProjectsService } from './projects.service.js';
 import { unbuiltTasksExecutionPort } from './projectLifecycle.service.js';
 import {
@@ -30,6 +31,7 @@ export const createProjectsModule = (requireAccessToken: RequestHandler): Router
       execution: unbuiltTasksExecutionPort,
       calendars: companyCalendarRepository,
       access: projectAccessRepository,
+      grants: projectGrantRepository,
     }),
   );
 

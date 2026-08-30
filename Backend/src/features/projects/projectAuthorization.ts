@@ -12,17 +12,21 @@ import { noActiveCompany, notPermittedToCreate, projectNotFound } from './projec
 /**
  * Every project authority question is answered here and nowhere else.
  *
- * Seven concepts stay separate, and none is collapsed into a role field:
+ * ALL project authority is PROJECT-SCOPED. A company permission never confers authority over a
+ * project: `project.create` means "may create a project" and nothing more. When a project is
+ * created its creator is given an explicit project grant, so even the creator's power is a row
+ * somebody can read, reduce or revoke — not something inferred from where they work.
  *
- *   createdBy            provenance — who filled the form. Grants nothing, ever.
- *   company membership   belonging to a business
- *   companyPosition      a job title. Never read by anything below.
- *   project membership   participating in one job
- *   projectRole          descriptive. Never read by anything below.
- *   permissions[]        individual grants
- *   fullAuthority        the "all of it, including later additions" grant
+ * Eight concepts stay separate and none is collapsed into a role field:
  *
- * Work delegation (D7) is an eighth mechanism and is not an input to any decision here.
+ *   createdBy           provenance. Grants nothing, ever.
+ *   company membership  belonging to a business — decides VISIBILITY, never authority
+ *   companyPosition     a job title. Never read below.
+ *   project membership  participating in one job
+ *   projectRole         descriptive. Never read below.
+ *   permissions[]       individual project grants
+ *   fullAuthority       the "all of it, including later additions" project grant
+ *   work delegation     D7. Not an input to anything here.
  */
 export interface ProjectAuthority {
   readonly companyId: string;
@@ -43,6 +47,7 @@ export const requireActiveCompany = (
   return { companyId: context.id, userId };
 };
 
+/** The one thing a company permission decides: whether this account may start a project at all. */
 export const requireMayCreateProject = (
   context: CompanyContext | null,
   userId: string,
@@ -55,57 +60,39 @@ export const requireMayCreateProject = (
 export interface ProjectAccessInput {
   readonly projectId: Types.ObjectId;
   readonly projectCompany: Types.ObjectId;
+  readonly userId: Types.ObjectId;
   readonly authority: ProjectAuthority;
-  readonly companyContext: CompanyContext;
   readonly access: ProjectAccessRepository;
 }
 
 export interface ResolvedProjectAccess {
-  /** True when the caller belongs to the business that owns the project. */
+  /** Belonging to the owning company is what makes a project VISIBLE. It authorizes nothing. */
   readonly isOwningCompany: boolean;
   readonly projectPermissions: readonly ProjectPermission[];
   readonly fullAuthority: boolean;
 }
 
-/**
- * What this caller may do on this project, from both sources at once: the company that owns it, and
- * an explicit project grant for somebody invited in from outside.
- *
- * A participant from another business is reached ONLY through their project membership — never
- * because of their company position, and never because they are a Main Contractor somewhere else.
- * Every project stands on its own.
- */
 export const resolveProjectAccess = async ({
   projectId,
   projectCompany,
+  userId,
   authority,
-  companyContext,
   access,
 }: ProjectAccessInput): Promise<ResolvedProjectAccess> => {
   const isOwningCompany = projectCompany.toString() === authority.companyId;
-
-  const membership = await access.findActiveMembership(
-    projectId,
-    new (projectId.constructor as typeof Types.ObjectId)(authority.userId),
-  );
+  const membership = await access.findActiveMembership(projectId, userId);
 
   if (!isOwningCompany && membership === null) throw projectNotFound();
 
-  // The owning company's project.create grant is what governs managing its own projects, since no
-  // finer-grained company permission exists. A guest's authority comes only from their grant.
-  const owningCompanyManages = isOwningCompany && holds(companyContext, 'project.create');
-
-  const granted = membership === null ? [] : effectiveProjectPermissions(membership);
-  const fullAuthority = membership?.fullAuthority === true;
-
   return {
     isOwningCompany,
-    projectPermissions: owningCompanyManages
-      ? [...new Set([...granted, 'project.edit', 'project.cancel', 'project.calendar.manage'] as ProjectPermission[])]
-      : granted,
-    fullAuthority: fullAuthority || owningCompanyManages,
+    projectPermissions: membership === null ? [] : effectiveProjectPermissions(membership),
+    fullAuthority: membership?.fullAuthority === true,
   };
 };
+
+export const mayManage = (resolved: ResolvedProjectAccess): boolean =>
+  resolved.fullAuthority || resolved.projectPermissions.includes('project.edit');
 
 export const requireProjectPermission = (
   resolved: ResolvedProjectAccess,

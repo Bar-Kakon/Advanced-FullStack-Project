@@ -9,6 +9,8 @@ import { CompanyModel } from '../src/features/companies/company.model.js';
 import { CompanyMembershipModel } from '../src/features/companies/companyMembership.model.js';
 import { ProjectModel } from '../src/features/projects/project.model.js';
 import { CompanyCalendarVersionModel } from '../src/features/calendar/companyCalendarVersion.model.js';
+import { ProjectMembershipModel } from '../src/features/projectaccess/projectMembership.model.js';
+import { PermissionTemplateModel } from '../src/features/projectaccess/permissionTemplate.model.js';
 import { createAccount, cleanUp } from './support/accounts.js';
 import { check, finish, request, section, startHarness } from './support/harness.js';
 
@@ -38,6 +40,7 @@ interface ProjectBody {
     };
     status: string;
     cancellable: boolean;
+    viewerManages: boolean;
   };
 }
 
@@ -57,6 +60,8 @@ const run = async (): Promise<void> => {
 
   const alice = await createAccount(baseUrl, MARKER, 1);
   const bob = await createAccount(baseUrl, MARKER, 2);
+  const carol = await createAccount(baseUrl, MARKER, 3);
+  const carolId = carol.userId.toString();
 
   const valid = {
     name: 'מגדל הצפון',
@@ -406,42 +411,170 @@ const run = async (): Promise<void> => {
     versionRow?.config?.hours?.startMinute,
   );
 
-  section('Authority comes from a grant, never from a role name');
+  section('Authority is project-scoped — a company permission never confers it');
   const keeper = await request(baseUrl, 'POST', '/api/projects', { token: alice.token, json: { ...valid, name: 'grant test' } });
   const keeperId = (keeper.body as unknown as ProjectBody).project.id;
 
-  // Strip only the grant. Standing stays `owner` and the job title is untouched, so anything that
-  // still succeeds would be reading a role rather than a permission.
-  await CompanyMembershipModel.updateOne(
-    { user: alice.userId, company: alice.companyId },
-    { $pull: { permissions: 'project.create' } },
+  const creatorGrant = await ProjectMembershipModel.findOne({ project: keeperId, user: alice.userId }).lean().exec();
+  check(creatorGrant !== null, 'Creating a project writes the creator an EXPLICIT grant row');
+  check(creatorGrant?.fullAuthority === true, 'With Full Project Authority');
+  check(creatorGrant?.status === 'active', 'And it is active immediately');
+
+  // `project.create` says only "may start a project". Removing the PROJECT grant must end
+  // management even though the company permission and the `owner` standing are both untouched.
+  await ProjectMembershipModel.updateOne(
+    { project: keeperId, user: alice.userId },
+    { $set: { fullAuthority: false, permissions: [] } },
   ).exec();
 
-  const ungrantedCreate = await request(baseUrl, 'POST', '/api/projects', { token: alice.token, json: valid });
-  check(ungrantedCreate.status === 403, 'Without the grant, creating is refused', ungrantedCreate.status);
   const ungrantedEdit = await request(baseUrl, 'PATCH', `/api/projects/${keeperId}`, {
     token: alice.token, json: { name: 'nope' },
   });
-  check(ungrantedEdit.status === 403, 'And so is editing', ungrantedEdit.status);
+  check(ungrantedEdit.status === 403, 'Without a PROJECT grant, editing is refused', ungrantedEdit.status);
   const ungrantedCancel = await request(baseUrl, 'DELETE', `/api/projects/${keeperId}`, { token: alice.token });
-  check(ungrantedCancel.status === 403, 'And cancelling', ungrantedCancel.status);
+  check(ungrantedCancel.status === 403, 'And so is cancelling', ungrantedCancel.status);
+  const stillCreates = await request(baseUrl, 'POST', '/api/projects', { token: alice.token, json: { ...valid, name: 'still allowed' } });
+  check(stillCreates.status === 201, 'But company project.create still allows CREATING — its meaning did not change', stillCreates.status);
 
-  const stillReads = await request(baseUrl, 'GET', '/api/projects', { token: alice.token });
-  check(stillReads.status === 200, 'Reading stays open to an active member', stillReads.status);
-  const stillReadsOne = await request(baseUrl, 'GET', `/api/projects/${keeperId}`, { token: alice.token });
-  check(stillReadsOne.status === 200, 'Including one project by id', stillReadsOne.status);
+  const stillReads = await request(baseUrl, 'GET', `/api/projects/${keeperId}`, { token: alice.token });
+  check(stillReads.status === 200, 'Company membership still makes the project visible', stillReads.status);
+  check(
+    (stillReads.body as unknown as ProjectBody).project.viewerManages === false,
+    'And the DTO says this viewer does not manage it',
+  );
 
   const untouched = await ProjectModel.findById(keeperId).lean().exec();
-  check(untouched?.name === 'grant test', 'And nothing was changed by the refused calls');
+  check(untouched?.name === 'grant test', 'Nothing was changed by the refused calls');
 
-  await CompanyMembershipModel.updateOne(
-    { user: alice.userId, company: alice.companyId },
-    { $addToSet: { permissions: 'project.create' } },
+  await ProjectMembershipModel.updateOne(
+    { project: keeperId, user: alice.userId },
+    { $set: { fullAuthority: true } },
   ).exec();
   const regranted = await request(baseUrl, 'PATCH', `/api/projects/${keeperId}`, {
     token: alice.token, json: { name: 'grant restored' },
   });
-  check(regranted.status === 200, 'Restoring the grant restores the ability', regranted.status);
+  check(regranted.status === 200, 'Restoring the project grant restores the ability', regranted.status);
+
+  section('Central Permissions — one model, project-scoped');
+  const overview = await request(baseUrl, 'GET', '/api/permissions', { token: alice.token });
+  check(overview.status === 200, 'The central surface answers', overview.status);
+  const ov = overview.body as { projects: { id: string }[]; grants: { projectId: string }[]; allPermissions: string[] };
+  check(ov.projects.some((p) => p.id === keeperId), 'It lists a project this caller may administer');
+  check(ov.grants.some((g) => g.projectId === keeperId), 'And the grants on it');
+  check(ov.allPermissions.length >= 8, 'And the permission vocabulary', ov.allPermissions.length);
+
+  const bobOverview = await request(baseUrl, 'GET', '/api/permissions', { token: bob.token });
+  check(
+    (bobOverview.body as { projects: unknown[] }).projects.length === 0,
+    'Another company administers nothing here',
+  );
+
+  section('Granting a guest from another company');
+  const guest = await request(baseUrl, 'POST', '/api/permissions/grants', {
+    token: alice.token,
+    json: { projectId: keeperId, userId: bob.userId.toString(), projectRole: 'subcontractor', permissions: ['project.edit'] },
+  });
+  check(guest.status === 201, 'A guest can be granted into the project', guest.status);
+  const guestGrantId = (guest.body as { grant: { id: string } }).grant.id;
+
+  const guestReads = await request(baseUrl, 'GET', `/api/projects/${keeperId}`, { token: bob.token });
+  check(guestReads.status === 200, 'The guest can reach a project their company does not own', guestReads.status);
+  const guestEdit = await request(baseUrl, 'PATCH', `/api/projects/${keeperId}`, {
+    token: bob.token, json: { name: 'guest edited' },
+  });
+  check(guestEdit.status === 200, 'And may edit, because they were granted it', guestEdit.status);
+  const guestCancel = await request(baseUrl, 'DELETE', `/api/projects/${keeperId}`, { token: bob.token });
+  check(guestCancel.status === 403, 'But not cancel, which they were not granted', guestCancel.status);
+  const guestCentral = await request(baseUrl, 'GET', '/api/permissions', { token: bob.token });
+  check(
+    (guestCentral.body as { projects: unknown[] }).projects.length === 0,
+    'A guest without project.permission.grant administers nothing centrally',
+  );
+
+  section('Full Project Authority is a flag, not a frozen list');
+  await request(baseUrl, 'PATCH', `/api/permissions/grants/${guestGrantId}`, {
+    token: alice.token, json: { fullAuthority: true },
+  });
+  const nowFull = await ProjectMembershipModel.findById(guestGrantId).lean().exec();
+  check(nowFull?.fullAuthority === true, 'The flag is set');
+  check(
+    (nowFull?.permissions?.length ?? 0) <= 1,
+    'And the individual list was NOT expanded into every permission',
+    nowFull?.permissions?.length,
+  );
+  const fullCancel = await request(baseUrl, 'DELETE', `/api/projects/${keeperId}`, { token: bob.token });
+  check(fullCancel.status === 204, 'Yet it authorizes a permission never listed on the row', fullCancel.status);
+
+  section('Templates are contractor-owned and copy at apply time');
+  const tpl = await request(baseUrl, 'POST', '/api/permissions/templates', {
+    token: alice.token, json: { name: 'kablan mishne', permissions: ['project.edit', 'task.create'] },
+  });
+  check(tpl.status === 201, 'A contractor can define a reusable template', tpl.status);
+  const tplId = (tpl.body as { template: { id: string } }).template.id;
+
+  const dupe = await request(baseUrl, 'POST', '/api/permissions/templates', {
+    token: alice.token, json: { name: 'kablan mishne', permissions: [] },
+  });
+  check(dupe.status === 409, 'Two templates cannot share a name', dupe.status);
+
+  const bobSeesTpl = await request(baseUrl, 'GET', '/api/permissions/templates', { token: bob.token });
+  check(
+    (bobSeesTpl.body as { templates: unknown[] }).templates.length === 0,
+    'Another company never sees it — templates are not universal',
+  );
+
+  const rebuilt = await request(baseUrl, 'POST', '/api/projects', { token: alice.token, json: { ...valid, name: 'tpl target' } });
+  const tplProjectId = (rebuilt.body as unknown as ProjectBody).project.id;
+  const applied = await request(baseUrl, 'POST', '/api/permissions/grants', {
+    token: alice.token,
+    json: { projectId: tplProjectId, userId: bob.userId.toString(), projectRole: 'subcontractor', templateId: tplId },
+  });
+  check(applied.status === 201, 'Applying a template creates the grant', applied.status);
+  const appliedGrant = (applied.body as { grant: { id: string; permissions: string[] } }).grant;
+  check(appliedGrant.permissions.includes('project.edit'), 'With the template grants copied onto it');
+
+  await PermissionTemplateModel.updateOne({ _id: tplId }, { $set: { permissions: [] } }).exec();
+  const afterTplEdit = await ProjectMembershipModel.findById(appliedGrant.id).lean().exec();
+  check(
+    (afterTplEdit?.permissions ?? []).includes('project.edit'),
+    'Editing the template afterwards does NOT reach back into the grant',
+  );
+
+  section('copy permissions from ...');
+  const copied = await request(baseUrl, 'POST', '/api/permissions/grants', {
+    token: alice.token,
+    json: {
+      projectId: tplProjectId, userId: carolId, projectRole: 'professional',
+      copyFromGrantId: appliedGrant.id,
+    },
+  });
+  check(copied.status === 201, 'Permissions can be copied from an existing grant', copied.status);
+  check(
+    (copied.body as { grant: { permissions: string[] } }).grant.permissions.includes('project.edit'),
+    'And the copy carries the same grants',
+  );
+
+  const conflicting = await request(baseUrl, 'POST', '/api/permissions/grants', {
+    token: alice.token,
+    json: { projectId: tplProjectId, userId: carolId, projectRole: 'professional', templateId: tplId, permissions: ['project.edit'] },
+  });
+  check(conflicting.status === 400, 'Two sources at once is refused rather than silently picking one', conflicting.status);
+
+  section('Revoking');
+  const otherGrant = await request(baseUrl, 'POST', '/api/permissions/grants', {
+    token: alice.token,
+    json: { projectId: tplProjectId, userId: bob.userId.toString(), projectRole: 'subcontractor', permissions: ['project.edit'] },
+  });
+  const otherGrantId = (otherGrant.body as { grant: { id: string } }).grant.id;
+  const revoked = await request(baseUrl, 'DELETE', `/api/permissions/grants/${otherGrantId}`, { token: alice.token });
+  check(revoked.status === 204, 'A grant can be revoked', revoked.status);
+  const afterRevoke = await ProjectMembershipModel.findById(otherGrantId).lean().exec();
+  check(afterRevoke?.status === 'removed', 'The row survives as history rather than vanishing');
+  check(afterRevoke?.fullAuthority === false, 'And the authority is gone');
+  const revokedEdit = await request(baseUrl, 'PATCH', `/api/projects/${tplProjectId}`, {
+    token: bob.token, json: { name: 'nope' },
+  });
+  check(revokedEdit.status === 404, 'The guest can no longer even see the project', revokedEdit.status);
 
   section('Cancellation — pre-start only, and it leaves no record');
   const cancelled = await request(baseUrl, 'DELETE', `/api/projects/${project.id}`, { token: alice.token });
@@ -464,7 +597,10 @@ const run = async (): Promise<void> => {
   );
   check((startedRead.body as unknown as ProjectBody).project.cancellable === false, 'And reports itself uncancellable');
 
-  await ProjectModel.deleteMany({ company: { $in: [alice.companyId, bob.companyId] } }).exec();
+  const companies = [alice.companyId, bob.companyId, carol.companyId];
+  await ProjectMembershipModel.deleteMany({ company: { $in: companies } }).exec();
+  await PermissionTemplateModel.deleteMany({ company: { $in: companies } }).exec();
+  await ProjectModel.deleteMany({ company: { $in: companies } }).exec();
   await CompanyMembershipModel.deleteMany({ company: { $in: [alice.companyId, bob.companyId] } }).exec();
   await CompanyModel.deleteMany({ name: new RegExp(`^${MARKER} `) }).exec();
   await cleanUp(MARKER);
