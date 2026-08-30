@@ -48,7 +48,6 @@ export interface ProjectRecord {
   readonly calendarVersion: Types.ObjectId;
   readonly calendarOverrides?: WorkingCalendarOverrides;
   readonly calendarAdoptions: readonly CalendarAdoptionRecord[];
-  readonly startedAt?: Date;
   readonly completedAt?: Date;
   readonly pausedAt?: Date;
   readonly createdAt: Date;
@@ -149,7 +148,6 @@ const projectSchema = new Schema(
     calendarOverrides: { type: overridesSchema, required: false },
     calendarAdoptions: { type: [calendarAdoptionSchema], default: [] },
 
-    startedAt: { type: Date },
     completedAt: { type: Date },
     pausedAt: { type: Date },
   },

@@ -8,6 +8,7 @@
 import { CompanyModel } from '../src/features/companies/company.model.js';
 import { CompanyMembershipModel } from '../src/features/companies/companyMembership.model.js';
 import { ProjectModel } from '../src/features/projects/project.model.js';
+import { TaskModel } from '../src/features/tasks/task.model.js';
 import { CompanyCalendarVersionModel } from '../src/features/calendar/companyCalendarVersion.model.js';
 import { ProjectMembershipModel } from '../src/features/projectaccess/projectMembership.model.js';
 import { PermissionTemplateModel } from '../src/features/projectaccess/permissionTemplate.model.js';
@@ -618,7 +619,14 @@ const run = async (): Promise<void> => {
 
   const startedProject = await request(baseUrl, 'POST', '/api/projects', { token: alice.token, json: valid });
   const startedId = (startedProject.body as unknown as ProjectBody).project.id;
-  await ProjectModel.updateOne({ _id: startedId }, { $set: { startedAt: new Date() } }).exec();
+  // The closed rule: the start date has arrived AND a real task actually started.
+  await ProjectModel.updateOne({ _id: startedId }, { $set: { startDate: new Date(Date.now() - 86_400_000) } }).exec();
+  await TaskModel.create({
+    kind: 'project', project: startedId, company: alice.companyId,
+    createdBy: alice.userId, assignee: alice.userId, title: 'first work',
+    startDate: new Date(Date.now() - 86_400_000), dueDate: new Date(Date.now() + 86_400_000),
+    startedAt: new Date(),
+  });
   const refuse = await request(baseUrl, 'DELETE', `/api/projects/${startedId}`, { token: alice.token });
   check(refuse.status === 409, 'A started project cannot be cancelled', refuse.status);
   const startedRead = await request(baseUrl, 'GET', `/api/projects/${startedId}`, { token: alice.token });
@@ -631,6 +639,7 @@ const run = async (): Promise<void> => {
 
   const companies = [alice.companyId, bob.companyId, carol.companyId];
   const owned = await ProjectModel.find({ company: { $in: companies } }).select('_id').lean().exec();
+  await TaskModel.deleteMany({ project: { $in: owned.map((row) => row._id) } }).exec();
   await ProjectMembershipModel.deleteMany({
     $or: [{ company: { $in: companies } }, { project: { $in: owned.map((row) => row._id) } }],
   }).exec();

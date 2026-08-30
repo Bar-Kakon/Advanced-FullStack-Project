@@ -93,7 +93,12 @@ export const createProjectDashboardService = ({
     });
 
     return {
-      project: toProjectDto(project, mayManage(resolved), configOrDefault(pinned)),
+      project: toProjectDto(
+        project,
+        mayManage(resolved),
+        await execution.hasFirstTaskStarted(project._id.toString()),
+        configOrDefault(pinned),
+      ),
       viewer: {
         manages: mayManage(resolved),
         canEdit: holds(resolved, 'project.edit'),

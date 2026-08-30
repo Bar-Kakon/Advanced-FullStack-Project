@@ -122,10 +122,25 @@ const run = async (): Promise<void> => {
   section('Status is derived on read, and is not settable here');
   check(view.project.status === 'planned', 'A project that has not started is planned', view.project.status);
   check(view.project.cancellable === true, 'And reports itself cancellable');
-  await ProjectModel.updateOne({ _id: projectId }, { $set: { startedAt: new Date() } }).exec();
+  // Half the rule is not the rule: a started task with the start date still ahead is not a start.
+  await ProjectModel.updateOne({ _id: projectId }, { $set: { startDate: new Date(Date.now() + 30 * 86_400_000) } }).exec();
+  const earlyTask = await TaskModel.create({
+    kind: 'project', project: new Types.ObjectId(projectId), company: alice.companyId,
+    createdBy: alice.userId, assignee: alice.userId, title: 'early start',
+    startDate: new Date(), dueDate: new Date(Date.now() + 86_400_000), startedAt: new Date(),
+  });
+  const earlyView = (await dashboard(alice.token)).body as unknown as DashboardBody;
+  check(earlyView.project.status === 'planned',
+    'A task started before the project start date does NOT start the project', earlyView.project.status);
+
+  await ProjectModel.updateOne({ _id: projectId }, { $set: { startDate: new Date(Date.now() - 86_400_000) } }).exec();
   const started = (await dashboard(alice.token)).body as unknown as DashboardBody;
-  check(started.project.status === 'active', 'Execution facts move it to active', started.project.status);
+  check(started.project.status === 'active',
+    'Both halves satisfied — the start date arrived and a task really started', started.project.status);
   check(started.project.cancellable === false, 'And cancellation is withdrawn with it');
+  const storedProject = await ProjectModel.findById(projectId).lean().exec();
+  check(!('startedAt' in (storedProject ?? {})),
+    'No second copy of the fact is written onto the project');
   const forced = await request(baseUrl, 'GET', `/api/projects/${projectId}/dashboard?status=completed`, {
     token: alice.token,
   });
@@ -133,7 +148,8 @@ const run = async (): Promise<void> => {
     (forced.body as unknown as DashboardBody).project.status === 'active',
     'A status in the query changes nothing',
   );
-  await ProjectModel.updateOne({ _id: projectId }, { $unset: { startedAt: '' } }).exec();
+  await TaskModel.deleteOne({ _id: earlyTask._id }).exec();
+  await ProjectModel.updateOne({ _id: projectId }, { $set: { startDate: new Date(Date.now() + 30 * 86_400_000) } }).exec();
 
   section('D16 — an unreachable project answers as one that does not exist');
   const stranger = await dashboard(bob.token);
@@ -321,6 +337,8 @@ const run = async (): Promise<void> => {
     startedAt: day2(-8), completedAt: day2(-5),
   });
 
+  // The start date is put back in the past so both halves of the closed rule are satisfied.
+  await ProjectModel.updateOne({ _id: projectId }, { $set: { startDate: new Date(Date.now() - 86_400_000) } }).exec();
   const withTasks = (await dashboard(alice.token)).body as unknown as DashboardBody;
   const summary = withTasks.tasks as { total: number; open: number; overdue: number; completed: number } | null;
   check(summary !== null, 'Once work exists the summary is real');
@@ -332,11 +350,12 @@ const run = async (): Promise<void> => {
   const rowCount = await TaskModel.countDocuments({ project: projectId }).exec();
   check(summary?.total === rowCount, 'The count is the task rows themselves, not a stored counter', rowCount);
 
-  // The port now answers hasFirstTaskStarted truthfully, and cancellation uses it. Promoting the
-  // PROJECT to active off the first started task is a lifecycle write, and is not in this batch.
-  check(withTasks.project.status === 'planned',
-    'Project status still derives from its own stored flags, not from task execution',
+  check(withTasks.project.status === 'active',
+    'The project reads as started, because a real task started after its start date',
     withTasks.project.status);
+  const completedProbe = await ProjectModel.findById(projectId).lean().exec();
+  check(completedProbe?.completedAt === undefined,
+    'And closing tasks alone never completes it — the quality half has no representation to infer');
 
   section('No task figure is invented anywhere');
   const final = (await dashboard(alice.token)).body as unknown as DashboardBody;

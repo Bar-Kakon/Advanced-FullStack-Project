@@ -12,6 +12,8 @@ import { deriveStatus, isCancellable } from './projectLifecycle.service.js';
 export const toProjectDto = (
   project: ProjectRecord,
   viewerManages: boolean,
+  /** From the Tasks domain. The one fact the closed start rule needs that the project cannot hold. */
+  firstTaskStarted: boolean,
   baseConfig?: WorkingCalendarConfig,
 ): ProjectDto => ({
   id: project._id.toString(),
@@ -46,8 +48,8 @@ export const toProjectDto = (
     ),
     overrunDaysFromOriginal: overrunFromOriginal(project.originalTargetEndDate, project.targetEndDate),
   },
-  status: deriveStatus(project),
-  cancellable: isCancellable(project),
+  status: deriveStatus(project, firstTaskStarted),
+  cancellable: isCancellable(project, firstTaskStarted),
   viewerManages,
   createdAt: project.createdAt.toISOString(),
   updatedAt: project.updatedAt.toISOString(),

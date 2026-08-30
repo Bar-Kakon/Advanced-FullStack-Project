@@ -26,6 +26,18 @@ export const taskExecutionAdapter: ProjectExecutionPort = {
     return started !== null;
   },
 
+  /** One query for a whole page of projects, so a list never costs a lookup per row. */
+  async startedProjectIds(projectIds) {
+    const ids = projectIds.filter((id) => Types.ObjectId.isValid(id)).map((id) => new Types.ObjectId(id));
+    if (ids.length === 0) return new Set<string>();
+
+    const started = await TaskModel.distinct('project', {
+      project: { $in: ids },
+      startedAt: { $ne: null },
+    }).exec();
+    return new Set(started.map((id) => String(id)));
+  },
+
   /** Completed means every task is closed — and a project with no tasks has closed nothing. */
   async areAllTasksClosed(projectId) {
     if (!Types.ObjectId.isValid(projectId)) return false;

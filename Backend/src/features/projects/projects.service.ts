@@ -165,7 +165,8 @@ export const createProjectsService = ({
         status: 'active',
       });
 
-      return toProjectDto(created, true);
+      // The creator manages it, and a project with no tasks cannot have started.
+      return toProjectDto(created, true, false);
     },
 
     async list(userId, limit, cursor) {
@@ -183,12 +184,14 @@ export const createProjectsService = ({
 
       const page = rows.slice(0, limit);
       const last = page.at(-1);
+      const started = await execution.startedProjectIds(page.map((row) => row._id.toString()));
+
       return {
         projects: page.map((row) => {
           const grant = grantByProject.get(row._id.toString());
           const viewerManages =
             grant?.fullAuthority === true || grant?.permissions.includes('project.edit') === true;
-          return toProjectDto(row, viewerManages);
+          return toProjectDto(row, viewerManages, started.has(row._id.toString()));
         }),
         nextCursor:
           rows.length > limit && last !== undefined
@@ -200,7 +203,8 @@ export const createProjectsService = ({
     async getOne(userId, projectId) {
       const { project: p, resolved } = await load(userId, projectId);
       const pinned = await calendars.findById(p.calendarVersion);
-      return toProjectDto(p, mayManage(resolved), configOrDefault(pinned));
+      const started = await execution.hasFirstTaskStarted(p._id.toString());
+      return toProjectDto(p, mayManage(resolved), started, configOrDefault(pinned));
     },
 
     async update(userId, projectId, body) {
@@ -244,7 +248,7 @@ export const createProjectsService = ({
 
       const updated = await projects.update(project._id, update, targetChange, { clearLocation });
       if (updated === null) throw projectNotFound();
-      return toProjectDto(updated, mayManage(resolved));
+      return toProjectDto(updated, mayManage(resolved), await execution.hasFirstTaskStarted(projectId));
     },
 
     /** The only way a project moves to a newer company version. Never automatic. */
@@ -268,7 +272,7 @@ export const createProjectsService = ({
         !keepOverrides,
       );
       if (updated === null) throw projectNotFound();
-      return toProjectDto(updated, mayManage(resolved));
+      return toProjectDto(updated, mayManage(resolved), await execution.hasFirstTaskStarted(projectId));
     },
 
     async setCalendarOverrides(userId, projectId, overrides) {
@@ -281,7 +285,7 @@ export const createProjectsService = ({
         null,
       );
       if (updated === null) throw projectNotFound();
-      return toProjectDto(updated, mayManage(resolved));
+      return toProjectDto(updated, mayManage(resolved), await execution.hasFirstTaskStarted(projectId));
     },
 
     /** How many of this company's projects still sit on an older pinned version. */
@@ -297,9 +301,8 @@ export const createProjectsService = ({
       const { project, resolved } = await load(userId, projectId);
       requireProjectPermission(resolved, 'project.cancel');
 
-      // Pre-start only. The stored flags answer first; the port covers the case where execution
-      // has begun but the flag has not been written yet.
-      if (!isCancellable(project) || (await execution.hasFirstTaskStarted(projectId))) {
+      // Pre-start only (D24), against the same closed rule the status derives from.
+      if (!isCancellable(project, await execution.hasFirstTaskStarted(projectId))) {
         throw projectAlreadyStarted();
       }
 
