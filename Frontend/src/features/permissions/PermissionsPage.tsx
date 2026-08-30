@@ -10,9 +10,9 @@ import { useLanguage } from '../../i18n/useLanguage';
 import { useDocumentTitle } from '../../routes/useDocumentTitle';
 import { useScreenStylesheet } from '../../styles/useScreenStylesheet';
 import { initialsOf } from '../profile/profileModel';
-import { FullAuthorityDialog } from './components/FullAuthorityDialog';
+import { GrantRow } from './components/GrantRow';
 import { usePermissions } from './usePermissions';
-import type { Grant, ProjectPermission } from '../../api/permissions.types';
+import type { Grant } from '../../api/permissions.types';
 import profileCss from '../profile/profile.css?inline';
 import projectsCss from '../projects/projects.css?inline';
 import permissionsCss from './permissions.css?inline';
@@ -30,7 +30,6 @@ export const PermissionsPage = () => {
     setFullAuthority, setPermissions, revoke, addTemplate, removeTemplate,
   } = usePermissions();
 
-  const [confirming, setConfirming] = useState<string | null>(null);
   const [templateName, setTemplateName] = useState('');
 
   useScreenStylesheet(
@@ -49,13 +48,6 @@ export const PermissionsPage = () => {
         : failure === 'NAME_TAKEN' ? t.permissions.templates.nameTaken
           : failure === 'NOT_FOUND' ? t.permissions.errors.notFound
             : t.permissions.errors.unknown;
-
-  const togglePermission = (grant: Grant, permission: ProjectPermission) => {
-    const next = grant.permissions.includes(permission)
-      ? grant.permissions.filter((p) => p !== permission)
-      : [...grant.permissions, permission];
-    void setPermissions(grant.id, next);
-  };
 
   const byProject = new Map<string, Grant[]>();
   for (const grant of overview?.grants ?? []) {
@@ -102,87 +94,16 @@ export const PermissionsPage = () => {
 
                 <ul className="perm-grants">
                   {(byProject.get(project.id) ?? []).map((grant) => (
-                    <li key={grant.id} className="perm-grant">
-                      <div className="perm-grant__head">
-                        <span className="perm-grant__role">{t.permissions.roles[grant.projectRole]}</span>
-                        {grant.userId === user?.id ? (
-                          <span className="perm-chip">{t.permissions.grants.you}</span>
-                        ) : null}
-                        {grant.status === 'removed' ? (
-                          <span className="perm-chip perm-chip--off">{t.permissions.grants.revoked}</span>
-                        ) : null}
-                        {grant.fullAuthority ? (
-                          <span className="perm-chip perm-chip--full">{t.permissions.fullAuthority.granted}</span>
-                        ) : null}
-                      </div>
-
-                      {/* Individual permissions are hidden under full authority: it already covers
-                          them, and showing a half-ticked list would misdescribe what is granted. */}
-                      {grant.fullAuthority ? null : (
-                        <ul className="perm-checks">
-                          {overview.allPermissions.map((permission) => (
-                            <li key={permission}>
-                              <label className="perm-check">
-                                <input
-                                  type="checkbox"
-                                  checked={grant.permissions.includes(permission)}
-                                  disabled={busyId !== null || grant.status === 'removed'}
-                                  onChange={() => togglePermission(grant, permission)}
-                                />
-                                <span>{t.permissions.perms[permission]}</span>
-                              </label>
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-
-                      {/* Your own row offers neither action: the server refuses both, and a
-                          control that always fails is worse than no control. */}
-                      {grant.status === 'removed' || grant.userId === user?.id ? null : (
-                        <div className="perm-grant__actions">
-                          {grant.fullAuthority ? (
-                            <button
-                              type="button"
-                              className="btn btn--ghost btn--sm"
-                              disabled={busyId !== null}
-                              onClick={() => void setFullAuthority(grant.id, false)}
-                            >
-                              {t.permissions.fullAuthority.reduce}
-                              {busyId === grant.id ? <ButtonSpinner /> : null}
-                            </button>
-                          ) : (
-                            <button
-                              type="button"
-                              className="btn btn--ghost btn--sm"
-                              disabled={busyId !== null}
-                              onClick={() => setConfirming(grant.id)}
-                            >
-                              {t.permissions.fullAuthority.label}
-                            </button>
-                          )}
-
-                          <button
-                            type="button"
-                            className="btn btn--quiet btn--sm"
-                            disabled={busyId !== null}
-                            onClick={() => void revoke(grant.id)}
-                          >
-                            {t.permissions.grants.revoke}
-                          </button>
-                        </div>
-                      )}
-
-                      {confirming === grant.id ? (
-                        <FullAuthorityDialog
-                          busy={busyId === grant.id}
-                          onConfirm={() => {
-                            setConfirming(null);
-                            void setFullAuthority(grant.id, true);
-                          }}
-                          onDismiss={() => setConfirming(null)}
-                        />
-                      ) : null}
-                    </li>
+                    <GrantRow
+                      key={grant.id}
+                      grant={grant}
+                      viewerUserId={user?.id}
+                      allPermissions={overview.allPermissions}
+                      busyId={busyId}
+                      onSetPermissions={(id, next) => void setPermissions(id, next)}
+                      onSetFullAuthority={(id, next) => void setFullAuthority(id, next)}
+                      onRevoke={(id) => void revoke(id)}
+                    />
                   ))}
                 </ul>
               </div>

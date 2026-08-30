@@ -59,6 +59,9 @@ export const ProjectCard = ({ project }: { project: Project }) => {
       ) : null}
 
       <div className="project-card__actions">
+        <Link to={`/projects/${project.id}`} className="btn btn--primary btn--sm">
+          {t.projectDashboard.entry}
+        </Link>
         <Link to={`/projects/${project.id}/members`} className="btn btn--ghost btn--sm">
           {t.members.entry}
         </Link>

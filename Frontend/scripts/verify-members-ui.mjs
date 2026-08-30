@@ -42,10 +42,14 @@ const register = async (page, who) => {
   await page.fill('#password', PASSWORD);
   await page.fill('#password-confirm', PASSWORD);
   await page.selectOption('#specialty', 'electrical').catch(() => {});
+  // Places answers over the network, so the option list is waited for rather than assumed.
   const cityBox = page.locator('.place-field input[role="combobox"]');
-  await cityBox.fill('חיפה');
-  await page.waitForTimeout(2200);
   const opts = page.locator('.place-field__list [role="option"]');
+  for (let attempt = 0; attempt < 4 && (await opts.count()) === 0; attempt += 1) {
+    await cityBox.fill('');
+    await cityBox.type('חיפה', { delay: 60 });
+    await page.waitForTimeout(2500);
+  }
   if (await opts.count()) await opts.first().click();
   await page.selectOption('#region', 'haifa').catch(() => {});
   const boxes = page.locator('input[type="checkbox"]');

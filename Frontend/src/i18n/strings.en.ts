@@ -392,6 +392,7 @@ export const en: Strings = {
       revoke: 'Revoke',
       none: 'No individual permissions set.',
       revoked: 'Revoked',
+      invited: 'Invitation awaiting an answer',
       you: 'Your access',
     },
 
@@ -441,6 +442,82 @@ export const en: Strings = {
       notFound: 'Not found.',
       network: 'We could not reach the server. Check your connection and try again.',
       unknown: 'We could not complete that just now.',
+    },
+  },
+
+  projectDashboard: {
+    title: 'Project dashboard',
+    lede: 'The working context of this project.',
+    entry: 'Project dashboard',
+    loading: 'Loading the project…',
+    retry: 'Try again',
+    backToProjects: 'Back to projects',
+    notFound: 'The project was not found, or it is not accessible.',
+    network: 'We could not reach the server. Check the connection and try again.',
+
+    summary: {
+      title: 'Project details',
+      type: 'Type',
+      size: 'Size',
+      location: 'Location',
+      noLocation: 'No location set',
+      status: 'Status',
+      start: 'Start date',
+      target: 'Target end date',
+      original: 'Original target',
+      ceiling: 'Latest permitted end date',
+      overrun: 'Overrun so far',
+      overrunDays: '{days} days',
+      noOverrun: 'No overrun',
+    },
+
+    actions: {
+      title: 'Project management',
+      lede: 'The actions shown here are the ones this account is permitted to perform on the project.',
+      edit: 'Edit the project',
+      members: 'Manage members',
+      permissions: 'Manage permissions',
+      calendar: 'Working calendar',
+      none: 'No management actions are available on this project.',
+    },
+
+    membersPanel: {
+      title: 'Members',
+      active: 'Active members: {count}',
+      pending: 'Invitations awaiting an answer: {count}',
+      open: 'Open the members screen',
+    },
+
+    permissionsPanel: {
+      title: 'Project permissions',
+      lede: 'The same permissions the central screen shows, filtered to this project alone.',
+      empty: 'No permissions have been set on this project yet.',
+      central: 'Central permissions screen',
+    },
+
+    calendarPanel: {
+      title: 'Working calendar',
+      pinned: 'This project works by version {version} of the company calendar.',
+      unknown: 'No calendar version is set for this project.',
+      current: 'The company is currently on version {version}',
+      upToDate: 'This project is on the company’s current version.',
+      outdated: 'A newer company version exists. It will not apply to this project until it is explicitly adopted.',
+      overridden: 'This project carries its own changes on top of the version it is pinned to.',
+      adopt: 'Adopt the newer version',
+      keepOverrides: 'Keep this project’s own changes',
+      workingDays: 'Working days',
+      hours: 'Working hours',
+      historyTitle: 'Adoption history',
+      historyNone: 'No newer version has been adopted for this project yet.',
+      historyRow: 'From version {from} to version {to}, by {name}',
+      historyFirst: 'To version {to}, by {name}',
+      historyKept: 'The project’s own changes were kept',
+      historyDropped: 'The project’s own changes were dropped',
+    },
+
+    tasks: {
+      title: 'Tasks',
+      unavailable: 'Task management has not been built yet. No task figure is shown here, and no zero is shown in its place.',
     },
   },
 

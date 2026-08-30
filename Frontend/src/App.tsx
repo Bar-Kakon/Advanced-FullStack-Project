@@ -17,6 +17,7 @@ import { MyProjectsPage } from './features/projects/MyProjectsPage';
 import { ProjectFormPage } from './features/projects/ProjectFormPage';
 import { PermissionsPage } from './features/permissions/PermissionsPage';
 import { ProjectMembersPage } from './features/members/ProjectMembersPage';
+import { ProjectDashboardPage } from './features/projectdashboard/ProjectDashboardPage';
 import { EmployeeManagementPage } from './features/employees/EmployeeManagementPage';
 import { EmployeeOnboardingPage } from './features/employees/EmployeeOnboardingPage';
 import { WaitingForApprovalPage } from './features/employees/WaitingForApprovalPage';
@@ -61,6 +62,7 @@ export const App = () => (
               <Route path="/projects/new" element={<ProjectFormPage />} />
               <Route path="/projects/:projectId/edit" element={<ProjectFormPage />} />
               <Route path="/projects/:projectId/members" element={<ProjectMembersPage />} />
+              <Route path="/projects/:projectId" element={<ProjectDashboardPage />} />
               <Route path="/permissions" element={<PermissionsPage />} />
             </Route>
           </Route>
