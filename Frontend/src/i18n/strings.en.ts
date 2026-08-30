@@ -1343,6 +1343,8 @@ export const en: Strings = {
 
   landing: {
     documentTitle: 'FieldSync — תיאום עבודה באתר / Construction coordination',
+    metaDescription:
+      'FieldSync — a coordination platform for construction professionals: assign work, link the tasks that depend on each other, and manage dates and changes in one place.',
     skip: 'Skip to content',
     navLabel: 'Menu',
     signIn: 'Sign in',

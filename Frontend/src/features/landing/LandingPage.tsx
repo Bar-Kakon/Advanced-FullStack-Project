@@ -1,4 +1,4 @@
-import { Fragment } from 'react';
+import { Fragment, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 
 import { LanguageSwitch } from '../../components/LanguageSwitch';
@@ -22,6 +22,16 @@ const VALUE_ICONS = [
   </>,
 ];
 
+const useMetaDescription = (content: string): void => {
+  useEffect(() => {
+    const meta = document.createElement('meta');
+    meta.name = 'description';
+    meta.content = content;
+    document.head.appendChild(meta);
+    return () => meta.remove();
+  }, [content]);
+};
+
 const FlowArrow = () => (
   <li className="flow__arrow" aria-hidden="true">
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -43,6 +53,7 @@ export const LandingPage = () => {
   const landing = t.landing;
   useScreenStylesheet({ id: 'landing.css', css: landingCss });
   useDocumentTitle(landing.documentTitle);
+  useMetaDescription(landing.metaDescription);
 
   return (
     <div className="app">

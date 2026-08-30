@@ -44,6 +44,11 @@ const run = async () => {
   check('the hero headline is on screen', (await page.locator('#hero-title').count()) === 1);
   check('no access token is stored', (await page.evaluate(() => localStorage.getItem('fieldsync-access-token'))) === null);
   check('the tab title names the product', (await page.title()).includes('FieldSync'), await page.title());
+  // The prototype's head carried this and the SPA shell does not, so the screen adds it itself.
+  const description = await page.locator('meta[name="description"]').getAttribute('content');
+  check('the approved meta description is present, verbatim',
+    description === 'FieldSync — a coordination platform for construction professionals: assign work, link the tasks that depend on each other, and manage dates and changes in one place.',
+    String(description));
 
   section('2. No authenticated chrome');
   check('the app navbar is absent', (await page.locator('.app-nav').count()) === 0);
