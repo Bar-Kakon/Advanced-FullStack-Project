@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="he">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>המשימות שלי / My Tasks — FieldSync</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <!-- Heebo and Frank Ruhl Libre serve Hebrew, Inter and Fraunces serve English, and IBM Plex Mono serves both. -->
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=IBM+Plex+Mono:wght@400;500&family=Heebo:wght@400;500;600;700&family=Frank+Ruhl+Libre:wght@500;700&display=swap"
+    rel="stylesheet" />
+  <link rel="stylesheet" href="my-tasks.css" />
+</head>
+<body>
+
+  <!-- These two radios drive every language state through sibling selectors, as on every other screen. -->
+  <input type="radio" name="lang" id="lang-he" class="lang-radio" checked>
+  <input type="radio" name="lang" id="lang-en" class="lang-radio">
+
+  <div class="app">
+
+    <!-- ═══════════════════════════════════════════════
+         REUSABLE APP NAVBAR  (.app-nav)
+         ═══════════════════════════════════════════════ -->
+    <!-- This markup is copied from my-projects.html so all app screens keep one navbar. -->
+    <header class="app-nav">
+      <div class="app-nav__inner">
+
+        <a href="personal-dashboard.html" class="app-nav__brand" aria-label="FieldSync — home">
+          <span class="app-nav__mark" aria-hidden="true">
+            <svg width="26" height="26" viewBox="0 0 40 40" fill="none">
+              <circle cx="8"  cy="20" r="6" fill="rgba(199,184,157,0.30)" stroke="rgba(255,253,248,0.92)" stroke-width="2"/>
+              <circle cx="32" cy="8"  r="6" fill="rgba(199,184,157,0.30)" stroke="rgba(255,253,248,0.92)" stroke-width="2"/>
+              <circle cx="32" cy="32" r="6" fill="rgba(199,184,157,0.30)" stroke="rgba(255,253,248,0.92)" stroke-width="2"/>
+              <line x1="14" y1="17" x2="26" y2="11" stroke="rgba(255,253,248,0.55)" stroke-width="1.5" stroke-dasharray="3 2"/>
+              <line x1="14" y1="23" x2="26" y2="29" stroke="rgba(255,253,248,0.55)" stroke-width="1.5" stroke-dasharray="3 2"/>
+              <line x1="32" y1="14" x2="32" y2="26" stroke="rgba(255,253,248,0.40)" stroke-width="1.5" stroke-dasharray="3 2"/>
+            </svg>
+          </span>
+          <span class="app-nav__name">FieldSync</span>
+        </a>
+
+        <nav class="app-nav__links" aria-label="Main">
+          <a href="browse-contractors.html" class="app-nav__link">
+            <span class="he-text">עיון בקבלנים</span>
+            <span class="en-text">Browse</span>
+          </a>
+          <a href="my-network.html" class="app-nav__link">
+            <span class="he-text">הרשת שלי</span>
+            <span class="en-text">Network</span>
+          </a>
+          <a href="my-projects.html" class="app-nav__link">
+            <span class="he-text">פרויקטים</span>
+            <span class="en-text">Projects</span>
+          </a>
+          <!-- This screen is the My Tasks route, so its own link carries the active state. -->
+          <a href="my-tasks.html" class="app-nav__link is-active" aria-current="page">
+            <span class="he-text">המשימות שלי</span>
+            <span class="en-text">My Tasks</span>
+          </a>
+        </nav>
+
+        <div class="app-nav__actions">
+
+          <!-- The bell is visual only; it opens the notifications popup in Stage 2. -->
+          <button type="button" class="nav-icon-btn has-dot" aria-label="Notifications">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/>
+              <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+            </svg>
+          </button>
+
+          <!-- The profile chip is visual only; its dropdown is wired in Stage 2. -->
+          <button type="button" class="nav-profile" aria-label="Account menu" aria-haspopup="true">
+            <span class="nav-profile__avatar" aria-hidden="true">
+              <span class="he-text">בכ</span><span class="en-text">BK</span>
+            </span>
+            <span class="nav-profile__name">
+              <span class="he-text">בר כאכון</span>
+              <span class="en-text">Bar Kakon</span>
+            </span>
+            <svg class="nav-profile__chevron" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M6 9l6 6 6-6"/>
+            </svg>
+          </button>
+
+          <div class="lang-switch" role="group" aria-label="Language / שפה">
+            <svg class="lang-switch__globe" width="15" height="15" viewBox="0 0 24 24"
+                 fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+              <circle cx="12" cy="12" r="9"/>
+              <path d="M3 12h18M12 3c2.5 2.7 2.5 15.3 0 18M12 3c-2.5 2.7-2.5 15.3 0 18"/>
+            </svg>
+            <label for="lang-he" class="lang-switch__btn">עב</label>
+            <span class="lang-switch__sep" aria-hidden="true"></span>
+            <label for="lang-en" class="lang-switch__btn">EN</label>
+          </div>
+
+        </div>
+      </div>
+    </header>
+
+    <!-- ═══════════════════════════════════════════════
+         MY TASKS — approved screen #15
+
+         One list holding every task assigned to the viewer
+         across every project, plus every standalone job.
+         A standalone job is shown as a row whose source is
+         "solo job" instead of a project name; nothing on this
+         screen says whether the two live in one collection or
+         two, because that is still decision D5.
+
+         Overdue is a derived state — a row past its endDate
+         that is not completed — and never a stored status.
+         ═══════════════════════════════════════════════ -->
+    <main class="tasks">
+
+      <header class="tasks__head">
+        <h1 class="tasks__title">
+          <span class="he-text">המשימות שלי</span>
+          <span class="en-text">My Tasks</span>
+        </h1>
+        <p class="tasks__sub">
+          <span class="he-text">אחת עשרה משימות ועבודות עצמאיות במקום אחד, שלוש מהן באיחור.</span>
+          <span class="en-text">Eleven tasks and solo jobs in one place, three of them overdue.</span>
+        </p>
+      </header>
+
+      <!-- ══════════ FILTER AND SORT ════════════════
+           Four controls for the four axes approved screen
+           #15 names. None of them filters anything yet: a
+           CSS-only filter can express status and type but
+           not a project list or a due-date sort, and a bar
+           where half the controls work is worse than one
+           that is uniformly not wired. React binds these to
+           the query without moving the layout.
+           ═══════════════════════════════════════════ -->
+      <section class="tfilters" aria-labelledby="h-filters">
+        <h2 class="sr-only" id="h-filters">
+          <span class="he-text">סינון ומיון</span>
+          <span class="en-text">Filter and sort</span>
+        </h2>
+
+        <!-- Option text cannot use the span trick, so each select is duplicated per language. -->
+        <div class="tfilter">
+          <span class="tfilter__pair he-text">
+            <label class="tfilter__label" for="f-project-he">פרויקט</label>
+            <select class="tfilter__select" id="f-project-he" name="project-he">
+              <option>כל הפרויקטים</option>
+              <option>רוטשילד 42 — מגדל מגורים</option>
+              <option>מחסן לוגיסטי — מודיעין</option>
+              <option>פארק תעשייה — נס ציונה</option>
+              <option>ללא פרויקט</option>
+            </select>
+          </span>
+          <span class="tfilter__pair en-text">
+            <label class="tfilter__label" for="f-project-en">Project</label>
+            <select class="tfilter__select" id="f-project-en" name="project-en">
+              <option>All projects</option>
+              <option>Rothschild 42 — residential tower</option>
+              <option>Logistics warehouse — Modi'in</option>
+              <option>Industrial park — Ness Ziona</option>
+              <option>No project</option>
+            </select>
+          </span>
+        </div>
+
+        <div class="tfilter">
+          <span class="tfilter__pair he-text">
+            <label class="tfilter__label" for="f-status-he">סטטוס</label>
+            <select class="tfilter__select" id="f-status-he" name="status-he">
+              <option>כל הסטטוסים</option>
+              <option>טרם התחילה</option>
+              <option>בביצוע</option>
+              <option>הושלמה</option>
+            </select>
+          </span>
+          <span class="tfilter__pair en-text">
+            <label class="tfilter__label" for="f-status-en">Status</label>
+            <select class="tfilter__select" id="f-status-en" name="status-en">
+              <option>Any status</option>
+              <option>Not started</option>
+              <option>In progress</option>
+              <option>Completed</option>
+            </select>
+          </span>
+        </div>
+
+        <div class="tfilter">
+          <span class="tfilter__pair he-text">
+            <label class="tfilter__label" for="f-due-he">מיון לפי יעד</label>
+            <select class="tfilter__select" id="f-due-he" name="due-he">
+              <option>יעד קרוב תחילה</option>
+              <option>יעד רחוק תחילה</option>
+            </select>
+          </span>
+          <span class="tfilter__pair en-text">
+            <label class="tfilter__label" for="f-due-en">Sort by due date</label>
+            <select class="tfilter__select" id="f-due-en" name="due-en">
+              <option>Soonest first</option>
+              <option>Latest first</option>
+            </select>
+          </span>
+        </div>
+
+        <div class="tfilter">
+          <span class="tfilter__pair he-text">
+            <label class="tfilter__label" for="f-type-he">סוג</label>
+            <select class="tfilter__select" id="f-type-he" name="type-he">
+              <option>הכול</option>
+              <option>משימה בפרויקט</option>
+              <option>עבודה עצמאית</option>
+            </select>
+          </span>
+          <span class="tfilter__pair en-text">
+            <label class="tfilter__label" for="f-type-en">Type</label>
+            <select class="tfilter__select" id="f-type-en" name="type-en">
+              <option>All</option>
+              <option>Project task</option>
+              <option>Solo job</option>
+            </select>
+          </span>
+        </div>
+      </section>
+
+      <div class="tasks__groups">
+
+        <!-- ══════════ OVERDUE ════════════════════════
+             A row lands here because endDate has passed and
+             publicStatus is not "completed". The row keeps the
+             status it actually stores; overdue is only its
+             position, its leading edge and its date line.
+             ═══════════════════════════════════════════ -->
+        <section class="tgroup tgroup--overdue" id="g-late" aria-labelledby="h-late">
+          <header class="tgroup__head">
+            <div class="tgroup__titlerow">
+              <h2 class="tgroup__title" id="h-late">
+                <svg class="tgroup__icon" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>
+                </svg>
+                <span class="he-text">באיחור</span>
+                <span class="en-text">Overdue</span>
+              </h2>
+              <span class="tgroup__count">3</span>
+            </div>
+            <p class="tgroup__lede">
+              <span class="he-text">משימות ועבודות שתאריך היעד שלהן עבר והן עדיין לא הושלמו. האיחור מחושב מהתאריך ואינו סטטוס שנשמר, והרשימה הזו לא שולחת תזכורות.</span>
+              <span class="en-text">Tasks and jobs whose due date has passed and that are not completed yet. Being late is worked out from the date rather than stored as a status, and this list sends no reminders.</span>
+            </p>
+          </header>
+
+          <ul class="tlist">
+
+            <!-- ── Project task, in progress, four days past its date ── -->
+            <li class="trow trow--late">
+              <div class="trow__body">
+                <h3 class="trow__title" id="t1">
+                  <span class="he-text" dir="auto">חשמל ראשוני — קומה 3</span>
+                  <span class="en-text" dir="auto">First-fix electrical — floor 3</span>
+                </h3>
+                <div class="trow__meta">
+                  <span class="src src--project">
+                    <svg class="src__icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path d="M3 21h18M5 21V7l7-4 7 4v14"/><path d="M10 21v-6h4v6"/>
+                    </svg>
+                    <span class="he-text" dir="auto">רוטשילד 42 — מגדל מגורים</span>
+                    <span class="en-text" dir="auto">Rothschild 42 — residential tower</span>
+                  </span>
+                  <span class="party">
+                    <span class="party__label"><span class="he-text">מאת</span><span class="en-text">From</span></span>
+                    <span class="party__avatar" aria-hidden="true"><span class="he-text">דל</span><span class="en-text">DL</span></span>
+                    <span class="party__name"><span class="he-text" dir="auto">דנה לוי</span><span class="en-text" dir="auto">Dana Levi</span></span>
+                  </span>
+                </div>
+                <p class="trow__stamp trow__stamp--late">
+                  <svg class="trow__stamp-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M12 3 2 20h20L12 3z"/><path d="M12 10v4M12 17h.01"/>
+                  </svg>
+                  <span class="he-text">באיחור של 4 ימים · יעד 19 באוגוסט</span>
+                  <span class="en-text">4 days late · due 19 August</span>
+                </p>
+              </div>
+              <span class="tstatus tstatus--doing">
+                <svg class="tstatus__icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor" stroke="none"/>
+                </svg>
+                <span class="he-text">בביצוע</span><span class="en-text">In progress</span>
+              </span>
+              <div class="trow__actions">
+                <button type="button" class="btn btn--primary btn--sm" id="t1-done" aria-labelledby="t1-done t1">
+                  <span class="he-text">סיום</span><span class="en-text">Complete</span>
+                </button>
+                <a href="task-detail.html" class="btn btn--quiet btn--sm" id="t1-open" aria-labelledby="t1-open t1">
+                  <span class="he-text">פתיחה</span><span class="en-text">Open</span>
+                </a>
+              </div>
+            </li>
+
+            <!-- ── Project task the viewer both owns and carries, so no other party gave it to them ── -->
+            <li class="trow trow--late">
+              <div class="trow__body">
+                <h3 class="trow__title" id="t2">
+                  <span class="he-text" dir="auto">התקנת מעקות</span>
+                  <span class="en-text" dir="auto">Railing installation</span>
+                </h3>
+                <div class="trow__meta">
+                  <span class="src src--project">
+                    <svg class="src__icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path d="M3 21h18M5 21V7l7-4 7 4v14"/><path d="M10 21v-6h4v6"/>
+                    </svg>
+                    <span class="he-text" dir="auto">מחסן לוגיסטי — מודיעין</span>
+                    <span class="en-text" dir="auto">Logistics warehouse — Modi'in</span>
+                  </span>
+                  <span class="party party--self">
+                    <span class="he-text">נוצרה על ידכם</span>
+                    <span class="en-text">Created by you</span>
+                  </span>
+                </div>
+                <p class="trow__stamp trow__stamp--late">
+                  <svg class="trow__stamp-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M12 3 2 20h20L12 3z"/><path d="M12 10v4M12 17h.01"/>
+                  </svg>
+                  <span class="he-text">באיחור של יומיים · יעד 21 באוגוסט</span>
+                  <span class="en-text">2 days late · due 21 August</span>
+                </p>
+              </div>
+              <span class="tstatus tstatus--todo">
+                <svg class="tstatus__icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <circle cx="12" cy="12" r="9"/>
+                </svg>
+                <span class="he-text">טרם התחילה</span><span class="en-text">Not started</span>
+              </span>
+              <div class="trow__actions">
+                <button type="button" class="btn btn--primary btn--sm" id="t2-start" aria-labelledby="t2-start t2">
+                  <span class="he-text">התחלה</span><span class="en-text">Start</span>
+                </button>
+                <a href="task-detail.html" class="btn btn--quiet btn--sm" id="t2-open" aria-labelledby="t2-open t2">
+                  <span class="he-text">פתיחה</span><span class="en-text">Open</span>
+                </a>
+              </div>
+            </li>
+
+            <!-- ── Standalone job, so its source pill names no project at all ── -->
+            <li class="trow trow--late">
+              <div class="trow__body">
+                <h3 class="trow__title" id="t3">
+                  <span class="he-text" dir="auto">החלפת דוד שמש — רמת גן</span>
+                  <span class="en-text" dir="auto">Solar boiler replacement — Ramat Gan</span>
+                </h3>
+                <div class="trow__meta">
+                  <span class="src src--solo">
+                    <svg class="src__icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path d="M4 7h16M4 12h16M4 17h9"/>
+                    </svg>
+                    <span class="he-text">עבודה עצמאית</span>
+                    <span class="en-text">Solo job</span>
+                  </span>
+                  <span class="party party--self">
+                    <span class="he-text">נוצרה על ידכם</span>
+                    <span class="en-text">Created by you</span>
+                  </span>
+                </div>
+                <p class="trow__stamp trow__stamp--late">
+                  <svg class="trow__stamp-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M12 3 2 20h20L12 3z"/><path d="M12 10v4M12 17h.01"/>
+                  </svg>
+                  <span class="he-text">באיחור של יום · יעד 22 באוגוסט</span>
+                  <span class="en-text">1 day late · due 22 August</span>
+                </p>
+              </div>
+              <span class="tstatus tstatus--doing">
+                <svg class="tstatus__icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor" stroke="none"/>
+                </svg>
+                <span class="he-text">בביצוע</span><span class="en-text">In progress</span>
+              </span>
+              <div class="trow__actions">
+                <button type="button" class="btn btn--primary btn--sm" id="t3-done" aria-labelledby="t3-done t3">
+                  <span class="he-text">סיום</span><span class="en-text">Complete</span>
+                </button>
+                <a href="task-detail.html" class="btn btn--quiet btn--sm" id="t3-open" aria-labelledby="t3-open t3">
+                  <span class="he-text">פתיחה</span><span class="en-text">Open</span>
+                </a>
+              </div>
+            </li>
+
+          </ul>
+
+          <!-- The CSS shows this only while the list above it holds no row. -->
+          <p class="tgroup-empty">
+            <span class="he-text">אין כרגע משימות או עבודות באיחור.</span>
+            <span class="en-text">Nothing is overdue right now.</span>
+          </p>
+        </section>
+
+        <!-- ══════════ OPEN WORK ══════════════════════
+             Everything not completed and not past its date,
+             ordered by how close each is to its due date.
+             Project tasks and standalone jobs are interleaved
+             here on purpose — the source pill is what tells
+             them apart, not their position in the list.
+             ═══════════════════════════════════════════ -->
+        <section class="tgroup" id="g-open" aria-labelledby="h-open">
+          <header class="tgroup__head">
+            <div class="tgroup__titlerow">
+              <h2 class="tgroup__title" id="h-open">
+                <svg class="tgroup__icon" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M4 7h16M4 12h16M4 17h9"/>
+                </svg>
+                <span class="he-text">עבודה פתוחה</span>
+                <span class="en-text">Open work</span>
+              </h2>
+              <span class="tgroup__count">6</span>
+            </div>
+            <p class="tgroup__lede">
+              <span class="he-text">כל מה שעדיין פתוח ואינו באיחור, לפי הקִרבה לתאריך היעד. משימות בפרויקט ועבודות עצמאיות מופיעות כאן יחד.</span>
+              <span class="en-text">Everything still open and not late, ordered by how close each is to its due date. Project tasks and solo jobs appear here together.</span>
+            </p>
+          </header>
+
+          <ul class="tlist">
+
+            <!-- ── Standalone job that came from another party, which is what gives it a counterparty ── -->
+            <li class="trow">
+              <div class="trow__body">
+                <h3 class="trow__title" id="t4">
+                  <span class="he-text" dir="auto">תיקון נזילה בחניון — גבעתיים</span>
+                  <span class="en-text" dir="auto">Car-park leak repair — Givatayim</span>
+                </h3>
+                <div class="trow__meta">
+                  <span class="src src--solo">
+                    <svg class="src__icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path d="M4 7h16M4 12h16M4 17h9"/>
+                    </svg>
+                    <span class="he-text">עבודה עצמאית</span>
+                    <span class="en-text">Solo job</span>
+                  </span>
+                  <span class="party">
+                    <span class="party__label"><span class="he-text">מאת</span><span class="en-text">From</span></span>
+                    <span class="party__avatar" aria-hidden="true"><span class="he-text">תש</span><span class="en-text">TS</span></span>
+                    <span class="party__name"><span class="he-text" dir="auto">תמר שפירא</span><span class="en-text" dir="auto">Tamar Shapira</span></span>
+                  </span>
+                </div>
+                <p class="trow__stamp">
+                  <span class="he-text">יעד היום, 23 באוגוסט</span>
+                  <span class="en-text">Due today, 23 August</span>
+                </p>
+              </div>
+              <span class="tstatus tstatus--todo">
+                <svg class="tstatus__icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <circle cx="12" cy="12" r="9"/>
+                </svg>
+                <span class="he-text">טרם התחילה</span><span class="en-text">Not started</span>
+              </span>
+              <div class="trow__actions">
+                <button type="button" class="btn btn--primary btn--sm" id="t4-start" aria-labelledby="t4-start t4">
+                  <span class="he-text">התחלה</span><span class="en-text">Start</span>
+                </button>
+                <a href="task-detail.html" class="btn btn--quiet btn--sm" id="t4-open" aria-labelledby="t4-open t4">
+                  <span class="he-text">פתיחה</span><span class="en-text">Open</span>
+                </a>
+              </div>
+            </li>
+
+            <li class="trow">
+              <div class="trow__body">
+                <h3 class="trow__title" id="t5">
+                  <span class="he-text" dir="auto">הרכבת ארון חשמל — פתח תקווה</span>
+                  <span class="en-text" dir="auto">Electrical cabinet install — Petah Tikva</span>
+                </h3>
+                <div class="trow__meta">
+                  <span class="src src--solo">
+                    <svg class="src__icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path d="M4 7h16M4 12h16M4 17h9"/>
+                    </svg>
+                    <span class="he-text">עבודה עצמאית</span>
+                    <span class="en-text">Solo job</span>
+                  </span>
+                  <span class="party party--self">
+                    <span class="he-text">נוצרה על ידכם</span>
+                    <span class="en-text">Created by you</span>
+                  </span>
+                </div>
+                <p class="trow__stamp">
+                  <span class="he-text">יעד מחר, 24 באוגוסט</span>
+                  <span class="en-text">Due tomorrow, 24 August</span>
+                </p>
+              </div>
+              <span class="tstatus tstatus--todo">
+                <svg class="tstatus__icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <circle cx="12" cy="12" r="9"/>
+                </svg>
+                <span class="he-text">טרם התחילה</span><span class="en-text">Not started</span>
+              </span>
+              <div class="trow__actions">
+                <button type="button" class="btn btn--primary btn--sm" id="t5-start" aria-labelledby="t5-start t5">
+                  <span class="he-text">התחלה</span><span class="en-text">Start</span>
+                </button>
+                <a href="task-detail.html" class="btn btn--quiet btn--sm" id="t5-open" aria-labelledby="t5-open t5">
+                  <span class="he-text">פתיחה</span><span class="en-text">Open</span>
+                </a>
+              </div>
+            </li>
+
+            <li class="trow">
+              <div class="trow__body">
+                <h3 class="trow__title" id="t6">
+                  <span class="he-text" dir="auto">החלפת צנרת מטבח — חולון</span>
+                  <span class="en-text" dir="auto">Kitchen pipework replacement — Holon</span>
+                </h3>
+                <div class="trow__meta">
+                  <span class="src src--solo">
+                    <svg class="src__icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path d="M4 7h16M4 12h16M4 17h9"/>
+                    </svg>
+                    <span class="he-text">עבודה עצמאית</span>
+                    <span class="en-text">Solo job</span>
+                  </span>
+                  <span class="party party--self">
+                    <span class="he-text">נוצרה על ידכם</span>
+                    <span class="en-text">Created by you</span>
+                  </span>
+                </div>
+                <p class="trow__stamp">
+                  <span class="he-text">יעד 26 באוגוסט</span>
+                  <span class="en-text">Due 26 August</span>
+                </p>
+              </div>
+              <span class="tstatus tstatus--doing">
+                <svg class="tstatus__icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor" stroke="none"/>
+                </svg>
+                <span class="he-text">בביצוע</span><span class="en-text">In progress</span>
+              </span>
+              <div class="trow__actions">
+                <button type="button" class="btn btn--primary btn--sm" id="t6-done" aria-labelledby="t6-done t6">
+                  <span class="he-text">סיום</span><span class="en-text">Complete</span>
+                </button>
+                <a href="task-detail.html" class="btn btn--quiet btn--sm" id="t6-open" aria-labelledby="t6-open t6">
+                  <span class="he-text">פתיחה</span><span class="en-text">Open</span>
+                </a>
+              </div>
+            </li>
+
+            <!-- ── The one row with a proposal waiting on the viewer, which sits beside its status rather than replacing it ── -->
+            <li class="trow trow--proposal">
+              <div class="trow__body">
+                <h3 class="trow__title" id="t7">
+                  <span class="he-text" dir="auto">גמר טיח קומה 2</span>
+                  <span class="en-text" dir="auto">Plaster finish, floor 2</span>
+                </h3>
+                <div class="trow__meta">
+                  <span class="src src--project">
+                    <svg class="src__icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path d="M3 21h18M5 21V7l7-4 7 4v14"/><path d="M10 21v-6h4v6"/>
+                    </svg>
+                    <span class="he-text" dir="auto">רוטשילד 42 — מגדל מגורים</span>
+                    <span class="en-text" dir="auto">Rothschild 42 — residential tower</span>
+                  </span>
+                  <span class="party">
+                    <span class="party__label"><span class="he-text">מאת</span><span class="en-text">From</span></span>
+                    <span class="party__avatar" aria-hidden="true"><span class="he-text">דל</span><span class="en-text">DL</span></span>
+                    <span class="party__name"><span class="he-text" dir="auto">דנה לוי</span><span class="en-text" dir="auto">Dana Levi</span></span>
+                  </span>
+                </div>
+                <p class="trow__stamp">
+                  <span class="he-text">יעד 28 באוגוסט</span>
+                  <span class="en-text">Due 28 August</span>
+                </p>
+                <a href="reschedule-proposal-review.html" class="tprop" id="t7-prop" aria-labelledby="t7-prop t7">
+                  <svg class="tprop__icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M12 14v3"/>
+                  </svg>
+                  <span class="he-text">הצעה לתאריך חדש ממתינה לתשובתכם · עד 25 באוגוסט</span>
+                  <span class="en-text">A new date is waiting for your answer · by 25 August</span>
+                </a>
+              </div>
+              <span class="tstatus tstatus--todo">
+                <svg class="tstatus__icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <circle cx="12" cy="12" r="9"/>
+                </svg>
+                <span class="he-text">טרם התחילה</span><span class="en-text">Not started</span>
+              </span>
+              <div class="trow__actions">
+                <button type="button" class="btn btn--primary btn--sm" id="t7-start" aria-labelledby="t7-start t7">
+                  <span class="he-text">התחלה</span><span class="en-text">Start</span>
+                </button>
+                <a href="task-detail.html" class="btn btn--quiet btn--sm" id="t7-open" aria-labelledby="t7-open t7">
+                  <span class="he-text">פתיחה</span><span class="en-text">Open</span>
+                </a>
+              </div>
+            </li>
+
+            <li class="trow">
+              <div class="trow__body">
+                <h3 class="trow__title" id="t8">
+                  <span class="he-text" dir="auto">בדיקת מערכת ניקוז — ראשון לציון</span>
+                  <span class="en-text" dir="auto">Drainage system check — Rishon LeZion</span>
+                </h3>
+                <div class="trow__meta">
+                  <span class="src src--solo">
+                    <svg class="src__icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path d="M4 7h16M4 12h16M4 17h9"/>
+                    </svg>
+                    <span class="he-text">עבודה עצמאית</span>
+                    <span class="en-text">Solo job</span>
+                  </span>
+                  <span class="party party--self">
+                    <span class="he-text">נוצרה על ידכם</span>
+                    <span class="en-text">Created by you</span>
+                  </span>
+                </div>
+                <p class="trow__stamp">
+                  <span class="he-text">יעד 29 באוגוסט</span>
+                  <span class="en-text">Due 29 August</span>
+                </p>
+              </div>
+              <span class="tstatus tstatus--todo">
+                <svg class="tstatus__icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <circle cx="12" cy="12" r="9"/>
+                </svg>
+                <span class="he-text">טרם התחילה</span><span class="en-text">Not started</span>
+              </span>
+              <div class="trow__actions">
+                <button type="button" class="btn btn--primary btn--sm" id="t8-start" aria-labelledby="t8-start t8">
+                  <span class="he-text">התחלה</span><span class="en-text">Start</span>
+                </button>
+                <a href="task-detail.html" class="btn btn--quiet btn--sm" id="t8-open" aria-labelledby="t8-open t8">
+                  <span class="he-text">פתיחה</span><span class="en-text">Open</span>
+                </a>
+              </div>
+            </li>
+
+            <!-- ── A third project, where the viewer's per-project role is supplier ── -->
+            <li class="trow">
+              <div class="trow__body">
+                <h3 class="trow__title" id="t9">
+                  <span class="he-text" dir="auto">אספקת פלדה — משלוח שני</span>
+                  <span class="en-text" dir="auto">Steel delivery — second consignment</span>
+                </h3>
+                <div class="trow__meta">
+                  <span class="src src--project">
+                    <svg class="src__icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path d="M3 21h18M5 21V7l7-4 7 4v14"/><path d="M10 21v-6h4v6"/>
+                    </svg>
+                    <span class="he-text" dir="auto">פארק תעשייה — נס ציונה</span>
+                    <span class="en-text" dir="auto">Industrial park — Ness Ziona</span>
+                  </span>
+                  <span class="party">
+                    <span class="party__label"><span class="he-text">מאת</span><span class="en-text">From</span></span>
+                    <span class="party__avatar" aria-hidden="true"><span class="he-text">פח</span><span class="en-text">FH</span></span>
+                    <span class="party__name"><span class="he-text" dir="auto">פאדי חדאד</span><span class="en-text" dir="auto">Fadi Haddad</span></span>
+                  </span>
+                </div>
+                <p class="trow__stamp">
+                  <span class="he-text">יעד 3 בספטמבר</span>
+                  <span class="en-text">Due 3 September</span>
+                </p>
+              </div>
+              <span class="tstatus tstatus--todo">
+                <svg class="tstatus__icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <circle cx="12" cy="12" r="9"/>
+                </svg>
+                <span class="he-text">טרם התחילה</span><span class="en-text">Not started</span>
+              </span>
+              <div class="trow__actions">
+                <button type="button" class="btn btn--primary btn--sm" id="t9-start" aria-labelledby="t9-start t9">
+                  <span class="he-text">התחלה</span><span class="en-text">Start</span>
+                </button>
+                <a href="task-detail.html" class="btn btn--quiet btn--sm" id="t9-open" aria-labelledby="t9-open t9">
+                  <span class="he-text">פתיחה</span><span class="en-text">Open</span>
+                </a>
+              </div>
+            </li>
+
+          </ul>
+
+          <p class="tgroup-empty">
+            <span class="he-text">אין כרגע עבודה פתוחה.</span>
+            <span class="en-text">There is no open work right now.</span>
+          </p>
+        </section>
+
+        <!-- ══════════ COMPLETED ══════════════════════
+             publicStatus is "completed", so the binary
+             tracking is finished and no progress control
+             remains — the row keeps only the way in.
+             ═══════════════════════════════════════════ -->
+        <section class="tgroup" id="g-done" aria-labelledby="h-done">
+          <header class="tgroup__head">
+            <div class="tgroup__titlerow">
+              <h2 class="tgroup__title" id="h-done">
+                <svg class="tgroup__icon" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M9 11l2 2 4-4"/><path d="M20 12a8 8 0 1 1-3.2-6.4"/>
+                </svg>
+                <span class="he-text">הושלמו</span>
+                <span class="en-text">Completed</span>
+              </h2>
+              <span class="tgroup__count">2</span>
+            </div>
+            <p class="tgroup__lede">
+              <span class="he-text">עבודה שסימנתם כהושלמה. היא נשארת כאן לצורך מעקב ואין בה פעולת התקדמות נוספת.</span>
+              <span class="en-text">Work you marked as completed. It stays here for reference and carries no further progress action.</span>
+            </p>
+          </header>
+
+          <ul class="tlist">
+
+            <li class="trow trow--done">
+              <div class="trow__body">
+                <h3 class="trow__title" id="t10">
+                  <span class="he-text" dir="auto">פירוק תבניות קומה 1</span>
+                  <span class="en-text" dir="auto">Formwork strip-out, floor 1</span>
+                </h3>
+                <div class="trow__meta">
+                  <span class="src src--project">
+                    <svg class="src__icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path d="M3 21h18M5 21V7l7-4 7 4v14"/><path d="M10 21v-6h4v6"/>
+                    </svg>
+                    <span class="he-text" dir="auto">רוטשילד 42 — מגדל מגורים</span>
+                    <span class="en-text" dir="auto">Rothschild 42 — residential tower</span>
+                  </span>
+                  <span class="party">
+                    <span class="party__label"><span class="he-text">מאת</span><span class="en-text">From</span></span>
+                    <span class="party__avatar" aria-hidden="true"><span class="he-text">דל</span><span class="en-text">DL</span></span>
+                    <span class="party__name"><span class="he-text" dir="auto">דנה לוי</span><span class="en-text" dir="auto">Dana Levi</span></span>
+                  </span>
+                </div>
+                <p class="trow__stamp">
+                  <span class="he-text">הושלמה 14 באוגוסט · היעד היה 15 באוגוסט</span>
+                  <span class="en-text">Completed 14 August · was due 15 August</span>
+                </p>
+              </div>
+              <span class="tstatus tstatus--done">
+                <svg class="tstatus__icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M20 6 9 17l-5-5"/>
+                </svg>
+                <span class="he-text">הושלמה</span><span class="en-text">Completed</span>
+              </span>
+              <div class="trow__actions">
+                <a href="task-detail.html" class="btn btn--quiet btn--sm" id="t10-open" aria-labelledby="t10-open t10">
+                  <span class="he-text">פתיחה</span><span class="en-text">Open</span>
+                </a>
+              </div>
+            </li>
+
+            <li class="trow trow--done">
+              <div class="trow__body">
+                <h3 class="trow__title" id="t11">
+                  <span class="he-text" dir="auto">החלפת ברז ראשי — הרצליה</span>
+                  <span class="en-text" dir="auto">Main valve replacement — Herzliya</span>
+                </h3>
+                <div class="trow__meta">
+                  <span class="src src--solo">
+                    <svg class="src__icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                      <path d="M4 7h16M4 12h16M4 17h9"/>
+                    </svg>
+                    <span class="he-text">עבודה עצמאית</span>
+                    <span class="en-text">Solo job</span>
+                  </span>
+                  <span class="party">
+                    <span class="party__label"><span class="he-text">מאת</span><span class="en-text">From</span></span>
+                    <span class="party__avatar" aria-hidden="true"><span class="he-text">תש</span><span class="en-text">TS</span></span>
+                    <span class="party__name"><span class="he-text" dir="auto">תמר שפירא</span><span class="en-text" dir="auto">Tamar Shapira</span></span>
+                  </span>
+                </div>
+                <p class="trow__stamp">
+                  <span class="he-text">הושלמה 20 באוגוסט · היעד היה 20 באוגוסט</span>
+                  <span class="en-text">Completed 20 August · was due 20 August</span>
+                </p>
+              </div>
+              <span class="tstatus tstatus--done">
+                <svg class="tstatus__icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M20 6 9 17l-5-5"/>
+                </svg>
+                <span class="he-text">הושלמה</span><span class="en-text">Completed</span>
+              </span>
+              <div class="trow__actions">
+                <a href="task-detail.html" class="btn btn--quiet btn--sm" id="t11-open" aria-labelledby="t11-open t11">
+                  <span class="he-text">פתיחה</span><span class="en-text">Open</span>
+                </a>
+              </div>
+            </li>
+
+          </ul>
+
+          <p class="tgroup-empty">
+            <span class="he-text">עדיין לא סימנתם עבודה כהושלמה.</span>
+            <span class="en-text">You have not marked any work as completed yet.</span>
+          </p>
+        </section>
+
+      </div>
+
+      <!-- The CSS shows this, and hides the filters and all three groups, only when no row exists anywhere. -->
+      <section class="tasks__none" aria-labelledby="h-none">
+        <h2 class="tasks__none-title" id="h-none">
+          <span class="he-text">אין כאן עדיין עבודה</span>
+          <span class="en-text">No work here yet</span>
+        </h2>
+        <p class="tasks__none-body">
+          <span class="he-text">לא הוקצו לכם משימות בפרויקטים ולא יצרתם עבודה עצמאית. כשמשימה תוקצה לכם או כשתפתחו עבודה משלכם, היא תופיע כאן.</span>
+          <span class="en-text">No project task is assigned to you and you have not created a solo job. When a task is assigned to you, or you open work of your own, it appears here.</span>
+        </p>
+      </section>
+
+    </main>
+
+  </div>
+
+  <!-- This script persists the language choice across screens, as on every other bilingual screen. -->
+  <script src="lang.js"></script>
+</body>
+</html>
