@@ -10,7 +10,7 @@ import { companyCalendarRepository } from '../calendar/companyCalendar.repositor
 import { projectAccessRepository } from '../projectaccess/projectAccess.repository.js';
 import { projectGrantRepository } from '../projectaccess/projectGrant.repository.js';
 import { createProjectsService } from './projects.service.js';
-import { unbuiltTasksExecutionPort } from './projectLifecycle.service.js';
+import { taskExecutionAdapter } from '../tasks/taskExecution.adapter.js';
 import {
   adoptCalendarBodySchema,
   calendarOverridesSchema,
@@ -28,7 +28,7 @@ export const createProjectsModule = (requireAccessToken: RequestHandler): Router
         memberships: companyMembershipRepository,
         companies: companyRepository,
       }),
-      execution: unbuiltTasksExecutionPort,
+      execution: taskExecutionAdapter,
       calendars: companyCalendarRepository,
       access: projectAccessRepository,
       grants: projectGrantRepository,

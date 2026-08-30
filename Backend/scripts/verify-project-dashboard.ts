@@ -14,6 +14,7 @@ import { CompanyCalendarVersionModel } from '../src/features/calendar/companyCal
 import { PermissionTemplateModel } from '../src/features/projectaccess/permissionTemplate.model.js';
 import { ProjectMembershipModel } from '../src/features/projectaccess/projectMembership.model.js';
 import { ProjectModel } from '../src/features/projects/project.model.js';
+import { TaskModel } from '../src/features/tasks/task.model.js';
 import { cleanUp, createAccount } from './support/accounts.js';
 import { check, finish, request, section, startHarness } from './support/harness.js';
 
@@ -297,16 +298,57 @@ const run = async (): Promise<void> => {
   });
   check(noCalendarRight.status === 403, 'A member without the calendar right cannot adopt', noCalendarRight.status);
 
-  section('No task figure is invented while Tasks do not exist');
+  section('A project with no tasks reports no figures at all');
+  const emptyView = (await dashboard(alice.token)).body as unknown as DashboardBody;
+  check(emptyView.tasks === null, 'The task summary is null, not four zeros', JSON.stringify(emptyView.tasks));
+
+  section('Real task counts, from the one Task source');
+  const day2 = (o: number): Date => new Date(Date.now() + o * 86_400_000);
+  await TaskModel.create({
+    kind: 'project', project: new Types.ObjectId(projectId), company: alice.companyId,
+    createdBy: alice.userId, assignee: alice.userId,
+    title: 'seed open', startDate: day2(-2), dueDate: day2(5),
+  });
+  await TaskModel.create({
+    kind: 'project', project: new Types.ObjectId(projectId), company: alice.companyId,
+    createdBy: alice.userId, assignee: alice.userId,
+    title: 'seed overdue', startDate: day2(-9), dueDate: day2(-3),
+  });
+  await TaskModel.create({
+    kind: 'project', project: new Types.ObjectId(projectId), company: alice.companyId,
+    createdBy: alice.userId, assignee: alice.userId,
+    title: 'seed done', startDate: day2(-9), dueDate: day2(-4),
+    startedAt: day2(-8), completedAt: day2(-5),
+  });
+
+  const withTasks = (await dashboard(alice.token)).body as unknown as DashboardBody;
+  const summary = withTasks.tasks as { total: number; open: number; overdue: number; completed: number } | null;
+  check(summary !== null, 'Once work exists the summary is real');
+  check(summary?.total === 3, 'Three tasks counted', summary?.total);
+  check(summary?.completed === 1, 'One complete', summary?.completed);
+  check(summary?.open === 2, 'Two still open', summary?.open);
+  check(summary?.overdue === 1, 'And one overdue, derived by the same rule My Tasks uses', summary?.overdue);
+
+  const rowCount = await TaskModel.countDocuments({ project: projectId }).exec();
+  check(summary?.total === rowCount, 'The count is the task rows themselves, not a stored counter', rowCount);
+
+  // The port now answers hasFirstTaskStarted truthfully, and cancellation uses it. Promoting the
+  // PROJECT to active off the first started task is a lifecycle write, and is not in this batch.
+  check(withTasks.project.status === 'planned',
+    'Project status still derives from its own stored flags, not from task execution',
+    withTasks.project.status);
+
+  section('No task figure is invented anywhere');
   const final = (await dashboard(alice.token)).body as unknown as DashboardBody;
-  check(final.tasks === null, 'The task summary is null, not a zero', JSON.stringify(final.tasks));
   const serialized = JSON.stringify(final);
-  for (const invented of ['overdue', 'openTaskCount', 'progress', 'completedTasks', 'dependencies']) {
+  // `overdue` is now a REAL counted figure and is deliberately not in this list.
+  for (const invented of ['openTaskCount', 'progress', 'percent', 'completedTasks', 'dependencies']) {
     check(!serialized.includes(invented), `The payload carries no \`${invented}\` figure`);
   }
 
   const companies = [alice.companyId, bob.companyId, carol.companyId];
   const owned = await ProjectModel.find({ company: { $in: companies } }).select('_id').lean().exec();
+  await TaskModel.deleteMany({ project: { $in: owned.map((row) => row._id) } }).exec();
   await ProjectMembershipModel.deleteMany({ project: { $in: owned.map((row) => row._id) } }).exec();
   await PermissionTemplateModel.deleteMany({ company: { $in: companies } }).exec();
   await CompanyCalendarVersionModel.deleteMany({ company: { $in: companies } }).exec();

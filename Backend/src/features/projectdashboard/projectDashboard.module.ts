@@ -9,7 +9,7 @@ import { createCompanyContextService } from '../companies/companyContext.service
 import { participantRepository } from '../projectmembers/participant.repository.js';
 import { projectAccessRepository } from '../projectaccess/projectAccess.repository.js';
 import { projectRepository } from '../projects/project.repository.js';
-import { unbuiltTasksExecutionPort } from '../projects/projectLifecycle.service.js';
+import { taskExecutionAdapter } from '../tasks/taskExecution.adapter.js';
 import { projectScopeParamsSchema } from '../projectmembers/projectMembers.validation.js';
 import { createProjectDashboardService } from './projectDashboard.service.js';
 
@@ -28,7 +28,7 @@ export const createProjectDashboardModule = (requireAccessToken: RequestHandler)
     access: projectAccessRepository,
     calendars: companyCalendarRepository,
     participants: participantRepository,
-    execution: unbuiltTasksExecutionPort,
+    execution: taskExecutionAdapter,
   });
 
   const router = Router({ mergeParams: true });
