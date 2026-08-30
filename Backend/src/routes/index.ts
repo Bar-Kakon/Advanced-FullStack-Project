@@ -19,6 +19,7 @@ import {
 } from '../features/projectmembers/projectMembers.module.js';
 import { createGoogleRoutesAdapter } from '../features/location/routes.adapter.js';
 import { createRatingsModule } from '../features/ratings/ratings.module.js';
+import { createTasksModule } from '../features/tasks/tasks.module.js';
 import { createUsersModule } from '../features/users/users.module.js';
 import { createHealthRouter } from './health.routes.js';
 import { createHealthAuthRouter } from './healthAuth.routes.js';
@@ -56,6 +57,7 @@ export const createApiRouter = (config: AppConfig): Router => {
   router.use('/projects', createProjectsModule(auth.requireAccessToken));
   router.use('/calendar', createCalendarModule(auth.requireAccessToken));
   router.use('/permissions', createPermissionsModule(auth.requireAccessToken));
+  router.use('/tasks', createTasksModule(auth.requireAccessToken));
   router.use('/ratings', createRatingsModule(auth.requireAccessToken));
   router.use('/location', createLocationModule(auth.requireAccessToken, config.googleMaps, routes));
   router.use(
