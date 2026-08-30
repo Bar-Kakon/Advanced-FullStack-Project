@@ -1,5 +1,5 @@
 import type { Availability } from '../companies/company.model.js';
-import type { Region, Trade } from '../users/user.model.js';
+import type { Region, RegistrationCategory, Specialty } from '../users/user.model.js';
 import type { RelationshipState } from '../connections/relationship.service.js';
 import type { StructuredPlace } from '../location/place.types.js';
 
@@ -12,7 +12,10 @@ export interface ContractorSummaryDto {
   readonly firstName: string;
   readonly lastName: string;
   readonly companyName: string | null;
-  readonly specialties: readonly Trade[];
+  /** Which of the three routes this account registered through. A card is never assumed to be a
+   *  contractor. */
+  readonly registrationCategory: RegistrationCategory;
+  readonly specialties: readonly Specialty[];
   readonly specialtyOther: string | null;
   readonly city: string | null;
   readonly region: Region | null;

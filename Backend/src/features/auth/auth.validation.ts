@@ -9,7 +9,18 @@ import {
   type CompanyPosition,
   type CompanyStanding,
 } from '../companies/companyMembership.model.js';
-import { REGIONS, TRADES, type Region, type Trade } from '../users/user.model.js';
+import {
+  DRILLING_SPECIALTY,
+  DRILLING_TYPES,
+  OTHER_SPECIALTIES,
+  REGIONS,
+  REGISTRATION_CATEGORIES,
+  SPECIALTIES_BY_CATEGORY,
+  type DrillingType,
+  type Region,
+  type RegistrationCategory,
+  type Specialty,
+} from '../users/user.model.js';
 
 export interface LoginBody {
   readonly email: string;
@@ -38,8 +49,12 @@ export interface RegisterBody {
   readonly email: string;
   readonly password: string;
   readonly confirmPassword: string;
-  readonly specialty: Trade;
+  /** Step 1's first choice. It decides which taxonomy `specialty` is read against. */
+  readonly registrationCategory: RegistrationCategory;
+  readonly specialty: Specialty;
   readonly specialtyOther?: string;
+  /** Contractor drilling only. */
+  readonly drillingTypes?: readonly DrillingType[];
   readonly city: string;
   readonly region: Region;
   readonly officePhone?: string;
@@ -48,6 +63,8 @@ export interface RegisterBody {
   readonly place?: StructuredPlaceBody;
   readonly availability?: Availability;
   readonly acceptedTerms: true;
+  /** Step 2. Required with no default, so neither answer can be assumed from silence. */
+  readonly operationalEmail: boolean;
 }
 
 const MAX_EMAIL_LENGTH = 254;
@@ -130,14 +147,39 @@ export const registerBodySchema = Joi.object<RegisterBody>({
     .valid(Joi.ref('password'))
     .messages({ 'any.only': 'confirmPassword must match password' }),
 
-  specialty: Joi.string()
-    .valid(...TRADES)
+  // Asked first in Step 1, because it decides which list the next field is read against.
+  registrationCategory: Joi.string()
+    .valid(...REGISTRATION_CATEGORIES)
     .required(),
-  // Required exactly when the trade is `other`, and refused otherwise, so the enum and the free
-  // text can never describe two different things.
+
+  // Each route accepts only its own taxonomy, so a supplier cannot register as an electrician.
+  specialty: Joi.when('registrationCategory', {
+    switch: REGISTRATION_CATEGORIES.map((category) => ({
+      is: category,
+      then: Joi.string()
+        .valid(...SPECIALTIES_BY_CATEGORY[category])
+        .required(),
+    })),
+    otherwise: Joi.any().forbidden(),
+  }),
+
+  // Required exactly when the specialty is the route's own `other` code, and refused otherwise, so
+  // the enum and the free text can never describe two different things.
   specialtyOther: Joi.when('specialty', {
-    is: 'other',
+    is: Joi.string()
+      .valid(...OTHER_SPECIALTIES)
+      .required(),
     then: Joi.string().trim().min(1).max(MAX_SPECIALTY_OTHER_LENGTH).required(),
+    otherwise: Joi.any().forbidden(),
+  }),
+
+  // The nested drilling subtype. Refused on every other specialty, the way `heavyEquipment` is.
+  drillingTypes: Joi.when('specialty', {
+    is: DRILLING_SPECIALTY,
+    then: Joi.array()
+      .items(Joi.string().valid(...DRILLING_TYPES))
+      .unique()
+      .optional(),
     otherwise: Joi.any().forbidden(),
   }),
 
@@ -180,4 +222,7 @@ export const registerBodySchema = Joi.object<RegisterBody>({
   }),
 
   acceptedTerms: Joi.boolean().valid(true).required(),
+
+  // Step 2. Required with no default: the person must actively choose, and either answer is valid.
+  operationalEmail: Joi.boolean().required(),
 });

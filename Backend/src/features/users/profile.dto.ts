@@ -1,6 +1,12 @@
 import type { Availability } from '../companies/company.model.js';
 import type { CompanyPosition, CompanyStanding } from '../companies/companyMembership.model.js';
-import type { HeavyEquipment, Region, Trade } from './user.model.js';
+import type {
+  DrillingType,
+  HeavyEquipment,
+  Region,
+  RegistrationCategory,
+  Specialty,
+} from './user.model.js';
 import type { StructuredPlace } from '../location/place.types.js';
 
 export interface WorkEntryDto {
@@ -26,10 +32,16 @@ export interface ProfileDto {
   readonly profileComplete: boolean;
 
   readonly bio: string;
-  readonly specialties: readonly Trade[];
+  /** The route this account registered through. Read-only here: it is not a profile field. */
+  readonly registrationCategory: RegistrationCategory;
+  readonly specialties: readonly Specialty[];
   readonly specialtyOther: string;
   /** Empty unless `heavy_equipment` is one of the specialties, which is what the server enforces. */
   readonly heavyEquipment: readonly HeavyEquipment[];
+  /** Empty unless `drilling` is one of the specialties, enforced the same way. */
+  readonly drillingTypes: readonly DrillingType[];
+  /** The Step 2 answer. Changing it needs a Notification Settings screen, which does not exist. */
+  readonly operationalEmail: boolean;
   readonly businessPhone: string;
   readonly city: string;
   readonly region: Region | null;

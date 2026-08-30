@@ -92,7 +92,9 @@ const toNewUser = (input: RegisterBody, passwordHash: string, termsVersion: stri
   passwordHash,
   firstName: input.firstName,
   lastName: input.lastName,
+  registrationCategory: input.registrationCategory,
   specialties: [input.specialty],
+  notificationPreferences: { operationalEmail: input.operationalEmail },
   location: {
     city: input.city,
     region: input.region,
@@ -100,6 +102,7 @@ const toNewUser = (input: RegisterBody, passwordHash: string, termsVersion: stri
   },
   termsAcceptances: [{ version: termsVersion, acceptedAt: new Date() }],
   ...(input.specialtyOther === undefined ? {} : { specialtyOther: input.specialtyOther }),
+  ...(input.drillingTypes === undefined ? {} : { drillingTypes: input.drillingTypes }),
   ...(input.businessPhone === undefined ? {} : { businessPhone: input.businessPhone }),
 });
 

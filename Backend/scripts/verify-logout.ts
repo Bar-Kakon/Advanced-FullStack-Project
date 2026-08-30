@@ -35,8 +35,8 @@ const run = async (): Promise<never> => {
     body: JSON.stringify({
       firstName: 'Logout', lastName: 'Tester', standing: 'owner', companyName,
       email, password: PASSWORD, confirmPassword: PASSWORD,
-      specialty: 'electrical', city: 'חיפה', region: 'haifa',
-      availability: 'open', acceptedTerms: true,
+      registrationCategory: 'contractor', specialty: 'electrical', city: 'חיפה', region: 'haifa',
+      availability: 'open', acceptedTerms: true, operationalEmail: true,
     }),
   });
   if (registered.status !== 201) throw new Error(`register: ${registered.status}`);

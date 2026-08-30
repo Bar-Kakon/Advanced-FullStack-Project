@@ -1,6 +1,11 @@
 import { Types, type PipelineStage } from 'mongoose';
 
-import { UserModel, type Region, type Trade } from '../users/user.model.js';
+import {
+  UserModel,
+  type Region,
+  type RegistrationCategory,
+  type Specialty,
+} from '../users/user.model.js';
 import type { Availability } from '../companies/company.model.js';
 import { CompanyMembershipModel } from '../companies/companyMembership.model.js';
 import { CompanyModel } from '../companies/company.model.js';
@@ -13,7 +18,8 @@ export interface BrowseCandidate {
   readonly firstName: string;
   readonly lastName: string;
   readonly bio?: string;
-  readonly specialties?: readonly Trade[];
+  readonly registrationCategory: RegistrationCategory;
+  readonly specialties?: readonly Specialty[];
   readonly specialtyOther?: string;
   readonly businessPhone?: string;
   readonly avatar?: { readonly fileId?: Types.ObjectId };
@@ -43,7 +49,8 @@ const UNRATED_SORT_KEY = -1;
 export interface BrowseQuery {
   readonly excludeUserIds: readonly Types.ObjectId[];
   readonly text?: string;
-  readonly specialties?: readonly Trade[];
+  readonly categories?: readonly RegistrationCategory[];
+  readonly specialties?: readonly Specialty[];
   readonly regions?: readonly Region[];
   readonly availability?: readonly Availability[];
   readonly approvedPlaceId?: string;
@@ -65,11 +72,13 @@ export const browseRepository: BrowseRepository = {
    * which is what keeps a page of results at a fixed number of round trips.
    */
   async find({
-    excludeUserIds, text, specialties, regions, availability, approvedPlaceId, sort, cursor, limit,
+    excludeUserIds, text, categories, specialties, regions, availability, approvedPlaceId, sort,
+    cursor, limit,
   }) {
     const match: Record<string, unknown> = { status: 'active' };
 
     if (excludeUserIds.length > 0) match['_id'] = { $nin: [...excludeUserIds] };
+    if (categories && categories.length > 0) match['registrationCategory'] = { $in: [...categories] };
     if (specialties && specialties.length > 0) match['specialties'] = { $in: [...specialties] };
     if (approvedPlaceId) match['approvedTravelLocations.placeId'] = approvedPlaceId;
 
@@ -183,7 +192,7 @@ export const browseRepository: BrowseRepository = {
       { $limit: limit },
       {
         $project: {
-          firstName: 1, lastName: 1, bio: 1, specialties: 1, specialtyOther: 1,
+          firstName: 1, lastName: 1, bio: 1, registrationCategory: 1, specialties: 1, specialtyOther: 1,
           businessPhone: 1, avatar: 1, location: 1, approvedTravelLocations: 1, createdAt: 1,
           ratingSortKey: 1,
           companyName: '$company.name',

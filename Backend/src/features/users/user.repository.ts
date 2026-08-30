@@ -3,10 +3,13 @@ import { Types } from 'mongoose';
 import type { DbSession } from '../../db/mongoose.js';
 import {
   UserModel,
+  type DrillingType,
   type HeavyEquipment,
+  type NotificationPreferences,
   type Region,
+  type RegistrationCategory,
+  type Specialty,
   type TermsAcceptance,
-  type Trade,
   type UserProfileRecord,
   type StoredApprovedTravelLocation,
   type StoredExcludedTravelLocation,
@@ -23,7 +26,7 @@ const IDENTITY_FIELDS = 'email status firstName lastName language profileComplet
  * absent from this list anyway; `termsAcceptances` and `security` are deliberately not here,
  * because no profile screen shows them and a projection is the cheapest place to keep it that way.
  */
-const PROFILE_FIELDS = `${IDENTITY_FIELDS} bio specialties specialtyOther heavyEquipment businessPhone location approvedTravelLocations schedulingPrefs avatar`;
+const PROFILE_FIELDS = `${IDENTITY_FIELDS} bio registrationCategory specialties specialtyOther heavyEquipment drillingTypes notificationPreferences businessPhone location approvedTravelLocations schedulingPrefs avatar`;
 
 /**
  * The write shape, deliberately separate from `UserRecord`. A caller can only supply what it lists,
@@ -38,8 +41,11 @@ export interface NewUser {
   readonly passwordHash: string;
   readonly firstName: string;
   readonly lastName: string;
-  readonly specialties: readonly Trade[];
+  readonly registrationCategory: RegistrationCategory;
+  readonly specialties: readonly Specialty[];
   readonly specialtyOther?: string;
+  readonly drillingTypes?: readonly DrillingType[];
+  readonly notificationPreferences: NotificationPreferences;
   readonly businessPhone?: string;
   readonly location: { readonly city: string; readonly region: Region; readonly place?: StoredPlace };
   readonly termsAcceptances: readonly TermsAcceptance[];
@@ -50,10 +56,12 @@ export interface ProfileUpdate {
   readonly firstName?: string;
   readonly lastName?: string;
   readonly bio?: string;
-  readonly specialties?: readonly Trade[];
+  readonly specialties?: readonly Specialty[];
   readonly specialtyOther?: string | null;
-  /** An empty array is a real answer: the trade is held, no machine is named yet. */
+  /** An empty array is a real answer: the specialty is held, no machine is named yet. */
   readonly heavyEquipment?: readonly HeavyEquipment[];
+  /** Likewise: drilling is held, no subtype is named yet. */
+  readonly drillingTypes?: readonly DrillingType[];
   readonly businessPhone?: string | null;
   readonly city?: string;
   readonly region?: Region;
@@ -181,6 +189,7 @@ export const userRepository: UserRepository = {
     if (update.specialties !== undefined) $set['specialties'] = [...update.specialties];
     put('specialtyOther', update.specialtyOther);
     if (update.heavyEquipment !== undefined) $set['heavyEquipment'] = [...update.heavyEquipment];
+    if (update.drillingTypes !== undefined) $set['drillingTypes'] = [...update.drillingTypes];
     put('businessPhone', update.businessPhone);
     put('location.city', update.city);
     put('location.region', update.region);
@@ -251,13 +260,14 @@ export const userRepository: UserRepository = {
    * ride along, because it is not in that projection. The read joins the caller's session, or it
    * would not see a document the open transaction has not committed yet.
    */
-  async create(user, session) {
+  async create({ specialties, drillingTypes, termsAcceptances, ...user }, session) {
     const [created] = await UserModel.create(
       [
         {
           ...user,
-          specialties: [...user.specialties],
-          termsAcceptances: [...user.termsAcceptances],
+          specialties: [...specialties],
+          termsAcceptances: [...termsAcceptances],
+          ...(drillingTypes === undefined ? {} : { drillingTypes: [...drillingTypes] }),
         },
       ],
       session ? { session } : {},

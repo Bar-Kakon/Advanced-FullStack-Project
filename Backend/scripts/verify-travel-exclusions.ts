@@ -220,7 +220,8 @@ const run = async (): Promise<void> => {
   const registered = await send('POST', '/auth/register', {
     firstName: 'Travel', lastName: 'Tester', standing: 'owner', companyName: 'Travel Verify Ltd',
     email, password: PASSWORD, confirmPassword: PASSWORD,
-    specialty: 'electrical', city: 'חיפה', region: 'haifa', availability: 'open', acceptedTerms: true,
+    registrationCategory: 'contractor', specialty: 'electrical', city: 'חיפה', region: 'haifa',
+    availability: 'open', acceptedTerms: true, operationalEmail: true,
   });
   if (registered.status !== 201) throw new Error(`register: ${JSON.stringify(registered.body)}`);
   const signedIn = await send('POST', '/auth/login', { email, password: PASSWORD });

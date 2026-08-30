@@ -91,6 +91,7 @@ export const createPublicProfileService = ({
       firstName: subject.firstName,
       lastName: subject.lastName,
       companyName: company?.name ?? null,
+      registrationCategory: subject.registrationCategory,
       specialties: subject.specialties ?? [],
       specialtyOther: subject.specialtyOther ?? null,
       city: subject.location?.city ?? null,
