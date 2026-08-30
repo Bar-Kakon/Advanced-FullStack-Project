@@ -36,8 +36,8 @@ const register = async (who, extra = {}) => {
       firstName: who.first, lastName: who.last, standing: 'owner',
       companyName: `Owner QA ${who.first} ${stamp} Ltd`, email: who.email,
       password: PASSWORD, confirmPassword: PASSWORD,
-      specialty: 'electrical', city: 'חיפה', region: 'haifa',
-      availability: 'open', acceptedTerms: true, ...extra,
+      registrationCategory: 'contractor', specialty: 'electrical', city: 'חיפה', region: 'haifa',
+      availability: 'open', acceptedTerms: true, operationalEmail: true, ...extra,
     }),
   });
   if (response.status !== 201) throw new Error(`register ${who.email}: ${response.status}`);

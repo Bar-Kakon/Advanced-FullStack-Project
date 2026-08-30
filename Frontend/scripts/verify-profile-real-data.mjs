@@ -53,6 +53,8 @@ const run = async () => {
   await page.fill('#email', ENTERED.email);
   await page.fill('#password', ENTERED.password);
   await page.fill('#password-confirm', ENTERED.password);
+  // Step 1 opens with the route: it decides which taxonomy the specialty select offers.
+  await page.selectOption('#registrationCategory', 'contractor').catch(() => {});
   await page.selectOption('#specialty', ENTERED.specialty).catch(() => {});
   // The city box is the shared structured place field now, so a place is chosen rather than typed.
   const cityBox = page.locator('.place-field input[role="combobox"]');
@@ -63,6 +65,10 @@ const run = async () => {
   await page.selectOption('#region', ENTERED.region).catch(() => {});
   await page.fill('#officePhone', ENTERED.officePhone).catch(() => {});
   await page.fill('#businessPhone', ENTERED.businessPhone).catch(() => {});
+  // Step 1 done; Step 2 asks for the email choice and the Terms.
+  await page.click('button[type="submit"]');
+  await page.waitForTimeout(700);
+  await page.check('#operationalEmail-accept').catch(() => {});
   const boxes = page.locator('input[type="checkbox"]');
   for (let i = 0; i < (await boxes.count()); i += 1) await boxes.nth(i).check().catch(() => {});
   await page.click('button[type="submit"]');

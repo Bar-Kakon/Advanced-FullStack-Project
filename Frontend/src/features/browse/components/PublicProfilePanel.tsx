@@ -77,8 +77,11 @@ export const PublicProfilePanel = ({
 
           {profile.specialties.length > 0 ? (
             <ul className="tags">
+              <li className={`tag tag--route tag--route-${profile.registrationCategory}`}>
+                {t.specialtyCategories[profile.registrationCategory]}
+              </li>
               {profile.specialties.map((code) => (
-                <li key={code} className="tag">{t.trades[code]}</li>
+                <li key={code} className="tag">{t.specialties[code]}</li>
               ))}
             </ul>
           ) : null}

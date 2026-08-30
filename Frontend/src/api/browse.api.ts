@@ -17,6 +17,7 @@ const toParams = (filters: BrowseFilters, cursor: string | null, limit: number):
   params.set('limit', String(limit));
 
   if (filters.q.trim()) params.set('q', filters.q.trim());
+  for (const code of filters.categories) params.append('category', code);
   for (const code of filters.specialties) params.append('specialty', code);
   for (const code of filters.regions) params.append('region', code);
   for (const code of filters.availability) params.append('availability', code);

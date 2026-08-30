@@ -5,9 +5,11 @@ import type {
   ApiErrorBody,
   Availability,
   CompanyPosition,
+  DrillingType,
   EquipmentCode,
   Region,
-  Trade,
+  RegistrationCategory,
+  Specialty,
 } from './types';
 import type { StructuredPlace } from '../location/place.types';
 
@@ -36,10 +38,16 @@ export interface Profile {
   readonly profileComplete: boolean;
 
   readonly bio: string;
-  readonly specialties: readonly Trade[];
+  /** The route this account registered through. Read-only: it is not a profile field. */
+  readonly registrationCategory: RegistrationCategory;
+  readonly specialties: readonly Specialty[];
   readonly specialtyOther: string;
   /** Empty unless `heavy_equipment` is one of the specialties; the server enforces that. */
   readonly heavyEquipment: readonly EquipmentCode[];
+  /** Empty unless `drilling` is one of the specialties, enforced the same way. */
+  readonly drillingTypes: readonly DrillingType[];
+  /** The Step 2 answer. There is no Notification Settings screen yet to change it from. */
+  readonly operationalEmail: boolean;
   readonly businessPhone: string;
   readonly city: string;
   readonly region: Region | null;
@@ -77,9 +85,10 @@ export interface ProfilePatch {
   firstName?: string;
   lastName?: string;
   bio?: string;
-  specialties?: readonly Trade[];
+  specialties?: readonly Specialty[];
   specialtyOther?: string | null;
   heavyEquipment?: readonly EquipmentCode[];
+  drillingTypes?: readonly DrillingType[];
   businessPhone?: string | null;
   city?: string;
   region?: Region;

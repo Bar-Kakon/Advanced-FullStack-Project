@@ -36,8 +36,8 @@ const run = async () => {
       firstName: FIRST, lastName: LAST, standing: 'owner',
       companyName: `Account Menu ${stamp} Ltd`, email: EMAIL,
       password: PASSWORD, confirmPassword: PASSWORD,
-      specialty: 'electrical', city: 'חיפה', region: 'haifa',
-      availability: 'open', acceptedTerms: true,
+      registrationCategory: 'contractor', specialty: 'electrical', city: 'חיפה', region: 'haifa',
+      availability: 'open', acceptedTerms: true, operationalEmail: true,
     }),
   });
   if (registered.status !== 201) throw new Error(`register: ${registered.status}`);

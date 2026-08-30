@@ -1248,3 +1248,79 @@ html[data-lang="en"] {
   align-items: center;
   pointer-events: none;
 }
+
+/* ═══ Two-step registration ═══ */
+/* The step list is the only place the flow's shape is visible, so it names both steps rather
+   than only the current one. Numbers stay outside the label text: the label is a translated
+   phrase and the number is not. */
+.reg-steps {
+  display: flex;
+  gap: 10px;
+  margin: 0 0 6px;
+  padding: 0;
+  list-style: none;
+}
+.reg-steps__item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  padding: 10px 12px;
+  border: 1px solid var(--secondary-55);
+  border-radius: 10px;
+  background: var(--background);
+  color: var(--text-mute);
+  font-size: 14px;
+  line-height: 1.25;
+}
+.reg-steps__item--current {
+  border-color: var(--primary-30);
+  background: var(--secondary-15);
+  color: var(--primary);
+  font-weight: 600;
+}
+.reg-steps__num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1px solid currentColor;
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+.reg-steps__item--current .reg-steps__num { background: var(--primary); border-color: var(--primary); color: #fff; }
+.reg-steps__count {
+  margin: 0 0 14px;
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-mute);
+}
+
+/* Back and submit sit on one row. Back is a ghost button so the primary action stays the one
+   that finishes the registration. */
+.reg-nav { display: flex; gap: 12px; }
+.reg-nav .btn { flex: 1; }
+
+/* ═══ Step 2: the email-delivery choice ═══ */
+/* Prominent by construction: it is the whole step, with the consequence of declining stated in
+   full above the two options rather than folded into a hint under them. */
+.email-choice {
+  gap: 10px;
+  padding: 16px;
+  border: 1px solid var(--secondary-55);
+  border-radius: 12px;
+  background: var(--background);
+}
+.email-choice__body {
+  margin: 0;
+  font-size: 15.5px;
+  line-height: 1.6;
+  color: var(--text-soft);
+}
+.email-choice__body--note { color: var(--text); }
+.email-choice__label { font-size: 15.5px; line-height: 1.4; }

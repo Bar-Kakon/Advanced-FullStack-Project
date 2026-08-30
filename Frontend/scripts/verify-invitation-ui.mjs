@@ -33,8 +33,9 @@ const run = async () => {
     body: JSON.stringify({
       firstName: 'Invite', lastName: `Owner${stamp}`, standing: 'owner', companyName: COMPANY,
       email: EMAIL, password: PASSWORD, confirmPassword: PASSWORD,
-      specialty: 'electrical', city: 'חיפה', region: 'haifa', availability: 'open',
+      registrationCategory: 'contractor', specialty: 'electrical', city: 'חיפה', region: 'haifa', availability: 'open',
       acceptedTerms: true,
+      operationalEmail: true,
     }),
   });
   if (registered.status !== 201) throw new Error(`register: ${registered.status}`);

@@ -1,14 +1,18 @@
 import type { StructuredPlace } from '../../location/place.types';
-import type {
-  Availability,
-  CompanyPosition,
-  CompanyStanding,
-  Region,
-  RegisterPayload,
-  Trade,
+import {
+  DRILLING_SPECIALTY,
+  OTHER_SPECIALTY,
+  type Availability,
+  type CompanyPosition,
+  type CompanyStanding,
+  type DrillingType,
+  type Region,
+  type RegisterPayload,
+  type RegistrationCategory,
+  type Specialty,
 } from '../../api/types';
 
-/** What the form holds while it is being filled: every field a string, exactly as typed. */
+/** What the form holds while it is being filled, exactly as typed. */
 export interface RegisterFormValues {
   firstName: string;
   lastName: string;
@@ -16,8 +20,10 @@ export interface RegisterFormValues {
   companyName: string;
   companyPosition: CompanyPosition | '';
   email: string;
-  specialty: Trade | '';
+  registrationCategory: RegistrationCategory | '';
+  specialty: Specialty | '';
   specialtyOther: string;
+  drillingTypes: readonly DrillingType[];
   city: string;
   place: StructuredPlace | null;
   region: Region | '';
@@ -27,6 +33,8 @@ export interface RegisterFormValues {
   password: string;
   confirmPassword: string;
   acceptedTerms: boolean;
+  /** `null` until the person answers. Neither option is preselected. */
+  operationalEmail: boolean | null;
 }
 
 export const emptyRegisterForm: RegisterFormValues = {
@@ -37,8 +45,10 @@ export const emptyRegisterForm: RegisterFormValues = {
   companyName: '',
   companyPosition: '',
   email: '',
+  registrationCategory: '',
   specialty: '',
   specialtyOther: '',
+  drillingTypes: [],
   city: '',
   place: null,
   region: '',
@@ -49,23 +59,33 @@ export const emptyRegisterForm: RegisterFormValues = {
   password: '',
   confirmPassword: '',
   acceptedTerms: false,
+  operationalEmail: null,
 };
+
+/** True when this specialty is the free-text code belonging to the chosen route. */
+export const isOtherSpecialty = (
+  category: RegistrationCategory | '',
+  specialty: Specialty | '',
+): boolean => category !== '' && specialty === OTHER_SPECIALTY[category];
 
 /**
  * The one place the form's shape becomes the endpoint's shape. Keeping it a plain function of its
  * input — no state, no network — is what makes the contract checkable in isolation.
  *
- * Three conversions are doing real work, and each one is a request the server would otherwise
+ * Five conversions are doing real work, and each one is a request the server would otherwise
  * reject:
  *
  * - **Empty optional fields are omitted, not sent blank.** `officePhone` is `Joi.string()`, and
  *   Joi treats `''` as invalid rather than absent, so sending an untouched phone field as an empty
  *   string fails the whole request with a 400.
- * - **`specialtyOther` is omitted unless the trade is `other`.** The server marks it `forbidden()`
- *   in every other case, so carrying a leftover value from a trade the user changed their mind
- *   about would fail validation.
+ * - **`specialtyOther` is omitted unless the specialty is the route's own `other` code.** The
+ *   server marks it `forbidden()` in every other case.
+ * - **`drillingTypes` is omitted unless the specialty is `drilling`**, which the server forbids the
+ *   same way — a leftover subtype from a changed answer would fail validation.
  * - **`acceptedTerms` is a real boolean.** A browser checkbox submits the string `"on"`; the
  *   server accepts only `true`.
+ * - **`operationalEmail` is sent as the boolean that was actually chosen.** The server has no
+ *   default for it, so an unanswered form is a bug here rather than a silent `false`.
  *
  * The two phones are built from separate, independent expressions. Neither reads the other, so no
  * fallback between them can exist here.
@@ -76,12 +96,19 @@ export const emptyRegisterForm: RegisterFormValues = {
  * three values the server matches their invitation on.
  */
 export const buildRegisterPayload = (values: RegisterFormValues): RegisterPayload => {
+  if (values.registrationCategory === '') {
+    throw new Error('buildRegisterPayload called without a registration category.');
+  }
   if (values.specialty === '') throw new Error('buildRegisterPayload called without a specialty.');
   if (values.region === '') throw new Error('buildRegisterPayload called without a region.');
+  if (values.operationalEmail === null) {
+    throw new Error('buildRegisterPayload called without an email-delivery choice.');
+  }
 
   const officePhone = values.officePhone.trim();
   const businessPhone = values.businessPhone.trim();
   const specialtyOther = values.specialtyOther.trim();
+  const wantsOther = isOtherSpecialty(values.registrationCategory, values.specialty);
 
   const isEmployee = values.standing === 'employee';
   if (isEmployee && values.companyPosition === '') {
@@ -97,8 +124,12 @@ export const buildRegisterPayload = (values: RegisterFormValues): RegisterPayloa
     email: values.email.trim(),
     password: values.password,
     confirmPassword: values.confirmPassword,
+    registrationCategory: values.registrationCategory,
     specialty: values.specialty,
-    ...(values.specialty === 'other' && specialtyOther ? { specialtyOther } : {}),
+    ...(wantsOther && specialtyOther ? { specialtyOther } : {}),
+    ...(values.specialty === DRILLING_SPECIALTY && values.drillingTypes.length > 0
+      ? { drillingTypes: values.drillingTypes }
+      : {}),
     city: values.city.trim(),
     ...(values.place === null ? {} : { place: values.place }),
     region: values.region,
@@ -106,5 +137,6 @@ export const buildRegisterPayload = (values: RegisterFormValues): RegisterPayloa
     ...(businessPhone ? { businessPhone } : {}),
     ...(isEmployee ? {} : { availability: values.availability }),
     acceptedTerms: true,
+    operationalEmail: values.operationalEmail,
   };
 };

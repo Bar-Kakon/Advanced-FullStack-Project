@@ -1,5 +1,11 @@
 import type { StructuredPlace } from '../location/place.types';
-import type { Availability, CompanyPosition, Region, Trade } from './types';
+import type {
+  Availability,
+  CompanyPosition,
+  Region,
+  RegistrationCategory,
+  Specialty,
+} from './types';
 
 /** The four Browse states, mirrored from `relationship.service.ts`. Blocked is never among them. */
 export const RELATIONSHIP_STATES = [
@@ -14,7 +20,9 @@ export interface ContractorSummary {
   readonly firstName: string;
   readonly lastName: string;
   readonly companyName: string | null;
-  readonly specialties: readonly Trade[];
+  /** The route this account registered through. A card is never assumed to be a contractor. */
+  readonly registrationCategory: RegistrationCategory;
+  readonly specialties: readonly Specialty[];
   readonly specialtyOther: string | null;
   readonly city: string | null;
   readonly region: Region | null;
@@ -87,7 +95,9 @@ export type BrowseSort = (typeof BROWSE_SORTS)[number];
 export interface BrowseFilters {
   readonly sort: BrowseSort;
   readonly q: string;
-  readonly specialties: readonly Trade[];
+  /** Which registration routes to search. Empty searches all three. */
+  readonly categories: readonly RegistrationCategory[];
+  readonly specialties: readonly Specialty[];
   readonly regions: readonly Region[];
   readonly availability: readonly Availability[];
   readonly approvedPlace: StructuredPlace | null;
@@ -100,6 +110,7 @@ export interface BrowseFilters {
 export const emptyBrowseFilters: BrowseFilters = {
   sort: 'relevance',
   q: '',
+  categories: [],
   specialties: [],
   regions: [],
   availability: [],

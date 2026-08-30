@@ -43,6 +43,13 @@ export const buildProfilePatch = (values: EditProfileValues, saved: Profile): Pr
     patch.heavyEquipment = values.equipment;
   }
 
+  const drillingChanged =
+    values.drillingTypes.length !== saved.drillingTypes.length
+    || values.drillingTypes.some((code) => !saved.drillingTypes.includes(code));
+  if (drillingChanged && values.specialties.includes('drilling')) {
+    patch.drillingTypes = values.drillingTypes;
+  }
+
   if (orNull(values.businessPhone) !== (saved.businessPhone || null)) {
     patch.businessPhone = orNull(values.businessPhone);
   }
