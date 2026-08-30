@@ -37,7 +37,8 @@
     "seed:min-rating": "tsx scripts/seed-min-rating.ts",
     "verify:project-members": "tsx scripts/verify-project-members.ts",
     "verify:project-dashboard": "tsx scripts/verify-project-dashboard.ts",
-    "verify:my-tasks": "tsx scripts/verify-my-tasks.ts"
+    "verify:my-tasks": "tsx scripts/verify-my-tasks.ts",
+    "seed:my-tasks": "tsx scripts/seed-my-tasks.ts"
   },
   "dependencies": {
     "@types/nodemailer": "^8.0.1",
