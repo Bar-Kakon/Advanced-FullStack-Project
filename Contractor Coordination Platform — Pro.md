@@ -1338,6 +1338,38 @@ into a proper section or the logs below._
 > - Notes: anything to remember / how to avoid it next time
 > ```
 
+### [2026-08-30] Three verification fixtures went stale against the schema, and only the second typecheck pass could see it — FIXED
+
+**Symptom.** `npm run typecheck` in `Backend` runs **two** passes — `tsc --noEmit` over `src`, then
+`tsc -p tsconfig.scripts.json` over `scripts/`. The second pass reported three errors, on **untouched
+`develop`** at `c98d49a`: `verify-blocks-connections-ratings.ts:308` and `:311`
+(`No overload matches this call` against `RatingModel.create`), and `verify-google-adapters.ts:36`
+(`Property 'registrationCategory' is missing in type … but required in type 'BrowseCandidate'`).
+
+**Cause — two different kinds of staleness, both from schema changes the fixtures never followed.**
+In the ratings script, `const context = { kind: 'project_task', … }` let TypeScript widen `kind` to
+`string`, so it no longer satisfied the `'project_task' | 'project_participation'` union the new
+`ratings.context` sub-document declares; overload resolution then fell through to the query-shaped
+signature and reported "no properties in common", which reads as nonsense unless the widening is
+spotted. In the Google script, `BrowseCandidate` gained a **required** `registrationCategory` with
+the Register taxonomy rework, and the hand-built candidate fixture was never updated.
+
+**The runtime was masking both, which is why the suites stayed green.** Mongoose casts
+`kind: string` to the enum on write, so the rating was stored correctly; and the Google adapters
+never read `registrationCategory`, so its absence changed no behaviour. Nothing was wrong at
+runtime — the types had simply stopped describing the fixtures, and the only thing looking was a
+pass that does not run under `tsx`.
+
+**Fix.** `fix/script-typecheck-debt`. The ratings fixture is annotated with the real
+`RatingWorkContext` type rather than left to inference, so the **next** schema change breaks the
+test at compile time instead of silently. The Google fixture gains
+`registrationCategory: 'contractor'`. **No production file was touched, no assertion changed
+meaning, and no product decision was involved** — `tsc --noEmit` over `src` was clean throughout,
+which is what proves this was fixture drift and not a production contract drift.
+
+**Notes.** `npm run typecheck` now exits 0 for the first time. Worth remembering that a green
+verification run says nothing about the second pass: `tsx` strips types and never checks them.
+
 ### [2026-08-30] An Access Token minted in the same second as a password reset survives it — OPEN, fix proposed and awaiting approval
 
 **Failing assertion.** `verify:password-reset` →
@@ -1768,6 +1800,7 @@ My projects, and a row that acts inside an `Invited` project fails.
 >
 > **Format:** `[YYYY-MM-DD] What changed — why.`
 
+- `[2026-08-30]` **The backend typecheck's second pass goes green — three stale verification fixtures, no production change.** Built on `fix/script-typecheck-debt`. **Not merged.** `npm run typecheck` runs `tsc --noEmit` over `src` **and** `tsc -p tsconfig.scripts.json` over `scripts/`; the second pass had been failing on untouched `develop` while every suite ran green, because `tsx` strips types and never checks them. Two fixtures had drifted from schema changes they never followed: an inferred `kind: string` that no longer satisfied the `ratings.context` union, and a `BrowseCandidate` fixture missing the `registrationCategory` the Register rework made required. **The runtime was masking both** — Mongoose casts the enum on write, and the Google adapters never read that field — so nothing was behaving wrongly; the types had simply stopped describing the fixtures. The ratings fixture is now annotated with the real `RatingWorkContext`, so the next schema change fails at compile time rather than silently. **No production file touched, no assertion changed meaning, no product decision involved**, which `tsc --noEmit` over `src` being clean throughout is what proves. Backend: **27 suites, 1,387 checks, 0 failures**, and `npm run typecheck` exits 0 for the first time. Detail in [§10](#10-bug--issue-log).
 - `[2026-08-30]` **Flexibility Score — the arithmetic is closed and built, and it is honest about having no evidence to run on yet.** Owner decision, built on `feature/flexibility-score` (`211b061`) and **merged into develop as `3ad02f8`**. **D6's arithmetic half closes here.**
 
   **The formula.** `score = round(100 × successful flexible resolutions ÷ score-relevant resolved events)`, 0–100. **POSITIVE, all at the same base value:** direct acceptance, a counter that reached an agreed workable solution, an accepted alternative date, and any other accepted practical solution that kept the commitment. **A Counter is never worth less for being a Counter** — what is measured is whether the work survived. **NEUTRAL:** a justified decline is excluded from the numerator **and the denominator**; leaving it in the denominator alone would lower the score, which is exactly what the closed rule forbids. The justified-reason list belongs to the approved domain findings and is supplied by the evidence source — this module holds no list of its own and never inspects a reason. **NEGATIVE:** a resolved event with no justification, no workable solution, and the commitment falling through. **Pending proposals are not events** and never reach the arithmetic.

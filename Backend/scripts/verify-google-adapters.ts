@@ -36,6 +36,7 @@ const stubPlaces = (nearby: StructuredPlace[], onResolve?: () => never): PlacesA
 const candidate = (id: string, placeId: string | null): BrowseCandidate => ({
   _id: new Types.ObjectId(id),
   firstName: 'A', lastName: 'B',
+  registrationCategory: 'contractor',
   createdAt: new Date('2026-01-01T00:00:00Z'),
   companyName: null, companyId: null, officePhone: null, availability: null,
   ...(placeId === null ? {} : { location: { place: { placeId, displayName: placeId } } }),

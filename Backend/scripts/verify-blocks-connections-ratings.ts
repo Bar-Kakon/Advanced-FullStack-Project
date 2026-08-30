@@ -11,7 +11,7 @@ import { connectToDatabase, disconnectFromDatabase } from '../src/db/mongoose.js
 import { loadConfig } from '../src/config/env.js';
 import { BlockModel } from '../src/features/blocks/block.model.js';
 import { ConnectionModel } from '../src/features/connections/connection.model.js';
-import { RatingModel } from '../src/features/ratings/rating.model.js';
+import { RatingModel, type RatingWorkContext } from '../src/features/ratings/rating.model.js';
 import { CompanyModel } from '../src/features/companies/company.model.js';
 import { CompanyMembershipModel } from '../src/features/companies/companyMembership.model.js';
 import { UserModel } from '../src/features/users/user.model.js';
@@ -304,7 +304,11 @@ const run = async (): Promise<void> => {
   console.log('\n12. The unique index enforces one rating per shared task');
   const rater = new Types.ObjectId(a.id);
   const ratee = new Types.ObjectId(b.id);
-  const context = { kind: 'project_task', project: new Types.ObjectId(), task: new Types.ObjectId() };
+  const context: RatingWorkContext = {
+    kind: 'project_task',
+    project: new Types.ObjectId(),
+    task: new Types.ObjectId(),
+  };
   await RatingModel.create([{ rater, ratee, score: 4, context }]);
   let second = 'REJECTED';
   try {
