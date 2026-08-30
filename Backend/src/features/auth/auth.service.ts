@@ -1,5 +1,5 @@
 import type { CompanyContextService } from '../companies/companyContext.service.js';
-import type { UserRecord } from '../users/user.model.js';
+import { INITIAL_TOKEN_VERSION, type UserRecord } from '../users/user.model.js';
 import type { UserRepository } from '../users/user.repository.js';
 import { invalidCredentials, invalidRefreshToken, unauthenticated } from './auth.errors.js';
 import { toSessionUser, type SessionUser } from './authenticatedUser.mapper.js';
@@ -39,6 +39,10 @@ export interface AuthServiceDependencies {
 export const isSessionPermitted = (user: Pick<UserRecord, 'status'>): boolean =>
   user.status === 'active';
 
+/** An account that has never had the version advanced sits at the initial one, stored or not. */
+export const currentTokenVersion = (user: Pick<UserRecord, 'security'>): number =>
+  user.security?.tokenVersion ?? INITIAL_TOKEN_VERSION;
+
 export const createAuthService = ({
   users,
   passwords,
@@ -64,7 +68,10 @@ export const createAuthService = ({
       throw invalidCredentials();
     }
 
-    const tokens = await tokenPair.issue(user._id.toString());
+    const tokens = await tokenPair.issue({
+      userId: user._id.toString(),
+      tokenVersion: currentTokenVersion(user),
+    });
     // Travels with the sign-in because the client routes on it immediately.
     const company = await companyContext.forUser(user._id.toString());
     return { ...tokens, user: toSessionUser(user, company) };
@@ -93,7 +100,11 @@ export const createAuthService = ({
     if (user === null || !isSessionPermitted(user)) throw invalidRefreshToken();
 
     await refreshTokenStore.markUsed(stored._id);
-    return tokenPair.issue(user._id.toString(), stored.family);
+    return tokenPair.issue({
+      userId: user._id.toString(),
+      tokenVersion: currentTokenVersion(user),
+      family: stored.family,
+    });
   },
 
   /**

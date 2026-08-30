@@ -44,7 +44,8 @@
     "seed:my-tasks": "tsx scripts/seed-my-tasks.ts",
     "verify:task-detail": "tsx scripts/verify-task-detail.ts",
     "verify:create-task": "tsx scripts/verify-create-task.ts",
-    "verify:register-taxonomy": "tsx scripts/verify-register-taxonomy.ts"
+    "verify:register-taxonomy": "tsx scripts/verify-register-taxonomy.ts",
+    "verify:token-version": "tsx scripts/verify-token-version.ts"
   },
   "dependencies": {
     "@types/nodemailer": "^8.0.1",

@@ -197,7 +197,10 @@ export interface UserRecord {
   readonly lastName: string;
   readonly language: UserLanguage;
   readonly profileComplete: boolean;
-  readonly security?: { readonly passwordChangedAt?: Date };
+  readonly security?: {
+    readonly passwordChangedAt?: Date;
+    readonly tokenVersion?: number;
+  };
 }
 
 /** The identity fields plus everything the profile screens read. */
@@ -208,6 +211,9 @@ export interface UserWithPasswordHash extends UserRecord {
 }
 
 export const USER_STATUSES: readonly UserStatus[] = ['active', 'deactivated', 'banned', 'deleted'];
+
+/** Where every account starts, and what an Access Token minted before the claim existed counts as. */
+export const INITIAL_TOKEN_VERSION = 0;
 
 const placeSchema = new Schema(
   {
@@ -322,10 +328,11 @@ const userSchema = new Schema(
       },
     ],
 
-    // Server-controlled, and the only input to the "is this token still valid" check. Absent means
-    // the password has never been changed, which is why registration does not set it.
+    // Server-controlled. `tokenVersion` is the authoritative answer to "is this Access Token still
+    // valid"; `passwordChangedAt` is retained as security history and decides nothing.
     security: {
       passwordChangedAt: { type: Date },
+      tokenVersion: { type: Number, default: INITIAL_TOKEN_VERSION, min: 0 },
     },
   },
   { timestamps: true },

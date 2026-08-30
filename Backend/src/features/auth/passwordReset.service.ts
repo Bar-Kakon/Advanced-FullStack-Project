@@ -97,7 +97,8 @@ export const createPasswordResetService = ({
     /**
      * Every failure raises the same error, so a caller learns whether the link worked and nothing
      * about why it did not. The three writes commit together: a password changed without its token
-     * being spent would leave the link replayable.
+     * being spent would leave the link replayable, and one whose token version did not advance
+     * would leave every Access Token already in circulation working.
      */
     async resetPassword({ token, password }) {
       const stored = await resetTokens.findByHash(resetTokens.hash(token));
@@ -117,9 +118,9 @@ export const createPasswordResetService = ({
       // Outside the transaction: bcrypt is ~250ms of CPU and must not hold one open.
       const passwordHash = await passwords.hash(password);
 
-      // Truncated to the whole second the JWT `iat` claim is measured in, so the two are compared
-      // in the same unit. Rounding up instead would reject the token Login mints moments later.
-      const passwordChangedAt = new Date(Math.floor(Date.now() / 1000) * 1000);
+      // Security history at full precision. Access Token validity is decided by the token version
+      // the same write advances, so nothing compares this against a clock.
+      const passwordChangedAt = new Date();
 
       await transactions.run(async (session) => {
         await users.updatePassword(user._id, { passwordHash, passwordChangedAt }, session);
