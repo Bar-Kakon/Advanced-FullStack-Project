@@ -12,6 +12,7 @@ import { createNetworkModule } from '../features/network/network.module.js';
 import { createProjectsModule } from '../features/projects/projects.module.js';
 import { createCalendarModule } from '../features/calendar/calendar.module.js';
 import { createPermissionsModule } from '../features/projectaccess/permissions.module.js';
+import { createProjectDashboardModule } from '../features/projectdashboard/projectDashboard.module.js';
 import {
   createProjectInvitationsModule,
   createProjectMembersModule,
@@ -46,6 +47,7 @@ export const createApiRouter = (config: AppConfig): Router => {
     createDashboardModule({ requireAccessToken: auth.requireAccessToken, blocks: blocks.service }),
   );
   router.use('/network', createNetworkModule(auth.requireAccessToken));
+  router.use('/projects/:projectId/dashboard', createProjectDashboardModule(auth.requireAccessToken));
   router.use(
     '/projects/:projectId/members',
     createProjectMembersModule(auth.requireAccessToken, blocks.service),

@@ -15,6 +15,7 @@ import {
 } from './projectAuthorization.js';
 import { calendarVersionMissing } from './project.errors.js';
 import type { ProjectDto, ProjectPageDto } from './project.dto.js';
+import { toProjectDto } from './project.mapper.js';
 import type { ProjectRecord, TargetChangeRecord } from './project.model.js';
 import type { ProjectCursor, ProjectRepository, ProjectUpdate } from './project.repository.js';
 import {
@@ -72,50 +73,6 @@ const decodeCursor = (raw: string | undefined): ProjectCursor | null => {
     return null;
   }
 };
-
-const toDto = (
-  project: ProjectRecord,
-  viewerManages: boolean,
-  baseConfig?: WorkingCalendarConfig,
-): ProjectDto => ({
-  id: project._id.toString(),
-  companyId: project.company.toString(),
-  name: project.name,
-  description: project.description ?? null,
-  projectType: project.projectType,
-  projectTypeOther: project.projectTypeOther ?? null,
-  size: project.size,
-  calendar: {
-    versionId: project.calendarVersion.toString(),
-    overrides: project.calendarOverrides ?? null,
-    effective:
-      baseConfig === undefined
-        ? null
-        : resolveEffectiveCalendar(baseConfig, project.calendarOverrides),
-    adoptionCount: project.calendarAdoptions.length,
-  },
-  location: {
-    place: project.location?.place ?? null,
-    city: project.location?.city ?? null,
-    region: project.location?.region ?? null,
-    address: project.location?.address ?? null,
-  },
-  dates: {
-    startDate: formatCalendarDate(project.startDate),
-    targetEndDate: formatCalendarDate(project.targetEndDate),
-    originalTargetEndDate: formatCalendarDate(project.originalTargetEndDate),
-    overrunAllowanceDays: project.overrunAllowanceDays,
-    overrunCeilingDate: formatCalendarDate(
-      overrunCeiling(project.originalTargetEndDate, project.overrunAllowanceDays),
-    ),
-    overrunDaysFromOriginal: overrunFromOriginal(project.originalTargetEndDate, project.targetEndDate),
-  },
-  status: deriveStatus(project),
-  cancellable: isCancellable(project),
-  viewerManages,
-  createdAt: project.createdAt.toISOString(),
-  updatedAt: project.updatedAt.toISOString(),
-});
 
 export const createProjectsService = ({
   projects,
@@ -208,7 +165,7 @@ export const createProjectsService = ({
         status: 'active',
       });
 
-      return toDto(created, true);
+      return toProjectDto(created, true);
     },
 
     async list(userId, limit, cursor) {
@@ -231,7 +188,7 @@ export const createProjectsService = ({
           const grant = grantByProject.get(row._id.toString());
           const viewerManages =
             grant?.fullAuthority === true || grant?.permissions.includes('project.edit') === true;
-          return toDto(row, viewerManages);
+          return toProjectDto(row, viewerManages);
         }),
         nextCursor:
           rows.length > limit && last !== undefined
@@ -243,7 +200,7 @@ export const createProjectsService = ({
     async getOne(userId, projectId) {
       const { project: p, resolved } = await load(userId, projectId);
       const pinned = await calendars.findById(p.calendarVersion);
-      return toDto(p, mayManage(resolved), configOrDefault(pinned));
+      return toProjectDto(p, mayManage(resolved), configOrDefault(pinned));
     },
 
     async update(userId, projectId, body) {
@@ -287,7 +244,7 @@ export const createProjectsService = ({
 
       const updated = await projects.update(project._id, update, targetChange, { clearLocation });
       if (updated === null) throw projectNotFound();
-      return toDto(updated, mayManage(resolved));
+      return toProjectDto(updated, mayManage(resolved));
     },
 
     /** The only way a project moves to a newer company version. Never automatic. */
@@ -311,7 +268,7 @@ export const createProjectsService = ({
         !keepOverrides,
       );
       if (updated === null) throw projectNotFound();
-      return toDto(updated, mayManage(resolved));
+      return toProjectDto(updated, mayManage(resolved));
     },
 
     async setCalendarOverrides(userId, projectId, overrides) {
@@ -324,7 +281,7 @@ export const createProjectsService = ({
         null,
       );
       if (updated === null) throw projectNotFound();
-      return toDto(updated, mayManage(resolved));
+      return toProjectDto(updated, mayManage(resolved));
     },
 
     /** How many of this company's projects still sit on an older pinned version. */
@@ -354,4 +311,4 @@ export const createProjectsService = ({
   };
 };
 
-export const __testing = { toDto, encodeCursor, decodeCursor, addDays };
+export const __testing = { encodeCursor, decodeCursor, addDays };

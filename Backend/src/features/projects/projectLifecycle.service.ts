@@ -18,9 +18,18 @@ export type ProjectStatus = (typeof PROJECT_STATUSES)[number];
  * evaluated against real data the moment the Tasks domain exists — it is not approximated by the
  * start date having arrived, which is a different rule that nobody decided.
  */
+export interface ProjectTaskSummary {
+  readonly total: number;
+  readonly open: number;
+  readonly overdue: number;
+  readonly completed: number;
+}
+
 export interface ProjectExecutionPort {
   hasFirstTaskStarted(projectId: string): Promise<boolean>;
   areAllTasksClosed(projectId: string): Promise<boolean>;
+  /** `null` while Tasks are unbuilt. A count nobody can compute is never served as a zero. */
+  summarize(projectId: string): Promise<ProjectTaskSummary | null>;
 }
 
 /** Every answer is `false` until Tasks exist: no project has started, none can be completed. */
@@ -30,6 +39,9 @@ export const unbuiltTasksExecutionPort: ProjectExecutionPort = {
   },
   async areAllTasksClosed() {
     return false;
+  },
+  async summarize() {
+    return null;
   },
 };
 
