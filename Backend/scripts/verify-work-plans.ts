@@ -35,6 +35,15 @@ interface PlanDto {
   uploadedByName: string | null;
 }
 
+/** Every version of one plan as `version:storedFileId`. */
+const groupFingerprint = async (planId: string): Promise<string> => {
+  const rows = await FileAssetModel.find({ versionGroup: new Types.ObjectId(planId) })
+    .sort({ version: 1 })
+    .lean<{ version?: number; storage: { fileId: Types.ObjectId } }[]>()
+    .exec();
+  return rows.map((row) => `${String(row.version)}:${row.storage.fileId.toString()}`).join('|');
+};
+
 const form = (bytes: Buffer, filename: string, mimeType: string, visibility?: string): FormData => {
   const body = new FormData();
   body.append('plan', new Blob([new Uint8Array(bytes)], { type: mimeType }), filename);
@@ -131,6 +140,7 @@ const run = async (): Promise<void> => {
   check(v1Bytes.status === 200, 'and version 1 can still be downloaded', v1Bytes.status);
 
   section('3. Marking an older version current is a rollback, not a delete');
+  const beforeRoll = await groupFingerprint(v1.planId);
   const rolled = await request(baseUrl, 'POST', `/api/work-plans/${v1.planId}/current`, {
     token: sub.token, json: { version: 1 },
   });
@@ -139,6 +149,10 @@ const run = async (): Promise<void> => {
   check(afterRoll.filter((row) => row.isCurrent).length === 1, 'still exactly one current version');
   check(afterRoll.find((row) => row.isCurrent)?.version === 1, 'and it is the one asked for');
   check(afterRoll.length === 2, 'version 2 was not deleted by the rollback');
+  const v2Bytes = await get(`/api/work-plans/assets/${v2.id}/content`, sub.token);
+  check(v2Bytes.status === 200, 'and version 2 is still downloadable after being superseded', v2Bytes.status);
+  check((await groupFingerprint(v1.planId)) === beforeRoll,
+    'the marker moved and nothing else: no new document, no second copy of the bytes');
   await request(baseUrl, 'POST', `/api/work-plans/${v1.planId}/current`, { token: sub.token, json: { version: 2 } });
 
   section('4. Reach is decided by the project, not by knowing an id');
@@ -239,13 +253,132 @@ const run = async (): Promise<void> => {
   check(avatarRejected.status === 400,
     'and the image route still refuses a PDF — the allow-lists did not merge', avatarRejected.status);
 
-  section('11. Nothing was orphaned in the byte store');
+  const entry = new FormData();
+  entry.append('title', 'ריצוף');
+  entry.append('meta', '2026');
+  entry.append('image', new Blob([new Uint8Array([0x89, 0x50, 0x4e, 0x47])], { type: 'image/png' }), 'w.png');
+  const entryUp = await request(baseUrl, 'POST', '/api/users/me/work-entries', { token: sub.token, form: entry });
+  check(entryUp.status === 201, 'a Completed Work entry still uploads its image', entryUp.status);
+
+  section('11. No route deletes a plan or a version');
+  const beforeDeletes = await groupFingerprint(v1.planId);
+  const deletable: readonly [string, string][] = [
+    [`/api/work-plans/${v1.planId}`, 'a plan'],
+    [`/api/work-plans/${v1.planId}/versions`, 'a version list'],
+    [`/api/work-plans/${v1.planId}/versions/1`, 'a single version'],
+    [`/api/work-plans/${v1.planId}/current`, 'the current marker'],
+    [`/api/work-plans/assets/${v1.id}`, 'an asset'],
+    [`/api/work-plans/assets/${v1.id}/content`, 'the stored bytes'],
+    [`/api/work-plans/task/${taskId}`, 'a whole task scope'],
+  ];
+  for (const [path, what] of deletable) {
+    const attempt = await request(baseUrl, 'DELETE', path, { token: sub.token });
+    check(attempt.status === 404, `no route deletes ${what}`, `${attempt.status}`);
+  }
+  check((await groupFingerprint(v1.planId)) === beforeDeletes,
+    'and the history is exactly what it was before the attempts');
+
+  section('12. Project-scoped plans version and roll back too');
+  const sitePlan = (gcProjectPlan.body as { plan: PlanDto }).plan;
+  const siteV2 = await post(`/api/work-plans/${sitePlan.planId}/versions`, gc.token,
+    form(pdfBytes('site2'), 'site-plan-b.pdf', 'application/pdf'));
+  check(siteV2.status === 201, 'a project-scoped plan takes a second version', siteV2.status);
+  const siteRolled = await request(baseUrl, 'POST', `/api/work-plans/${sitePlan.planId}/current`, {
+    token: gc.token, json: { version: 1 },
+  });
+  const siteVersions = (siteRolled.body as { versions: PlanDto[] }).versions;
+  check(siteVersions.length === 2, 'and rolls back without losing the newer one', `${siteVersions.length}`);
+  check(siteVersions.filter((row) => row.isCurrent).length === 1,
+    'exactly one project-scoped version is current');
+  await request(baseUrl, 'POST', `/api/work-plans/${sitePlan.planId}/current`, { token: gc.token, json: { version: 2 } });
+
+  const projectPrivate = await post(`/api/work-plans/project/${projectId}`, gc.token,
+    form(pdfBytes('p'), 'p.pdf', 'application/pdf', 'private'));
+  check(projectPrivate.status === 403 && projectPrivate.body['code'] === 'WORK_PLAN_VISIBILITY_NOT_PERMITTED',
+    'a project scope has no private channel, because it has no delegation to keep',
+    `${projectPrivate.status} ${String(projectPrivate.body['code'])}`);
+
+  section('13. Full Authority and an explicit grant both carry workplan.manage');
+  const gcMembership = await ProjectMembershipModel.findOne({ project: projectId, user: gc.userId }).lean().exec();
+  check(gcMembership?.fullAuthority === true,
+    'the project creator holds Full Authority', String(gcMembership?.fullAuthority));
+  check(!(gcMembership?.permissions ?? []).includes('workplan.manage'),
+    'and holds no explicit workplan.manage code, so Full Authority is what carried the upload above');
+
+  await ProjectMembershipModel.updateOne({ project: projectId, user: bystander.userId },
+    { $set: { permissions: ['workplan.manage'] } }).exec();
+  const granted = await post(`/api/work-plans/project/${projectId}`, bystander.token,
+    form(pdfBytes('granted'), 'granted.pdf', 'application/pdf', 'shared'));
+  check(granted.status === 201, 'the explicit grant alone is enough to manage plans', granted.status);
+  const grantedElsewhere = await post(`/api/work-plans/project/${otherProjectId}`, bystander.token,
+    form(pdfBytes('x'), 'x.pdf', 'application/pdf', 'shared'));
+  check(grantedElsewhere.status === 404, 'and it reaches no other project', grantedElsewhere.status);
+  await ProjectMembershipModel.updateOne({ project: projectId, user: bystander.userId },
+    { $set: { permissions: [] } }).exec();
+
+  section('14. Project-facing publication is the delegator own act');
+  const delegateOnShared = await post(`/api/work-plans/${v1.planId}/versions`, delegate.token,
+    form(pdfBytes('dv'), 'dv.pdf', 'application/pdf'));
+  check(delegateOnShared.status === 403 && delegateOnShared.body['code'] === 'WORK_PLAN_VISIBILITY_NOT_PERMITTED',
+    'a delegate cannot append to the project-facing history either',
+    `${delegateOnShared.status} ${String(delegateOnShared.body['code'])}`);
+
+  const beforePublish = (await get(`/api/work-plans/task/${taskId}`, gc.token)).body as { plans: PlanDto[] };
+  check(!beforePublish.plans.some((row) => row.id === priv.id),
+    'the private version has still not surfaced upward on its own');
+
+  const published = await post(`/api/work-plans/task/${taskId}`, sub.token,
+    form(pdfBytes('final'), 'foundations-final.pdf', 'application/pdf', 'shared'));
+  check(published.status === 201, 'the responsible party publishes into the project-facing layer', published.status);
+  const publishedPlan = (published.body as { plan: PlanDto }).plan;
+
+  const afterPublish = (await get(`/api/work-plans/task/${taskId}`, gc.token)).body as { plans: PlanDto[] };
+  const publishedRow = afterPublish.plans.find((row) => row.id === publishedPlan.id);
+  check(publishedRow !== undefined, 'the party above now sees the published plan');
+  check(publishedRow?.uploadedByName === 'Verify Account2',
+    'attributed to the responsible party the project already knows', String(publishedRow?.uploadedByName));
+  check(!afterPublish.plans.some((row) => row.id === priv.id),
+    'and the private original was not promoted along with it');
+  check(!JSON.stringify(afterPublish).includes(delegate.userId.toString()),
+    'nothing in the project-facing answer names the confidential delegate');
+
+  const delegatorView = (await get(`/api/work-plans/task/${taskId}`, sub.token)).body as { plans: PlanDto[] };
+  check(delegatorView.plans.find((row) => row.id === priv.id)?.uploadedByName === 'Verify Account3',
+    'inside the private channel the record stays real: the delegator sees who actually uploaded',
+    String(delegatorView.plans.find((row) => row.id === priv.id)?.uploadedByName));
+
+  section('15. Work-plan bytes answer only to the work-plan rules');
+  const ownerRoute = await get(`/api/users/me/assets/${publishedPlan.id}`, sub.token);
+  check(ownerRoute.status === 404,
+    'even its own uploader cannot fetch it through the owner-scoped profile route', ownerRoute.status);
+  const delegateOwnerRoute = await get(`/api/users/me/assets/${priv.id}`, delegate.token);
+  check(delegateOwnerRoute.status === 404,
+    'and neither can the delegate, so no route bypasses the delegation wall', delegateOwnerRoute.status);
+
+  section('16. The stored indexes are the ones the schema declares');
+  const indexes = (await FileAssetModel.collection.indexes()) as readonly {
+    key: Record<string, number>;
+    unique?: boolean;
+    partialFilterExpression?: Record<string, unknown>;
+  }[];
+  const byKey = (key: string) => indexes.find((index) => JSON.stringify(index.key) === key);
+  check(byKey('{"scope.type":1,"scope.id":1,"isCurrent":1}') !== undefined,
+    'the scope index carries isCurrent, so listing the current plans is one index read');
+  check(byKey('{"scope.type":1,"scope.id":1}') === undefined,
+    'the retired two-key index was dropped rather than left beside it');
+  const versionIndex = byKey('{"versionGroup":1,"version":-1}');
+  check(versionIndex?.unique === true,
+    'the version index is unique, so two rows cannot claim one version number');
+  check(JSON.stringify(versionIndex?.partialFilterExpression) === '{"versionGroup":{"$exists":true}}',
+    'and partial, so every avatar row is outside it', JSON.stringify(versionIndex?.partialFilterExpression));
+
+  section('17. Nothing was orphaned in the byte store');
   const taskRows = await FileAssetModel.countDocuments({ 'scope.type': 'task', 'scope.id': task._id });
   const projectRows = await FileAssetModel.countDocuments({ 'scope.type': 'project', 'scope.id': new Types.ObjectId(projectId) });
-  check(taskRows === 3, 'the task carries exactly its two versions and the private exchange', `${taskRows}`);
-  check(projectRows === 1, 'and the project carries exactly the one plan that was accepted', `${projectRows}`);
-  check((await FileAssetModel.countDocuments({ versionGroup: { $exists: true }, isCurrent: { $ne: true } })) === 1,
-    'one superseded version survives as history, and only one');
+  check(taskRows === 4, 'the task carries its two versions, the private exchange and the published plan', `${taskRows}`);
+  check(projectRows === 3, 'and the project carries the two site-plan versions and the granted upload', `${projectRows}`);
+  check((await FileAssetModel.countDocuments({ versionGroup: { $exists: true }, isCurrent: { $ne: true } })) === 2,
+    'two superseded versions survive as history, and nothing else was left behind');
 
   await FileAssetModel.deleteMany({ 'scope.type': { $in: ['task', 'project'] } }).exec();
   await TaskModel.deleteMany({ project: new Types.ObjectId(projectId) }).exec();

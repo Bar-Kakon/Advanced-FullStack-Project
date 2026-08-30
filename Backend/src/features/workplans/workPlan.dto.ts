@@ -22,24 +22,15 @@ export interface WorkPlanDto {
   readonly uploadedByName: string | null;
 }
 
-/**
- * Whose name may stand against this upload.
- *
- * A delegate performs work the party above is never told about, so their identity may not travel
- * with a file. Where the uploader IS the delegate, the row is attributed to the responsible party
- * — the delegator — which is the same rule Flexibility and the task counterparty already follow.
- *
- * This is the second of two guards. The first is structural: `mayUploadShared` refuses a delegate
- * a `shared` row at all, so no upward-facing row can carry a delegate's identity in the first
- * place. This one holds even if that rule is ever loosened.
- */
+/** Whose name may stand against this upload; a private row keeps its real uploader. */
 export const attributableUploader = (
-  owner: Types.ObjectId,
+  asset: Pick<FileAssetRecord, 'owner' | 'visibility'>,
   responsibleParty: Types.ObjectId | null,
   delegate: Types.ObjectId | null,
 ): Types.ObjectId | null => {
-  if (delegate !== null && owner.equals(delegate)) return responsibleParty;
-  return owner;
+  if ((asset.visibility ?? 'shared') === 'private') return asset.owner;
+  if (delegate !== null && asset.owner.equals(delegate)) return responsibleParty;
+  return asset.owner;
 };
 
 export const toWorkPlanDto = (asset: FileAssetRecord, uploadedByName: string | null): WorkPlanDto => ({

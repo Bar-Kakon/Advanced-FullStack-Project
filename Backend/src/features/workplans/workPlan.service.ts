@@ -116,7 +116,7 @@ export const createWorkPlanService = ({
     const responsible = resolved.task?.assignee ?? null;
 
     const ids = rows
-      .map((row) => attributableUploader(row.owner, responsible, delegate))
+      .map((row) => attributableUploader(row, responsible, delegate))
       .filter((id): id is Types.ObjectId => id !== null);
     const people = await participants.findByIds(ids);
     const names = new Map(
@@ -124,7 +124,7 @@ export const createWorkPlanService = ({
     );
 
     return rows.map((row) => {
-      const attributed = attributableUploader(row.owner, responsible, delegate);
+      const attributed = attributableUploader(row, responsible, delegate);
       return toWorkPlanDto(row, attributed === null ? null : names.get(attributed.toString()) ?? null);
     });
   };

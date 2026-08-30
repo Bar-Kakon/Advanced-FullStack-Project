@@ -235,7 +235,15 @@ const run = async () => {
   const bad = FORBIDDEN_HE.filter((f) => he.includes(f));
   check('No plural-as-neutral and no slash forms', bad.length === 0, bad.join(' · '));
 
-  section('9. Both languages at three widths');
+  section('9. The Work Plans panel offers no way to destroy history');
+  const plansPanel = sub.locator('section[aria-labelledby="work-plans-title"]');
+  check('The panel is on the task', (await plansPanel.count()) === 1);
+  const planControls = await plansPanel.locator('button, a, label').allTextContents();
+  const destructive = planControls.filter((label) => /מחיק|מחק|הסר|delete|remove|discard/i.test(label));
+  check('No delete or remove control is offered', destructive.length === 0, destructive.join(' · '));
+  check('And the history control is there instead', planControls.some((label) => label.trim().length > 0));
+
+  section('10. Both languages at three widths');
   for (const [label, width, height] of [['desktop', 1440, 900], ['tablet', 834, 1100], ['mobile', 390, 844]]) {
     await sub.setViewportSize({ width, height });
     for (const lang of ['en', 'עב']) {
@@ -249,7 +257,7 @@ const run = async () => {
   }
   await sub.setViewportSize({ width: 1440, height: 900 });
 
-  section('10. Long content');
+  section('11. Long content');
   await sub.goto(`${APP}/tasks/${taskId}`, { waitUntil: 'networkidle' });
   await sub.waitForTimeout(1200);
   await sub.evaluate(() => {
@@ -260,7 +268,7 @@ const run = async () => {
   await sub.waitForTimeout(500);
   check('A 200-character title does not overflow on mobile', (await overflow(sub)) <= 0, `${await overflow(sub)}px`);
 
-  section('11. Page errors');
+  section('12. Page errors');
   const unexpected = errors.filter((e) => !/status of 40[34]/.test(e));
   check('No uncaught page error', unexpected.length === 0, unexpected.slice(0, 2).join(' | '));
 

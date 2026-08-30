@@ -32,6 +32,7 @@ export const mayUploadShared = (viewer: WorkPlanViewer): boolean =>
   viewer.holdsWorkPlanManage || viewer.taskViewpoint === 'assignee';
 
 export const allowedVisibilityFor = (viewer: WorkPlanViewer): readonly FileVisibility[] => {
+  if (viewer.scopeType === 'project') return ['shared'];
   if (mayUploadShared(viewer)) return ['shared', 'private'];
   return viewer.taskViewpoint === 'delegate' ? ['private'] : [];
 };
