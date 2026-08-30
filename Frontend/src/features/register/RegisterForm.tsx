@@ -1,15 +1,21 @@
 import {
   COMPANY_POSITIONS,
   COMPANY_STANDINGS,
+  DRILLING_SPECIALTY,
+  DRILLING_TYPES,
   REGIONS,
-  TRADES,
+  REGISTRATION_CATEGORIES,
+  SPECIALTIES_BY_CATEGORY,
   type CompanyPosition,
   type CompanyStanding,
+  type DrillingType,
   type Region,
-  type Trade,
+  type RegistrationCategory,
+  type Specialty,
 } from '../../api/types';
 import { useLanguage } from '../../i18n/useLanguage';
-import { MIN_PASSWORD_LENGTH, useRegisterForm } from './useRegisterForm';
+import { MIN_PASSWORD_LENGTH, REGISTER_STEPS, useRegisterForm } from './useRegisterForm';
+import { isOtherSpecialty } from './buildRegisterPayload';
 import { ButtonSpinner } from '../../components/ButtonSpinner';
 import { FieldLabel } from '../../components/FieldLabel';
 import { FormAlert } from '../../components/FormAlert';
@@ -17,6 +23,7 @@ import { PasswordField } from '../../components/PasswordField';
 import { SelectField } from '../../components/SelectField';
 import { TextField } from '../../components/TextField';
 import { AvailabilityChoice } from './components/AvailabilityChoice';
+import { EmailNotificationChoice } from './components/EmailNotificationChoice';
 import { TermsCheckbox } from './components/TermsCheckbox';
 import { LocationField } from '../../location/LocationField';
 
@@ -27,7 +34,10 @@ const MAX = {
 
 export const RegisterForm = ({ form }: { form: ReturnType<typeof useRegisterForm> }) => {
   const { t } = useLanguage();
-  const { values, setValue, setStanding, touched, markTouched, errors, isComplete, submitting, failure } = form;
+  const {
+    values, setValue, setStanding, setCategory, setSpecialty, touched, markTouched, errors,
+    step, goNext, goBack, detailsComplete, isComplete, submitting, failure,
+  } = form;
 
   const alertMessage =
     failure === 'EMAIL_ALREADY_REGISTERED' ? t.errors.emailTaken
@@ -40,17 +50,45 @@ export const RegisterForm = ({ form }: { form: ReturnType<typeof useRegisterForm
 
   /** An employee claims a seat their employer opened; an owner creates the business. */
   const isEmployee = values.standing === 'employee';
+  const onDetails = step === 'details';
 
   // Option lists pair a language-neutral code with the label for the language on screen. Built
   // here rather than stored, so switching language relabels them without touching any value.
-  const tradeOptions = TRADES.map((code) => ({ value: code, label: t.trades[code] }));
+  const categoryOptions = REGISTRATION_CATEGORIES.map((code) => ({
+    value: code, label: t.specialtyCategories[code],
+  }));
   const regionOptions = REGIONS.map((code) => ({ value: code, label: t.regions[code] }));
   const standingOptions = COMPANY_STANDINGS.map((code) => ({ value: code, label: t.form.standing[code] }));
   const positionOptions = COMPANY_POSITIONS.map((code) => ({ value: code, label: t.companyPositions[code] }));
 
+  // Only the chosen route's own taxonomy is offered, which is the same list the server accepts.
+  const specialtyOptions = values.registrationCategory === ''
+    ? []
+    : SPECIALTIES_BY_CATEGORY[values.registrationCategory].map((code) => ({
+        value: code as Specialty, label: t.specialties[code],
+      }));
+
+  const stepNumber = REGISTER_STEPS.indexOf(step) + 1;
+
   return (
     <>
       {alertMessage ? <FormAlert message={alertMessage} /> : null}
+
+      <ol className="reg-steps" aria-label={t.form.steps.label}>
+        {REGISTER_STEPS.map((name, index) => (
+          <li
+            key={name}
+            className={`reg-steps__item${step === name ? ' reg-steps__item--current' : ''}`}
+            {...(step === name ? { 'aria-current': 'step' as const } : {})}
+          >
+            <span className="reg-steps__num">{index + 1}</span>
+            <span className="reg-steps__label">{t.form.steps[name]}</span>
+          </li>
+        ))}
+      </ol>
+      <p className="reg-steps__count">
+        {t.form.steps.of.replace('{current}', String(stepNumber)).replace('{total}', String(REGISTER_STEPS.length))}
+      </p>
 
       {/* onSubmit rather than a click handler: it also fires on Enter in a text field, which is
           how people actually submit a form. preventDefault stops the browser's own navigation. */}
@@ -59,157 +97,232 @@ export const RegisterForm = ({ form }: { form: ReturnType<typeof useRegisterForm
         noValidate
         onSubmit={(e) => {
           e.preventDefault();
+          if (onDetails) {
+            if (detailsComplete) goNext();
+            return;
+          }
           void form.submit();
         }}
       >
-        <TextField
-          className="col--half" id="firstName" label={t.form.firstName.label}
-          placeholder={t.form.firstName.placeholder} autoComplete="given-name" maxLength={MAX.name} required
-          value={values.firstName} onChange={(v) => setValue('firstName', v)}
-          onBlur={() => markTouched('firstName')} touched={!!touched.firstName}
-        />
-        <TextField
-          className="col--half" id="lastName" label={t.form.lastName.label}
-          placeholder={t.form.lastName.placeholder} autoComplete="family-name" maxLength={MAX.name} required
-          value={values.lastName} onChange={(v) => setValue('lastName', v)}
-          onBlur={() => markTouched('lastName')} touched={!!touched.lastName}
-        />
-        {/* Standing decides what the rest of the form means, so it is asked before the fields it
-            governs. It is organizational standing only — never a permission or a job title. */}
-        <SelectField<CompanyStanding>
-          className="col--full" id="standing" label={t.form.standing.label}
-          placeholder={t.form.standing.placeholder} options={standingOptions} required
-          {...(isEmployee ? { hint: t.form.standing.employeeHint } : {})}
-          value={values.standing} onChange={(v) => { if (v) setStanding(v); }}
-        />
+        {onDetails ? (
+          <>
+            {/* Asked first: it decides which taxonomy the specialty field below offers. */}
+            <SelectField<RegistrationCategory>
+              className="col--full" id="registrationCategory" label={t.form.registrationCategory.label}
+              placeholder={t.form.registrationCategory.placeholder} options={categoryOptions} required
+              hint={t.form.registrationCategory.hint}
+              value={values.registrationCategory}
+              onChange={(v) => { if (v) setCategory(v); }}
+              onBlur={() => markTouched('registrationCategory')}
+              touched={!!touched.registrationCategory}
+            />
 
-        <TextField
-          className={isEmployee ? 'col--half' : 'col--full'} id="companyName" label={t.form.companyName.label}
-          placeholder={t.form.companyName.placeholder} autoComplete="organization" maxLength={MAX.companyName} required
-          value={values.companyName} onChange={(v) => setValue('companyName', v)}
-          onBlur={() => markTouched('companyName')} touched={!!touched.companyName}
-        />
+            <TextField
+              className="col--half" id="firstName" label={t.form.firstName.label}
+              placeholder={t.form.firstName.placeholder} autoComplete="given-name" maxLength={MAX.name} required
+              value={values.firstName} onChange={(v) => setValue('firstName', v)}
+              onBlur={() => markTouched('firstName')} touched={!!touched.firstName}
+            />
+            <TextField
+              className="col--half" id="lastName" label={t.form.lastName.label}
+              placeholder={t.form.lastName.placeholder} autoComplete="family-name" maxLength={MAX.name} required
+              value={values.lastName} onChange={(v) => setValue('lastName', v)}
+              onBlur={() => markTouched('lastName')} touched={!!touched.lastName}
+            />
+            {/* Standing decides what the rest of the form means, so it is asked before the fields it
+                governs. It is organizational standing only — never a permission or a job title. */}
+            <SelectField<CompanyStanding>
+              className="col--full" id="standing" label={t.form.standing.label}
+              placeholder={t.form.standing.placeholder} options={standingOptions} required
+              {...(isEmployee ? { hint: t.form.standing.employeeHint } : {})}
+              value={values.standing} onChange={(v) => { if (v) setStanding(v); }}
+            />
 
-        {/* One of the three values the server matches the invitation on. Typing a company name is
-            not proof of employment, and neither is this — the seat has to already exist. */}
-        {isEmployee ? (
-          <SelectField<CompanyPosition>
-            className="col--half" id="companyPosition" label={t.form.companyPosition.label}
-            placeholder={t.form.companyPosition.placeholder} options={positionOptions} required
-            value={values.companyPosition} onChange={(v) => setValue('companyPosition', v)}
-            onBlur={() => markTouched('companyPosition')} touched={!!touched.companyPosition}
-          />
-        ) : null}
-        <TextField
-          className="col--half" id="email" label={t.form.email.label} type="email" dir="ltr"
-          placeholder={t.form.email.placeholder} autoComplete="email" maxLength={MAX.email} required
-          value={values.email} onChange={(v) => setValue('email', v)}
-          onBlur={() => markTouched('email')} touched={!!touched.email}
-          {...(errors.email ? { error: t.form.email.error } : {})}
-        />
+            <TextField
+              className={isEmployee ? 'col--half' : 'col--full'} id="companyName" label={t.form.companyName.label}
+              placeholder={t.form.companyName.placeholder} autoComplete="organization" maxLength={MAX.companyName} required
+              value={values.companyName} onChange={(v) => setValue('companyName', v)}
+              onBlur={() => markTouched('companyName')} touched={!!touched.companyName}
+            />
 
-        <SelectField<Trade>
-          className="col--half" id="specialty" label={t.form.specialty.label}
-          placeholder={t.form.specialty.placeholder} options={tradeOptions} required
-          hint={t.form.specialty.hint}
-          value={values.specialty} onChange={(v) => setValue('specialty', v)}
-          onBlur={() => markTouched('specialty')} touched={!!touched.specialty}
-        >
-          {/* Revealed by the value rather than by a CSS `:has()` on the checked option — same
-              condition the server enforces, which is why it can never send a stale value. */}
-          {values.specialty === 'other' ? (
-            <div className="other-trade other-trade--visible">
-              <FieldLabel plain text={t.form.specialtyOther.label} />
-              <input
-                className="form-input" type="text" name="specialtyOther"
-                maxLength={MAX.specialtyOther} placeholder={t.form.specialtyOther.placeholder}
-                value={values.specialtyOther}
-                onChange={(e) => setValue('specialtyOther', e.target.value)}
+            {/* One of the three values the server matches the invitation on. Typing a company name is
+                not proof of employment, and neither is this — the seat has to already exist. */}
+            {isEmployee ? (
+              <SelectField<CompanyPosition>
+                className="col--half" id="companyPosition" label={t.form.companyPosition.label}
+                placeholder={t.form.companyPosition.placeholder} options={positionOptions} required
+                value={values.companyPosition} onChange={(v) => setValue('companyPosition', v)}
+                onBlur={() => markTouched('companyPosition')} touched={!!touched.companyPosition}
+              />
+            ) : null}
+            <TextField
+              className="col--half" id="email" label={t.form.email.label} type="email" dir="ltr"
+              placeholder={t.form.email.placeholder} autoComplete="email" maxLength={MAX.email} required
+              value={values.email} onChange={(v) => setValue('email', v)}
+              onBlur={() => markTouched('email')} touched={!!touched.email}
+              {...(errors.email ? { error: t.form.email.error } : {})}
+            />
+
+            {/* Absent until a route is chosen: there is no list to show before then. */}
+            {values.registrationCategory === '' ? null : (
+              <SelectField<Specialty>
+                className="col--half" id="specialty" label={t.form.specialty.label}
+                placeholder={t.form.specialty.placeholder} options={specialtyOptions} required
+                hint={t.form.specialty.hint}
+                value={values.specialty} onChange={(v) => setSpecialty(v)}
+                onBlur={() => markTouched('specialty')} touched={!!touched.specialty}
+              >
+                {/* Revealed by the value rather than by a CSS `:has()` on the checked option — same
+                    condition the server enforces, which is why it can never send a stale value. */}
+                {isOtherSpecialty(values.registrationCategory, values.specialty) ? (
+                  <div className="other-trade other-trade--visible">
+                    <FieldLabel plain text={t.form.specialtyOther.label} />
+                    <input
+                      className="form-input" type="text" name="specialtyOther"
+                      maxLength={MAX.specialtyOther} placeholder={t.form.specialtyOther.placeholder}
+                      value={values.specialtyOther}
+                      onChange={(e) => setValue('specialtyOther', e.target.value)}
+                    />
+                  </div>
+                ) : null}
+
+                {/* The nested drilling subtype, offered only under the profession that carries it. */}
+                {values.specialty === DRILLING_SPECIALTY ? (
+                  <div className="other-trade other-trade--visible">
+                    <FieldLabel plain text={t.form.drillingTypes.label} />
+                    {DRILLING_TYPES.map((code) => (
+                      <label className="avail-option" key={code} htmlFor={`drillingTypes-${code}`}>
+                        <input
+                          className="avail-option__input" id={`drillingTypes-${code}`}
+                          type="checkbox" name="drillingTypes" value={code}
+                          checked={values.drillingTypes.includes(code)}
+                          onChange={(e) =>
+                            setValue(
+                              'drillingTypes',
+                              e.target.checked
+                                ? [...values.drillingTypes, code]
+                                : values.drillingTypes.filter((held: DrillingType) => held !== code),
+                            )
+                          }
+                        />
+                        <span className="avail-option__box" aria-hidden="true">
+                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                               strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M20 6L9 17l-5-5" />
+                          </svg>
+                        </span>
+                        <span className="email-choice__label">{t.drillingTypes[code]}</span>
+                      </label>
+                    ))}
+                  </div>
+                ) : null}
+              </SelectField>
+            )}
+
+            {/* City, region and the two phones share one grid cell, stacked. */}
+            <div className="field-stack col--half">
+              <LocationField
+                label={t.form.city.label}
+                placeholder={t.form.city.placeholder}
+                place={values.place}
+                city={values.city}
+                onPlace={(place) => setValue('place', place)}
+                onCity={(city) => setValue('city', city)}
+                required
+              />
+              <SelectField<Region>
+                id="region" label={t.form.region.label} placeholder={t.form.region.placeholder}
+                options={regionOptions} required
+                value={values.region} onChange={(v) => setValue('region', v)}
+                onBlur={() => markTouched('region')} touched={!!touched.region}
+              />
+              {/* Two independent numbers. Each is optional on its own, and neither is derived from
+                  the other — they are stored on two different documents server-side. The office line
+                  belongs to the business, so only somebody creating one is asked for it. */}
+              {isEmployee ? null : (
+                <TextField
+                  id="officePhone" label={t.form.officePhone.label} optionalText={t.form.optional}
+                  type="tel" dir="ltr" placeholder={t.form.officePhone.placeholder}
+                  autoComplete="work tel" maxLength={MAX.phone}
+                  value={values.officePhone} onChange={(v) => setValue('officePhone', v)}
+                />
+              )}
+              <TextField
+                id="businessPhone" label={t.form.businessPhone.label} optionalText={t.form.optional}
+                type="tel" dir="ltr" placeholder={t.form.businessPhone.placeholder}
+                autoComplete="tel" maxLength={MAX.phone}
+                value={values.businessPhone} onChange={(v) => setValue('businessPhone', v)}
               />
             </div>
-          ) : null}
-        </SelectField>
 
-        {/* City, region and the two phones share one grid cell, stacked. */}
-        <div className="field-stack col--half">
-          <LocationField
-            label={t.form.city.label}
-            placeholder={t.form.city.placeholder}
-            place={values.place}
-            city={values.city}
-            onPlace={(place) => setValue('place', place)}
-            onCity={(city) => setValue('city', city)}
-            required
-          />
-          <SelectField<Region>
-            id="region" label={t.form.region.label} placeholder={t.form.region.placeholder}
-            options={regionOptions} required
-            value={values.region} onChange={(v) => setValue('region', v)}
-            onBlur={() => markTouched('region')} touched={!!touched.region}
-          />
-          {/* Two independent numbers. Each is optional on its own, and neither is derived from
-              the other — they are stored on two different documents server-side. The office line
-              belongs to the business, so only somebody creating one is asked for it. */}
-          {isEmployee ? null : (
-            <TextField
-              id="officePhone" label={t.form.officePhone.label} optionalText={t.form.optional}
-              type="tel" dir="ltr" placeholder={t.form.officePhone.placeholder}
-              autoComplete="work tel" maxLength={MAX.phone}
-              value={values.officePhone} onChange={(v) => setValue('officePhone', v)}
+            {/* Availability is the organization's, set by whoever runs it — so an employee is not
+                asked, and the server refuses the field on that path anyway. */}
+            {isEmployee ? null : (
+              <AvailabilityChoice
+                legend={t.form.availability.label} hint={t.form.availability.hint}
+                labels={t.availability}
+                value={values.availability} onChange={(v) => setValue('availability', v)}
+              />
+            )}
+
+            <PasswordField
+              className="col--half"
+              id="password" name="password" label={t.form.password.label} placeholder={t.form.password.placeholder}
+              hint={t.form.password.hint} toggleLabel={t.form.togglePassword}
+              minLength={MIN_PASSWORD_LENGTH} maxLength={MAX.password}
+              value={values.password} onChange={(v) => setValue('password', v)}
+              onBlur={() => markTouched('password')} touched={!!touched.password}
+              {...(errors.password ? { error: t.form.password.error } : {})}
             />
-          )}
-          <TextField
-            id="businessPhone" label={t.form.businessPhone.label} optionalText={t.form.optional}
-            type="tel" dir="ltr" placeholder={t.form.businessPhone.placeholder}
-            autoComplete="tel" maxLength={MAX.phone}
-            value={values.businessPhone} onChange={(v) => setValue('businessPhone', v)}
-          />
-        </div>
+            <PasswordField
+              className="col--half"
+              id="password-confirm" name="confirmPassword" label={t.form.confirmPassword.label}
+              placeholder={t.form.confirmPassword.placeholder} toggleLabel={t.form.togglePassword}
+              maxLength={MAX.password}
+              value={values.confirmPassword} onChange={(v) => setValue('confirmPassword', v)}
+              onBlur={() => markTouched('confirmPassword')} touched={!!touched.confirmPassword}
+              {...(errors.confirmPassword ? { error: t.form.confirmPassword.error } : {})}
+            />
 
-        {/* Availability is the organization's, set by whoever runs it — so an employee is not
-            asked, and the server refuses the field on that path anyway. */}
-        {isEmployee ? null : (
-          <AvailabilityChoice
-            legend={t.form.availability.label} hint={t.form.availability.hint}
-            labels={t.availability}
-            value={values.availability} onChange={(v) => setValue('availability', v)}
-          />
+            <button
+              type="submit"
+              className="btn btn--primary btn--full col--full"
+              id="register-next"
+              disabled={!detailsComplete}
+            >
+              {t.form.steps.next}
+            </button>
+          </>
+        ) : (
+          <>
+            <EmailNotificationChoice
+              copy={t.form.emailNotifications}
+              value={values.operationalEmail}
+              onChange={(v) => setValue('operationalEmail', v)}
+            />
+
+            <TermsCheckbox
+              terms={t.form.terms} checked={values.acceptedTerms}
+              onChange={(v) => setValue('acceptedTerms', v)}
+              onBlur={() => markTouched('acceptedTerms')} touched={!!touched.acceptedTerms}
+            />
+
+            <div className="reg-nav col--full">
+              <button type="button" className="btn btn--ghost" id="register-back" onClick={goBack}>
+                {t.form.steps.back}
+              </button>
+              <button
+                type="submit"
+                className="btn btn--primary"
+                disabled={!isComplete || submitting}
+                aria-busy={submitting}
+              >
+                {t.form.submit}
+                {submitting ? <ButtonSpinner /> : null}
+              </button>
+            </div>
+          </>
         )}
-
-        <PasswordField
-          className="col--half"
-          id="password" name="password" label={t.form.password.label} placeholder={t.form.password.placeholder}
-          hint={t.form.password.hint} toggleLabel={t.form.togglePassword}
-          minLength={MIN_PASSWORD_LENGTH} maxLength={MAX.password}
-          value={values.password} onChange={(v) => setValue('password', v)}
-          onBlur={() => markTouched('password')} touched={!!touched.password}
-          {...(errors.password ? { error: t.form.password.error } : {})}
-        />
-        <PasswordField
-          className="col--half"
-          id="password-confirm" name="confirmPassword" label={t.form.confirmPassword.label}
-          placeholder={t.form.confirmPassword.placeholder} toggleLabel={t.form.togglePassword}
-          maxLength={MAX.password}
-          value={values.confirmPassword} onChange={(v) => setValue('confirmPassword', v)}
-          onBlur={() => markTouched('confirmPassword')} touched={!!touched.confirmPassword}
-          {...(errors.confirmPassword ? { error: t.form.confirmPassword.error } : {})}
-        />
-
-        <TermsCheckbox
-          terms={t.form.terms} checked={values.acceptedTerms}
-          onChange={(v) => setValue('acceptedTerms', v)}
-          onBlur={() => markTouched('acceptedTerms')} touched={!!touched.acceptedTerms}
-        />
-
-        <button
-          type="submit"
-          className="btn btn--primary btn--full col--full"
-          disabled={!isComplete || submitting}
-          aria-busy={submitting}
-        >
-          {t.form.submit}
-          {submitting ? <ButtonSpinner /> : null}
-        </button>
       </form>
     </>
   );

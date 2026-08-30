@@ -72,6 +72,8 @@ const run = async () => {
   await page.fill('#email', ACCOUNT.email);
   await page.fill('#password', ACCOUNT.password);
   await page.fill('#password-confirm', ACCOUNT.password);
+  // Step 1 opens with the route: it decides which taxonomy the specialty select offers.
+  await page.selectOption('#registrationCategory', 'contractor').catch(() => {});
   await page.selectOption('#specialty', ACCOUNT.specialty).catch(() => {});
 
   const cityBox = page.locator('.place-field input[role="combobox"]');
@@ -81,7 +83,16 @@ const run = async () => {
   if ((await options.count()) > 0) await options.first().click();
   await page.selectOption('#region', ACCOUNT.region).catch(() => {});
 
+  // Step 1 done; Step 2 asks for the email choice and the Terms.
+
+  await page.click('button[type="submit"]');
+
+  await page.waitForTimeout(700);
+
+  await page.check('#operationalEmail-accept').catch(() => {});
+
   const boxes = page.locator('input[type="checkbox"]');
+
   for (let i = 0; i < (await boxes.count()); i += 1) await boxes.nth(i).check().catch(() => {});
 
   await page.click('button[type="submit"]');

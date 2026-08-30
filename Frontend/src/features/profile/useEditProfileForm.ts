@@ -1,6 +1,14 @@
 import { useCallback, useMemo, useState } from 'react';
 
-import type { Availability, Region, Trade } from '../../api/types';
+import {
+  DRILLING_SPECIALTY,
+  OTHER_SPECIALTY,
+  type Availability,
+  type DrillingType,
+  type Region,
+  type RegistrationCategory,
+  type Specialty,
+} from '../../api/types';
 import type { CompletedWorkEntry, EquipmentCode, ProfileView } from './profileModel';
 import type { StructuredPlace } from '../../location/place.types';
 
@@ -20,9 +28,12 @@ export interface EditProfileValues {
   officePhone: string;
   businessPhone: string;
   bio: string;
-  specialties: readonly Trade[];
+  /** Read-only here. The route was fixed at registration and this screen never changes it. */
+  registrationCategory: RegistrationCategory;
+  specialties: readonly Specialty[];
   specialtyOther: string;
   equipment: readonly EquipmentCode[];
+  drillingTypes: readonly DrillingType[];
   /** `''` while the server holds no answer yet, so nothing is defaulted on the person's behalf. */
   availability: Availability | '';
   city: string;
@@ -50,9 +61,11 @@ export const fromProfile = (profile: ProfileView): EditProfileValues => ({
   officePhone: profile.officePhone ?? '',
   businessPhone: profile.businessPhone ?? '',
   bio: profile.bio,
+  registrationCategory: profile.registrationCategory,
   specialties: profile.specialties,
   specialtyOther: profile.specialtyOther,
   equipment: profile.heavyEquipment,
+  drillingTypes: profile.drillingTypes,
   availability: profile.availability ?? '',
   city: profile.city,
   place: profile.place,
@@ -78,12 +91,16 @@ export const useEditProfileForm = (initial: EditProfileValues) => {
     setTouched((prev) => (prev[field] ? prev : { ...prev, [field]: true }));
   }, []);
 
-  const toggleSpecialty = useCallback((code: Trade, on: boolean): void => {
+  const toggleSpecialty = useCallback((code: Specialty, on: boolean): void => {
     setValues((prev) => ({ ...prev, specialties: toggle(prev.specialties, code, on) }));
   }, []);
 
   const toggleEquipment = useCallback((code: EquipmentCode, on: boolean): void => {
     setValues((prev) => ({ ...prev, equipment: toggle(prev.equipment, code, on) }));
+  }, []);
+
+  const toggleDrillingType = useCallback((code: DrillingType, on: boolean): void => {
+    setValues((prev) => ({ ...prev, drillingTypes: toggle(prev.drillingTypes, code, on) }));
   }, []);
 
   const removeWork = useCallback((id: string): void => {
@@ -123,16 +140,17 @@ export const useEditProfileForm = (initial: EditProfileValues) => {
     () => ({
       // The free-text box and the equipment picker are revealed by the value the form already
       // holds, rather than by a CSS :has() reading the DOM back.
-      showOther: values.specialties.includes('other'),
+      showOther: values.specialties.includes(OTHER_SPECIALTY[values.registrationCategory]),
       showEquipment: values.specialties.includes('heavy_equipment'),
+      showDrillingTypes: values.specialties.includes(DRILLING_SPECIALTY),
       // Travel distance stops being a meaningful preference once the work area is the country.
       nationwide: values.region === 'nationwide',
     }),
-    [values.specialties, values.region],
+    [values.specialties, values.registrationCategory, values.region],
   );
 
   return {
     values, setValue, touched, markTouched, markAllTouched, toggleSpecialty, toggleEquipment,
-    removeWork, setWork, reset, flags, missing, isValid,
+    toggleDrillingType, removeWork, setWork, reset, flags, missing, isValid,
   };
 };

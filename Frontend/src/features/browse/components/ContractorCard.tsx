@@ -47,8 +47,12 @@ export const ContractorCard = ({
       ) : null}
 
       <ul className="tags">
+        {/* The route first, so a supplier or an architectural account is not read as a contractor. */}
+        <li className={`tag tag--route tag--route-${contractor.registrationCategory}`}>
+          {t.specialtyCategories[contractor.registrationCategory]}
+        </li>
         {contractor.specialties.map((code) => (
-          <li key={code} className="tag">{t.trades[code]}</li>
+          <li key={code} className="tag">{t.specialties[code]}</li>
         ))}
       </ul>
 

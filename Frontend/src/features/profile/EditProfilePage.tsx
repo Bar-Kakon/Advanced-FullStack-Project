@@ -1,7 +1,14 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-import { AVAILABILITY_STATUSES, REGIONS, TRADES, type Region, type Trade } from '../../api/types';
+import {
+  AVAILABILITY_STATUSES,
+  DRILLING_TYPES,
+  REGIONS,
+  SPECIALTIES_BY_CATEGORY,
+  type Region,
+  type Specialty,
+} from '../../api/types';
 import { AppNav } from '../../components/AppNav';
 import { ButtonSpinner } from '../../components/ButtonSpinner';
 import { useLanguage } from '../../i18n/useLanguage';
@@ -36,7 +43,8 @@ const MAX = { name: 100, companyName: 120, city: 80, phone: 30, specialtyOther: 
 
 const EMPTY_FORM = fromProfile({
   firstName: '', lastName: '', email: '', language: 'he', profileComplete: false,
-  bio: '', specialties: [], specialtyOther: '', heavyEquipment: [], businessPhone: '', city: '',
+  bio: '', registrationCategory: 'contractor', specialties: [], specialtyOther: '',
+  heavyEquipment: [], drillingTypes: [], operationalEmail: false, businessPhone: '', city: '',
   region: null, place: null, travelRadiusKm: null, delayToleranceDays: null, noticeRequiredDays: null,
   avatarUrl: null, companyName: null, officePhone: null, availability: null,
   standing: null, companyPosition: null, companyMembershipActive: false,
@@ -60,6 +68,7 @@ export const EditProfilePage = () => {
   const form = useEditProfileForm(EMPTY_FORM);
   const {
     values, setValue, touched, markTouched, markAllTouched, toggleSpecialty, toggleEquipment,
+    toggleDrillingType,
     setWork, reset, flags, missing, isValid,
   } = form;
   const { save, saving, saved, failure: saveFailure, clearSaved } = useProfileSave();
@@ -300,15 +309,17 @@ export const EditProfilePage = () => {
                   <legend className="field-label">{t.editProfile.specialties.legend}</legend>
                   <p className="field-hint">{t.editProfile.specialties.hint}</p>
 
+                  {/* Only the route this account registered through. The server refuses anything
+                      else, so offering another route's list would be offering a rejected save. */}
                   <ul className="choice-grid">
-                    {TRADES.map((code: Trade) => (
+                    {SPECIALTIES_BY_CATEGORY[values.registrationCategory].map((code: Specialty) => (
                       <li key={code}>
                         <Choice
                           type="checkbox" name="specialties" value={code}
                           checked={values.specialties.includes(code)}
                           onChange={(on) => toggleSpecialty(code, on)}
                         >
-                          <span className="choice__label">{t.trades[code]}</span>
+                          <span className="choice__label">{t.specialties[code]}</span>
                         </Choice>
                       </li>
                     ))}
@@ -327,6 +338,23 @@ export const EditProfilePage = () => {
                         onChange={(e) => setValue('specialtyOther', e.target.value)}
                       />
                     </div>
+                  ) : null}
+
+                  {/* The nested subtype, offered only while the profession that carries it is held. */}
+                  {flags.showDrillingTypes ? (
+                    <ul className="choice-grid">
+                      {DRILLING_TYPES.map((code) => (
+                        <li key={code}>
+                          <Choice
+                            type="checkbox" name="drillingTypes" value={code}
+                            checked={values.drillingTypes.includes(code)}
+                            onChange={(on) => toggleDrillingType(code, on)}
+                          >
+                            <span className="choice__label">{t.drillingTypes[code]}</span>
+                          </Choice>
+                        </li>
+                      ))}
+                    </ul>
                   ) : null}
 
                   {flags.showEquipment ? (

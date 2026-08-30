@@ -445,6 +445,14 @@ fieldset { border: 0; }
   border-radius: var(--r-sm);
 }
 
+/* The registration route, first in the list. Filled rather than outlined so it reads as the kind
+   of account this is, not as one more specialty among the ones beside it. */
+.tag--route {
+  color: var(--surface);
+  background: var(--primary);
+  border-color: var(--primary);
+}
+
 .meta-row {
   display: flex;
   align-items: center;

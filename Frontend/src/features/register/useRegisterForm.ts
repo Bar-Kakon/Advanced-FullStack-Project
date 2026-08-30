@@ -1,21 +1,31 @@
 import { useCallback, useMemo, useState } from 'react';
 
 import { classifyRegisterError, registerAccount, type RegisterFailure } from '../../api/auth.api';
-import type { CompanyStanding } from '../../api/types';
+import { DRILLING_SPECIALTY, type CompanyStanding, type RegistrationCategory } from '../../api/types';
 import { EMAIL_PATTERN } from '../../shared/validation';
-import { buildRegisterPayload, emptyRegisterForm, type RegisterFormValues } from './buildRegisterPayload';
+import {
+  buildRegisterPayload,
+  emptyRegisterForm,
+  isOtherSpecialty,
+  type RegisterFormValues,
+} from './buildRegisterPayload';
 
 export const MIN_PASSWORD_LENGTH = 8;
 
 export type FieldName = keyof RegisterFormValues;
 
+/** Two steps: the account and business details, then the email-delivery choice. */
+export const REGISTER_STEPS = ['details', 'notifications'] as const;
+export type RegisterStep = (typeof REGISTER_STEPS)[number];
+
 /**
- * Which fields must be filled before the account can be created. The two phones are absent by
- * design — they are independently optional — and `specialtyOther` is absent because it is only
- * required conditionally, which `isComplete` handles separately.
+ * Which fields Step 1 must have before it can be left. The two phones are absent by design — they
+ * are independently optional — and `specialtyOther` is absent because it is only required
+ * conditionally, which `detailsComplete` handles separately.
  */
 const REQUIRED: readonly FieldName[] = [
-  'firstName', 'lastName', 'companyName', 'email', 'specialty', 'city', 'region', 'password', 'confirmPassword',
+  'firstName', 'lastName', 'companyName', 'email', 'registrationCategory', 'specialty',
+  'city', 'region', 'password', 'confirmPassword',
 ];
 
 /**
@@ -24,6 +34,7 @@ const REQUIRED: readonly FieldName[] = [
  */
 export const useRegisterForm = (onSuccess: () => void) => {
   const [values, setValues] = useState<RegisterFormValues>(emptyRegisterForm);
+  const [step, setStep] = useState<RegisterStep>('details');
   // Which fields the user has actually finished with. Errors stay hidden until then, so a pristine
   // form is never scolded for being empty — the same rule the static screen's `.touched` class had.
   const [touched, setTouched] = useState<Partial<Record<FieldName, boolean>>>({});
@@ -54,6 +65,31 @@ export const useRegisterForm = (onSuccess: () => void) => {
     setFailure(null);
   }, []);
 
+  /**
+   * The route decides which taxonomy is offered, so changing it clears the answer given under the
+   * previous one. A specialty from another route would be refused by the server anyway; clearing it
+   * means the form never displays one list while holding a value from a different one.
+   */
+  const setCategory = useCallback((next: RegistrationCategory): void => {
+    setValues((prev) =>
+      prev.registrationCategory === next
+        ? prev
+        : { ...prev, registrationCategory: next, specialty: '', specialtyOther: '', drillingTypes: [] },
+    );
+    setFailure(null);
+  }, []);
+
+  /** Refinements belong to the specialty that carries them and are dropped with it. */
+  const setSpecialty = useCallback((next: RegisterFormValues['specialty']): void => {
+    setValues((prev) => ({
+      ...prev,
+      specialty: next,
+      ...(isOtherSpecialty(prev.registrationCategory, next) ? {} : { specialtyOther: '' }),
+      ...(next === DRILLING_SPECIALTY ? {} : { drillingTypes: [] }),
+    }));
+    setFailure(null);
+  }, []);
+
   const markTouched = useCallback((field: FieldName): void => {
     setTouched((prev) => (prev[field] ? prev : { ...prev, [field]: true }));
   }, []);
@@ -67,17 +103,32 @@ export const useRegisterForm = (onSuccess: () => void) => {
     return { email: emailBad, password: passwordBad, confirmPassword: mismatch };
   }, [values.email, values.password, values.confirmPassword]);
 
-  const isComplete = useMemo(() => {
+  const detailsComplete = useMemo(() => {
     const filled = REQUIRED.every((f) => String(values[f]).trim().length > 0);
-    const otherOk = values.specialty !== 'other' || values.specialtyOther.trim().length > 0;
+    const otherOk =
+      !isOtherSpecialty(values.registrationCategory, values.specialty)
+      || values.specialtyOther.trim().length > 0;
     // An employee is claiming a seat, and the position is one of the three values it is matched on.
     const positionOk = values.standing !== 'employee' || values.companyPosition !== '';
     const matches = values.password === values.confirmPassword;
     return (
-      filled && otherOk && positionOk && matches && values.acceptedTerms &&
-      !errors.email && !errors.password && values.password.length >= MIN_PASSWORD_LENGTH
+      filled && otherOk && positionOk && matches
+      && !errors.email && !errors.password && values.password.length >= MIN_PASSWORD_LENGTH
     );
   }, [values, errors.email, errors.password]);
+
+  // Step 2 asks for the Terms and one of the two delivery answers. Declining email is a complete
+  // answer, which is why this reads for a chosen boolean rather than for a true one.
+  const isComplete = detailsComplete && values.acceptedTerms && values.operationalEmail !== null;
+
+  const goNext = useCallback((): void => {
+    setStep((current) => (current === 'details' ? 'notifications' : current));
+  }, []);
+
+  const goBack = useCallback((): void => {
+    setStep((current) => (current === 'notifications' ? 'details' : current));
+    setFailure(null);
+  }, []);
 
   const submit = useCallback(async (): Promise<void> => {
     if (!isComplete || submitting) return;
@@ -95,5 +146,10 @@ export const useRegisterForm = (onSuccess: () => void) => {
     }
   }, [isComplete, submitting, values, onSuccess]);
 
-  return { values, setValue, setStanding, touched, markTouched, errors, isComplete, submitting, failure, submit };
+  return {
+    values, setValue, setStanding, setCategory, setSpecialty,
+    touched, markTouched, errors,
+    step, goNext, goBack, detailsComplete, isComplete,
+    submitting, failure, submit,
+  };
 };

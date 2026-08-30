@@ -63,7 +63,7 @@ export const TrustPanel = ({
           ) : null}
           <ul className="tags">
             {profile.specialties.map((code) => (
-              <li className="tag" key={code}>{t.trades[code]}</li>
+              <li className="tag" key={code}>{t.specialties[code]}</li>
             ))}
           </ul>
           <p className="meta-row">

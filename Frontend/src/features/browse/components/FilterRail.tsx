@@ -1,5 +1,10 @@
-import { AVAILABILITY_STATUSES, REGIONS, TRADES } from '../../../api/types';
-import type { Availability, Region, Trade } from '../../../api/types';
+import {
+  AVAILABILITY_STATUSES,
+  REGIONS,
+  REGISTRATION_CATEGORIES,
+  SPECIALTIES_BY_CATEGORY,
+} from '../../../api/types';
+import type { Availability, Region, RegistrationCategory, Specialty } from '../../../api/types';
 import { useLanguage } from '../../../i18n/useLanguage';
 import type { BrowseState } from '../useBrowse';
 
@@ -45,6 +50,30 @@ export const FilterRail = ({
             />
           </div>
 
+          {/* Suppliers and the architectural category are their own routes, so Browse filters on
+              the route rather than treating every result as a contractor. */}
+          <div className="form-group">
+            <label className="field-label" htmlFor="browse-category">{t.browse.filters.category.label}</label>
+            <select
+              id="browse-category"
+              className="form-select"
+              value={one(filters.categories)}
+              onChange={(e) =>
+                applyFilters({
+                  categories: e.target.value ? [e.target.value as RegistrationCategory] : [],
+                  // The specialty lists do not overlap, so a held code from another route would
+                  // return nothing at all.
+                  specialties: [],
+                })
+              }
+            >
+              <option value="">{t.browse.filters.category.placeholder}</option>
+              {REGISTRATION_CATEGORIES.map((code) => (
+                <option key={code} value={code}>{t.specialtyCategories[code]}</option>
+              ))}
+            </select>
+          </div>
+
           <div className="form-group">
             <label className="field-label" htmlFor="browse-specialty">{t.browse.filters.specialty.label}</label>
             <select
@@ -52,13 +81,20 @@ export const FilterRail = ({
               className="form-select"
               value={one(filters.specialties)}
               onChange={(e) =>
-                applyFilters({ specialties: e.target.value ? [e.target.value as Trade] : [] })
+                applyFilters({ specialties: e.target.value ? [e.target.value as Specialty] : [] })
               }
             >
               <option value="">{t.browse.filters.specialty.placeholder}</option>
-              {TRADES.map((code) => (
-                <option key={code} value={code}>{t.trades[code]}</option>
-              ))}
+              {/* Grouped by route, and narrowed to one group once a route is chosen. */}
+              {REGISTRATION_CATEGORIES
+                .filter((c) => filters.categories.length === 0 || filters.categories.includes(c))
+                .map((category) => (
+                  <optgroup key={category} label={t.specialtyCategories[category]}>
+                    {SPECIALTIES_BY_CATEGORY[category].map((code) => (
+                      <option key={code} value={code}>{t.specialties[code]}</option>
+                    ))}
+                  </optgroup>
+                ))}
             </select>
           </div>
 

@@ -9,12 +9,49 @@ import type { StructuredPlace } from '../location/place.types';
  * *missing from the object*, not sent as `''`.
  */
 
-export const TRADES = [
-  'general', 'electrical', 'plumbing', 'drilling', 'shell', 'concrete', 'saferoom',
-  'carpentry', 'aluminum', 'hvac', 'painting', 'tiling', 'plastering', 'earthworks',
-  'waterproofing', 'supply', 'development', 'doors', 'sandpumps', 'haulage_crane',
-  'concrete_cutting', 'heavy_equipment', 'other',
+/** The three registration routes, mirrored from `user.model.ts`. */
+export const REGISTRATION_CATEGORIES = ['contractor', 'architectural', 'supplier'] as const;
+export type RegistrationCategory = (typeof REGISTRATION_CATEGORIES)[number];
+
+export const CONTRACTOR_SPECIALTIES = [
+  'shell', 'development_infrastructure', 'drilling', 'concrete_cutting', 'door_installation',
+  'waterproofing', 'tiling', 'plastering', 'painting', 'electrical', 'plumbing', 'metalwork',
+  'carpentry', 'stonework', 'grouting', 'concrete_pumps', 'sand_pumps', 'haulage_crane',
+  'heavy_equipment', 'contractor_other',
 ] as const;
+
+export const ARCHITECTURAL_SPECIALTIES = [
+  'structural_engineer', 'construction_supervisor', 'soil_consultant', 'architect',
+  'architectural_other',
+] as const;
+
+export const SUPPLIER_SPECIALTIES = [
+  'stone_supplier', 'building_materials_supplier', 'steel_plant', 'concrete_plant',
+  'ceramics_supplier', 'carpentry_supplier', 'colored_render_plant', 'aluminum_supplier',
+  'doors_supplier', 'drainage_pipe_supplier', 'concrete_pump_supplier', 'supplier_other',
+] as const;
+
+export const SPECIALTIES_BY_CATEGORY = {
+  contractor: CONTRACTOR_SPECIALTIES,
+  architectural: ARCHITECTURAL_SPECIALTIES,
+  supplier: SUPPLIER_SPECIALTIES,
+} as const;
+
+export const SPECIALTIES = [
+  ...CONTRACTOR_SPECIALTIES, ...ARCHITECTURAL_SPECIALTIES, ...SUPPLIER_SPECIALTIES,
+] as const;
+
+/** One per route. There is no route-neutral `other`, so the server can never be sent one. */
+export const OTHER_SPECIALTY: Readonly<Record<RegistrationCategory, Specialty>> = {
+  contractor: 'contractor_other',
+  architectural: 'architectural_other',
+  supplier: 'supplier_other',
+};
+
+/** The nested subtype of `drilling`, refined the way `EQUIPMENT_CODES` refines heavy equipment. */
+export const DRILLING_SPECIALTY = 'drilling';
+export const DRILLING_TYPES = ['injection_pvc'] as const;
+export type DrillingType = (typeof DRILLING_TYPES)[number];
 
 export const REGIONS = [
   'nationwide', 'north', 'haifa', 'sharon', 'center', 'telaviv', 'jerusalem', 'lowlands', 'south',
@@ -22,13 +59,13 @@ export const REGIONS = [
 
 export const AVAILABILITY_STATUSES = ['open', 'limited', 'closed'] as const;
 
-/** The ten machine codes that refine the `heavy_equipment` trade. Mirrored from `user.model.ts`. */
+/** The ten machine codes that refine `heavy_equipment`. Mirrored from `user.model.ts`. */
 export const EQUIPMENT_CODES = [
   'excavator', 'backhoe', 'drill_rig', 'mini_excavator', 'crawler',
   'jcb', 'wheel_loader', 'bobcat', 'bulldozer', 'hooklift_truck',
 ] as const;
 
-export type Trade = (typeof TRADES)[number];
+export type Specialty = (typeof SPECIALTIES)[number];
 export type Region = (typeof REGIONS)[number];
 export type Availability = (typeof AVAILABILITY_STATUSES)[number];
 export type EquipmentCode = (typeof EQUIPMENT_CODES)[number];
@@ -64,9 +101,13 @@ export interface RegisterPayload {
   readonly password: string;
   /** Validated by the server and never stored. Required, so it is always sent. */
   readonly confirmPassword: string;
-  readonly specialty: Trade;
-  /** Required exactly when `specialty` is `other`, and refused otherwise. */
+  /** Step 1's first choice. It decides which taxonomy `specialty` is read against. */
+  readonly registrationCategory: RegistrationCategory;
+  readonly specialty: Specialty;
+  /** Required exactly when `specialty` is the route's own `other` code, and refused otherwise. */
   readonly specialtyOther?: string;
+  /** Contractor drilling only; refused on every other specialty. */
+  readonly drillingTypes?: readonly DrillingType[];
   readonly city: string;
   readonly region: Region;
   /** Belongs to the business, so only an owner registration may carry it. */
@@ -77,6 +118,8 @@ export interface RegisterPayload {
   readonly availability?: Availability;
   /** The server only accepts `true`, and records the consent against its own Terms version. */
   readonly acceptedTerms: true;
+  /** Step 2. Required with no default, so neither answer can be assumed from silence. */
+  readonly operationalEmail: boolean;
   /** The structured place behind `city`, when the browser resolved one. */
   readonly place?: StructuredPlace;
 }
