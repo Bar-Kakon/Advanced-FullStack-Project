@@ -1281,149 +1281,212 @@ module.exports = mongoose.model('CompanyCalendarVersion', companyCalendarVersion
 /* ─────────── tasks ─────────── */
 {
   id: 'tasks', model: 'Task', domain: 'work', stage: 3, hub: true,
-  tag: 'the DAG, and the privacy carrier',
+  tag: 'one queue, and the privacy carrier',
   pos: { x: 550, y: 350 },
-  purpose: 'A unit of work — either a task inside a project or a standalone job with no project at all. This is the busiest collection in the system and the one that carries the confidential-delegation model, so its fields are grouped below by **who is allowed to see them**.',
-  callout: 'Fields are listed in three visibility groups. Everything in the **private layer** must be stripped before the document is serialised toward the party above. Try it in the [Privacy lab](#privacy) — that grouping is not documentation, it is what the serializer actually keys off.',
+  purpose: 'A unit of work — project work or standalone work, in one collection. <strong>Built 2026-08-30</strong>, and it differs from the shape drawn here earlier in four ways that were owner decisions, not preferences: the source is a stored <code>kind</code>, there is no stored status, there are no task-to-task dependency edges, and the private execution layer moved out into its own collection.',
+  callout: '<strong>The source is stored, not inferred.</strong> Owner decision (2026-08-30): <code>kind</code> is <code>project | standalone</code> and stands beside the optional project reference, so \'this is standalone work\' is a fact somebody wrote rather than a conclusion drawn from an empty field. A pre-validate hook refuses the two ways they could disagree — project work with no project, standalone work naming one.',
   calloutKind: 'warn',
   fields: [
-    { group: 'Public layer', groupNote: 'visible to the general contractor and to accepted project members' },
+    { group: 'The work itself' },
     { name: '_id', type: 'ObjectId', note: '' },
-    { name: 'project', type: 'ObjectId | null', ref: 'projects', idx: true, note: '**Null means this is a standalone job.** The one field that makes the polymorphic model work (decision D5).' },
-    { name: 'kind', type: "'task' | 'job'", req: true, note: 'Redundant with `project === null`, but explicit: a validator enforces that a `job` has no project and no dependencies, so the invariant is checked rather than assumed.' },
+    { name: 'kind', type: "'project' | 'standalone'", req: true, note: '<strong>Owner decision, 2026-08-30 (D5).</strong> The earlier design carried <code>task | job</code> and treated <code>project === null</code> as the real answer. The stored kind is now the answer, and the null-ness is the redundancy — the reverse of the old row.' },
+    { name: 'project', type: 'ObjectId', ref: 'projects', idx: true, note: 'Present on project work and genuinely ABSENT on standalone work — not stored as null. <strong>Withheld entirely from a delegate</strong>, because naming the project would place them inside the wider job and identify the party above indirectly.' },
+    { name: 'stage', type: 'ObjectId', ref: 'projectstages', idx: true, note: 'Which stage of the project this work sits in. <strong>This is where dependency lives</strong> — see the collection below.' },
     { name: 'title', type: 'String', req: true, note: '' },
-    { name: 'description', type: 'String', note: '' },
-    { name: 'createdBy', type: 'ObjectId', ref: 'users', note: 'Usually the general contractor. Hidden from a delegate — this field alone would expose the party above.' },
-    { name: 'assignee', type: 'ObjectId', ref: 'users', req: true, idx: true, note: '**The contract of record.** When work is delegated this stays pointing at the delegator, because that is who the general contractor believes is doing the job.' },
-    { name: 'startDate', type: 'Date', req: true, note: 'UTC.' },
-    { name: 'endDate', type: 'Date', req: true, idx: true, note: 'UTC. The value the cascade shifts.' },
-    { name: 'publicStatus', type: "'not_started' | 'in_progress' | 'completed'", idx: true, note: 'Binary start/complete as far as the product is concerned. **Set manually by the assignee** — it is a claim made upward, not an observation.' },
-    { name: 'publicStatusUpdatedAt', type: 'Date', note: '' },
-    { name: 'dependencies', type: '[ObjectId]', ref: 'tasks', idx: true, note: 'Predecessors — the tasks this one is blocked by. These are the edges of the DAG. Project tasks only; a standalone job has none.' },
-    { name: 'workPlans', type: '[ObjectId]', ref: 'fileassets', note: 'Versioned file references. Only the entries whose [[fileassets]] document is `visibility: "shared"` are serialised upward.' },
+    { name: 'description', type: 'String', note: 'Replaced for a delegate by the part they were handed, when only part of the work was delegated.' },
+    { name: 'createdBy', type: 'ObjectId', ref: 'users', req: true, note: 'Provenance, and the counterparty an ordinary assignee answers to. <strong>Never reaches a delegate</strong> — this field alone would expose the party above (D21).' },
+    { name: 'assignee', type: 'ObjectId', ref: 'users', idx: true, note: '<strong>The contract of record.</strong> When work is delegated this stays pointing at the delegator, because that is who the general contractor believes is doing the job. Becomes ABSENT when the work is orphaned — never silently reassigned.' },
+    { name: 'startDate / dueDate', type: 'Date', req: true, note: 'UTC. The values a date change would move.' },
 
-    { group: 'Private execution layer', groupNote: 'visible to the assignee (delegator) and downward only — **never serialised toward the party above**' },
-    { name: 'delegate', type: 'ObjectId | null', ref: 'users', idx: true, hidden: true, note: 'Who is actually doing the work. The single most sensitive field in the database. Re-delegation is forbidden (decision D7), so a task whose actor is the delegate can never write this field.' },
-    { name: 'delegatedAt', type: 'Date', hidden: true, note: '' },
-    { name: 'delegationNote', type: 'String', hidden: true, note: 'Private instructions from the delegator to the delegate.' },
-    { name: 'privateStatus', type: "'not_started' | 'in_progress' | 'completed'", hidden: true, note: 'What is **really** happening. Diverges from `publicStatus` on purpose: the delegator decides when and whether to pass reality upward.' },
-    { name: 'actualStartAt', type: 'Date', hidden: true, note: 'The real binary start timestamp, written by whoever is executing.' },
-    { name: 'actualCompleteAt', type: 'Date', hidden: true, note: 'The real completion timestamp.' },
-    { name: 'subTasks', type: '[{ _id, title, done, doneAt }]', hidden: true, note: 'Embedded. The private execution breakdown — how the receiver organises their own work inside somebody else project.' },
-    { name: 'privateNotes', type: '[{ _id, author, body, createdAt }]', hidden: true, note: 'Embedded. Notes between delegator and delegate.' },
-    { name: 'visibilityMode', type: "'project' | 'private'", hidden: true, note: 'Receiver-only classification: the assignee decides whether to manage this work openly in the project or privately.' },
+    { group: 'Progress', groupNote: 'two timestamps, and nothing else' },
+    { name: 'startedAt', type: 'Date', note: 'Written by Start. Absent means not started.' },
+    { name: 'completedAt', type: 'Date', note: 'Written by Complete. Absent means not complete.' },
 
-    { group: 'Provenance' },
-    { name: 'originMessage', type: 'ObjectId | null', ref: 'messages', note: 'Set when the task was auto-created from an agreement form in the inbox.' },
-    { name: 'createdAt / updatedAt', type: 'Date', note: '' }
+    { group: 'Delegation', groupNote: 'visible to the two parties to it and to nobody else' },
+    { name: 'delegation', type: '{ delegate, scope, partDescription?, delegatedAt }', note: 'Embedded 1:1, rather than the four flat fields drawn earlier — it is one fact and is written and cleared as one. <code>delegate</code> is the most sensitive reference in the database. <code>scope</code> is <code>whole | part</code>: <strong>part-delegation is closed domain behaviour</strong> (לעבודה שלמה או רק לחלק מהעבודה, זאת בחירה של הקבלן שמעביר), and <code>partDescription</code> is the only description the delegate is shown. Re-delegation is refused: single level, no exception.' },
+    { name: 'ownCrewOnly', type: 'Boolean', req: true, note: 'The GC\'s own-crew-only term — שלא יעביר את העבודה לביצוע של קבלן משנה אחר. When true the work cannot be delegated at all, and the control is not offered.' },
+    { name: 'delegatorOnSiteRequired', type: 'Boolean', req: true, note: 'The GC may require the delegator on site even after handing performance over.' },
+
+    { group: 'Orphan state', groupNote: 'the node survives its owner' },
+    { name: 'orphanedAt', type: 'Date', note: 'Dates freeze from here: overdue stops accruing, because nothing may move until the GC resolves it.' },
+    { name: 'previousAssignee', type: 'ObjectId', ref: 'users', note: 'Who was responsible before. <strong>Always preserved</strong> — the closed orphan rule requires that the fact a different professional was originally responsible survives.' },
+    { name: 'createdAt / updatedAt', type: 'Date', note: 'Mongoose `timestamps: true`.' }
   ],
   indexes: [
-    { def: '{ project: 1, endDate: 1 }', serves: 'Project dashboard timeline', why: 'Equality on `project` then a range/sort on `endDate` — the canonical compound-index shape. Reversing the order would make the sort useless.' },
-    { def: '{ assignee: 1, publicStatus: 1, endDate: 1 }', serves: 'My Tasks, across every project', why: 'Covers filter-by-status and sort-by-due-date in one index, for the screen that aggregates work from everywhere.' },
-    { def: '{ delegate: 1, privateStatus: 1 }', opts: 'sparse', serves: 'The delegate own narrow task list', why: 'Sparse because almost no task is delegated — the index only stores the ones that are.' },
-    { def: '{ dependencies: 1 }', opts: 'multikey', serves: '**The cascade.** Find every task blocked by task X', why: 'The single most important index in the project. Edges are stored on the dependent task, so this reverses the direction of the graph in one query instead of scanning the whole collection.' },
-    { def: '{ project: 1, assignee: 1 }', serves: 'Per-member task breakdown in the project dashboard', why: '' }
+    { def: '{ assignee: 1, dueDate: 1, _id: 1 }', serves: 'My Tasks — one person\'s queue, soonest first', why: 'The busiest read in the Tasks domain. The `_id` tiebreaker is what lets the cursor page through without repeating or skipping a row when two share a due date.' },
+    { def: "{ 'delegation.delegate': 1, dueDate: 1, _id: 1 }", serves: 'The delegate\'s own queue', why: 'Delegated work still has to reach whoever actually performs it, and that person is not the assignee. Without this the delegate\'s My Tasks would scan the collection.' },
+    { def: '{ project: 1, index on stage }', serves: 'The Project Dashboard counts and the stage view', why: 'Counting a project\'s work, and grouping it by stage, are both project-scoped reads.' }
   ],
   why: [
-    '**One collection for tasks and standalone jobs** (this is the answer to D5). A job is a task with `project: null` and no dependencies. Splitting them would duplicate roughly eighty percent of the fields plus the entire status, file and delegation machinery — and it would force `My Tasks` to query two collections, merge them in application memory, and sort the result by hand, losing the index. A schema validator keeps jobs honest instead.',
-    '**`subTasks` and `privateNotes` are embedded** and pass all five embedding tests: they belong to exactly one task, are always loaded with it, are never queried independently, are bounded by human patience, and are not shared with anything else.',
-    '**`dependencies` is an embedded array of references — a hybrid.** The ids live on the document, so reading a task gives you its edges for free; the documents they point at live in the same collection. That is how you store a graph in a document database.',
-    '**Edge direction is a design decision.** Storing *predecessors* answers "what am I waiting on?" with zero extra queries. The cascade needs the opposite question — "who is waiting on me?" — and the multikey index on `dependencies` answers that in one indexed lookup. **Store one direction, index it, and you get both.** Storing both directions would mean two writes per edge and a chance to disagree.',
-    '**Two status fields is the privacy model in miniature.** `publicStatus` is a claim the delegator makes to the general contractor; `privateStatus` plus `actualStartAt` are what actually happened. Modelling them as one field would make confidential delegation impossible.',
-    '**`delegate` is a top-level field, not nested inside a `private` object**, purely so `{ delegate: 1 }` can be indexed for the delegate own task list. The cost is that the serializer must strip it explicitly — which is why the field carries an obvious name and its own test.',
-    '**Cycle prevention is application logic, not a schema feature.** MongoDB will happily store a cycle. Before adding edge X→Y the server walks Y ancestors and rejects the write if X is among them — see the [Flows](#flows) tab.'
+    '<strong>There is no stored status, and no stored `overdue`.</strong> The closed tracking model is binary: Start and Complete write timestamps, and the state a screen shows — not started, in progress, completed — is derived on every read. `overdue` is a separate comparison against the due date, deliberately NOT one of the states, because a task can be overdue in any of them. The earlier design stored `publicStatus`; storing it would have created a second truth that can disagree with its own timestamps.',
+    '<strong>There are no task-to-task dependency edges.</strong> Owner decision, 2026-08-30, against the closed domain finding that dependencies run between WHOLE STAGES — אין דבר כזה בבניין עבודה ספציפית. The `dependencies: [ObjectId]` array drawn here earlier is gone; [[projectstages]] carries the edges and the gate flag.',
+    '<strong>The private execution layer moved out</strong> into [[privateworkitems]]. It was drawn here as embedded `subTasks` plus a parallel `privateStatus` / `actualStartAt` / `actualCompleteAt` set. Two reasons it left: sub-tasks and private notes are the same shape and belong together, and a second hidden status pair would be a second truth about the same work. The closed rule is that the receiver sets the visible state themselves — so there is one pair of timestamps, and the private layer never derives it.',
+    '<strong>One collection, both kinds of work.</strong> My Tasks is the busiest screen and shows project work and standalone work together; two collections would mean two queries merged and sorted in memory, which cannot be paged from an index, and every later feature — delegation, files, the private layer — built twice.',
+    '<strong>The delegation wall is enforced in one module, not per route.</strong> `taskVisibility.ts` answers where a viewer stands and what they may be told; every surface that reads a task goes through it, so the wall cannot be forgotten in one place.'
   ],
   relations: [
-    { to: 'projects', via: 'project', store: 'ref', card: 'N:1 (optional)', why: 'Nullable: a null project is what makes the document a standalone job rather than a project task.' },
-    { to: 'users', via: 'assignee', store: 'ref', card: 'N:1', why: 'The contract of record — stays the delegator on every view rendered upward.' },
-    { to: 'users', via: 'delegate', store: 'ref', card: 'N:1 (optional)', why: 'The private half of the delegation. Stripped by the serializer for any viewer above the delegator.' },
-    { to: 'tasks', via: 'dependencies[]', store: 'ref', card: 'N:M (acyclic)', why: 'The dependency DAG. Predecessors stored on the dependent; the multikey index reverses the direction for the cascade.' },
-    { to: 'fileassets', via: 'workPlans[]', store: 'ref', card: '1:N', why: 'Versioned files. Private uploads are filtered out of the upward view by the file own `visibility` flag.' },
-    { to: 'messages', via: 'originMessage', store: 'ref', card: 'N:1 (optional)', why: 'Provenance for tasks auto-created from an agreement form.' }
+    { to: 'projects', via: 'project', store: 'ref', card: 'N:1', why: 'Absent entirely on standalone work.' },
+    { to: 'projectstages', via: 'stage', store: 'ref', card: 'N:1', why: 'Where the work sits in the sequence. Dependency lives on the stage, not here.' },
+    { to: 'users', via: 'assignee / createdBy / delegation.delegate', store: 'ref', card: 'N:1', why: 'Three different people, three different visibility rules.' }
   ],
   sample: `{
-  _id: ObjectId("6661d7e0c2b9e30012af1201"),
+  _id:  ObjectId("6670a1a0c2b9e30012af2101"),
+  kind: "project",                                  // stored, not inferred
   project: ObjectId("6660c3d0c2b9e30012af1001"),
-  kind: "task",
-  title: "Pour ground-floor slab",
-  description: "C30/37, 240 m3. Pump access from the north gate.",
-  createdBy: ObjectId("6650a0b0c2b9e30012af0b10"),   // the GC
-  assignee:  ObjectId("6650a1f4c2b9e30012af0b21"),   // Dana — contract of record
-  startDate: ISODate("2026-09-14T00:00:00Z"),
-  endDate:   ISODate("2026-09-16T00:00:00Z"),
-  publicStatus: "not_started",
-  dependencies: [ ObjectId("6661d6a0..."),           // rebar tied
-                  ObjectId("6661d6b1...") ],         // formwork inspected
-  workPlans: [ ObjectId("6661e0...") ],
+  stage:   ObjectId("6670b2b0c2b9e30012af2201"),    // \u05d7\u05e9\u05de\u05dc
 
-  // ── private execution layer — never leaves the server toward the GC ──
-  delegate:       ObjectId("6650a2c1c2b9e30012af0b44"),   // Ronen
-  delegatedAt:    ISODate("2026-08-02T06:40:00Z"),
-  delegationNote: "Bring your own vibrators, site has none.",
-  privateStatus:  "in_progress",
-  actualStartAt:  ISODate("2026-09-14T04:55:00Z"),
-  subTasks: [ { title: "Pump on site 05:00", done: true },
-              { title: "Slump test",         done: false } ],
-  privateNotes: [ { author: ObjectId("6650a2c1..."), body: "Truck 3 is late",
-                    createdAt: ISODate("2026-09-14T06:10:00Z") } ],
-  visibilityMode: "private",
+  title: "\u05d4\u05e2\u05d1\u05e8\u05ea \u05e6\u05e0\u05e8\u05ea \u05d7\u05e9\u05de\u05dc",
+  createdBy: ObjectId("6650a0b0c2b9e30012af0b10"),  // the GC — never shown to a delegate
+  assignee:  ObjectId("6650a1f4c2b9e30012af0b21"),  // Dana, the contract of record
 
-  createdAt: ISODate("2026-07-02T11:00:00Z")
-}`,
-  schema: `const subTaskSchema = new Schema({
-  title: { type: String, required: true },
-  done:  { type: Boolean, default: false },
-  doneAt: Date
-}, { _id: true });
+  startDate: ISODate("2026-09-01"), dueDate: ISODate("2026-09-12"),
+  startedAt: ISODate("2026-09-01T06:10:00Z"),       // state is DERIVED from these two
+  completedAt: undefined,                            // → "in progress", and not overdue yet
 
-const privateNoteSchema = new Schema({
-  author: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-  body:   { type: String, required: true }
-}, { _id: true, timestamps: { createdAt: true, updatedAt: false } });
+  delegation: {                                      // Moshe performs; the GC never learns it
+    delegate: ObjectId("6650a2c8c2b9e30012af0b33"),
+    scope: "part",
+    partDescription: "\u05de\u05e2\u05d1\u05e8 \u05d4\u05e6\u05e0\u05e8\u05ea \u05d1\u05dc\u05d1\u05d3",
+    delegatedAt: ISODate("2026-09-02T08:00:00Z")
+  },
+  ownCrewOnly: false,
+  delegatorOnSiteRequired: true
+}
 
-const taskSchema = new Schema({
-  // ── public layer ──
-  project: { type: Schema.Types.ObjectId, ref: 'Project', default: null },
-  kind:    { type: String, enum: ['task','job'], required: true },
-  title:       { type: String, required: true, trim: true },
-  description: String,
+// The GC reads this document and is served: Dana as the performer, no delegation at all.
+// Moshe reads it and is served: the part he was given, Dana as his counterparty,
+// and NO project, NO stage and NO sequence.`,
+  schema: `const taskSchema = new Schema({
+  kind:    { type: String, enum: ['project','standalone'], required: true },
+  project: { type: Schema.Types.ObjectId, ref: 'Project', index: true },
+  stage:   { type: Schema.Types.ObjectId, ref: 'ProjectStage', index: true },
+
+  title: { type: String, required: true, maxlength: 200 },
   createdBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-  assignee:  { type: Schema.Types.ObjectId, ref: 'User', required: true },
+  assignee:  { type: Schema.Types.ObjectId, ref: 'User', index: true },
+
   startDate: { type: Date, required: true },
-  endDate:   { type: Date, required: true },
-  publicStatus: { type: String, enum: ['not_started','in_progress','completed'], default: 'not_started' },
-  publicStatusUpdatedAt: Date,
-  dependencies: [{ type: Schema.Types.ObjectId, ref: 'Task' }],
-  workPlans:    [{ type: Schema.Types.ObjectId, ref: 'FileAsset' }],
+  dueDate:   { type: Date, required: true },
+  startedAt:   Date,          // the whole of progress reporting
+  completedAt: Date,
 
-  // ── private execution layer — stripped by the serializer for viewers above ──
-  delegate:       { type: Schema.Types.ObjectId, ref: 'User', default: null },
-  delegatedAt:    Date,
-  delegationNote: String,
-  privateStatus:  { type: String, enum: ['not_started','in_progress','completed'], default: 'not_started' },
-  actualStartAt:    Date,
-  actualCompleteAt: Date,
-  subTasks:     [subTaskSchema],
-  privateNotes: [privateNoteSchema],
-  visibilityMode: { type: String, enum: ['project','private'], default: 'project' },
+  delegation: delegationSchema,          // { delegate, scope, partDescription?, delegatedAt }
+  ownCrewOnly: { type: Boolean, required: true, default: false },
+  delegatorOnSiteRequired: { type: Boolean, required: true, default: false },
 
-  originMessage: { type: Schema.Types.ObjectId, ref: 'Message', default: null }
+  orphanedAt: Date,
+  previousAssignee: { type: Schema.Types.ObjectId, ref: 'User' }
 }, { timestamps: true });
 
-// A standalone job has no project and no dependencies — checked, not assumed
-taskSchema.pre('validate', function (next) {
-  if (this.kind === 'job' && (this.project || this.dependencies.length))
-    return next(new Error('A standalone job cannot have a project or dependencies'));
-  next();
+// The kind and the project reference can never describe two different things.
+taskSchema.pre('validate', async function () {
+  if (this.get('kind') === 'project'   && !this.get('project')) throw new Error('...');
+  if (this.get('kind') === 'standalone' && this.get('project')) throw new Error('...');
 });
 
-taskSchema.index({ project: 1, endDate: 1 });
-taskSchema.index({ assignee: 1, publicStatus: 1, endDate: 1 });
-taskSchema.index({ delegate: 1, privateStatus: 1 }, { sparse: true });
-taskSchema.index({ dependencies: 1 });          // multikey — powers the cascade
-taskSchema.index({ project: 1, assignee: 1 });
+taskSchema.index({ assignee: 1, dueDate: 1, _id: 1 });
+taskSchema.index({ 'delegation.delegate': 1, dueDate: 1, _id: 1 });
 
-module.exports = mongoose.model('Task', taskSchema);`
+// Derived on READ. Nothing about state or lateness is stored.
+const deriveState = (t) => t.completedAt ? 'completed' : t.startedAt ? 'in_progress' : 'not_started';`
+},
+
+/* ─────────── projectstages ─────────── */
+{
+  id: 'projectstages', model: 'ProjectStage', domain: 'work', stage: 3,
+  tag: 'the sequence, and the gates',
+  pos: { x: 780, y: 430 },
+  purpose: 'One stage of one project\'s work, and the edges between stages. <strong>Built 2026-08-30</strong> by owner decision on the dependency representation.',
+  callout: '<strong>Dependencies run between STAGES, never between individual tasks.</strong> The domain finding is verbatim: אין דבר כזה בבניין עבודה ספציפית — the shell must finish before electrical starts, not "task 3.2 before task 4.1". A stage may be flagged a true GATE, and the stages of a project are the GC\'s to set, because the order varies project to project.',
+  calloutKind: 'warn',
+  fields: [
+    { name: '_id', type: 'ObjectId', note: '' },
+    { name: 'project', type: 'ObjectId', ref: 'projects', req: true, idx: true, note: '' },
+    { name: 'name', type: 'String', req: true, note: 'The GC\'s own name for the stage — שלד, חשמל, גמרים.' },
+    { name: 'order', type: 'Number', req: true, note: 'Display order. It is NOT the dependency — `dependsOn` is, and the two are deliberately separate.' },
+    { name: 'isGate', type: 'Boolean', req: true, note: 'A true gate blocks everything downstream until it is complete. The named ones are דיפונים, ביסוסים, חפירות, איטום מרתף, שלד, חשמלאי, אינסטלציה and גמרים.' },
+    { name: 'dependsOn', type: '[ObjectId]', ref: 'projectstages', note: 'The stages that must finish first. Directed edges, and <strong>kept free of cycles</strong> — an edge is refused when the stage it points at can already reach this one.' },
+    { name: 'partialReleaseAt / By / Note', type: 'Date · ObjectId · String', note: 'שחרור חלקי — an authorised release of downstream work before this stage completes. Only the GC/CEO decides it, or the granted chain originating there.' }
+  ],
+  indexes: [
+    { def: '{ project: 1, order: 1 }', serves: 'The stage list for one project', why: 'The only way stages are ever read: one project, in the order the GC set.' }
+  ],
+  why: [
+    '<strong>Stage-level edges, not a task DAG.</strong> A task-level graph cannot say "the shell must FINISH before electrical starts" without linking every shell task to every electrical task — N×M edges redrawn by hand every time a task is added — and a gate would have nowhere to live.',
+    '<strong>Cycle prevention is mandatory and happens before the write.</strong> The check walks the graph as it WOULD be, depth-first with a visited set, so a graph that already contains a loop cannot spin the checker. This matters twice over: the same edges will feed the Project Dashboard timeline and dependency view.',
+    '<strong>`order` and `dependsOn` are separate on purpose.</strong> A GC can list stages in a reading order without claiming every one blocks the next.'
+  ],
+  relations: [
+    { to: 'projects', via: 'project', store: 'ref', card: 'N:1', why: 'Stages belong to one project and vary between projects.' },
+    { to: 'projectstages', via: 'dependsOn', store: 'ref', card: 'N:M', why: 'The edges themselves. Many-to-one and one-to-many are both real.' }
+  ],
+  sample: `{
+  _id: ObjectId("6670b2b0c2b9e30012af2201"),
+  project: ObjectId("6660c3d0c2b9e30012af1001"),
+  name: "\u05d7\u05e9\u05de\u05dc", order: 1, isGate: false,
+  dependsOn: [ ObjectId("6670b2b0c2b9e30012af2200") ]   // \u05e9\u05dc\u05d3, which IS a gate
+}`,
+  schema: `const projectStageSchema = new Schema({
+  project: { type: Schema.Types.ObjectId, ref: 'Project', required: true, index: true },
+  name:   { type: String, required: true, maxlength: 120 },
+  order:  { type: Number, required: true, min: 0 },
+  isGate: { type: Boolean, required: true, default: false },
+  dependsOn: [{ type: Schema.Types.ObjectId, ref: 'ProjectStage' }],
+  partialReleaseAt: Date,
+  partialReleaseBy: { type: Schema.Types.ObjectId, ref: 'User' }
+}, { timestamps: true });
+
+projectStageSchema.index({ project: 1, order: 1 });`
+},
+
+/* ─────────── privateworkitems ─────────── */
+{
+  id: 'privateworkitems', model: 'PrivateWorkItem', domain: 'work', stage: 3,
+  tag: 'how the performer organises their own work',
+  pos: { x: 320, y: 430 },
+  purpose: 'The receiver\'s own sub-tasks and notes on work they were given. <strong>Built 2026-08-30</strong>, moved out of the embedded `subTasks` array the tasks entry used to carry.',
+  callout: '<strong>Delegation hides WHO performs; this hides HOW they organise it.</strong> They are two features that share a serializer and nothing else. A private sub-task is a checklist item: it carries no dependency edges, it cannot propagate a date, and <strong>the public state of the parent task is never derived from it</strong> — the receiver sets that themselves with Start and Complete, or the method leaks upward through the status field.',
+  calloutKind: 'warn',
+  fields: [
+    { name: '_id', type: 'ObjectId', note: '' },
+    { name: 'task', type: 'ObjectId', ref: 'tasks', req: true, idx: true, note: '' },
+    { name: 'owner', type: 'ObjectId', ref: 'users', req: true, idx: true, note: '<strong>Whose private layer this is.</strong> Nobody else ever reads it — not the delegator who owns the task, not the GC, whatever authority they hold.' },
+    { name: 'kind', type: "'subtask' | 'note'", req: true, note: 'One shape for both, because they differ only in whether a tick means anything.' },
+    { name: 'body', type: 'String', req: true, note: 'Max 1000 characters.' },
+    { name: 'done', type: 'Boolean', req: true, note: 'Sub-tasks only. A checklist tick with no bearing on the parent task.' },
+    { name: 'order', type: 'Number', req: true, note: '' }
+  ],
+  indexes: [
+    { def: '{ task: 1, owner: 1, order: 1 }', serves: 'One person\'s private layer on one task', why: 'The owner is IN the index because the layer is never read by task alone — doing so would be the leak.' }
+  ],
+  why: [
+    '<strong>A separate collection rather than an embedded array.</strong> Embedding put the private layer inside the document the serializer sends upward, so every read had to remember to strip it. A separate collection scoped by owner means the wrong person\'s query returns nothing rather than relying on a strip step.',
+    '<strong>Classification is receiver-only and post-hoc.</strong> The closed rule is that job length and structure are not declared in advance; they are the receiver\'s own record after the fact.',
+    '<strong>File contents are never parsed to infer progress.</strong> A standing platform exclusion, and it applies here too — progress comes from Start and Complete or from nowhere.'
+  ],
+  relations: [
+    { to: 'tasks', via: 'task', store: 'ref', card: 'N:1', why: 'The work being organised.' },
+    { to: 'users', via: 'owner', store: 'ref', card: 'N:1', why: 'The only person who may ever read the row.' }
+  ],
+  sample: `{
+  _id: ObjectId("6670c3c0c2b9e30012af2301"),
+  task:  ObjectId("6670a1a0c2b9e30012af2101"),
+  owner: ObjectId("6650a2c8c2b9e30012af0b33"),   // Moshe — and ONLY Moshe
+  kind: "subtask", body: "\u05e1\u05d9\u05de\u05d5\u05df \u05de\u05e1\u05dc\u05d5\u05dc", done: true, order: 0
+}
+
+// Dana owns the task. She still reads zero rows here.`,
+  schema: `const privateWorkItemSchema = new Schema({
+  task:  { type: Schema.Types.ObjectId, ref: 'Task', required: true, index: true },
+  owner: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
+  kind:  { type: String, enum: ['subtask','note'], required: true },
+  body:  { type: String, required: true, maxlength: 1000 },
+  done:  { type: Boolean, required: true, default: false },
+  order: { type: Number, required: true, default: 0 }
+}, { timestamps: true });
+
+// Always read as "this person's layer on this task" — never by task alone.
+privateWorkItemSchema.index({ task: 1, owner: 1, order: 1 });`
 },
 
 /* ─────────── fileassets ─────────── */
