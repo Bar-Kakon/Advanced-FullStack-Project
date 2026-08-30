@@ -13,6 +13,13 @@ import { MyProfilePage } from './features/profile/MyProfilePage';
 import { EditProfilePage } from './features/profile/EditProfilePage';
 import { BrowsePage } from './features/browse/BrowsePage';
 import { MyNetworkPage } from './features/network/MyNetworkPage';
+import { MyProjectsPage } from './features/projects/MyProjectsPage';
+import { ProjectFormPage } from './features/projects/ProjectFormPage';
+import { PermissionsPage } from './features/permissions/PermissionsPage';
+import { ProjectMembersPage } from './features/members/ProjectMembersPage';
+import { ProjectDashboardPage } from './features/projectdashboard/ProjectDashboardPage';
+import { MyTasksPage } from './features/tasks/MyTasksPage';
+import { TaskDetailPage } from './features/tasks/TaskDetailPage';
 import { EmployeeManagementPage } from './features/employees/EmployeeManagementPage';
 import { EmployeeOnboardingPage } from './features/employees/EmployeeOnboardingPage';
 import { WaitingForApprovalPage } from './features/employees/WaitingForApprovalPage';
@@ -53,6 +60,14 @@ export const App = () => (
               <Route path="/employees" element={<EmployeeManagementPage />} />
               <Route path="/browse" element={<BrowsePage />} />
               <Route path="/network" element={<MyNetworkPage />} />
+              <Route path="/projects" element={<MyProjectsPage />} />
+              <Route path="/projects/new" element={<ProjectFormPage />} />
+              <Route path="/projects/:projectId/edit" element={<ProjectFormPage />} />
+              <Route path="/projects/:projectId/members" element={<ProjectMembersPage />} />
+              <Route path="/projects/:projectId" element={<ProjectDashboardPage />} />
+              <Route path="/permissions" element={<PermissionsPage />} />
+              <Route path="/tasks" element={<MyTasksPage />} />
+              <Route path="/tasks/:taskId" element={<TaskDetailPage />} />
             </Route>
           </Route>
 

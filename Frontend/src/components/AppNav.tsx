@@ -45,8 +45,8 @@ export const AppNav = ({ name, initials }: { name: string; initials: string }) =
         <nav className="app-nav__links" aria-label={t.nav.label}>
           <Link to="/browse" className="app-nav__link">{t.nav.browse}</Link>
           <Link to="/network" className="app-nav__link">{t.nav.network}</Link>
-          <span className="app-nav__link is-disabled" aria-disabled="true">{t.nav.projects}</span>
-          <span className="app-nav__link is-disabled" aria-disabled="true">{t.nav.myTasks}</span>
+          <Link to="/projects" className="app-nav__link">{t.nav.projects}</Link>
+          <Link to="/tasks" className="app-nav__link">{t.nav.myTasks}</Link>
           {showEmployees ? (
             <Link to="/employees" className="app-nav__link">{t.nav.employees}</Link>
           ) : null}

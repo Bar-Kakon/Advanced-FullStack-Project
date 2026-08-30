@@ -1,0 +1,134 @@
+/* FieldSync — My tasks */
+/* Loaded on top of profile.css and projects.css. Approved palette only. */
+
+.task-filters {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 0 18px;
+}
+
+.task-filters .form-group { margin-block-end: 12px; }
+
+.task-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.task-row {
+  padding: 16px 18px;
+  border: 1px solid var(--secondary-45);
+  border-radius: var(--r-md);
+  background: var(--surface);
+}
+
+/* Overdue is a fact about the row, marked on its leading edge so RTL and LTR both read it. */
+.task-row--overdue { border-inline-start: 3px solid var(--primary); }
+
+.task-row__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px 14px;
+  margin-block-end: 8px;
+}
+
+.task-row__title {
+  font-family: var(--font-serif);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--primary);
+  overflow-wrap: anywhere;
+}
+
+.task-row__badges { display: flex; flex-wrap: wrap; gap: 6px; }
+
+.task-chip {
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 13px;
+  line-height: 1.5;
+  border: 1px solid var(--secondary-55);
+  background: var(--secondary-15);
+  color: var(--text);
+  white-space: nowrap;
+}
+
+.task-chip--completed { background: var(--primary); border-color: var(--primary); color: var(--surface); }
+.task-chip--overdue { border-color: var(--primary-30); background: var(--background); font-weight: 700; }
+.task-chip--standalone { background: var(--surface); }
+
+.task-row__desc,
+.task-row__note {
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--text-soft);
+  margin-block-end: 8px;
+  overflow-wrap: anywhere;
+}
+
+.task-row__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 18px;
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--text-soft);
+  margin-block-end: 8px;
+}
+
+.task-row__meta > span { overflow-wrap: anywhere; }
+.task-row__late { font-weight: 700; color: var(--text); }
+
+.task-row__actions { display: flex; flex-wrap: wrap; gap: 8px; }
+
+@media (max-width: 640px) {
+  .task-row__actions > .btn { flex: 1 1 auto; }
+}
+
+/* ═══ The private execution layer ═══ */
+
+.private-list {
+  list-style: none;
+  margin: 0 0 12px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.private-item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 14px;
+  padding: 10px 14px;
+  border: 1px solid var(--secondary-45);
+  border-radius: var(--r-md);
+  background: var(--surface);
+}
+
+.private-item__note {
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--text-soft);
+  overflow-wrap: anywhere;
+}
+
+.private-add {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px;
+}
+
+.private-add .form-group { flex: 1 1 200px; margin-block-end: 0; }
+
+@media (max-width: 640px) {
+  .private-add > .btn { flex: 1 1 auto; }
+}

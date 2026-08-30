@@ -375,6 +375,458 @@ export const en: Strings = {
     sendNewLink: 'Send a new link',
   },
 
+  permissions: {
+    title: 'Permissions',
+    lede: 'Permissions across every project you manage, in one place. Each one belongs to a specific project.',
+    loading: 'Loading permissions…',
+    retry: 'Try again',
+    backToProjects: 'Back to projects',
+    empty: 'There are no projects whose permissions you can manage.',
+    entry: 'Manage permissions',
+
+    grants: {
+      title: 'Permissions by project',
+      role: 'Project role',
+      status: 'Status',
+      permissions: 'Permissions',
+      revoke: 'Revoke',
+      none: 'No individual permissions set.',
+      revoked: 'Revoked',
+      declined: 'Invitation declined',
+      invited: 'Invitation awaiting an answer',
+      you: 'Your access',
+    },
+
+    fullAuthority: {
+      label: 'Full project authority',
+      title: 'Grant full project authority',
+      disclaimer: 'Granting this gives full management authority in the project, including permissions added in the future. The access can be reduced or revoked at any time.',
+      confirm: 'Grant authority',
+      dismiss: 'Back',
+      reduce: 'Remove full authority',
+      granted: 'Full authority',
+    },
+
+    templates: {
+      title: 'Permission templates',
+      lede: 'Reusable permission sets your company defines. Applying one copies its permissions at that moment.',
+      name: 'Template name',
+      namePlaceholder: 'Subcontractor',
+      create: 'Create template',
+      remove: 'Delete',
+      none: 'No templates yet.',
+      nameTaken: 'A template with that name already exists.',
+    },
+
+    perms: {
+      'project.edit': 'Edit the project',
+      'project.cancel': 'Cancel the project',
+      'project.calendar.manage': 'Manage the working calendar',
+      'project.member.invite': 'Invite participants',
+      'project.member.manage': 'Manage participants',
+      'project.permission.grant': 'Grant permissions',
+      'task.create': 'Create tasks',
+      'task.assign': 'Assign tasks',
+      'schedule.exception.approve': 'Approve calendar exceptions',
+    },
+
+    roles: {
+      main_contractor: 'Main contractor',
+      subcontractor: 'Subcontractor',
+      professional: 'Professional',
+      supplier: 'Supplier',
+      viewer: 'View only',
+    },
+
+    errors: {
+      notPermitted: 'You may not manage permissions on that project.',
+      notFound: 'Not found.',
+      network: 'We could not reach the server. Check your connection and try again.',
+      unknown: 'We could not complete that just now.',
+    },
+  },
+
+  tasks: {
+    title: 'My tasks',
+    lede: 'Project tasks and standalone work in one place.',
+    loading: 'Loading tasks…',
+    loadMore: 'Show more',
+    retry: 'Try again',
+
+    start: 'Start',
+    complete: 'Complete',
+
+    state: {
+      not_started: 'Not started',
+      in_progress: 'In progress',
+      completed: 'Completed',
+    },
+    overdue: 'Overdue',
+    overdueBy: '{days} days overdue',
+    overdueByOne: 'One day overdue',
+    overdueByTwo: 'Two days overdue',
+
+    kind: {
+      project: 'Project task',
+      standalone: 'Standalone work',
+    },
+
+    groups: {
+      overdue: { title: 'Overdue', lede: 'Work whose target date has passed and which is not complete. Overdue is calculated from the date and is not a stored status.', empty: 'Nothing is overdue right now.' },
+      open: { title: 'Open work', lede: 'Everything still open and not overdue, by how near the target is.', empty: 'There is no open work right now.' },
+      done: { title: 'Completed', lede: 'Work marked complete. It stays here for reference.', empty: 'Nothing has been marked complete yet.' },
+    },
+
+    row: {
+      due: 'Target {date}',
+      from: 'From {name}',
+      selfOpened: 'Opened by me',
+      delegated: 'Handed to someone else to perform',
+      performing: 'Received to perform',
+      orphaned: 'This work has no responsible party right now',
+      noProject: 'No project',
+      completedOn: 'Completed on {date}',
+    },
+
+    filters: {
+      title: 'Filter and sort',
+      project: { label: 'Project', all: 'All projects', none: 'No project' },
+      state: { label: 'Status', all: 'Any status' },
+      kind: { label: 'Type of work', all: 'All' },
+      sort: { label: 'Sort', due_asc: 'Soonest first', due_desc: 'Latest first' },
+    },
+
+    empty: 'No project tasks have been assigned to me and I have not opened any standalone work. When a task is assigned to me, or I open work of my own, it will appear here.',
+
+    detail: {
+      title: 'Work detail',
+      back: 'Back to tasks',
+      loading: 'Loading the work…',
+      notFound: 'That work was not found, or it is not accessible.',
+      dates: '{start} to {due}',
+
+      stage: {
+        title: 'Stage in the project',
+        inStage: 'This work belongs to the {name} stage',
+        none: 'No stage has been set for this work.',
+        gate: 'Blocking stage',
+        blockedBy: 'Stages that must finish first',
+        noBlockers: 'No stage comes before this one.',
+        partialRelease: 'Partially released',
+        note: 'Dependencies in a project run between stages, not between individual tasks.',
+      },
+
+      delegation: {
+        title: 'Hand over performance',
+        lede: 'Hand the performance to somebody else. Responsibility stays with me, and the party above still sees me as the performer.',
+        performedBy: 'Performance handed to {name}',
+        scopeWhole: 'All of the work',
+        scopePart: 'Part of the work',
+        partLabel: 'The part handed over',
+        partPlaceholder: 'The conduit run only',
+        who: { label: 'Hand it to', placeholder: 'Search by name' },
+        scope: { label: 'How much' },
+        send: 'Hand it over',
+        end: 'End the hand-over',
+        endedNote: 'Ending it returns performance to me.',
+        receivedNote: 'This work was received to perform. The wider project is not shown here.',
+        ownCrewOnly: 'The party above required your own crew, so this work cannot be handed over.',
+        onSite: 'I am required on site even after handing the performance over.',
+        noRedelegate: 'Work received to perform cannot be handed on again.',
+      },
+
+      privateWork: {
+        title: 'My own organisation',
+        lede: 'Sub-tasks and notes for my use only. Nobody else can see them, and they do not change the state of the work.',
+        subtask: 'Sub-task',
+        note: 'Note',
+        addLabel: 'Add an item',
+        addPlaceholder: 'Mark out the route',
+        add: 'Add',
+        remove: 'Delete',
+        none: 'Nothing in my own organisation yet.',
+        noEffect: 'Ticking a sub-task does not change how the work appears to anybody else.',
+      },
+
+      dateChange: {
+        title: 'Request a date change',
+        unavailable: 'The date-change mechanism has not been built yet, so no request can be raised here. No count of affected tasks is shown.',
+        request: 'Request a date change',
+      },
+
+      workPlans: {
+        title: 'Work plans',
+        unavailable: 'Uploading work plans has not been built into this screen yet.',
+      },
+    },
+
+    errors: {
+      notFound: 'That work was not found, or it is not accessible.',
+      notPerformer: 'Only the person performing the work can report on it.',
+      already: 'That work has already been updated. The list has been refreshed.',
+      orphaned: 'That work has no responsible party right now, so it cannot be reported on.',
+      network: 'We could not reach the server. Check the connection and try again.',
+      unknown: 'We could not complete that just now.',
+    },
+  },
+
+  projectDashboard: {
+    title: 'Project dashboard',
+    lede: 'The working context of this project.',
+    entry: 'Project dashboard',
+    loading: 'Loading the project…',
+    retry: 'Try again',
+    backToProjects: 'Back to projects',
+    notFound: 'The project was not found, or it is not accessible.',
+    network: 'We could not reach the server. Check the connection and try again.',
+
+    summary: {
+      title: 'Project details',
+      type: 'Type',
+      size: 'Size',
+      location: 'Location',
+      noLocation: 'No location set',
+      status: 'Status',
+      start: 'Start date',
+      target: 'Target end date',
+      original: 'Original target',
+      ceiling: 'Latest permitted end date',
+      overrun: 'Overrun so far',
+      overrunDays: '{days} days',
+      noOverrun: 'No overrun',
+    },
+
+    actions: {
+      title: 'Project management',
+      lede: 'The actions shown here are the ones this account is permitted to perform on the project.',
+      edit: 'Edit the project',
+      members: 'Manage members',
+      permissions: 'Manage permissions',
+      calendar: 'Working calendar',
+      none: 'No management actions are available on this project.',
+    },
+
+    membersPanel: {
+      title: 'Members',
+      active: 'Active members: {count}',
+      pending: 'Invitations awaiting an answer: {count}',
+      open: 'Open the members screen',
+    },
+
+    permissionsPanel: {
+      title: 'Project permissions',
+      lede: 'The same permissions the central screen shows, filtered to this project alone.',
+      empty: 'No permissions have been set on this project yet.',
+      central: 'Central permissions screen',
+    },
+
+    calendarPanel: {
+      title: 'Working calendar',
+      pinned: 'This project works by version {version} of the company calendar.',
+      unknown: 'No calendar version is set for this project.',
+      current: 'The company is currently on version {version}',
+      upToDate: 'This project is on the company’s current version.',
+      outdated: 'A newer company version exists. It will not apply to this project until it is explicitly adopted.',
+      overridden: 'This project carries its own changes on top of the version it is pinned to.',
+      adopt: 'Adopt the newer version',
+      keepOverrides: 'Keep this project’s own changes',
+      workingDays: 'Working days',
+      hours: 'Working hours',
+      historyTitle: 'Adoption history',
+      historyNone: 'No newer version has been adopted for this project yet.',
+      historyRow: 'From version {from} to version {to}, by {name}',
+      historyFirst: 'To version {to}, by {name}',
+      historyKept: 'The project’s own changes were kept',
+      historyDropped: 'The project’s own changes were dropped',
+    },
+
+    tasks: {
+      title: 'Tasks',
+      unavailable: 'No tasks have been opened on this project yet. No zero is shown in place of a figure that does not exist.',
+      total: 'Total tasks: {count}',
+      open: 'Open: {count}',
+      overdue: 'Overdue: {count}',
+      completed: 'Completed: {count}',
+    },
+  },
+
+  members: {
+    title: 'Project members',
+    lede: 'The people taking part in this project, and the invitations still waiting for an answer.',
+    entry: 'Members',
+    loading: 'Loading members…',
+    retry: 'Try again',
+    backToProjects: 'Back to projects',
+
+    active: { title: 'Members', none: 'Nobody is taking part in this project yet.' },
+    pending: { title: 'Invitations awaiting an answer', none: 'There are no open invitations.' },
+
+    row: {
+      role: 'Project role',
+      company: 'Company',
+      noCompany: 'No company',
+      invitedBy: 'Invited by {name}',
+      invitedOn: 'Invitation sent on {date}',
+      you: 'This is me',
+      remove: 'Remove from project',
+      withdraw: 'Withdraw invitation',
+      noPermissions: 'No individual permissions set.',
+      permissionsHidden: 'Permissions are shown only to those authorised to manage them.',
+    },
+
+    invite: {
+      title: 'Invite a participant',
+      lede: 'Search by name, choose the project role and set the permissions. An invitation becomes participation only once the invitee accepts.',
+      search: { label: 'Search for a person', placeholder: 'Name or company name' },
+      searching: 'Searching…',
+      noResults: 'No matching results.',
+      selected: 'Selected: {name}',
+      clear: 'Choose again',
+      role: { label: 'Project role', placeholder: 'Choose a role' },
+      send: 'Send the invitation',
+      sent: 'The invitation was sent.',
+    },
+
+    authority: {
+      title: 'The permissions to be granted',
+      lede: 'The project role is descriptive and grants nothing. Permissions are granted here, explicitly.',
+      none: 'No management permissions',
+      selected: 'Choose individual permissions',
+      template: 'From a permission template',
+      copy: 'Copy permissions from an existing participant',
+      full: 'Full project authority',
+      templatePlaceholder: 'Choose a template',
+      copyPlaceholder: 'Choose a participant',
+      noTemplates: 'No permission templates have been created yet.',
+      noCopySource: 'There is nobody to copy permissions from yet.',
+      manage: 'Manage permissions',
+    },
+
+    incoming: {
+      title: 'Invitations awaiting your answer',
+      lede: 'An invitation to take part in somebody else’s project. The full details open once it is accepted.',
+      role: 'Role offered: {role}',
+      invitedBy: 'Invited by {name}',
+      dates: '{start} to {target}',
+      accept: 'Accept',
+      decline: 'Decline',
+      none: 'There are no invitations awaiting an answer.',
+    },
+
+    errors: {
+      notFound: 'The project was not found, or it is not accessible.',
+      notPermitted: 'You are not permitted to do that on this project.',
+      alreadyOnProject: 'That person is already on the project, or their invitation is still open.',
+      blocked: 'That person cannot be invited.',
+      invitationClosed: 'That invitation is no longer open. The list has been refreshed.',
+      ownAuthority: 'You cannot remove your own participation from the project.',
+      network: 'We could not reach the server. Check the connection and try again.',
+      unknown: 'We could not complete that just now.',
+    },
+  },
+
+  projects: {
+    title: 'My projects',
+    lede: 'Your business\u2019s projects, newest first.',
+    loading: 'Loading your projects…',
+    loadMore: 'Show more',
+    retry: 'Try again',
+    empty: 'No projects yet. You can start with the first one.',
+    create: 'New project',
+    edit: 'Edit',
+    backToList: 'Back to projects',
+
+    type: {
+      label: 'Project type',
+      placeholder: 'Choose a project type',
+      villa: 'Villa',
+      private_house: 'Private house',
+      building: 'Building',
+      other: 'Other',
+      otherLabel: 'Describe the project type',
+      otherPlaceholder: 'Agricultural structure',
+    },
+
+    size: {
+      label: 'Project size',
+      placeholder: '12-floor building',
+      hint: 'A free description of the scale — for example: a 10-floor building, 2 buildings.',
+    },
+
+    calendar: {
+      title: 'Working calendar',
+      inheritedOnCreate: 'The project will take your company working calendar as it is now. A later change to the company calendar will not alter this project on its own.',
+      pinned: 'This project works to the calendar version it was given.',
+      outdated: 'A newer company calendar version exists. It can be applied to this project, and only when you choose to.',
+      adopt: 'Apply the newer version',
+      keepOverrides: 'Keep this project\u2019s adjustments',
+      workingDays: 'Working days',
+      hours: 'Working hours',
+      overridden: 'This project is customised',
+      days: {
+        sunday: 'Sunday', monday: 'Monday', tuesday: 'Tuesday', wednesday: 'Wednesday',
+        thursday: 'Thursday', friday: 'Friday', saturday: 'Saturday',
+      },
+    },
+
+    groups: {
+      mine: 'My projects',
+      notManaged: 'Projects I do not manage',
+    },
+
+    status: {
+      planned: 'Not started',
+      active: 'In progress',
+      paused: 'Paused',
+      completed: 'Completed',
+    },
+
+    card: {
+      dates: '{start} to {target}',
+      originalTarget: 'Original target: {date}',
+      overrun: 'Actual overrun: {days} days',
+      ceiling: 'Latest permitted date: {date}',
+      noLocation: 'No location set',
+    },
+
+    form: {
+      createTitle: 'New project',
+      editTitle: 'Edit project',
+      createLede: 'Enter the project details. You can update them later.',
+      editLede: 'Update the project details.',
+      name: { label: 'Project name', placeholder: 'Northern Tower' },
+      description: { label: 'Description', placeholder: 'A short description of the scope' },
+      location: { label: 'Project location', placeholder: 'City or address' },
+      address: { label: 'Street address', placeholder: '1 Herzl' },
+      startDate: { label: 'Start date' },
+      targetEndDate: { label: 'Target end date' },
+      overrunAllowance: {
+        label: 'Permitted overrun (days)',
+        hint: 'Set once when the project is created, and cannot be changed afterwards.',
+        locked: 'The overrun was set at creation: {days} days. The target cannot pass {date}.',
+      },
+      save: 'Save',
+      cancel: 'Cancel',
+      deleteProject: 'Cancel project',
+      deleteConfirm: 'Cancelling deletes the project completely and leaves no record. This is only possible before work has started.',
+      deleteConfirmAction: 'Cancel project',
+      deleteDismiss: 'Back',
+    },
+
+    errors: {
+      required: 'This field is required',
+      targetBeforeStart: 'The target date cannot precede the start date',
+      overrunCeiling: 'The target date passes the permitted overrun',
+      allowanceRange: 'Enter a whole number of days between 0 and 3650',
+      notFound: 'Project not found.',
+      notPermitted: 'This account may not create projects for its company.',
+      noCompany: 'This account is not linked to an active company.',
+      alreadyStarted: 'The project has already started, so it cannot be cancelled.',
+      network: 'We could not reach the server. Check your connection and try again.',
+      unknown: 'We could not complete that just now.',
+    },
+  },
+
   network: {
     title: 'My network',
     lede: 'Professional connections, open requests and the blocks you created — all in one place.',
