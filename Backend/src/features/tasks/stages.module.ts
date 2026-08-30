@@ -16,7 +16,7 @@ import {
 } from '../projects/projectAuthorization.js';
 import { projectScopeParamsSchema } from '../projectmembers/projectMembers.validation.js';
 import { createStagesService } from './stages.service.js';
-import { stageDependenciesBodySchema } from './tasks.validation.js';
+import { createStageBodySchema, stageDependenciesBodySchema } from './tasks.validation.js';
 import Joi from 'joi';
 
 const stageParamsSchema = projectScopeParamsSchema.keys({
@@ -65,6 +65,21 @@ export const createStagesModule = (requireAccessToken: RequestHandler): Router =
     const { project } = await reachProject(getAuthenticatedUserId(res), projectId);
     res.json({ stages: await stages.list(project._id) });
   });
+
+  // A project task must name a stage, so a fresh project needs a way to have one.
+  router.post(
+    '/',
+    validateRequest({ params: projectScopeParamsSchema, body: createStageBodySchema }),
+    async (req, res) => {
+      const { projectId } = getValidated<{ projectId: string }>(res, 'params');
+      const body = getValidated<{ name: string; isGate: boolean; order?: number }>(res, 'body');
+
+      const { project, resolved } = await reachProject(getAuthenticatedUserId(res), projectId);
+      requireProjectPermission(resolved, 'project.edit');
+
+      res.status(201).json({ stage: await stages.create(project._id, body) });
+    },
+  );
 
   router.patch(
     '/:stageId/dependencies',

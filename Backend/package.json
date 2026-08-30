@@ -39,7 +39,8 @@
     "verify:project-dashboard": "tsx scripts/verify-project-dashboard.ts",
     "verify:my-tasks": "tsx scripts/verify-my-tasks.ts",
     "seed:my-tasks": "tsx scripts/seed-my-tasks.ts",
-    "verify:task-detail": "tsx scripts/verify-task-detail.ts"
+    "verify:task-detail": "tsx scripts/verify-task-detail.ts",
+    "verify:create-task": "tsx scripts/verify-create-task.ts"
   },
   "dependencies": {
     "@types/nodemailer": "^8.0.1",

@@ -107,6 +107,7 @@ export const createProjectDashboardService = ({
         canInvite: holds(resolved, 'project.member.invite'),
         canManageMembers: holds(resolved, 'project.member.manage'),
         canGrantPermissions: holds(resolved, 'project.permission.grant'),
+        canCreateTasks: holds(resolved, 'task.create'),
       },
       calendar: {
         versionNumber: pinned?.version ?? null,

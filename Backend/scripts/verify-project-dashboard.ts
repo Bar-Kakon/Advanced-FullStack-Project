@@ -51,6 +51,7 @@ interface DashboardBody {
     canInvite: boolean;
     canManageMembers: boolean;
     canGrantPermissions: boolean;
+    canCreateTasks: boolean;
   };
   calendar: {
     versionNumber: number | null;
@@ -167,7 +168,8 @@ const run = async (): Promise<void> => {
   check(
     started.viewer.manages && started.viewer.canEdit && started.viewer.canCancel &&
       started.viewer.canManageCalendar && started.viewer.canInvite &&
-      started.viewer.canManageMembers && started.viewer.canGrantPermissions,
+      started.viewer.canManageMembers && started.viewer.canGrantPermissions &&
+      started.viewer.canCreateTasks,
     'The creator holds every capability through Full Project Authority',
   );
 
@@ -179,7 +181,8 @@ const run = async (): Promise<void> => {
   check(guest.viewer.manages === false, 'A member with no permissions manages nothing');
   check(
     !guest.viewer.canEdit && !guest.viewer.canCancel && !guest.viewer.canManageCalendar &&
-      !guest.viewer.canInvite && !guest.viewer.canManageMembers && !guest.viewer.canGrantPermissions,
+      !guest.viewer.canInvite && !guest.viewer.canManageMembers &&
+      !guest.viewer.canGrantPermissions && !guest.viewer.canCreateTasks,
     'Every capability is false, even though the project role says Main Contractor',
   );
   check(guest.project.viewerManages === false, 'And the project DTO agrees');
