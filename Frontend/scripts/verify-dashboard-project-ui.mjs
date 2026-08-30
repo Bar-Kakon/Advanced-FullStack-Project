@@ -221,10 +221,12 @@ const run = async () => {
 
   section('10. No task data is invented');
   check('The Tasks section is present', (await owner.locator('#tasks-title').count()) === 1);
-  check('And says the feature does not exist yet',
-    (await owner.textContent('main')).includes('ניהול המשימות עדיין לא נבנה'));
+  // The Tasks domain now exists. This project simply has no work in it, and the panel says that
+  // rather than rendering four zeros, which would claim work exists and none of it is done.
+  check('A project with no work says so, rather than showing zeros',
+    (await owner.textContent('main')).includes('עדיין לא נפתחו משימות'));
   const numbers = await owner.textContent('#tasks-title ~ p');
-  check('It renders no count at all', !/\d/.test(numbers ?? ''), numbers ?? '');
+  check('And renders no count at all', !/\d/.test(numbers ?? ''), numbers ?? '');
 
   section('11. A member with no authority sees no management control');
   await owner.goto(`${APP}/projects/${projectId}/members`, { waitUntil: 'networkidle' });

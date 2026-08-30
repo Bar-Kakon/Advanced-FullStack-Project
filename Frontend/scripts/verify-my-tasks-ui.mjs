@@ -169,8 +169,9 @@ const run = async () => {
   const delegatedRow = owner.locator('.task-row', { hasText: 'מעבר צנרת' });
   check('The delegator sees their own arrangement', (await delegatedRow.count()) === 1);
   check('Marked as handed over', (await delegatedRow.textContent()).includes('הועברה לביצוע'));
-  check('And offers the delegator no Start control',
-    (await delegatedRow.locator('.task-row__actions').count()) === 0);
+  // Every row carries a detail link; what a delegator must not get is a Start or Complete button.
+  check('And offers the delegator no Start or Complete control',
+    (await delegatedRow.locator('.task-row__actions button').count()) === 0);
 
   await helper.goto(`${APP}/tasks`, { waitUntil: 'networkidle' });
   await helper.waitForTimeout(1600);
