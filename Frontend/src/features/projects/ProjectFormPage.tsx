@@ -5,6 +5,9 @@ import { AppNav } from '../../components/AppNav';
 import { ButtonSpinner } from '../../components/ButtonSpinner';
 import { FormAlert } from '../../components/FormAlert';
 import { TextField } from '../../components/TextField';
+import { SelectField } from '../../components/SelectField';
+import { PROJECT_TYPES } from '../../api/projects.types';
+import { ProjectCalendarPanel } from './components/ProjectCalendarPanel';
 import { useAuth } from '../../auth/useAuth';
 import { useLanguage } from '../../i18n/useLanguage';
 import { useDocumentTitle } from '../../routes/useDocumentTitle';
@@ -27,7 +30,7 @@ export const ProjectFormPage = () => {
   const { projectId } = useParams<{ projectId: string }>();
   const [confirmingCancel, setConfirmingCancel] = useState(false);
 
-  const { values, set, project, loading, saving, failure, errors, save, cancel } =
+  const { values, set, project, loading, saving, failure, errors, save, cancel, adoptCalendar, outdatedCalendar } =
     useProjectForm(projectId);
 
   useScreenStylesheet(
@@ -116,6 +119,41 @@ export const ProjectFormPage = () => {
               {...(errors.name ? { error: errors.name, touched: true } : {})}
             />
 
+            <SelectField
+              id="projectType"
+              label={t.projects.type.label}
+              placeholder={t.projects.type.placeholder}
+              value={values.projectType}
+              onChange={(v) => set('projectType', v as typeof values.projectType)}
+              required
+              options={PROJECT_TYPES.map((code) => ({ value: code, label: t.projects.type[code] }))}
+              {...(errors.projectType ? { error: errors.projectType, touched: true } : {})}
+            />
+
+            {/* Free text appears only for `other`, and is sent only then. */}
+            {values.projectType === 'other' ? (
+              <TextField
+                id="projectTypeOther"
+                label={t.projects.type.otherLabel}
+                placeholder={t.projects.type.otherPlaceholder}
+                value={values.projectTypeOther}
+                onChange={(v) => set('projectTypeOther', v)}
+                required
+                {...(errors.projectTypeOther ? { error: errors.projectTypeOther, touched: true } : {})}
+              />
+            ) : null}
+
+            <TextField
+              id="size"
+              label={t.projects.size.label}
+              placeholder={t.projects.size.placeholder}
+              hint={t.projects.size.hint}
+              value={values.size}
+              onChange={(v) => set('size', v)}
+              required
+              {...(errors.size ? { error: errors.size, touched: true } : {})}
+            />
+
             <div className="form-group">
               <label className="field-label" htmlFor="description">
                 {t.projects.form.description.label}
@@ -189,6 +227,10 @@ export const ProjectFormPage = () => {
               />
             )}
 
+            {!editing ? (
+              <p className="project-allowance" role="note">{t.projects.calendar.inheritedOnCreate}</p>
+            ) : null}
+
             <div className="project-form__actions">
               <button type="submit" className="btn btn--primary" disabled={saving}>
                 {t.projects.form.save}
@@ -197,6 +239,16 @@ export const ProjectFormPage = () => {
               <Link to="/projects" className="btn btn--ghost">{t.projects.form.cancel}</Link>
             </div>
           </form>
+        ) : null}
+
+        {!loading && editing && project !== null ? (
+          <ProjectCalendarPanel
+            project={project}
+            outdated={outdatedCalendar}
+            busy={saving}
+            canManage={project.viewerManages}
+            onAdopt={(keep) => void adoptCalendar(keep)}
+          />
         ) : null}
 
         {/* Cancellation exists only on Edit, and only while the server says it is available. */}

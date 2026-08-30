@@ -386,6 +386,44 @@ export const en: Strings = {
     edit: 'Edit',
     backToList: 'Back to projects',
 
+    type: {
+      label: 'Project type',
+      placeholder: 'Choose a project type',
+      villa: 'Villa',
+      private_house: 'Private house',
+      building: 'Building',
+      other: 'Other',
+      otherLabel: 'Describe the project type',
+      otherPlaceholder: 'Agricultural structure',
+    },
+
+    size: {
+      label: 'Project size',
+      placeholder: '12-floor building',
+      hint: 'A free description of the scale — for example: a 10-floor building, 2 buildings.',
+    },
+
+    calendar: {
+      title: 'Working calendar',
+      inheritedOnCreate: 'The project will take your company working calendar as it is now. A later change to the company calendar will not alter this project on its own.',
+      pinned: 'This project works to the calendar version it was given.',
+      outdated: 'A newer company calendar version exists. It can be applied to this project, and only when you choose to.',
+      adopt: 'Apply the newer version',
+      keepOverrides: 'Keep this project\u2019s adjustments',
+      workingDays: 'Working days',
+      hours: 'Working hours',
+      overridden: 'This project is customised',
+      days: {
+        sunday: 'Sunday', monday: 'Monday', tuesday: 'Tuesday', wednesday: 'Wednesday',
+        thursday: 'Thursday', friday: 'Friday', saturday: 'Saturday',
+      },
+    },
+
+    groups: {
+      mine: 'My projects',
+      notManaged: 'Projects I do not manage',
+    },
+
     status: {
       planned: 'Not started',
       active: 'In progress',

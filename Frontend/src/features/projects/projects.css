@@ -128,3 +128,60 @@
   .project-card__name { font-size: 20px; }
   .project-form__actions > .btn { flex: 1 1 auto; }
 }
+
+/* ═══ Groups ═══ */
+
+.project-group { margin-block-end: 22px; }
+
+.project-group__title {
+  font-family: var(--font-serif);
+  font-size: 19px;
+  font-weight: 700;
+  line-height: 1.25;
+  color: var(--primary);
+  margin-block-end: 10px;
+}
+
+.project-card__badges { display: flex; flex-wrap: wrap; gap: 6px; }
+.project-chip--type { background: var(--surface); }
+
+/* ═══ Calendar panel ═══ */
+
+.calendar-facts {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 6px 16px;
+  margin: 0 0 14px;
+}
+
+.calendar-facts dt { font-size: 15px; color: var(--text-soft); }
+.calendar-facts dd { margin: 0; font-size: 15px; color: var(--text); overflow-wrap: anywhere; }
+
+.calendar-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--secondary-55);
+  background: var(--secondary-15);
+  font-size: 14px;
+  color: var(--text);
+  margin-block-end: 14px;
+}
+
+.calendar-adopt {
+  padding: 16px 18px;
+  border: 1px solid var(--secondary-45);
+  border-radius: var(--r-md);
+  background: var(--background);
+}
+
+.calendar-adopt .panel__lede { margin-bottom: 12px; }
+
+.calendar-keep {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-block-end: 12px;
+  font-size: 15px;
+  color: var(--text);
+}

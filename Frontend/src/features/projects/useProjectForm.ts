@@ -1,20 +1,25 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import {
+  adoptCurrentCalendar,
   cancelProject,
   classifyProjectError,
   createProject,
+  fetchOutdatedCalendarCount,
   fetchProject,
   isAbortError,
   updateProject,
   type ProjectFailure,
 } from '../../api/projects.api';
-import type { Project, ProjectLocationPayload } from '../../api/projects.types';
+import type { Project, ProjectLocationPayload, ProjectType } from '../../api/projects.types';
 import type { StructuredPlace } from '../../location/place.types';
 import type { Region } from '../../api/types';
 
 export interface ProjectFormValues {
   name: string;
+  projectType: ProjectType | '';
+  projectTypeOther: string;
+  size: string;
   description: string;
   place: StructuredPlace | null;
   city: string;
@@ -27,6 +32,9 @@ export interface ProjectFormValues {
 
 export const emptyForm: ProjectFormValues = {
   name: '',
+  projectType: '',
+  projectTypeOther: '',
+  size: '',
   description: '',
   place: null,
   city: '',
@@ -39,6 +47,9 @@ export const emptyForm: ProjectFormValues = {
 
 const toForm = (project: Project): ProjectFormValues => ({
   name: project.name,
+  projectType: project.projectType,
+  projectTypeOther: project.projectTypeOther ?? '',
+  size: project.size,
   description: project.description ?? '',
   place: project.location.place,
   city: project.location.city ?? '',
@@ -70,6 +81,11 @@ export const validate = (
   const errors: FieldErrors = {};
 
   if (values.name.trim().length === 0) errors.name = messages.required;
+  if (values.projectType === '') errors.projectType = messages.required;
+  if (values.projectType === 'other' && values.projectTypeOther.trim().length === 0) {
+    errors.projectTypeOther = messages.required;
+  }
+  if (values.size.trim().length === 0) errors.size = messages.required;
   if (values.startDate.length === 0) errors.startDate = messages.required;
   if (values.targetEndDate.length === 0) errors.targetEndDate = messages.required;
 
@@ -97,6 +113,7 @@ export const useProjectForm = (projectId?: string) => {
   const [saving, setSaving] = useState(false);
   const [failure, setFailure] = useState<ProjectFailure | null>(null);
   const [errors, setErrors] = useState<FieldErrors>({});
+  const [outdatedCalendar, setOutdatedCalendar] = useState(false);
 
   const mounted = useRef(true);
   useEffect(() => {
@@ -118,6 +135,9 @@ export const useProjectForm = (projectId?: string) => {
         setProject(loaded);
         setValues(toForm(loaded));
         setFailure(null);
+        // Only ever asks whether a newer version exists. Nothing is applied by reading.
+        const behind = await fetchOutdatedCalendarCount(controller.signal).catch(() => 0);
+        if (mounted.current) setOutdatedCalendar(behind > 0);
       } catch (error) {
         if (isAbortError(error) || !mounted.current) return;
         setFailure(classifyProjectError(error));
@@ -161,6 +181,11 @@ export const useProjectForm = (projectId?: string) => {
           project === null
             ? await createProject({
                 name: values.name.trim(),
+                projectType: values.projectType as ProjectType,
+                ...(values.projectType === 'other'
+                  ? { projectTypeOther: values.projectTypeOther.trim() }
+                  : {}),
+                size: values.size.trim(),
                 ...(values.description.trim() ? { description: values.description.trim() } : {}),
                 ...(location ? { location } : {}),
                 startDate: values.startDate,
@@ -169,6 +194,11 @@ export const useProjectForm = (projectId?: string) => {
               })
             : await updateProject(project.id, {
                 name: values.name.trim(),
+                projectType: values.projectType as ProjectType,
+                ...(values.projectType === 'other'
+                  ? { projectTypeOther: values.projectTypeOther.trim() }
+                  : {}),
+                size: values.size.trim(),
                 description: values.description.trim(),
                 location,
                 startDate: values.startDate,
@@ -203,5 +233,26 @@ export const useProjectForm = (projectId?: string) => {
     }
   }, [project, saving]);
 
-  return { values, set, project, loading, saving, failure, errors, save, cancel };
+  const adoptCalendar = useCallback(
+    async (keepOverrides: boolean): Promise<void> => {
+      if (project === null || saving) return;
+      setSaving(true);
+      try {
+        const updated = await adoptCurrentCalendar(project.id, keepOverrides);
+        if (!mounted.current) return;
+        setProject(updated);
+        setOutdatedCalendar(false);
+      } catch (error) {
+        if (mounted.current) setFailure(classifyProjectError(error));
+      } finally {
+        if (mounted.current) setSaving(false);
+      }
+    },
+    [project, saving],
+  );
+
+  return {
+    values, set, project, loading, saving, failure, errors, save, cancel,
+    adoptCalendar, outdatedCalendar,
+  };
 };

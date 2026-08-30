@@ -62,12 +62,29 @@ export const MyProjectsPage = () => {
             <p className="panel__lede">{t.projects.empty}</p>
           ) : null}
 
+          {/* Grouped by the real current management relationship, never by who created it. */}
           {!loading && projects !== null && projects.length > 0 ? (
-            <ul className="project-list">
-              {projects.map((project) => (
-                <ProjectCard key={project.id} project={project} />
-              ))}
-            </ul>
+            <>
+              {([
+                ['mine', projects.filter((p) => p.viewerManages)],
+                ['notManaged', projects.filter((p) => !p.viewerManages)],
+              ] as const).map(([group, rows]) =>
+                rows.length === 0 ? null : (
+                  <section key={group} className="project-group">
+                    {/* One heading is noise when every project sits under it. */}
+                    {projects.some((p) => p.viewerManages) &&
+                    projects.some((p) => !p.viewerManages) ? (
+                      <h2 className="project-group__title">{t.projects.groups[group]}</h2>
+                    ) : null}
+                    <ul className="project-list">
+                      {rows.map((project) => (
+                        <ProjectCard key={project.id} project={project} />
+                      ))}
+                    </ul>
+                  </section>
+                ),
+              )}
+            </>
           ) : null}
 
           {hasMore ? (

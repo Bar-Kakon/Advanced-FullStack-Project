@@ -9,7 +9,7 @@ import { Chevron } from './Chevron';
  * border still works with no change to the stylesheet.
  */
 export const SelectField = <T extends string>({
-  id, label, value, onChange, onBlur, placeholder, options, required = false, hint, children, className = '', touched = false,
+  id, label, value, onChange, onBlur, placeholder, options, required = false, hint, error, children, className = '', touched = false,
 }: {
   id: string;
   label: string;
@@ -20,6 +20,7 @@ export const SelectField = <T extends string>({
   options: readonly { readonly value: T; readonly label: string }[];
   required?: boolean;
   hint?: string;
+  error?: string;
   /** Anything revealed by this select's own value, such as the free-text trade field. */
   children?: React.ReactNode;
   className?: string;
@@ -46,5 +47,8 @@ export const SelectField = <T extends string>({
     </div>
     {children}
     {hint ? <p className="field-hint">{hint}</p> : null}
+    {error && touched ? (
+      <p className="field-error field-error--visible" aria-live="polite">{error}</p>
+    ) : null}
   </div>
 );

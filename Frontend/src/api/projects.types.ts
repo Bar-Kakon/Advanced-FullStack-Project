@@ -25,15 +25,50 @@ export interface ProjectDates {
   readonly overrunDaysFromOriginal: number;
 }
 
+/** Mirrored from `Backend/src/features/projects/projectType.ts`. */
+export const PROJECT_TYPES = ['villa', 'private_house', 'building', 'other'] as const;
+export type ProjectType = (typeof PROJECT_TYPES)[number];
+
+export const WEEKDAYS = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'] as const;
+export type Weekday = (typeof WEEKDAYS)[number];
+
+export const SECTORS = ['jewish', 'arab', 'mixed'] as const;
+export type Sector = (typeof SECTORS)[number];
+
+export interface WorkingCalendarConfig {
+  readonly workingDays: readonly Weekday[];
+  readonly hours: { readonly startMinute: number; readonly endMinute: number };
+  readonly sector: Sector;
+  readonly worksCholHaMoed: boolean;
+  readonly worksMemorialDays: boolean;
+}
+
+export type WorkingCalendarOverrides = Partial<WorkingCalendarConfig>;
+
+export interface ProjectCalendar {
+  /** The company version this project is pinned to. A company edit does not move it. */
+  readonly versionId: string;
+  readonly overrides: WorkingCalendarOverrides | null;
+  readonly effective: WorkingCalendarConfig | null;
+  readonly adoptionCount: number;
+}
+
 export interface Project {
   readonly id: string;
   readonly companyId: string;
   readonly name: string;
   readonly description: string | null;
+  readonly projectType: ProjectType;
+  readonly projectTypeOther: string | null;
+  /** Free text — "בניין 12 קומות", "2 בניינים". Never a category. */
+  readonly size: string;
+  readonly calendar: ProjectCalendar;
   readonly location: ProjectLocation;
   readonly dates: ProjectDates;
   readonly status: ProjectStatus;
   readonly cancellable: boolean;
+  /** Real current management authority for this viewer. Never derived from who created it. */
+  readonly viewerManages: boolean;
   readonly createdAt: string;
   readonly updatedAt: string;
 }
@@ -52,6 +87,9 @@ export interface ProjectLocationPayload {
 
 export interface CreateProjectPayload {
   readonly name: string;
+  readonly projectType: ProjectType;
+  readonly projectTypeOther?: string;
+  readonly size: string;
   readonly description?: string;
   readonly location?: ProjectLocationPayload;
   readonly startDate: string;
@@ -62,6 +100,9 @@ export interface CreateProjectPayload {
 /** Every field optional: a screen sends what it changed. `location: null` is an explicit clear. */
 export interface UpdateProjectPayload {
   readonly name?: string;
+  readonly projectType?: ProjectType;
+  readonly projectTypeOther?: string;
+  readonly size?: string;
   readonly description?: string;
   readonly location?: ProjectLocationPayload | null;
   readonly startDate?: string;

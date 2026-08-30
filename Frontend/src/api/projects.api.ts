@@ -50,6 +50,25 @@ export const cancelProject = async (projectId: string): Promise<void> => {
   await api.delete(`/projects/${projectId}`);
 };
 
+export const adoptCurrentCalendar = async (
+  projectId: string,
+  keepOverrides: boolean,
+): Promise<Project> => {
+  const { data } = await api.post<{ project: Project }>(
+    `/projects/${projectId}/calendar/adopt`,
+    { keepOverrides },
+  );
+  return data.project;
+};
+
+export const fetchOutdatedCalendarCount = async (signal?: AbortSignal): Promise<number> => {
+  const { data } = await api.get<{ outdated: number }>(
+    '/projects/calendar/outdated',
+    signal ? { signal } : {},
+  );
+  return data.outdated;
+};
+
 export type ProjectFailure =
   | 'NOT_FOUND'
   | 'NOT_PERMITTED'

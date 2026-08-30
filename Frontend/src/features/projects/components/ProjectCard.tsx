@@ -24,8 +24,15 @@ export const ProjectCard = ({ project }: { project: Project }) => {
     <li className="project-card">
       <div className="project-card__head">
         <h2 className="project-card__name" dir="auto">{project.name}</h2>
-        <span className={`project-chip project-chip--${project.status}`}>
-          {t.projects.status[project.status]}
+        <span className="project-card__badges">
+          <span className="project-chip project-chip--type">
+            {project.projectType === 'other' && project.projectTypeOther
+              ? project.projectTypeOther
+              : t.projects.type[project.projectType]}
+          </span>
+          <span className={`project-chip project-chip--${project.status}`}>
+            {t.projects.status[project.status]}
+          </span>
         </span>
       </div>
 
@@ -35,6 +42,7 @@ export const ProjectCard = ({ project }: { project: Project }) => {
 
       <p className="project-card__meta">
         <span dir="auto">{place ?? t.projects.card.noLocation}</span>
+        <span dir="auto">{project.size}</span>
         <span>
           {t.projects.card.dates
             .replace('{start}', displayDate(dates.startDate, lang))
@@ -50,11 +58,14 @@ export const ProjectCard = ({ project }: { project: Project }) => {
         </p>
       ) : null}
 
-      <div className="project-card__actions">
-        <Link to={`/projects/${project.id}/edit`} className="btn btn--ghost btn--sm">
-          {t.projects.edit}
-        </Link>
-      </div>
+      {/* Edit appears only where the viewer actually holds management authority. */}
+      {project.viewerManages ? (
+        <div className="project-card__actions">
+          <Link to={`/projects/${project.id}/edit`} className="btn btn--ghost btn--sm">
+            {t.projects.edit}
+          </Link>
+        </div>
+      ) : null}
     </li>
   );
 };

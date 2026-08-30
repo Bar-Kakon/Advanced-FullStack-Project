@@ -75,6 +75,8 @@ const run = async () => {
   await page.click('a[href="/projects/new"]');
   await page.waitForTimeout(900);
   await page.fill('#name', NAME);
+  await page.selectOption('#projectType', 'building');
+  await page.fill('#size', 'בניין 12 קומות');
   await page.fill('#description', 'שלד וגמר');
   await page.fill('#startDate', day(0));
   await page.fill('#targetEndDate', day(100));
@@ -84,6 +86,9 @@ const run = async () => {
   check('It returns to the list', page.url().endsWith('/projects'), page.url());
   check('The project is listed', (await page.locator('.project-card').count()) === 1);
   check('With its real name', (await page.textContent('.project-card__name'))?.includes(NAME));
+  const card = await page.textContent('.project-card');
+  check('The type is shown', card.includes('בניין'));
+  check('And the free-text size exactly as typed', card.includes('בניין 12 קומות'));
   check('And a derived status chip', (await page.locator('.project-chip--planned').count()) === 1);
 
   section('4. Create validation');
@@ -95,6 +100,8 @@ const run = async () => {
     `${await page.locator('.field-error--visible').count()} errors`);
 
   await page.fill('#name', 'backwards');
+  await page.selectOption('#projectType', 'villa');
+  await page.fill('#size', 'וילה אחת');
   await page.fill('#startDate', day(50));
   await page.fill('#targetEndDate', day(10));
   await page.fill('#overrunAllowanceDays', '5');
@@ -102,10 +109,32 @@ const run = async () => {
   await page.waitForTimeout(600);
   check('A target before the start is refused', page.url().includes('/projects/new'));
 
+  section('4b. `אחר` reveals free text and requires it');
+  await page.goto(`${APP}/projects/new`, { waitUntil: 'networkidle' });
+  await page.waitForTimeout(600);
+  check('No free-text box before choosing other', (await page.locator('#projectTypeOther').count()) === 0);
+  await page.selectOption('#projectType', 'other');
+  await page.waitForTimeout(300);
+  check('Choosing other reveals it', (await page.locator('#projectTypeOther').count()) === 1);
+  await page.fill('#name', 'other type');
+  await page.fill('#size', 'מבנה אחד');
+  await page.fill('#startDate', day(0));
+  await page.fill('#targetEndDate', day(30));
+  await page.fill('#overrunAllowanceDays', '5');
+  await page.click('button[type="submit"]');
+  await page.waitForTimeout(700);
+  check('And it is required', page.url().includes('/projects/new'));
+  await page.fill('#projectTypeOther', 'מבנה חקלאי');
+  await page.click('button[type="submit"]');
+  await page.waitForTimeout(1800);
+  check('With the text filled in, it saves', page.url().endsWith('/projects'), page.url());
+  check('And the card shows the free text, not "אחר"',
+    (await page.textContent('body')).includes('מבנה חקלאי'));
+
   section('5. Edit — persists, and the ceiling holds');
   await page.goto(`${APP}/projects`, { waitUntil: 'networkidle' });
-  await page.click('.project-card__actions a');
-  await page.waitForTimeout(1200);
+  await page.locator('.project-card', { hasText: NAME }).locator('.project-card__actions a').click();
+  await page.waitForTimeout(1400);
   check('The form loads the stored values', (await page.inputValue('#name')) === NAME);
   check('The allowance is a stated fact, not an input',
     (await page.locator('#overrunAllowanceDays').count()) === 0 &&
@@ -124,10 +153,19 @@ const run = async () => {
 
   await page.reload({ waitUntil: 'networkidle' });
   await page.waitForTimeout(900);
-  const body = await page.textContent('.project-card');
+  const body = await page.textContent('body');
   check('The change survives a reload', body.includes('עדכון'));
   check('The original target is shown once the target moved', body.includes('2027'));
-  check('And the actual overrun is stated', (await page.locator('.project-card__overrun').count()) === 1);
+  check('And the actual overrun is stated', (await page.locator('.project-card__overrun').count()) >= 1);
+
+  section('5b. The calendar panel shows what the project works by');
+  await page.goto(`${APP}/projects`, { waitUntil: 'networkidle' });
+  await page.locator('.project-card', { hasText: NAME }).locator('.project-card__actions a').click();
+  await page.waitForTimeout(1400);
+  check('A calendar panel is shown on Edit', (await page.locator('#project-calendar-title').count()) === 1);
+  check('With real working days', (await page.locator('.calendar-facts dd').first().textContent()).length > 0);
+  check('And no adopt control while the project is current',
+    (await page.locator('.calendar-adopt').count()) === 0);
 
   section('6. Unauthorized / not-found');
   await page.goto(`${APP}/projects/6512c1f4c2b9e30012af0b21/edit`, { waitUntil: 'networkidle' });
@@ -171,8 +209,8 @@ const run = async () => {
 
   section('9. Cancellation removes it entirely');
   await page.goto(`${APP}/projects`, { waitUntil: 'networkidle' });
-  await page.click('.project-card__actions a');
-  await page.waitForTimeout(1200);
+  await page.locator('.project-card', { hasText: NAME }).locator('.project-card__actions a').click();
+  await page.waitForTimeout(1400);
   check('Cancellation is offered on a project that has not started',
     (await page.locator('.panel--danger').count()) === 1);
   await page.click('.panel--danger button');
@@ -180,10 +218,12 @@ const run = async () => {
   await page.click('.btn--danger');
   await page.waitForTimeout(1800);
   check('It returns to the list', page.url().endsWith('/projects'), page.url());
-  check('And the project is gone', (await page.locator('.project-card').count()) === 0);
+  check('And the project is gone',
+    (await page.locator('.project-card', { hasText: NAME }).count()) === 0);
   await page.reload({ waitUntil: 'networkidle' });
   await page.waitForTimeout(900);
-  check('Still gone after a reload — no record left', (await page.locator('.project-card').count()) === 0);
+  check('Still gone after a reload — no record left',
+    (await page.locator('.project-card', { hasText: NAME }).count()) === 0);
 
   section('10. Page errors');
   // Section 6 asks for projects that do not exist on purpose, and the browser logs every 404
