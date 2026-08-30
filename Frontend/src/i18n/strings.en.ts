@@ -422,6 +422,7 @@ export const en: Strings = {
       'project.edit': 'Edit the project',
       'project.cancel': 'Cancel the project',
       'project.calendar.manage': 'Manage the working calendar',
+      'project.stage.manage': 'Manage stages and the work sequence',
       'project.member.invite': 'Invite participants',
       'project.member.manage': 'Manage participants',
       'project.permission.grant': 'Grant permissions',

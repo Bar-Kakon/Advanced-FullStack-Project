@@ -452,6 +452,7 @@ export const he = {
       'project.edit': 'עריכת הפרויקט',
       'project.cancel': 'ביטול הפרויקט',
       'project.calendar.manage': 'ניהול לוח ימי העבודה',
+      'project.stage.manage': 'ניהול שלבי הביצוע ורצף העבודה',
       'project.member.invite': 'הזמנת משתתפים',
       'project.member.manage': 'ניהול משתתפים',
       'project.permission.grant': 'מתן הרשאות',

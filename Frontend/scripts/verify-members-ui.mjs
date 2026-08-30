@@ -211,11 +211,13 @@ const run = async () => {
   await owner.waitForTimeout(1600);
   const guestGrant = owner.locator('.perm-grant').filter({ hasNot: owner.locator('.perm-chip', { hasText: 'ההרשאה שלי' }) });
   check('The central surface carries the member as a grant', (await guestGrant.count()) >= 1);
+  // Addressed by permission code, not by position: a catalogue that gains a code must not silently
+  // move this assertion onto a different permission.
+  const inviteBox = guestGrant.first().locator('.perm-checks input[value="project.member.invite"]');
   // The list is controlled by the server answer, so the box only ticks after the re-read lands.
-  await guestGrant.first().locator('.perm-checks input[type="checkbox"]').nth(3).click();
+  await inviteBox.click();
   await owner.waitForTimeout(2500);
-  check('The grant is written and read back',
-    await guestGrant.first().locator('.perm-checks input[type="checkbox"]').nth(3).isChecked());
+  check('The grant is written and read back', await inviteBox.isChecked());
 
   await guest.reload({ waitUntil: 'networkidle' });
   await guest.waitForTimeout(1600);

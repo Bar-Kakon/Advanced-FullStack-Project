@@ -151,6 +151,38 @@ const run = async (): Promise<void> => {
   });
   check(legal.status === 200, 'A legal many-to-one edge set is accepted', legal.status);
 
+  // Owner decision 2026-08-30: sequencing is its own grant. Editing the project record and setting
+  // the construction order are different powers, so holding one must not confer the other.
+  const membershipId = (await ProjectMembershipModel.findOne({ project: projectId, user: sub.userId })
+    .lean()
+    .exec())?._id.toString();
+  const editOnly = await request(baseUrl, 'PATCH', `/api/permissions/grants/${membershipId}`, {
+    token: gc.token,
+    json: { permissions: ['project.edit'] },
+  });
+  check(editOnly.status === 200, 'A member is granted project.edit alone', editOnly.status);
+  const refusedBySequencing = await request(
+    baseUrl,
+    'PATCH',
+    `/api/projects/${projectId}/stages/${finishing._id.toString()}/dependencies`,
+    { token: sub.token, json: { dependsOn: [shell._id.toString()] } },
+  );
+  check(refusedBySequencing.status === 403,
+    'project.edit alone cannot change the construction sequence', refusedBySequencing.status);
+
+  await request(baseUrl, 'PATCH', `/api/permissions/grants/${membershipId}`, {
+    token: gc.token,
+    json: { permissions: ['project.stage.manage'] },
+  });
+  const allowedBySequencing = await request(
+    baseUrl,
+    'PATCH',
+    `/api/projects/${projectId}/stages/${finishing._id.toString()}/dependencies`,
+    { token: sub.token, json: { dependsOn: [shell._id.toString()] } },
+  );
+  check(allowedBySequencing.status === 200,
+    'and project.stage.manage alone can, without project.edit', allowedBySequencing.status);
+
   section('Delegation — single level, and the delegator chooses the scope');
   const partial = await request(baseUrl, 'POST', `/api/tasks/${taskId}/delegation`, {
     token: sub.token,

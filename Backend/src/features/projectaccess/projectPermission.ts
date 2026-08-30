@@ -4,9 +4,17 @@
  * job, and the two are not the same list.
  */
 export const PROJECT_PERMISSIONS = [
+  /** Project METADATA only. It confers no authority over the construction sequence. */
   'project.edit',
   'project.cancel',
   'project.calendar.manage',
+  /**
+   * Stage and construction-sequence management: creating stages, their names and details, their
+   * order, the edges between them, and the `isGate` threshold. Owner decision 2026-08-30, replacing
+   * an engineering assumption that `project.edit` covered sequencing. Order and the gate flag are
+   * deliberately NOT separate codes — they are one capability.
+   */
+  'project.stage.manage',
   'project.member.invite',
   'project.member.manage',
   'project.permission.grant',
