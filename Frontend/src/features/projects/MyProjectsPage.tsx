@@ -7,7 +7,9 @@ import { useLanguage } from '../../i18n/useLanguage';
 import { useDocumentTitle } from '../../routes/useDocumentTitle';
 import { useScreenStylesheet } from '../../styles/useScreenStylesheet';
 import { initialsOf } from '../profile/profileModel';
+import { PendingInvitations } from './components/PendingInvitations';
 import { ProjectCard } from './components/ProjectCard';
+import { useMyInvitations } from './useMyInvitations';
 import { useProjects } from './useProjects';
 import profileCss from '../profile/profile.css?inline';
 import projectsCss from './projects.css?inline';
@@ -16,6 +18,7 @@ export const MyProjectsPage = () => {
   const { t } = useLanguage();
   const { user } = useAuth();
   const { projects, loading, loadingMore, failure, hasMore, reload, loadMore } = useProjects();
+  const invitations = useMyInvitations(reload);
 
   useScreenStylesheet(
     { id: 'profile.css', css: profileCss },
@@ -50,6 +53,15 @@ export const MyProjectsPage = () => {
             <Link to="/projects/new" className="btn btn--primary btn--sm">{t.projects.create}</Link>
           </div>
         </header>
+
+        {/* The same membership rows the Project Members screen writes — never a second source. */}
+        <PendingInvitations
+          invitations={invitations.invitations}
+          busyId={invitations.busyId}
+          failure={invitations.failure}
+          onAccept={(id) => void invitations.accept(id)}
+          onDecline={(id) => void invitations.decline(id)}
+        />
 
         <section className="panel" aria-live="polite">
           {failure !== null ? (

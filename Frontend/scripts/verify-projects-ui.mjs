@@ -133,7 +133,7 @@ const run = async () => {
 
   section('5. Edit — persists, and the ceiling holds');
   await page.goto(`${APP}/projects`, { waitUntil: 'networkidle' });
-  await page.locator('.project-card', { hasText: NAME }).locator('.project-card__actions a').click();
+  await page.locator('.project-card', { hasText: NAME }).locator('a[href$="/edit"]').click();
   await page.waitForTimeout(1400);
   check('The form loads the stored values', (await page.inputValue('#name')) === NAME);
   check('The allowance is a stated fact, not an input',
@@ -160,7 +160,7 @@ const run = async () => {
 
   section('5b. The calendar panel shows what the project works by');
   await page.goto(`${APP}/projects`, { waitUntil: 'networkidle' });
-  await page.locator('.project-card', { hasText: NAME }).locator('.project-card__actions a').click();
+  await page.locator('.project-card', { hasText: NAME }).locator('a[href$="/edit"]').click();
   await page.waitForTimeout(1400);
   check('A calendar panel is shown on Edit', (await page.locator('#project-calendar-title').count()) === 1);
   check('With real working days', (await page.locator('.calendar-facts dd').first().textContent()).length > 0);
@@ -209,7 +209,7 @@ const run = async () => {
 
   section('9. Cancellation removes it entirely');
   await page.goto(`${APP}/projects`, { waitUntil: 'networkidle' });
-  await page.locator('.project-card', { hasText: NAME }).locator('.project-card__actions a').click();
+  await page.locator('.project-card', { hasText: NAME }).locator('a[href$="/edit"]').click();
   await page.waitForTimeout(1400);
   check('Cancellation is offered on a project that has not started',
     (await page.locator('.panel--danger').count()) === 1);

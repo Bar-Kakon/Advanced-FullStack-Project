@@ -444,6 +444,81 @@ export const en: Strings = {
     },
   },
 
+  members: {
+    title: 'Project members',
+    lede: 'The people taking part in this project, and the invitations still waiting for an answer.',
+    entry: 'Members',
+    loading: 'Loading members…',
+    retry: 'Try again',
+    backToProjects: 'Back to projects',
+
+    active: { title: 'Members', none: 'Nobody is taking part in this project yet.' },
+    pending: { title: 'Invitations awaiting an answer', none: 'There are no open invitations.' },
+
+    row: {
+      role: 'Project role',
+      company: 'Company',
+      noCompany: 'No company',
+      invitedBy: 'Invited by {name}',
+      invitedOn: 'Invitation sent on {date}',
+      you: 'This is me',
+      remove: 'Remove from project',
+      withdraw: 'Withdraw invitation',
+      noPermissions: 'No individual permissions set.',
+      permissionsHidden: 'Permissions are shown only to those authorised to manage them.',
+    },
+
+    invite: {
+      title: 'Invite a participant',
+      lede: 'Search by name, choose the project role and set the permissions. An invitation becomes participation only once the invitee accepts.',
+      search: { label: 'Search for a person', placeholder: 'Name or company name' },
+      searching: 'Searching…',
+      noResults: 'No matching results.',
+      selected: 'Selected: {name}',
+      clear: 'Choose again',
+      role: { label: 'Project role', placeholder: 'Choose a role' },
+      send: 'Send the invitation',
+      sent: 'The invitation was sent.',
+    },
+
+    authority: {
+      title: 'The permissions to be granted',
+      lede: 'The project role is descriptive and grants nothing. Permissions are granted here, explicitly.',
+      none: 'No management permissions',
+      selected: 'Choose individual permissions',
+      template: 'From a permission template',
+      copy: 'Copy permissions from an existing participant',
+      full: 'Full project authority',
+      templatePlaceholder: 'Choose a template',
+      copyPlaceholder: 'Choose a participant',
+      noTemplates: 'No permission templates have been created yet.',
+      noCopySource: 'There is nobody to copy permissions from yet.',
+      manage: 'Manage permissions',
+    },
+
+    incoming: {
+      title: 'Invitations awaiting your answer',
+      lede: 'An invitation to take part in somebody else’s project. The full details open once it is accepted.',
+      role: 'Role offered: {role}',
+      invitedBy: 'Invited by {name}',
+      dates: '{start} to {target}',
+      accept: 'Accept',
+      decline: 'Decline',
+      none: 'There are no invitations awaiting an answer.',
+    },
+
+    errors: {
+      notFound: 'The project was not found, or it is not accessible.',
+      notPermitted: 'You are not permitted to do that on this project.',
+      alreadyOnProject: 'That person is already on the project, or their invitation is still open.',
+      blocked: 'That person cannot be invited.',
+      invitationClosed: 'That invitation is no longer open. The list has been refreshed.',
+      ownAuthority: 'You cannot remove your own participation from the project.',
+      network: 'We could not reach the server. Check the connection and try again.',
+      unknown: 'We could not complete that just now.',
+    },
+  },
+
   projects: {
     title: 'My projects',
     lede: 'Your business\u2019s projects, newest first.',

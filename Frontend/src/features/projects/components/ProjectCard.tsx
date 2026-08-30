@@ -58,14 +58,17 @@ export const ProjectCard = ({ project }: { project: Project }) => {
         </p>
       ) : null}
 
-      {/* Edit appears only where the viewer actually holds management authority. */}
-      {project.viewerManages ? (
-        <div className="project-card__actions">
+      <div className="project-card__actions">
+        <Link to={`/projects/${project.id}/members`} className="btn btn--ghost btn--sm">
+          {t.members.entry}
+        </Link>
+        {/* Edit appears only where the viewer actually holds management authority. */}
+        {project.viewerManages ? (
           <Link to={`/projects/${project.id}/edit`} className="btn btn--ghost btn--sm">
             {t.projects.edit}
           </Link>
-        </div>
-      ) : null}
+        ) : null}
+      </div>
     </li>
   );
 };

@@ -20,7 +20,8 @@
     "verify:projects-ui": "node scripts/verify-projects-ui.mjs",
     "verify:integrated": "node scripts/verify-integrated-flow.mjs",
     "verify:owner-qa": "node scripts/verify-owner-qa.mjs",
-    "verify:min-rating-ui": "node scripts/verify-min-rating-ui.mjs"
+    "verify:min-rating-ui": "node scripts/verify-min-rating-ui.mjs",
+    "verify:members-ui": "node scripts/verify-members-ui.mjs"
   },
   "devDependencies": {
     "@types/react": "^19.2.18",
