@@ -360,8 +360,12 @@ const run = async () => {
   section('16. Nothing in the navbar pretends to work');
   check('no dead href="#" link remains',
     (await page.locator('.app-nav__link[href="#"]').count()) === 0);
-  check('unbuilt destinations are present but inert',
-    (await page.locator('.app-nav__link.is-disabled').count()) === 2);
+  // Projects and My Tasks are real destinations now, so nothing in the navbar is inert any more.
+  check('no inert destination remains',
+    (await page.locator('.app-nav__link.is-disabled').count()) === 0);
+  check('and every link points at a real route',
+    (await page.$$eval('.app-nav__link', (n) => n.map((x) => x.getAttribute('href'))))
+      .every((href) => typeof href === 'string' && href.startsWith('/')));
   check('and My network is now a real destination',
     (await page.locator('.app-nav__link[href="/network"]').count()) === 1);
   check('the brand goes somewhere real',
