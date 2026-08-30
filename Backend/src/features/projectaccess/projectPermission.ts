@@ -36,6 +36,12 @@ export const PROJECT_PERMISSIONS = [
    * only where that chain reaches him. No endpoint reads this yet.
    */
   'schedule.partial_release.manage',
+  /**
+   * Versioned work plans on this project and its tasks: uploading a plan, adding a version, and
+   * deciding which version is current. Owner decision 2026-08-30. It does NOT replace the task's
+   * own parties, who may upload against their own task without holding it.
+   */
+  'workplan.manage',
 ] as const;
 export type ProjectPermission = (typeof PROJECT_PERMISSIONS)[number];
 

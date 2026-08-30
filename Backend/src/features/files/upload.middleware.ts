@@ -3,12 +3,15 @@ import multer, { MulterError, type StorageEngine } from 'multer';
 import type { Types } from 'mongoose';
 
 import { AppError } from '../../shared/errors.js';
-import { ALLOWED_IMAGE_MIME_TYPES } from './fileAsset.model.js';
+import { ALLOWED_DOCUMENT_MIME_TYPES, ALLOWED_IMAGE_MIME_TYPES } from './fileAsset.model.js';
 import { deleteFromGridFs, uploadStreamToGridFs } from './gridFs.service.js';
 import { fileTooLarge, unexpectedFileField, unsupportedFileType } from './file.errors.js';
 
 /** 5 MB, which is what the Edit profile screen already tells people. */
 export const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+
+/** 30 MB — the size D1 was closed on GridFS to support. */
+export const MAX_DOCUMENT_BYTES = 30 * 1024 * 1024;
 
 declare module 'express-serve-static-core' {
   interface Request {
@@ -45,26 +48,27 @@ const gridFsStorage: StorageEngine = {
   },
 };
 
-const fileFilter = (_req: Request, file: Express.Multer.File, callback: multer.FileFilterCallback): void => {
-  // The declared MIME type is checked, never the filename extension — an extension is whatever the
-  // uploader typed.
-  if ((ALLOWED_IMAGE_MIME_TYPES as readonly string[]).includes(file.mimetype)) {
-    callback(null, true);
-    return;
-  }
-  callback(unsupportedFileType());
-};
+// The declared MIME type is checked, never the filename extension — an extension is whatever the
+// uploader typed.
+const allowOnly = (types: readonly string[]) =>
+  (_req: Request, file: Express.Multer.File, callback: multer.FileFilterCallback): void => {
+    if (types.includes(file.mimetype)) {
+      callback(null, true);
+      return;
+    }
+    callback(unsupportedFileType());
+  };
 
 /**
  * One optional image, under one named field. `single` is what makes an unexpected file field an
  * error rather than something silently ignored, and the count limit is Multer's, not a check of
  * ours that could be forgotten.
  */
-export const uploadSingleImage = (fieldName: string): RequestHandler => {
+const singleUpload = (fieldName: string, types: readonly string[], maxBytes: number): RequestHandler => {
   const handler = multer({
     storage: gridFsStorage,
-    fileFilter,
-    limits: { fileSize: MAX_IMAGE_BYTES, files: 1 },
+    fileFilter: allowOnly(types),
+    limits: { fileSize: maxBytes, files: 1 },
   }).single(fieldName);
 
   return (req, res, next) => {
@@ -86,3 +90,9 @@ export const uploadSingleImage = (fieldName: string): RequestHandler => {
     });
   };
 };
+
+export const uploadSingleImage = (fieldName: string): RequestHandler =>
+  singleUpload(fieldName, ALLOWED_IMAGE_MIME_TYPES, MAX_IMAGE_BYTES);
+
+export const uploadSingleDocument = (fieldName: string): RequestHandler =>
+  singleUpload(fieldName, ALLOWED_DOCUMENT_MIME_TYPES, MAX_DOCUMENT_BYTES);

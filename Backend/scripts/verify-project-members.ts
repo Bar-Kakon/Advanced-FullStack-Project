@@ -119,10 +119,14 @@ const run = async (): Promise<void> => {
   check(list.invitations.length === 0, 'And nothing is pending');
   check(list.viewer.canInvite && list.viewer.canManageMembers && list.viewer.canGrantPermissions,
     'The creator may invite, manage and grant');
-  check(list.allPermissions.length === 11, 'The permission vocabulary is served', list.allPermissions.length);
+  check(list.allPermissions.length === 12, 'The permission vocabulary is served', list.allPermissions.length);
   check(
     list.allPermissions.includes('project.stage.manage'),
     'including the sequencing grant, which is its own capability and not part of project.edit',
+  );
+  check(
+    list.allPermissions.includes('workplan.manage'),
+    'and the work-plan grant, which the task parties do not need in order to upload on their own task',
   );
   check(
     list.allPermissions.includes('schedule.partial_release.manage'),

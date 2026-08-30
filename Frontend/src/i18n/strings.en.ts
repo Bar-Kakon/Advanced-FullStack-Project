@@ -610,7 +610,24 @@ export const en: Strings = {
 
       workPlans: {
         title: 'Work plans',
-        unavailable: 'Uploading work plans has not been built into this screen yet.',
+        lede: 'Versioned PDFs. A new version never replaces the one before it — the history is kept.',
+        none: 'No work plan on this task yet.',
+        add: 'Add a plan',
+        newVersion: 'New version',
+        history: 'Version history',
+        current: 'Current version',
+        makeCurrent: 'Make current',
+        versionLabel: 'Version {n}',
+        by: 'Uploaded by {name}',
+        private: 'Private exchange',
+        limits: 'PDF only, up to 30MB.',
+        visibility: {
+          legend: 'Who will see this plan',
+          shared: 'Everyone who can see the task',
+          private: 'Private exchange only',
+        },
+        loadFailed: 'The work plans could not be loaded.',
+        actionFailed: 'That action failed.',
       },
     },
 

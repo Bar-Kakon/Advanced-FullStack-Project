@@ -9,6 +9,7 @@ import { createConnectionsModule } from '../features/connections/connections.mod
 import { createDashboardModule } from '../features/dashboard/dashboard.module.js';
 import { createLocationModule } from '../features/location/location.module.js';
 import { createNetworkModule } from '../features/network/network.module.js';
+import { createWorkPlansModule } from '../features/workplans/workplans.module.js';
 import { createProjectsModule } from '../features/projects/projects.module.js';
 import { createCalendarModule } from '../features/calendar/calendar.module.js';
 import { createPermissionsModule } from '../features/projectaccess/permissions.module.js';
@@ -49,6 +50,7 @@ export const createApiRouter = (config: AppConfig): Router => {
     createDashboardModule({ requireAccessToken: auth.requireAccessToken, blocks: blocks.service }),
   );
   router.use('/network', createNetworkModule(auth.requireAccessToken));
+  router.use('/work-plans', createWorkPlansModule(auth.requireAccessToken));
   router.use('/projects/:projectId/stages', createStagesModule(auth.requireAccessToken));
   router.use('/projects/:projectId/dashboard', createProjectDashboardModule(auth.requireAccessToken));
   router.use(
