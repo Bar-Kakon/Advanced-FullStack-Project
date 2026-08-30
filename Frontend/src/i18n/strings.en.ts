@@ -1340,4 +1340,19 @@ export const en: Strings = {
       notPermitted: 'You are not permitted to edit the company details.',
     },
   },
+
+  notFound: {
+    documentTitle: 'הדף אינו זמין / Page unavailable — FieldSync',
+    code: '404',
+    title: "This page isn't available",
+    lede: 'The page requested could not be displayed. You can go back and carry on from there.',
+    reasonsTitle: 'Possible reasons',
+    reasons: [
+      'The link this page was opened through is no longer current',
+      'The page is unavailable, temporarily or permanently',
+      'The content requested cannot be reached right now',
+    ],
+    ctaHome: 'Back to Home',
+    ctaSignIn: 'Go to sign-in',
+  },
 };
