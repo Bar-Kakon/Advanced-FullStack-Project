@@ -1181,8 +1181,14 @@ export const en: Strings = {
     },
     flexibility: {
       label: 'Your flexibility score',
-      foot: 'Based on {count} responses to date changes · updated {month}',
+      foot: 'Based on {count} resolved coordination events',
       empty: 'No flexibility score yet',
+      context: {
+        workable: 'A workable solution was reached in {workable} of {events} coordination events.',
+        alternatives: 'An alternative date or another solution was offered and agreed {count} times.',
+        notice: 'Advance notice allowed the change to be coordinated {count} times.',
+        justified: '{count} justified declines are excluded from the score.',
+      },
     },
     explain: {
       question: 'How is the flexibility score calculated?',

@@ -1,4 +1,5 @@
 import type { Availability } from '../companies/company.model.js';
+import type { FlexibilityView } from '../flexibility/flexibility.service.js';
 import type { Region, RegistrationCategory, Specialty } from '../users/user.model.js';
 import type { RelationshipState } from '../connections/relationship.service.js';
 import type { StructuredPlace } from '../location/place.types.js';
@@ -24,8 +25,8 @@ export interface ContractorSummaryDto {
   readonly relationship: RelationshipState;
   /** `null` until enough history exists. Never rendered, or filtered, as zero. */
   readonly rating: { readonly average: number; readonly count: number } | null;
-  /** Always `null` today: no approved arithmetic exists, so no number is invented. */
-  readonly flexibility: null;
+  /** `null` until resolved coordination outcomes exist. Never a zero standing in for no data. */
+  readonly flexibility: FlexibilityView | null;
   /** Road distance from the search origin, when a driving-distance filter was applied. */
   readonly drivingDistanceMeters: number | null;
 }
