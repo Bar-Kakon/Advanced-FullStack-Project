@@ -9,7 +9,7 @@ import type { GrantUpdate, ProjectGrantRepository } from './projectGrant.reposit
 import type { PermissionTemplateRepository } from './permissionTemplate.repository.js';
 import { PROJECT_PERMISSIONS, type ProjectPermission } from './projectPermission.js';
 import type { ProjectRole } from './projectMembership.model.js';
-import { templateNameTaken, templateNotFound } from './permissions.errors.js';
+import { cannotRemoveOwnAuthority, templateNameTaken, templateNotFound } from './permissions.errors.js';
 
 export interface GrantDto {
   readonly id: string;
@@ -202,6 +202,14 @@ export const createPermissionsService = ({
       if (existing === null) throw projectNotFound();
       const { project } = await requireGrantAuthority(userId, existing.project);
 
+      if (existing.user.toString() === userId) {
+        const keepsFull = update.fullAuthority ?? existing.fullAuthority;
+        const keepsGrant = (update.permissions ?? existing.permissions).includes(
+          'project.permission.grant',
+        );
+        if (!keepsFull && !keepsGrant) throw cannotRemoveOwnAuthority();
+      }
+
       const updated = await grants.update(existing._id, update);
       if (updated === null) throw projectNotFound();
       return toGrantDto(updated, project.name);
@@ -211,6 +219,7 @@ export const createPermissionsService = ({
       const existing = await grants.findById(grantId);
       if (existing === null) throw projectNotFound();
       await requireGrantAuthority(userId, existing.project);
+      if (existing.user.toString() === userId) throw cannotRemoveOwnAuthority();
       await grants.revoke(existing._id);
     },
 

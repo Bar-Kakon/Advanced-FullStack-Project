@@ -505,6 +505,38 @@ const run = async (): Promise<void> => {
   const fullCancel = await request(baseUrl, 'DELETE', `/api/projects/${keeperId}`, { token: bob.token });
   check(fullCancel.status === 204, 'Yet it authorizes a permission never listed on the row', fullCancel.status);
 
+  section('Nobody can lock themselves out of their own project');
+  // A fresh project: an earlier section cancelled `keeper`, and a grant on a deleted project is
+  // unreachable for the same reason any other row on it is.
+  const lockTest = await request(baseUrl, 'POST', '/api/projects', {
+    token: alice.token, json: { ...valid, name: 'lockout test' },
+  });
+  const lockProjectId = (lockTest.body as unknown as ProjectBody).project.id;
+  const ownGrant = await ProjectMembershipModel.findOne({ project: lockProjectId, user: alice.userId }).lean().exec();
+  check(ownGrant !== null, 'The creator grant exists on the fresh project');
+  const selfReduce = await request(baseUrl, 'PATCH', `/api/permissions/grants/${ownGrant?._id.toString()}`, {
+    token: alice.token, json: { fullAuthority: false },
+  });
+  check(selfReduce.status === 409, 'Removing your OWN last authority is refused', selfReduce.status);
+  const selfRevoke = await request(baseUrl, 'DELETE', `/api/permissions/grants/${ownGrant?._id.toString()}`, {
+    token: alice.token,
+  });
+  check(selfRevoke.status === 409, 'And so is revoking your own grant', selfRevoke.status);
+  const intact = await ProjectMembershipModel.findById(ownGrant?._id).lean().exec();
+  check(intact?.fullAuthority === true, 'The authority is untouched by the refused calls');
+
+  const keepingGrantRight = await request(baseUrl, 'PATCH', `/api/permissions/grants/${ownGrant?._id.toString()}`, {
+    token: alice.token, json: { fullAuthority: false, permissions: ['project.permission.grant', 'project.edit'] },
+  });
+  check(
+    keepingGrantRight.status === 200,
+    'But stepping down to a narrower grant that still administers is allowed',
+    keepingGrantRight.status,
+  );
+  await request(baseUrl, 'PATCH', `/api/permissions/grants/${ownGrant?._id.toString()}`, {
+    token: alice.token, json: { fullAuthority: true },
+  });
+
   section('Templates are contractor-owned and copy at apply time');
   const tpl = await request(baseUrl, 'POST', '/api/permissions/templates', {
     token: alice.token, json: { name: 'kablan mishne', permissions: ['project.edit', 'task.create'] },
