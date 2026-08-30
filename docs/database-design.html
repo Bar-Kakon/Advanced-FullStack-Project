@@ -1081,65 +1081,201 @@ module.exports = mongoose.model('Project', projectSchema);`
 
 /* ─────────── memberships ─────────── */
 {
-  id: 'memberships', model: 'Membership', domain: 'work', stage: 3,
-  tag: 'user × project, and the role',
+  id: 'memberships', model: 'ProjectMembership', domain: 'work', stage: 3,
+  tag: 'user × project, participation and authority',
   pos: { x: 290, y: 190 },
-  purpose: 'The link between a user and a project — and the place the **per-project role** lives. One document per person per project, carrying the invitation state machine as well as the role.',
-  callout: 'This is the single most important modelling idea in the whole schema. The product requires that _the same contractor can be a general contractor on one project and a subcontractor on another_. Putting `role` on [[users]] makes that literally impossible to express. Putting it on the **relationship** makes it natural.',
+  purpose: 'The link between a user and a project — and the place per-project **authority** lives. One document per person per project, carrying the invitation state machine, a descriptive role, and the two grant fields every project authorisation check actually reads. <strong>Built 2026-08-30</strong> as <code>projectmemberships</code>, and it differs from the shape drawn here earlier in ways that were owner decisions, not preferences.',
+  callout: 'This is the single most important modelling idea in the whole schema. The product requires that _the same contractor can be a general contractor on one project and a subcontractor on another_. Putting a role on [[users]] makes that literally impossible to express. Putting the relationship in its own document makes it natural. <strong>What changed when it was built: the role stopped granting anything.</strong> The design had one <code>role</code> field that every write-side check read. The owner rule is that authority is never inferred from a role, a job title, a company or who invited whom — so the document now carries <code>projectRole</code> (descriptive, never read by a check) beside <code>permissions[]</code> and <code>fullAuthority</code> (the only two fields authority comes from).',
   calloutKind: '',
   fields: [
-    { name: '_id', type: 'ObjectId', note: '' },
+    { name: '_id', type: 'ObjectId', note: 'Doubles as the <strong>grant id</strong> the Permissions endpoints address. There is one row, called a membership from the Members screen and a grant from the Permissions screen.' },
     { name: 'project', type: 'ObjectId', ref: 'projects', req: true, idx: true, note: '' },
     { name: 'user', type: 'ObjectId', ref: 'users', req: true, idx: true, note: '' },
-    { name: 'role', type: "'gc' | 'sub' | 'supplier' | 'viewer'", req: true, note: '**Scoped to this project only.** Every write-side authorisation check in the app starts by reading this field.' },
-    { name: 'status', type: "'invited' | 'accepted' | 'declined' | 'removed'", req: true, idx: true, note: 'The invitation state machine. `removed` rather than a delete, so the audit history of what this person did on the project still resolves.' },
-    { name: 'invitedBy', type: 'ObjectId', ref: 'users', note: 'Who sent the invitation.' },
-    { name: 'invitedAt', type: 'Date', note: '' },
-    { name: 'respondedAt', type: 'Date', note: '' }
+    { name: 'company', type: 'ObjectId', ref: 'companies', note: '<strong>Attribution, never authority.</strong> The business this participant acts through, captured from their own active company membership when they are invited. No authorisation check reads it, and belonging to the owning company decides <em>visibility</em> of a project and nothing more.' },
+    { name: 'projectRole', type: "'main_contractor' | 'subcontractor' | 'professional' | 'supplier' | 'viewer'", req: true, note: '<strong>Descriptive only. It grants nothing</strong>, and no code path reads it to decide whether an action is allowed. Being called Main Contractor here confers exactly as much as being called Viewer.' },
+    { name: 'permissions[]', type: '[String] — enum of nine project permissions', note: 'The individual grants: <code>project.edit</code>, <code>project.cancel</code>, <code>project.calendar.manage</code>, <code>project.member.invite</code>, <code>project.member.manage</code>, <code>project.permission.grant</code>, <code>task.create</code>, <code>task.assign</code>, <code>schedule.exception.approve</code>. Codes, never labels — the interface is bilingual.' },
+    { name: 'fullAuthority', type: 'Boolean', req: true, note: '<strong>Full Project Authority — a flag, never an expanded copy of the list.</strong> It is resolved at read time to the whole permission vocabulary, which is what makes the approved disclaimer true: a permission added to the scope next year is covered without anybody re-granting it. Expanding it into <code>permissions[]</code> at grant time would freeze it and quietly break that promise.' },
+    { name: 'status', type: "'invited' | 'active' | 'declined' | 'removed'", req: true, idx: true, note: 'The invitation state machine, and the only way onto a project. <strong>`accepted` was renamed `active`</strong> to match every other membership in the schema. <strong>`declined` is its own state and is not permanent</strong> — the same person may be invited again, reusing the one row, which is the rule [[D17]] closed for connection requests. Reusing `removed` for a refusal was rejected: being kicked out and saying no are different facts.' },
+    { name: 'invitedBy', type: 'ObjectId', ref: 'users', req: true, note: 'Provenance. Who made the offer — a record, never a permission, and <strong>never inherited</strong>: being invited by somebody powerful grants nothing.' },
+    { name: 'invitedAt', type: 'Date', req: true, note: 'Refreshed when a declined or removed person is invited again, so the card dates the current offer rather than a stale one.' },
+    { name: 'respondedAt', type: 'Date', note: 'When the invitee answered. Cleared on re-invitation.' }
   ],
   indexes: [
-    { def: '{ project: 1, user: 1 }', opts: 'unique', serves: 'The authorisation check on every project write', why: 'Doubles as a correctness guarantee — one membership per person per project — and as the index behind the single most frequent query in the backend: `findOne({ project, user, status: "accepted" })`.' },
-    { def: '{ user: 1, status: 1 }', serves: 'My projects (owned, member, invited)', why: 'Reads the relationship from the user side, which is the direction the busiest screen needs.' },
-    { def: '{ project: 1, status: 1, role: 1 }', serves: 'Project members panel', why: 'Lets the members list be grouped by role and filtered by invite state entirely in the index.' }
+    { def: '{ project: 1, user: 1 }', opts: 'unique', serves: 'The authorisation check on every project write', why: 'Doubles as a correctness guarantee — one row per person per project, so re-inviting edits rather than duplicating — and as the index behind the most frequent query in the backend: `findOne({ project, user, status: "active" })`.' },
+    { def: '{ user: 1, status: 1 }', serves: 'My projects, and the pending-invitation list', why: 'Reads the relationship from the user side, which is the direction the busiest screen needs, and answers `status: "invited"` for the invitation panel out of the same index.' },
+    { def: '{ project: 1 }', serves: 'Project members panel and the dashboard member counts', why: 'The members screen reads every row on one project and groups by status in memory — the set is small and bounded by the people on one site.' }
   ],
   why: [
-    '**A junction collection is what a many-to-many with attributes looks like.** In SQL this would be a join table with extra columns. In MongoDB it is a collection, for the same reason: the moment the relationship has its own facts (role, who invited, when they answered), it has become a thing, not a pointer.',
-    '**It is the authorisation table.** The source-of-truth document flags that write-side authorisation is a separate concern from the read-side serializer and must be centralised. This collection is where that centralisation happens: one helper resolves `(user, project) → role | null`, and every controller asks it the same question.',
-    '**Both directions are indexed** because both are hot: `My projects` reads user→projects, the members panel reads project→users. An embedded array on either side would have made one of those two directions a full collection scan.',
-    '**`removed` instead of deleting the document.** A person who left the project still appears in [[auditentries]] and may still be the `assignee` on a completed task; the membership has to remain resolvable.'
+    '**A junction collection is what a many-to-many with attributes looks like.** In SQL this would be a join table with extra columns. In MongoDB it is a collection, for the same reason: the moment the relationship has its own facts — a role, a set of grants, who invited, when they answered — it has become a thing, not a pointer.',
+    '**It is the authorisation table, and the grant table, and they are one table on purpose.** A Project Members screen and a Permissions screen are two views of this collection, never two collections. There is exactly one place a person\'s authority on a project is written, so the two surfaces cannot drift into two sets of rules.',
+    '**Eight concepts stay separate here and none is collapsed into a role field:** `createdBy` on the project (provenance), company membership (visibility), `companyPosition` (a job title, elsewhere entirely and never read), this document (participation), `projectRole` (descriptive), `permissions[]`, `fullAuthority`, and work delegation ([[D7]], a seventh mechanism that lives nowhere near this document).',
+    '**Authority is per project, and every project stands on its own.** There is no company-wide grant row anywhere in the schema. A grant on one project is invisible on another, a permission template is copied at the moment it is applied rather than linked, and `copy permissions from …` refuses a source on a different project.',
+    '**`removed` and `declined` instead of deleting the document.** A person who left still appears in [[auditentries]] and may still be the `assignee` on a completed task, and a refusal is a fact somebody may need to see. Both keep the row and clear the authority.',
+    '**Nobody can remove their own last authority (approved rule, 2026-08-30).** Reducing or revoking your own grant is refused with a 409 when it would leave you unable to restore it — the surface that could give it back is the one you would be removing yourself from. Somebody else holding grant authority can still reduce or remove you.',
+    '**Both directions are indexed** because both are hot: `My projects` reads user→projects, the members panel reads project→users. An embedded array on either side would have made one of those two directions a full collection scan.'
   ],
   relations: [
     { to: 'projects', via: 'project', store: 'ref', card: 'N:1', why: 'Half of the junction.' },
-    { to: 'users', via: 'user', store: 'ref', card: 'N:1', why: 'The other half. Together with `role`, this is what makes roles contextual rather than global.' }
+    { to: 'users', via: 'user', store: 'ref', card: 'N:1', why: 'The other half. Together with the grant fields, this is what makes authority contextual rather than global.' },
+    { to: 'companies', via: 'company', store: 'ref', card: 'N:1', why: 'Attribution only — which business the participant acts through. It is not read by any authorisation check.' }
   ],
   sample: `{
-  _id: ObjectId("6660d1a0c2b9e30012af1101"),
+  _id: ObjectId("6660d1a0c2b9e30012af1101"),   // the Members screen calls this a membership;
+                                               // the Permissions screen calls it a grant
   project: ObjectId("6660c3d0c2b9e30012af1001"),
   user:    ObjectId("6650a1f4c2b9e30012af0b21"),   // Dana
-  role:    "sub",                                   // on THIS project she is a sub…
-  status:  "accepted",
+  company: ObjectId("6650b2f0c2b9e30012af0c40"),   // her own business — attribution, not authority
+
+  projectRole:   "subcontractor",              // descriptive; grants nothing
+  permissions:   ["project.edit", "task.create"],
+  fullAuthority: false,
+
+  status:      "active",
   invitedBy:   ObjectId("6650a0b0c2b9e30012af0b10"),
   invitedAt:   ISODate("2026-07-01T09:00:00Z"),
   respondedAt: ISODate("2026-07-01T12:30:00Z")
 }
 
-// …and on her own project the very same user has role: "gc".
-// That is only expressible because role lives here and not on the user.`,
-  schema: `const membershipSchema = new Schema({
-  project: { type: Schema.Types.ObjectId, ref: 'Project', required: true },
-  user:    { type: Schema.Types.ObjectId, ref: 'User', required: true },
-  role:    { type: String, enum: ['gc','sub','supplier','viewer'], required: true },
-  status:  { type: String, enum: ['invited','accepted','declined','removed'], default: 'invited' },
-  invitedBy:   { type: Schema.Types.ObjectId, ref: 'User' },
-  invitedAt:   { type: Date, default: Date.now },
+// On her own project the very same user has projectRole: "main_contractor"
+// and fullAuthority: true. That is only expressible because authority lives
+// here and not on the user — and because it is a row, not an inference.`,
+  schema: `const PROJECT_PERMISSIONS = [
+  'project.edit', 'project.cancel', 'project.calendar.manage',
+  'project.member.invite', 'project.member.manage', 'project.permission.grant',
+  'task.create', 'task.assign', 'schedule.exception.approve'
+];
+
+const projectMembershipSchema = new Schema({
+  project: { type: Schema.Types.ObjectId, ref: 'Project', required: true, index: true },
+  user:    { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
+  company: { type: Schema.Types.ObjectId, ref: 'Company' },
+
+  status:      { type: String, enum: ['invited','active','declined','removed'], default: 'invited' },
+  projectRole: { type: String, enum: ['main_contractor','subcontractor','professional','supplier','viewer'], default: 'professional' },
+
+  permissions:   [{ type: String, enum: PROJECT_PERMISSIONS }],
+  // Never expanded into permissions, so it keeps meaning "all of them, including later ones".
+  fullAuthority: { type: Boolean, required: true, default: false },
+
+  invitedBy:   { type: Schema.Types.ObjectId, ref: 'User', required: true },
+  invitedAt:   { type: Date, required: true, default: () => new Date() },
   respondedAt: Date
 }, { timestamps: true });
 
-membershipSchema.index({ project: 1, user: 1 }, { unique: true });
-membershipSchema.index({ user: 1, status: 1 });
-membershipSchema.index({ project: 1, status: 1, role: 1 });
+projectMembershipSchema.index({ project: 1, user: 1 }, { unique: true });
+projectMembershipSchema.index({ user: 1, status: 1 });
 
-module.exports = mongoose.model('Membership', membershipSchema);`
+// Resolved at READ time, which is what keeps fullAuthority honest.
+const effectivePermissions = (grant) =>
+  grant.fullAuthority ? PROJECT_PERMISSIONS : grant.permissions;
+
+module.exports = mongoose.model('ProjectMembership', projectMembershipSchema);`
+},
+
+/* ─────────── permissiontemplates ─────────── */
+{
+  id: 'permissiontemplates', model: 'PermissionTemplate', domain: 'work', stage: 3,
+  tag: 'a reusable set of project permissions',
+  pos: { x: 130, y: 300 },
+  purpose: 'A named, reusable set of project permissions a contractor keeps for their own company — "subcontractor", "site manager" — so the same grant does not have to be assembled by hand on every project. <strong>Built 2026-08-30.</strong>',
+  callout: '<strong>Applying a template COPIES it, at that moment.</strong> A grant never points at a template, so editing the template later does not silently change what anybody already holds. That is the same rule `copy permissions from …` follows, and for the same reason: a person\'s authority must be readable from their own row alone.',
+  calloutKind: '',
+  fields: [
+    { name: '_id', type: 'ObjectId', note: '' },
+    { name: 'company', type: 'ObjectId', ref: 'companies', req: true, idx: true, note: 'The owning business. A template is never global and never visible to another company.' },
+    { name: 'name', type: 'String', req: true, note: 'Free text, chosen by the contractor. Unique within the company.' },
+    { name: 'permissions[]', type: '[String] — the same nine codes as [[memberships]]', note: 'What applying it writes into a grant.' },
+    { name: 'fullAuthority', type: 'Boolean', req: true, note: 'A template may carry the flag rather than a list, in which case applying it grants Full Project Authority.' },
+    { name: 'createdBy', type: 'ObjectId', ref: 'users', req: true, note: 'Provenance. Grants nothing.' }
+  ],
+  indexes: [
+    { def: '{ company: 1, name: 1 }', opts: 'unique', serves: 'The template list, and the duplicate-name check', why: 'One name per company, enforced by the index rather than by a read-then-write that two concurrent requests could both pass.' }
+  ],
+  why: [
+    '**A template is a convenience, not a relationship.** Nothing references it after it has been applied, which is why there is no back-pointer and no cascade to worry about when one is deleted.',
+    '**Company-owned, because the vocabulary is the contractor\'s.** What "subcontractor" should be allowed to do is a decision each business makes, and one company\'s answer must never leak into another\'s list.'
+  ],
+  relations: [
+    { to: 'companies', via: 'company', store: 'ref', card: 'N:1', why: 'The owning business.' },
+    { to: 'users', via: 'createdBy', store: 'ref', card: 'N:1', why: 'Provenance only.' }
+  ],
+  sample: `{
+  _id: ObjectId("6660e2b0c2b9e30012af1201"),
+  company: ObjectId("6650b2f0c2b9e30012af0c40"),
+  name: "קבלן משנה",
+  permissions: ["project.edit", "task.create"],
+  fullAuthority: false,
+  createdBy: ObjectId("6650a0b0c2b9e30012af0b10")
+}`,
+  schema: `const permissionTemplateSchema = new Schema({
+  company: { type: Schema.Types.ObjectId, ref: 'Company', required: true, index: true },
+  name:    { type: String, required: true, trim: true, maxlength: 80 },
+  permissions:   [{ type: String, enum: PROJECT_PERMISSIONS }],
+  fullAuthority: { type: Boolean, required: true, default: false },
+  createdBy: { type: Schema.Types.ObjectId, ref: 'User', required: true }
+}, { timestamps: true });
+
+permissionTemplateSchema.index({ company: 1, name: 1 }, { unique: true });
+
+module.exports = mongoose.model('PermissionTemplate', permissionTemplateSchema);`
+},
+
+/* ─────────── companycalendarversions ─────────── */
+{
+  id: 'companycalendarversions', model: 'CompanyCalendarVersion', domain: 'work', stage: 3,
+  tag: 'a frozen version of a working calendar',
+  pos: { x: 700, y: 300 },
+  purpose: 'One frozen version of a company\'s default working calendar — the working days, the hours, the sector, and whether Chol HaMoed and memorial days are worked. <strong>Built 2026-08-30</strong>, and it is the storage half of [[D22]], whose behaviour was already closed.',
+  callout: '<strong>Versions are never edited.</strong> Changing the company default appends a new one. That is the whole safety mechanism: [[projects]] pins a version by id, so somebody editing the company default cannot move dates inside a running project — the project keeps pointing at a document that keeps saying what it always said. Nothing propagates; adoption is an explicit action recorded on the project.',
+  calloutKind: '',
+  fields: [
+    { name: '_id', type: 'ObjectId', note: 'What [[projects]] `calendarVersion` pins to.' },
+    { name: 'company', type: 'ObjectId', ref: 'companies', req: true, note: '' },
+    { name: 'version', type: 'Number', req: true, note: 'Starts at 1 and increases by one. The number a person reads on screen — "this project works by version 1, the company is on version 2".' },
+    { name: 'config', type: '{ workingDays[], hours: { startMinute, endMinute }, sector, worksCholHaMoed, worksMemorialDays }', req: true, note: 'The calendar itself, embedded 1:1 and immutable with the document that holds it. `hours` is stored as minutes from midnight rather than as strings, so arithmetic needs no parsing. 7:00–16:00 is the common default the domain named.' },
+    { name: 'createdBy', type: 'ObjectId', ref: 'users', req: true, note: 'Who appended this version.' },
+    { name: 'createdAt', type: 'Date', note: '`timestamps: { createdAt: true, updatedAt: false }` — there is no update to stamp.' }
+  ],
+  indexes: [
+    { def: '{ company: 1, version: -1 }', opts: 'unique', serves: 'Finding the current version, and appending the next one safely', why: 'Descending so `findOne` with no skip returns the newest. <strong>Unique is a correctness guarantee under concurrency:</strong> two people saving the company default at the same moment cannot both claim v4 — the loser gets a duplicate-key error and retries against the version that actually won, so no edit is silently overwritten.' }
+  ],
+  why: [
+    '**Append-only versioning instead of a mutable calendar document.** A mutable one cannot answer "what was this project scheduled by in July", and it makes the closed rule — that nothing moves inside a running project without approval — a procedure somebody has to remember rather than something the storage makes impossible.',
+    '**The project pins an id, not a copy.** A full copy on [[projects]] would be trivial to read and would stop tracking the default the moment the contractor changed it; a reference plus a per-project override diff keeps both facts, and the override stays project-specific by construction.',
+    '**A company with no version yet behaves as though it holds the default**, never as an error. The first project created appends v1 rather than failing.'
+  ],
+  relations: [
+    { to: 'companies', via: 'company', store: 'ref', card: 'N:1', why: 'The owning business.' },
+    { to: 'projects', via: 'calendarVersion (on projects)', store: 'ref', card: '1:N', why: 'A project points here. This is the pin that makes a company edit unable to reach a running project.' }
+  ],
+  sample: `{
+  _id: ObjectId("6660f3c0c2b9e30012af1301"),
+  company: ObjectId("6650b2f0c2b9e30012af0c40"),
+  version: 1,
+  config: {
+    workingDays: ["sunday","monday","tuesday","wednesday","thursday"],
+    hours: { startMinute: 420, endMinute: 960 },   // 07:00–16:00
+    sector: "jewish",
+    worksCholHaMoed: false,
+    worksMemorialDays: false
+  },
+  createdBy: ObjectId("6650a0b0c2b9e30012af0b10"),
+  createdAt: ISODate("2026-08-30T08:00:00Z")
+}
+
+// Editing the company default writes version 2. Version 1 is untouched,
+// and every project pinned to it keeps working exactly as before.`,
+  schema: `const companyCalendarVersionSchema = new Schema({
+  company: { type: Schema.Types.ObjectId, ref: 'Company', required: true },
+  version: { type: Number, required: true, min: 1 },
+  config:  { type: configSchema, required: true },
+  createdBy: { type: Schema.Types.ObjectId, ref: 'User', required: true }
+}, { timestamps: { createdAt: true, updatedAt: false } });
+
+// One row per company per version number, so two concurrent edits cannot both claim v4.
+companyCalendarVersionSchema.index({ company: 1, version: -1 }, { unique: true });
+
+module.exports = mongoose.model('CompanyCalendarVersion', companyCalendarVersionSchema);`
 },
 
 /* ─────────── tasks ─────────── */
