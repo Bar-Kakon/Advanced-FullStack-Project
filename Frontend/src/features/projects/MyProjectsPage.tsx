@@ -43,7 +43,12 @@ export const MyProjectsPage = () => {
             <h1 className="profile__title">{t.projects.title}</h1>
             <p className="profile__sub">{t.projects.lede}</p>
           </div>
-          <Link to="/projects/new" className="btn btn--primary btn--sm">{t.projects.create}</Link>
+          <div className="profile__head-actions">
+            {/* The entry point into the central surface. It manages project-scoped grants across
+                every project this account administers — the same rows a Project Dashboard edits. */}
+            <Link to="/permissions" className="btn btn--ghost btn--sm">{t.permissions.entry}</Link>
+            <Link to="/projects/new" className="btn btn--primary btn--sm">{t.projects.create}</Link>
+          </div>
         </header>
 
         <section className="panel" aria-live="polite">

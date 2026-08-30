@@ -375,6 +375,75 @@ export const en: Strings = {
     sendNewLink: 'Send a new link',
   },
 
+  permissions: {
+    title: 'Permissions',
+    lede: 'Permissions across every project you manage, in one place. Each one belongs to a specific project.',
+    loading: 'Loading permissions…',
+    retry: 'Try again',
+    backToProjects: 'Back to projects',
+    empty: 'There are no projects whose permissions you can manage.',
+    entry: 'Manage permissions',
+
+    grants: {
+      title: 'Permissions by project',
+      role: 'Project role',
+      status: 'Status',
+      permissions: 'Permissions',
+      revoke: 'Revoke',
+      none: 'No individual permissions set.',
+      revoked: 'Revoked',
+      you: 'Your access',
+    },
+
+    fullAuthority: {
+      label: 'Full project authority',
+      title: 'Grant full project authority',
+      disclaimer: 'Granting this gives full management authority in the project, including permissions added in the future. The access can be reduced or revoked at any time.',
+      confirm: 'Grant authority',
+      dismiss: 'Back',
+      reduce: 'Remove full authority',
+      granted: 'Full authority',
+    },
+
+    templates: {
+      title: 'Permission templates',
+      lede: 'Reusable permission sets your company defines. Applying one copies its permissions at that moment.',
+      name: 'Template name',
+      namePlaceholder: 'Subcontractor',
+      create: 'Create template',
+      remove: 'Delete',
+      none: 'No templates yet.',
+      nameTaken: 'A template with that name already exists.',
+    },
+
+    perms: {
+      'project.edit': 'Edit the project',
+      'project.cancel': 'Cancel the project',
+      'project.calendar.manage': 'Manage the working calendar',
+      'project.member.invite': 'Invite participants',
+      'project.member.manage': 'Manage participants',
+      'project.permission.grant': 'Grant permissions',
+      'task.create': 'Create tasks',
+      'task.assign': 'Assign tasks',
+      'schedule.exception.approve': 'Approve calendar exceptions',
+    },
+
+    roles: {
+      main_contractor: 'Main contractor',
+      subcontractor: 'Subcontractor',
+      professional: 'Professional',
+      supplier: 'Supplier',
+      viewer: 'View only',
+    },
+
+    errors: {
+      notPermitted: 'You may not manage permissions on that project.',
+      notFound: 'Not found.',
+      network: 'We could not reach the server. Check your connection and try again.',
+      unknown: 'We could not complete that just now.',
+    },
+  },
+
   projects: {
     title: 'My projects',
     lede: 'Your business\u2019s projects, newest first.',

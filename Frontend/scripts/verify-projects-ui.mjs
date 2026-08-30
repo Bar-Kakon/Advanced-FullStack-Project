@@ -225,6 +225,34 @@ const run = async () => {
   check('Still gone after a reload — no record left',
     (await page.locator('.project-card', { hasText: NAME }).count()) === 0);
 
+  section('9b. Central Permissions is reachable from My projects');
+  await page.goto(`${APP}/projects`, { waitUntil: 'networkidle' });
+  const permsLink = page.locator('a[href="/permissions"]');
+  check('My projects exposes an entry point', (await permsLink.count()) === 1);
+  await permsLink.click();
+  await page.waitForTimeout(1400);
+  check('It navigates to the central screen', page.url().includes('/permissions'), page.url());
+  check('Which lists projects this account administers',
+    (await page.locator('.perm-project').count()) >= 1);
+  check('And their grants', (await page.locator('.perm-grant').count()) >= 1);
+
+  const creatorChip = await page.locator('.perm-chip--full').count();
+  check('The creator holds Full Project Authority as an explicit row', creatorChip >= 1, `${creatorChip}`);
+
+  section('9c. Your own row cannot lock you out');
+  check('Your own grant is marked as yours',
+    (await page.locator('.perm-grant .perm-chip', { hasText: 'ההרשאה שלי' }).count()) >= 1);
+  check('And offers no reduce or revoke control at all',
+    (await page.locator('.perm-grant__actions').count()) === 0);
+
+  section('9d. Templates');
+  const tplName = `tpl ${stamp}`;
+  await page.fill('#templateName', tplName);
+  await page.click('.perm-template-new .btn--primary');
+  await page.waitForTimeout(1600);
+  check('A contractor template can be created',
+    (await page.textContent('body')).includes(tplName));
+
   section('10. Page errors');
   // Section 6 asks for projects that do not exist on purpose, and the browser logs every 404
   // response as a console error. Those are the assertion succeeding, not the page failing.

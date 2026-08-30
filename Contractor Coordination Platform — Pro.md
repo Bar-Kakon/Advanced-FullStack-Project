@@ -1605,6 +1605,14 @@ My projects, and a row that acts inside an `Invited` project fails.
 >
 > **Format:** `[YYYY-MM-DD] What changed — why.`
 
+- `[2026-08-30]` **The central Permissions screen is built and reachable from My projects, on `feature/projects-react`. IMPLEMENTED · VERIFIED BY AUTOMATED TESTS · NOT MERGED · OWNER MANUAL QA PENDING.** A new route `/permissions`, entered from a control in the My projects header. It lists **every project this account may administer**, the grants on each, and the company's reusable templates. `npm run verify:projects-ui` is now **60 checks**.
+
+  **Full Project Authority is confirmed behind its own disclaimer**, in the owner's approved wording: *מתן גישה זו מעניק סמכות ניהול מלאה בפרויקט, כולל הרשאות שיתווספו בעתיד. ניתן לצמצם או לבטל את הגישה בכל עת.* The browser check reads the rendered text and asserts both halves — that future permissions are included, and that it can be reduced or revoked at any time. **Individual checkboxes are hidden while full authority is on**, because a half-ticked list would misdescribe what is actually granted.
+
+  **Your own row shows no reduce or revoke control**, since the server refuses both — a control that always fails is worse than no control. It carries a `ההרשאה שלי` chip instead.
+
+  **The Project Dashboard integration point is defined and needs no new backend.** The per-project surface is the same `/api/permissions` grants filtered to one project id; the central screen already groups by project, so the dashboard renders one of those groups. **There is one grants model and two views of it — only the filter differs**, which is what keeps the two surfaces from becoming two systems.
+
 - `[2026-08-30]` **My projects and Create / Edit project gained type, size, the calendar panel and real grouping, on `feature/projects-react`. IMPLEMENTED · VERIFIED BY AUTOMATED TESTS · NOT MERGED · OWNER MANUAL QA PENDING.** `npm run verify:projects-ui` is now **52 checks**.
 
   **Type is a four-value select and `אחר` reveals its free-text box only when chosen** — proved in the browser: the box is absent until `other` is selected, required once it is, and the **card then shows the free text rather than the word "אחר"**. **Size is a plain required text field** with the domain's own examples as its hint, and the card prints it exactly as typed.
