@@ -26,3 +26,26 @@ export const myTasksQuerySchema = Joi.object({
 export const taskParamsSchema = Joi.object({
   taskId: Joi.string().trim().required(),
 });
+
+export const delegateBodySchema = Joi.object({
+  userId: Joi.string().trim().required(),
+  scope: Joi.string().valid('whole', 'part').required(),
+  partDescription: Joi.string().trim().max(400).optional(),
+});
+
+export const privateItemBodySchema = Joi.object({
+  kind: Joi.string().valid('subtask', 'note').required(),
+  body: Joi.string().trim().min(1).max(1000).required(),
+});
+
+export const privateToggleBodySchema = Joi.object({
+  done: Joi.boolean().required(),
+});
+
+export const privateItemParamsSchema = taskParamsSchema.keys({
+  itemId: Joi.string().trim().required(),
+});
+
+export const stageDependenciesBodySchema = Joi.object({
+  dependsOn: Joi.array().items(Joi.string().trim()).required(),
+});

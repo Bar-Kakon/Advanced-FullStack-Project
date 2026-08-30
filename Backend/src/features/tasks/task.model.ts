@@ -47,6 +47,10 @@ export interface TaskRecord {
   readonly completedAt?: Date;
 
   readonly delegation?: TaskDelegation;
+  /** The GC's own-crew-only term: this work may not be handed to anybody else. */
+  readonly ownCrewOnly: boolean;
+  /** The GC may require the delegator on site even after handing the work over. */
+  readonly delegatorOnSiteRequired: boolean;
 
   /** Orphan state: the node survives, the owner may be absent, and dates freeze. */
   readonly orphanedAt?: Date;
@@ -86,6 +90,8 @@ const taskSchema = new Schema(
     completedAt: { type: Date },
 
     delegation: { type: delegationSchema },
+    ownCrewOnly: { type: Boolean, required: true, default: false },
+    delegatorOnSiteRequired: { type: Boolean, required: true, default: false },
 
     orphanedAt: { type: Date },
     previousAssignee: { type: Schema.Types.ObjectId, ref: 'User' },
