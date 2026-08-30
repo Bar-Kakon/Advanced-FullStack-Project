@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="he">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- An error page must never be indexed -->
+  <meta name="robots" content="noindex" />
+  <title>הדף אינו זמין / Page unavailable — FieldSync</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <!-- Same font stack and same requested weights as every other screen: Heebo + Frank Ruhl (he), Inter + Fraunces (en), Plex Mono (both) -->
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=IBM+Plex+Mono:wght@400;500&family=Heebo:wght@400;500;600;700&family=Frank+Ruhl+Libre:wght@500;700&display=swap"
+    rel="stylesheet" />
+  <link rel="stylesheet" href="error.css" />
+</head>
+<body>
+
+  <!-- CSS-only bilingual toggle, Hebrew default — same mechanism as every other screen -->
+  <input type="radio" name="lang" id="lang-he" class="lang-radio" checked>
+  <input type="radio" name="lang" id="lang-en" class="lang-radio">
+
+  <div class="app">
+
+    <!-- No .app-nav: a standalone error screen cannot know whether there is a session -->
+    <div class="lang-switch" role="group" aria-label="Language / שפה">
+      <svg class="lang-switch__globe" width="15" height="15" viewBox="0 0 24 24"
+           fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+        <circle cx="12" cy="12" r="9"/>
+        <path d="M3 12h18M12 3c2.5 2.7 2.5 15.3 0 18M12 3c-2.5 2.7-2.5 15.3 0 18"/>
+      </svg>
+      <label for="lang-he" class="lang-switch__btn">עב</label>
+      <span class="lang-switch__sep" aria-hidden="true"></span>
+      <label for="lang-en" class="lang-switch__btn">EN</label>
+    </div>
+
+    <main class="err">
+      <section class="err__card">
+
+        <span class="reg-mark reg-mark--tl" aria-hidden="true"></span>
+        <span class="reg-mark reg-mark--br" aria-hidden="true"></span>
+        <span class="crosshair crosshair--a" aria-hidden="true"></span>
+        <span class="crosshair crosshair--b" aria-hidden="true"></span>
+
+        <!-- Identity mark only, deliberately not a link: the screen has exactly one recovery action -->
+        <div class="err__brand">
+          <span class="err__brand-mark" aria-hidden="true">
+            <svg width="28" height="28" viewBox="0 0 40 40" fill="none">
+              <circle cx="8"  cy="20" r="6" fill="rgba(199,184,157,0.30)" stroke="rgba(35,56,77,0.92)" stroke-width="2"/>
+              <circle cx="32" cy="8"  r="6" fill="rgba(199,184,157,0.30)" stroke="rgba(35,56,77,0.92)" stroke-width="2"/>
+              <circle cx="32" cy="32" r="6" fill="rgba(199,184,157,0.30)" stroke="rgba(35,56,77,0.92)" stroke-width="2"/>
+              <line x1="14" y1="17" x2="26" y2="11" stroke="rgba(35,56,77,0.55)" stroke-width="1.5" stroke-dasharray="3 2"/>
+              <line x1="14" y1="23" x2="26" y2="29" stroke="rgba(35,56,77,0.55)" stroke-width="1.5" stroke-dasharray="3 2"/>
+              <line x1="32" y1="14" x2="32" y2="26" stroke="rgba(35,56,77,0.40)" stroke-width="1.5" stroke-dasharray="3 2"/>
+            </svg>
+          </span>
+          <span class="err__brand-name">FieldSync</span>
+        </div>
+
+        <!-- Digits are weak-directional; <bdi> keeps the numeral LTR inside the Hebrew layout -->
+        <p class="err__code"><bdi>404</bdi></p>
+
+        <h1 class="err__title">
+          <span class="he-text" dir="auto">הדף הזה אינו זמין</span>
+          <span class="en-text" dir="auto">This page isn’t available</span>
+        </h1>
+
+        <p class="err__lede">
+          <span class="he-text" dir="auto">לא הצלחנו להציג את הדף שביקשתם. אפשר לחזור לדף הבית ולהמשיך משם.</span>
+          <span class="en-text" dir="auto">We couldn’t display the page you asked for. You can return to your home dashboard and carry on from there.</span>
+        </p>
+
+        <div class="err__reasons">
+          <h2 class="err__reasons-title">
+            <span class="he-text" dir="auto">סיבות אפשריות</span>
+            <span class="en-text" dir="auto">Possible reasons</span>
+          </h2>
+          <!-- Neutral by design: none of these confirms whether the content exists or who may see it -->
+          <ul class="err__reasons-list">
+            <li>
+              <span class="he-text" dir="auto">הקישור שהגעתם דרכו כבר אינו עדכני</span>
+              <span class="en-text" dir="auto">The link you followed is no longer current</span>
+            </li>
+            <li>
+              <span class="he-text" dir="auto">הדף אינו זמין כעת, באופן זמני או קבוע</span>
+              <span class="en-text" dir="auto">The page is unavailable, temporarily or permanently</span>
+            </li>
+            <li>
+              <span class="he-text" dir="auto">לא ניתן להגיע לתוכן המבוקש כרגע</span>
+              <span class="en-text" dir="auto">The content requested cannot be reached right now</span>
+            </li>
+          </ul>
+        </div>
+
+        <!-- Single CTA. Home is the Personal dashboard, approved screen 5, not yet built -->
+        <a href="personal-dashboard.html" class="btn btn--primary err__cta">
+          <span class="he-text">חזרה לדף הבית</span>
+          <span class="en-text">Back to Home</span>
+        </a>
+
+      </section>
+    </main>
+
+  </div>
+
+  <!-- Shared across screens: remembers the language choice in localStorage -->
+  <script src="lang.js"></script>
+
+</body>
+</html>
