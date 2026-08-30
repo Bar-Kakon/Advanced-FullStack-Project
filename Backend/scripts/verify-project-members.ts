@@ -11,6 +11,7 @@ import { CompanyModel } from '../src/features/companies/company.model.js';
 import { CompanyMembershipModel } from '../src/features/companies/companyMembership.model.js';
 import { PermissionTemplateModel } from '../src/features/projectaccess/permissionTemplate.model.js';
 import { ProjectMembershipModel } from '../src/features/projectaccess/projectMembership.model.js';
+import { effectiveProjectPermissions } from '../src/features/projectaccess/projectPermission.js';
 import { ProjectModel } from '../src/features/projects/project.model.js';
 import { BlockModel } from '../src/features/blocks/block.model.js';
 import { cleanUp, createAccount } from './support/accounts.js';
@@ -118,10 +119,14 @@ const run = async (): Promise<void> => {
   check(list.invitations.length === 0, 'And nothing is pending');
   check(list.viewer.canInvite && list.viewer.canManageMembers && list.viewer.canGrantPermissions,
     'The creator may invite, manage and grant');
-  check(list.allPermissions.length === 10, 'The permission vocabulary is served', list.allPermissions.length);
+  check(list.allPermissions.length === 11, 'The permission vocabulary is served', list.allPermissions.length);
   check(
     list.allPermissions.includes('project.stage.manage'),
     'including the sequencing grant, which is its own capability and not part of project.edit',
+  );
+  check(
+    list.allPermissions.includes('schedule.partial_release.manage'),
+    'and partial release, which is its own capability and not schedule.exception.approve',
   );
   check(list.allRoles.includes('subcontractor'), 'And the role vocabulary');
 
@@ -357,7 +362,13 @@ const run = async (): Promise<void> => {
   });
   const fullRow = await ProjectMembershipModel.findById(bobGrantId).lean().exec();
   check(fullRow?.fullAuthority === true, 'The flag is set');
-  check(fullRow?.permissions.length === 1, 'The stored list is NOT expanded to all nine', fullRow?.permissions.length);
+  check(fullRow?.permissions.length === 1, 'The stored list is NOT expanded to all of them', fullRow?.permissions.length);
+  // A code added after a grant was made must still be covered by it — that is what the flag means.
+  check(
+    effectiveProjectPermissions({ fullAuthority: true, permissions: [] })
+      .includes('schedule.partial_release.manage'),
+    'Full Project Authority covers partial release without it ever being listed',
+  );
   const fullInvites = await request(baseUrl, 'POST', `/api/projects/${p1}/members`, {
     token: bob.token,
     json: { userId: dan.userId.toString(), projectRole: 'professional' },

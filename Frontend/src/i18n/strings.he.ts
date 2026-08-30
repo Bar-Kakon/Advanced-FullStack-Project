@@ -459,6 +459,7 @@ export const he = {
       'task.create': 'יצירת משימות',
       'task.assign': 'שיוך משימות',
       'schedule.exception.approve': 'אישור חריגים בלוח',
+      'schedule.partial_release.manage': 'שחרור חלקי של עבודה להמשך',
     },
 
     roles: {
