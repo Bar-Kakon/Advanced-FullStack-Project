@@ -19,6 +19,7 @@ const FORBIDDEN_KEYS = [
   'passwordHash',
   'password',
   'passwordChangedAt',
+  'tokenVersion',
   'refreshToken',
   'refreshTokens',
   'resetToken',

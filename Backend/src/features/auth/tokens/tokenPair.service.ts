@@ -7,9 +7,16 @@ export interface TokenPair {
   readonly refreshToken: string;
 }
 
+export interface IssueTokenPair {
+  readonly userId: string;
+  /** Stamped on the Access Token, so a later increment retires everything issued before it. */
+  readonly tokenVersion: number;
+  /** Omit to open a new session; pass one to continue the chain a login already opened. */
+  readonly family?: string;
+}
+
 export interface TokenPairService {
-  /** Omit `family` to open a new session; pass one to continue the chain a login already opened. */
-  issue(userId: string, family?: string): Promise<TokenPair>;
+  issue(input: IssueTokenPair): Promise<TokenPair>;
 }
 
 export interface TokenPairDependencies {
@@ -29,7 +36,7 @@ export const createTokenPairService = ({
   refreshTokens,
   refreshTokenStore,
 }: TokenPairDependencies): TokenPairService => ({
-  async issue(userId, family) {
+  async issue({ userId, tokenVersion, family }) {
     const refresh = refreshTokens.issue(userId, family);
 
     await refreshTokenStore.save({
@@ -39,6 +46,6 @@ export const createTokenPairService = ({
       expiresAt: refresh.expiresAt,
     });
 
-    return { accessToken: accessTokens.issue(userId), refreshToken: refresh.token };
+    return { accessToken: accessTokens.issue(userId, tokenVersion), refreshToken: refresh.token };
   },
 });

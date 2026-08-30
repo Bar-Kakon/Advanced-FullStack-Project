@@ -5,12 +5,19 @@
 export const ACCESS_TOKEN_PURPOSE = 'access';
 export const REFRESH_TOKEN_PURPOSE = 'refresh';
 
+import { INITIAL_TOKEN_VERSION } from '../../users/user.model.js';
+
 export interface AccessTokenClaims {
   readonly sub: string;
   readonly typ: typeof ACCESS_TOKEN_PURPOSE;
-  /** Issued-at, in whole seconds. Read to reject tokens minted before a credential change. */
+  /** Issued-at, in whole seconds. Audit only; it decides nothing about validity. */
   readonly iat: number;
+  /** The account's token version when this token was minted. Absent on tokens predating the claim. */
+  readonly ver?: number;
 }
+
+export const accessTokenVersionOf = (claims: AccessTokenClaims): number =>
+  claims.ver ?? INITIAL_TOKEN_VERSION;
 
 export interface RefreshTokenClaims {
   readonly sub: string;

@@ -2,6 +2,7 @@ import { Types } from 'mongoose';
 
 import type { DbSession } from '../../db/mongoose.js';
 import {
+  INITIAL_TOKEN_VERSION,
   UserModel,
   type DrillingType,
   type HeavyEquipment,
@@ -19,7 +20,7 @@ import {
   type UserWithPasswordHash,
 } from './user.model.js';
 
-const IDENTITY_FIELDS = 'email status firstName lastName language profileComplete security.passwordChangedAt';
+const IDENTITY_FIELDS = 'email status firstName lastName language profileComplete security.passwordChangedAt security.tokenVersion';
 
 /**
  * Everything the profile screens read, and nothing else. `passwordHash` is `select: false` and is
@@ -75,7 +76,8 @@ export interface ProfileUpdate {
 /** What a protected route needs to know about a token holder, and nothing more. */
 export interface CredentialState {
   readonly status: UserStatus;
-  readonly passwordChangedAt: Date | null;
+  /** The version every Access Token for this account must carry to be accepted. */
+  readonly tokenVersion: number;
 }
 
 export interface TravelPreferencesUpdate {
@@ -137,18 +139,24 @@ export const userRepository: UserRepository = {
     if (!Types.ObjectId.isValid(id)) return null;
 
     const found = await UserModel.findById(id)
-      .select('status security.passwordChangedAt')
-      .lean<{ status: UserStatus; security?: { passwordChangedAt?: Date } }>()
+      .select('status security.tokenVersion')
+      .lean<{ status: UserStatus; security?: { tokenVersion?: number } }>()
       .exec();
 
     if (found === null) return null;
-    return { status: found.status, passwordChangedAt: found.security?.passwordChangedAt ?? null };
+    return {
+      status: found.status,
+      tokenVersion: found.security?.tokenVersion ?? INITIAL_TOKEN_VERSION,
+    };
   },
 
   async updatePassword(id, { passwordHash, passwordChangedAt }, session) {
     const query = UserModel.updateOne(
       { _id: id },
-      { $set: { passwordHash, 'security.passwordChangedAt': passwordChangedAt } },
+      {
+        $set: { passwordHash, 'security.passwordChangedAt': passwordChangedAt },
+        $inc: { 'security.tokenVersion': 1 },
+      },
     );
     if (session) query.session(session);
     await query.exec();

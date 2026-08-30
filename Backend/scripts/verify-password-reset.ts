@@ -265,11 +265,15 @@ const run = async (): Promise<void> => {
   check('the new password works', withNew.status === 200 && !!withNew.body['accessToken']);
 
   console.log('\nACCESS TOKEN INVALIDATION — a signature is no longer sufficient');
-  const changedAt = (await UserModel.findById(userId).select('security.passwordChangedAt').lean())
-    ?.security?.passwordChangedAt as Date | undefined;
-  check('the reset stamped security.passwordChangedAt', !!changedAt, String(changedAt));
-  check('it is stored on a whole second, matching the unit `iat` uses',
-    !!changedAt && changedAt.getTime() % 1000 === 0);
+  const security = (await UserModel.findById(userId).select('security').lean())?.security as
+    | { passwordChangedAt?: Date; tokenVersion?: number }
+    | undefined;
+  check('the reset advanced security.tokenVersion past the initial version',
+    (security?.tokenVersion ?? 0) > 0, String(security?.tokenVersion));
+  check('security.passwordChangedAt is still stamped, as security history',
+    !!security?.passwordChangedAt, String(security?.passwordChangedAt));
+  check('nothing rounds that stamp any more — it is no longer compared against a token',
+    !!security?.passwordChangedAt && security.passwordChangedAt.getTime() <= Date.now());
   check('Access Token A is rejected immediately after the reset', (await getHealthAuth(tokenA)) === 401);
   const tokenB = withNew.body['accessToken'] as string;
   check('Access Token B, minted after the reset, works', (await getHealthAuth(tokenB)) === 200);

@@ -4,6 +4,7 @@ import type { CredentialState } from '../users/user.repository.js';
 import { unauthenticated } from './auth.errors.js';
 import { isSessionPermitted } from './auth.service.js';
 import type { AccessTokenService } from './tokens/accessToken.service.js';
+import { accessTokenVersionOf, type AccessTokenClaims } from './tokens/token.types.js';
 
 const BEARER_PREFIX = 'Bearer ';
 
@@ -24,13 +25,11 @@ const readBearerToken = (header: string | undefined): string | null => {
 };
 
 /**
- * Both sides are whole seconds: `iat` is, and `passwordChangedAt` is stored truncated to match.
- * A token from any earlier second is dead. One minted in the same second as the reset survives —
- * the granularity of `iat` is what limits this, and rounding the other way would instead reject
- * the token Login mints moments after a reset.
+ * Integer equality, so no clock is consulted and no two events can share a tick. A token carrying
+ * no `ver` reads as the initial version, which is what an account that has never reset sits at.
  */
-const issuedBeforePasswordChange = (issuedAtSeconds: number, passwordChangedAt: Date | null): boolean =>
-  passwordChangedAt !== null && issuedAtSeconds * 1000 < passwordChangedAt.getTime();
+const carriesCurrentVersion = (claims: AccessTokenClaims, current: number): boolean =>
+  accessTokenVersionOf(claims) === current;
 
 /**
  * Answers one question — *who is making this request?* — and stops there. It resolves no roles, no
@@ -43,8 +42,8 @@ const issuedBeforePasswordChange = (issuedAtSeconds: number, passwordChangedAt: 
  * A valid signature is necessary and no longer sufficient. An Access Token is stateless, so
  * nothing that happens to the account can reach one already in circulation — so every accepted
  * token is checked against the account's current state: it must still be permitted a session, by
- * the same `isSessionPermitted` rule Login and Refresh apply, and it must not predate the last
- * password change. That costs one indexed lookup per authenticated request.
+ * the same `isSessionPermitted` rule Login and Refresh apply, and it must carry the account's
+ * current token version. That costs one indexed lookup per authenticated request.
  */
 export const createRequireAccessToken = (
   accessTokens: AccessTokenService,
@@ -66,12 +65,12 @@ export const createRequireAccessToken = (
     void users
       .findCredentialState(claims.sub)
       .then((state) => {
-        // No such account, an account no longer permitted a session, or a token predating the
-        // current password: none of the three may proceed.
+        // No such account, an account no longer permitted a session, or a token retired by a
+        // credential change: none of the three may proceed.
         if (
           state === null ||
           !isSessionPermitted(state) ||
-          issuedBeforePasswordChange(claims.iat, state.passwordChangedAt)
+          !carriesCurrentVersion(claims, state.tokenVersion)
         ) {
           next(unauthenticated());
           return;
