@@ -1,10 +1,11 @@
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
+import { BrowserRouter, Route, Routes } from 'react-router-dom';
 
 import { AuthProvider } from './auth/AuthContext';
 import { LanguageProvider } from './i18n/LanguageContext';
 import { PrivateRoute } from './routes/PrivateRoute';
 import { MembershipRoute } from './routes/MembershipRoute';
 import { LandingPage } from './features/landing/LandingPage';
+import { NotFoundPage } from './features/errors/NotFoundPage';
 import { LoginPage } from './features/login/LoginPage';
 import { ForgotPasswordPage } from './features/password-reset/ForgotPasswordPage';
 import { ResetPasswordPage } from './features/password-reset/ResetPasswordPage';
@@ -79,10 +80,10 @@ export const App = () => (
             </Route>
           </Route>
 
-          {/* No 404 screen is migrated yet — approved screen #28 exists as a static prototype
-              only — so an unknown address is sent to the authentication boundary rather than to a
-              page this application would have to invent. */}
-          <Route path="*" element={<Navigate to="/login" replace />} />
+          {/* Outside `PrivateRoute` on purpose: an unmatched address is not an authentication
+              failure, so it is answered rather than redirected. A signed-out visitor and a signed-in
+              one both see the same neutral screen, and neither is sent to Login. */}
+          <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>

@@ -762,7 +762,7 @@ _Later stages live in the [Roadmap](#4-roadmap-stages); we'll expand the next on
 | Admin: users / reports / stats | 7 | Planned | Effectively a second app — late |
 | Report submission (user side) | 7 | Planned | |
 | Rules engine (My rules + rule editor) | 7 | Planned | **Stretch** |
-| 404 Not Found (unmatched routes) | any | In progress | Approved screen **#28**. Static HTML/CSS on `feature/error-screens` (`screens/404.html` + `screens/error.css`, `afff980`). **Standalone — deliberately no `.app-nav`**, because an unmatched route is reachable signed-out and a navbar carrying a notifications bell and a profile chip would be wrong for half the people who see it. **Copy is neutral by requirement:** *This page isn't available*, three possible reasons phrased as possibilities, and nothing that confirms whether the content exists, never existed, or is merely forbidden — so the same screen can absorb a 403 if [D16](#7-open-decisions) closes that way. **No technical routing detail is shown** — no failed URL, no pathname, no debug data. **One CTA only**, *Back to Home* → the Personal dashboard; the FieldSync logo is deliberately not a link, so there is exactly one recovery path. No "go back" control, because `history.back()` is JavaScript. **Filenames reserved here for screens not yet built:** `personal-dashboard.html` = Personal dashboard (#5), `project-dashboard.html` = Project dashboard (#13). The stylesheet is `error.css`, not `404.css`, so a later 403 / 500 reuses it instead of forking another copy of the palette |
+| 404 Not Found (unmatched routes) | any | In progress | Approved screen **#28**. Static HTML/CSS on `feature/error-screens` (`screens/404.html` + `screens/error.css`, `afff980`). **Standalone — deliberately no `.app-nav`**, because an unmatched route is reachable signed-out and a navbar carrying a notifications bell and a profile chip would be wrong for half the people who see it. **Copy is neutral by requirement:** *This page isn't available*, three possible reasons phrased as possibilities, and nothing that confirms whether the content exists, never existed, or is merely forbidden — so the same screen can absorb a 403 if [D16](#7-open-decisions) closes that way. **No technical routing detail is shown** — no failed URL, no pathname, no debug data. **One CTA only**, *Back to Home* → the Personal dashboard; the FieldSync logo is deliberately not a link, so there is exactly one recovery path. No "go back" control, because `history.back()` is JavaScript. **Filenames reserved here for screens not yet built:** `personal-dashboard.html` = Personal dashboard (#5), `project-dashboard.html` = Project dashboard (#13). The stylesheet is `error.css`, not `404.css`, so a later 403 / 500 reuses it instead of forking another copy of the palette **2026-08-30 — migrated to React on `feature/404-react` (not merged), and the router's fallback stopped being Login.** `<Route path="*">` rendered `<Navigate to="/login">` **only because no 404 screen was migrated**, which sent an authenticated person with a typo in the address to the authentication boundary — the same trap [§8](#8-known-issues--risks) records for a contractor card and for the disabled Settings entry. It is now `NotFoundPage`, placed **outside `PrivateRoute`**: an unmatched address is not an authentication failure, so it is **answered rather than redirected**, and the address the visitor typed stays in the bar. **Signed-out and signed-in viewers see the same neutral screen.** The stylesheet is the approved `error.css` with only its bilingual declarations changed. **The recovery CTA is reconciled with real routing:** `personal-dashboard.html` is not a route, so an authenticated viewer's single CTA is `destinationFor(user)` — the app's one answer to where a session belongs, which is `/dashboard`, `/onboarding/employees` or `/waiting-for-approval`. **Owner decision, 2026-08-30: a signed-out viewer's recovery is the Landing screen at `/`**, not Login — `/` is the real public Home, a lost visitor must not be pushed into a credentials form, and the prototype always intended **one** Home recovery action. So the screen carries **one CTA and one label**, `חזרה לדף הבית` / *Back to Home*, for both viewer states; the temporary `מעבר לכניסה` / *Go to sign-in* string is deleted. **This makes Landing a merge-order dependency:** the 404 must not reach develop before `/` is a route. **`<meta name="robots" content="noindex">` is restored** for the life of the screen, which a single-page application has to add and remove itself. **One UX residue is flagged rather than decided** — see the entry in [§8](#8-known-issues--risks). Verified by `verify:404-ui`, **46 checks** |
 
 ---
 
@@ -839,12 +839,22 @@ no further action.
   waiting on, not an open product question — except where marked.
 
   - **Settings screen is not built.** The account menu carries a Settings entry, deliberately **disabled**. It cannot be
-    pointed anywhere: `/settings` is not a route and the catch-all sends unknown paths to `/login`, which would log an
-    authenticated person out.
+    pointed anywhere: `/settings` is not a route and the catch-all sent unknown paths to `/login`, which would log an
+    authenticated person out. ~~*(the catch-all half)*~~ **Half of this is gone as of 2026-08-30
+    (`feature/404-react`, not merged):** the catch-all now renders the 404 screen and **redirects nobody**, so an
+    authenticated person who reaches `/settings` sees a neutral page and keeps their session. The entry stays disabled,
+    because the screen still does not exist — but the trap under it is closed.
   - **The navbar chip shows initials even when the person uploaded a photo**, because `SessionUser` — what Login and
     `/auth/me` return — carries no `avatarUrl`. Cosmetic, and the fix is a payload field rather than a screen change.
   - **Minimum flexibility cannot be built** until [D6](#7-open-decisions)'s arithmetic exists. The approved static Browse
     screen has the control; React deliberately does not. **This one is a genuine open decision, not just a dependency.**
+  - ~~**Where a signed-out viewer's 404 recovery should lead is not decided**~~ — **CLOSED by owner decision the same
+    day (2026-08-30).** It is the **Landing screen at `/`**, not Login. An authenticated viewer keeps
+    `destinationFor(user)`, which is the app's own answer and needed no new rule. The interim `/login` was shipped only
+    because Landing did not yet exist on that branch, and it forced a second label; both are gone, and the screen is
+    back to **one CTA and one label** in both viewer states, which is what the static prototype always expressed. **It
+    leaves a merge-order dependency rather than a question:** `feature/404-react` must not reach develop before `/` is
+    a route, or the recovery would land on the 404 itself.
   - **Browse's Sort control was approved on the prototype and had not been migrated.** Found on 2026-08-29 while
     checking that nothing unique was stranded in the static files before deleting them, and recorded here **before**
     `browse-contractors.html` was removed. The prototype offered four options — `רלוונטיות` / *Relevance*,
@@ -1448,6 +1458,18 @@ list stay empty: `0 options`, `none`. In one run the browser console also carrie
 `Access to fetch at 'https://places.googleapis.com/v1/places:autocomplete' … blocked by CORS
 policy: No 'Access-Control-Allow-Origin' header` and `net::ERR_FAILED`.
 
+**Seen again 2026-08-30**, during the `feature/404-react` regression run, in three suites at once and
+in both of its shapes. `verify:integrated` reported it directly —
+`FAIL  Browse Places autocomplete returns live results   0 options` and
+`FAIL  Hebrew UI returns Hebrew place names   none`. `verify:projects-ui` and `verify:members-ui`
+hit the *consequence* rather than the symptom: with no suggestion to click, no place is selected,
+Register's Step 1 never completes, and Playwright times out on
+`<button disabled type="submit" id="register-next">` after 30 seconds — a failure whose message
+names the button and says nothing about Google at all, which is worth knowing before somebody reads
+it as a Register defect. **All three passed on an immediate rerun with no change to any code**, on
+the same key and the same machine. The same shape had already cost a `verify:my-tasks-ui` run
+earlier the same day. **Nothing was altered to make them pass, and no sleep was added.**
+
 **Suites affected.** `verify:integrated` — the four checks in *Browse Places autocomplete* and
 *Places localization* — and `verify:create-task-ui` on one occasion, through its shared registration
 helper.
@@ -1617,7 +1639,7 @@ half, so `completedAt` remains the stored record that both were satisfied.
 - Symptom: *Manage in My network* on a contractor card sent a signed-in user to the login screen.
 - Cause: a router `<Link to="/network">`, but `/network` is not a route — the catch-all redirects unknown paths to `/login`.
 - Fix: the same `#` treatment the navbar already uses for unmigrated destinations.
-- Notes: it recurred as a design question one day later for the account menu's **Settings** entry, and was answered the same way: **disabled with a reason beats a link to a route that does not exist.**
+- Notes: it recurred as a design question one day later for the account menu's **Settings** entry, and was answered the same way: **disabled with a reason beats a link to a route that does not exist.** **2026-08-30 — the cause underneath both is gone** (`feature/404-react`, not merged): the catch-all no longer redirects at all, it renders the 404 screen, and an authenticated person reaching an unknown address keeps their session. The two `#` treatments stay, because a control that goes nowhere should still say so rather than lead somebody to a dead end — but they are now a courtesy rather than a defence.
 
 ### [2026-08-29] Google Places answered in English while the interface was in Hebrew
 - Symptom: place suggestions came back as `Haifa` with the app in Hebrew, and stale results from the previous language stayed on screen after switching.
@@ -1839,6 +1861,19 @@ My projects, and a row that acts inside an `Invited` project fails.
 >
 > **Format:** `[YYYY-MM-DD] What changed — why.`
 
+- `[2026-08-30]` **404 migrated to React, and an unknown address stopped being treated as a sign-in problem.** Built on `feature/404-react`. **Not merged.** A migration of approved screen #28, not a redesign, and **no 403 feature was invented alongside it.**
+
+  **The routing correction is the substance.** `<Route path="*">` rendered `<Navigate to="/login">`, and the code comment said why: *no 404 screen is migrated yet*. So a **typo in an address signed-in people were already using sent them to the authentication boundary** — the same trap [§8](#8-known-issues--risks) records for a contractor card and for the disabled Settings entry, still live at the router level. The catch-all now renders `NotFoundPage`, and it sits **outside `PrivateRoute`** deliberately: an unmatched address is not an authentication failure. Nothing redirects, so the address stays in the bar, **a signed-out visitor sees the screen** and **an authenticated one sees the same screen and keeps their session**.
+
+  **The privacy stance is preserved, and it is the reason the copy is dull.** The screen never says whether the thing asked for never existed, was removed, or is simply not this viewer's to see — which is the same answer the backend gives under [D16](#7-open-decisions), and it only holds if both ends keep it. It renders **no failed address, no pathname, no authorization state, no debug detail and no stack**. The three reasons stay phrased as possibilities, so the same screen can still absorb a 403 if D16 closes that way.
+
+  **The recovery action, reconciled with real routing rather than kept as a filename.** The prototype pointed at `personal-dashboard.html`, which is not a route. There is still exactly **one** CTA — the brand mark is deliberately not a link, and no second control was added because React makes it easy. Authenticated, it is **`destinationFor(user)`**, the app's single existing answer to where a session belongs (`/dashboard`, `/onboarding/employees` or `/waiting-for-approval`), so the screen invents no destination of its own. **Signed out it is `/` — the Landing screen — by owner decision on 2026-08-30**, closing what this entry originally left open. The reasoning: `/` is now the real public Home; a visitor who is simply lost should not be handed a credentials form for an account they may not have; and the static prototype always expressed **one** Home recovery. **One CTA, one label, both states** — the interim `Go to sign-in` string existed only because Landing had not been built, and is deleted.
+
+  **The residue, flagged rather than decided.** No approved rule says where a **signed-out** viewer's recovery should lead. `/login` is chosen because it is the one public destination that currently exists, and it is a defensible default rather than a decision — see the [§8](#8-known-issues--risks) entry. **This is an owner question, and it becomes a live one the moment the Landing screen is migrated.**
+
+  **Also restored:** `<meta name="robots" content="noindex">`, which the static document carried in its head and a single-page application has to add and remove for the life of the screen.
+
+  **Verification.** `verify:404-ui`, **46 checks**: four unmatched addresses signed out and the same four signed in, each staying at its own URL and rendering the card; no session created and none destroyed; the failed address absent from the page; no disclosing or debug wording in either language; one CTA only; the signed-out CTA reaching `/` and the signed-in CTA reaching the session's own home with no redirect and no loop, both under the same label; both languages with the root `dir` and the computed direction; `noindex` present; no uncaught page error; and zero horizontal overflow at 1280 / 1024 / 640 / 390px. Frontend typecheck and `vite build` both clean. **Owner manual QA remains pending.**
 - `[2026-08-30]` **Landing migrated to React, and the application finally answers at `/`.** Built on `feature/landing-page-react`. **Not merged.** A migration of approved screen #1, not a redesign.
 
   **What it changes about routing.** `/` was an unmatched address that fell through the catch-all to Login. It is now the Landing screen, **public, and it redirects nobody** — not a signed-out visitor, and not an authenticated one either, because no approved rule says a public page should turn a signed-in person away and inventing one is not this batch's job. It carries its own `.site-nav`, never `AppNav`: no bell, no account chip, nothing that implies a session.

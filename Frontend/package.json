@@ -27,7 +27,8 @@
     "verify:task-detail-ui": "node scripts/verify-task-detail-ui.mjs",
     "verify:create-task-ui": "node scripts/verify-create-task-ui.mjs",
     "verify:register-ui": "node scripts/verify-register-ui.mjs",
-    "verify:landing-ui": "node scripts/verify-landing-ui.mjs"
+    "verify:landing-ui": "node scripts/verify-landing-ui.mjs",
+    "verify:404-ui": "node scripts/verify-404-ui.mjs"
   },
   "devDependencies": {
     "@types/react": "^19.2.18",
