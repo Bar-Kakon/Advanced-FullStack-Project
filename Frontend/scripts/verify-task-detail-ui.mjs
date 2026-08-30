@@ -161,12 +161,14 @@ const run = async () => {
   check('It offers the private organisation panel', (await sub.locator('#private-title').count()) === 1);
   check('And the delegation panel', (await sub.locator('#delegation-title').count()) === 1);
 
-  section('4. The date-change entry point is honest');
-  check('The screen says the mechanism is not built',
-    detail.includes('מנגנון שינוי התאריכים עדיין לא נבנה'));
-  check('And offers no request control',
-    (await sub.locator('button', { hasText: 'בקשה לשינוי תאריך' }).count()) === 0);
-  check('No affected-task count is invented', !/משימות מושפעות: \d/.test(detail));
+  section('4. The date-change entry point is real');
+  check('The not-built notice is gone', !detail.includes('עדיין לא נבנה'));
+  check('The request panel is offered to the responsible party',
+    (await sub.locator('.date-change').count()) === 1);
+  check('It says plainly that asking does not move the schedule',
+    detail.includes('אינה משנה את הלוח בעצמה'));
+  check('And the reach of a change here is a real figure, not an invented one',
+    /נוגע(ת)? גם ב־\d|אינו נוגע/.test(detail));
 
   section('5. The private execution layer');
   await sub.selectOption('#private-kind', 'subtask');

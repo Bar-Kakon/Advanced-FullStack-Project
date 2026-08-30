@@ -283,12 +283,35 @@ const run = async (): Promise<void> => {
   });
   check(foreignTick.status === 404, 'Nobody else can touch another person’s private item', foreignTick.status);
 
-  section('The date-change entry point is honest');
-  check(view.rescheduleAvailable === false, 'The cascade domain reports itself unavailable');
-  check(view.rescheduleImpact === null, 'And no impact figure is invented', view.rescheduleImpact);
-  check(view.viewer.canRequestDateChange === false, 'So the control is not offered');
-  const dateChange = await request(baseUrl, 'POST', `/api/tasks/${taskId}/date-change`, { token: sub.token });
-  check(dateChange.status === 503, 'And calling it says so rather than accepting a request', dateChange.status);
+  section('The date-change entry point is real');
+  check(view.rescheduleAvailable === true, 'The cascade domain answers for itself now');
+  check(typeof view.rescheduleImpact === 'number' && view.rescheduleImpact >= 0,
+    'And the impact figure is computed rather than invented', view.rescheduleImpact);
+  check(view.viewer.canRequestDateChange === true,
+    'The responsible party is offered the control');
+
+  const emptyChange = await request(baseUrl, 'POST', `/api/tasks/${taskId}/date-change`, {
+    token: sub.token, json: {},
+  });
+  check(emptyChange.status === 400,
+    'A request that asks for no change at all is refused', emptyChange.status);
+
+  const realChange = await request(baseUrl, 'POST', `/api/tasks/${taskId}/date-change`, {
+    token: sub.token, json: { deltaWorkingDays: 2 },
+  });
+  check(realChange.status === 201, 'and a real one is accepted', realChange.status);
+  const raised = (realChange.body as { proposal: { status: string; id: string } }).proposal;
+  check(raised.status === 'requested',
+    'as a request the authority still has to launch, not a committed change', raised.status);
+  const untouched = await TaskModel.findById(taskId).lean().exec();
+  check(untouched?.dueDate.getTime() === task.dueDate.getTime(),
+    'and the task date did not move by asking');
+
+  const outsiderChange = await request(baseUrl, 'POST', `/api/tasks/${taskId}/date-change`, {
+    token: outsider.token, json: { deltaWorkingDays: 2 },
+  });
+  check(outsiderChange.status === 404,
+    'somebody with no standing on the work cannot raise one at all', outsiderChange.status);
 
   section('Ending a delegation returns responsibility to the delegator');
   const ended = await request(baseUrl, 'DELETE', `/api/tasks/${taskId}/delegation`, { token: sub.token });

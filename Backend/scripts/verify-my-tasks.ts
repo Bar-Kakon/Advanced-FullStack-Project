@@ -290,10 +290,10 @@ const run = async (): Promise<void> => {
   check(pages === 3, 'A 30-row queue pages in three requests at limit 10', pages);
   check(seen.size === 30, 'Every row is seen exactly once — no repeats and no gaps', seen.size);
 
-  section('No proposal data is invented');
+  section('The proposal marker answers from the real domain');
   const anyRow = (await listFor(sub.token)).tasks[0];
-  check(anyRow?.pendingProposal === null,
-    'The proposal marker is null while that domain does not exist — never a false',
+  check(anyRow?.pendingProposal === false,
+    'With nothing waiting on this viewer the marker is a real false, not a null guess',
     anyRow?.pendingProposal);
 
   const companies = [gc.companyId, sub.companyId, delegate.companyId, stranger.companyId];
