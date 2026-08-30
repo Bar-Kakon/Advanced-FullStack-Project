@@ -392,6 +392,7 @@ export const en: Strings = {
       revoke: 'Revoke',
       none: 'No individual permissions set.',
       revoked: 'Revoked',
+      declined: 'Invitation declined',
       invited: 'Invitation awaiting an answer',
       you: 'Your access',
     },

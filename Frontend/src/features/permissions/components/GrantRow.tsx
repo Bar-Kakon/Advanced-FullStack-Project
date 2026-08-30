@@ -28,6 +28,8 @@ export const GrantRow = ({
   const [confirming, setConfirming] = useState(false);
 
   const isViewer = grant.userId === viewerUserId;
+  // A refused or withdrawn grant is history. Editing it would suggest an authority nobody holds.
+  const inactive = grant.status === 'removed' || grant.status === 'declined';
 
   const togglePermission = (permission: ProjectPermission) =>
     onSetPermissions(
@@ -44,6 +46,9 @@ export const GrantRow = ({
         {isViewer ? <span className="perm-chip">{t.permissions.grants.you}</span> : null}
         {grant.status === 'removed' ? (
           <span className="perm-chip perm-chip--off">{t.permissions.grants.revoked}</span>
+        ) : null}
+        {grant.status === 'declined' ? (
+          <span className="perm-chip perm-chip--off">{t.permissions.grants.declined}</span>
         ) : null}
         {grant.status === 'invited' ? (
           <span className="perm-chip perm-chip--off">{t.permissions.grants.invited}</span>
@@ -63,7 +68,7 @@ export const GrantRow = ({
                 <input
                   type="checkbox"
                   checked={grant.permissions.includes(permission)}
-                  disabled={busyId !== null || grant.status === 'removed'}
+                  disabled={busyId !== null || inactive}
                   onChange={() => togglePermission(permission)}
                 />
                 <span>{t.permissions.perms[permission]}</span>
@@ -75,7 +80,7 @@ export const GrantRow = ({
 
       {/* Your own row offers neither action: the server refuses both, and a control that always
           fails is worse than no control. */}
-      {grant.status === 'removed' || isViewer ? null : (
+      {inactive || isViewer ? null : (
         <div className="perm-grant__actions">
           {grant.fullAuthority ? (
             <button
