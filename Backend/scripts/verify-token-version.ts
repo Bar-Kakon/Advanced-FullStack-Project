@@ -114,6 +114,16 @@ const forge = (userId: string, claims: { iat: number; ver?: number }): string =>
     { expiresIn: config.tokens.accessTtlSeconds },
   );
 
+/**
+ * `exp` is supplied rather than derived, so an `iat` far in the past still leaves a live token —
+ * which is the only way to ask whether the old timestamp comparison is really out of the decision.
+ */
+const forgeWithLifetime = (userId: string, iat: number, ver: unknown): string =>
+  jwt.sign(
+    { sub: userId, typ: ACCESS_TOKEN_PURPOSE, iat, exp: Math.floor(Date.now() / 1000) + 900, ver },
+    SECRET,
+  );
+
 const storedVersion = async (userId: Types.ObjectId): Promise<number | undefined> =>
   (await UserModel.findById(userId).select('security.tokenVersion').lean().exec())?.security?.tokenVersion;
 
@@ -253,6 +263,53 @@ const run = async (): Promise<never> => {
   await UserModel.updateOne({ _id: one._id }, { $set: { status: 'active' } }).exec();
   check((await protectedStatus(baseUrl, sessionC.accessToken)) === 200,
     'restoring the status restores the very same token — no version was spent');
+
+  section('11. A stored record with no tokenVersion at all behaves as version 0');
+  // What an account written before this field existed actually looks like on disk.
+  await UserModel.updateOne({ _id: two._id }, { $unset: { 'security.tokenVersion': '' } }).exec();
+  check((await storedVersion(two._id)) === undefined, 'the field is genuinely absent from the document');
+  const nowSecond = Math.floor(Date.now() / 1000);
+  check((await protectedStatus(baseUrl, forge(two._id.toString(), { iat: nowSecond }))) === 200,
+    'a token with no ver claim is accepted against the absent field');
+  check((await protectedStatus(baseUrl, forge(two._id.toString(), { iat: nowSecond, ver: 0 }))) === 200,
+    'and so is an explicit ver 0');
+  check((await protectedStatus(baseUrl, forge(two._id.toString(), { iat: nowSecond, ver: 1 }))) === 401,
+    'while ver 1 is refused — the absent field is 0, not a wildcard');
+  const legacyLogin = await login(baseUrl, emailTwo, NEW_PASSWORD);
+  check(versionOf(legacyLogin.accessToken) === 0,
+    'Login against the absent field stamps 0', versionOf(legacyLogin.accessToken));
+  check((await resetPasswordTo(baseUrl, two._id, OLD_PASSWORD)) === 200, 'that account resets its password');
+  check((await storedVersion(two._id)) === 1,
+    '$inc on the absent field lands on 1, so no backfill is required', await storedVersion(two._id));
+  check((await protectedStatus(baseUrl, legacyLogin.accessToken)) === 401,
+    'and the token issued before that reset is now refused');
+
+  section('12. A malformed ver claim is refused rather than coerced');
+  const current = (await storedVersion(two._id)) ?? 0;
+  for (const [label, value] of [
+    ['a string', String(current)],
+    ['a float', current + 0.5],
+    ['null', null],
+    ['a boolean', true],
+    ['an object', { v: current }],
+  ] as const) {
+    check((await protectedStatus(baseUrl, forgeWithLifetime(two._id.toString(), nowSecond, value))) === 401,
+      `ver as ${label} is refused`);
+  }
+
+  section('13. passwordChangedAt is stored, and no longer decides anything');
+  const stamped = (await UserModel.findById(two._id).select('security.passwordChangedAt').lean().exec())
+    ?.security?.passwordChangedAt;
+  check(stamped instanceof Date, 'the reset still stamped it', String(stamped));
+  check(!!stamped && Date.now() - stamped.getTime() < 60_000,
+    'and it records this reset, not an older one', String(stamped));
+  // An hour before the last password change, carrying the current version. The old rule refused
+  // exactly this; the new rule has no reason to look at the clock at all.
+  const ancient = Math.floor(((stamped?.getTime() ?? Date.now()) - 60 * 60 * 1000) / 1000);
+  check((await protectedStatus(baseUrl, forgeWithLifetime(two._id.toString(), ancient, current))) === 200,
+    'a token whose iat predates the password change by an hour is ACCEPTED on a matching version');
+  check((await protectedStatus(baseUrl, forgeWithLifetime(two._id.toString(), ancient, current - 1))) === 401,
+    'and the same ancient token on the previous version is refused — the version is the whole rule');
 
   await wipe();
   return finish(harness);
