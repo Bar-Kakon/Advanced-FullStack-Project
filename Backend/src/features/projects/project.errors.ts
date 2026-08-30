@@ -25,3 +25,6 @@ export const overrunAllowanceImmutable = (): AppError =>
 /** Cancellation exists before work starts and nowhere else (D24). */
 export const projectAlreadyStarted = (): AppError =>
   new AppError('A project that has started cannot be cancelled.', 409, 'PROJECT_ALREADY_STARTED');
+
+export const calendarVersionMissing = (): AppError =>
+  new AppError('The company has no working calendar version to adopt.', 409, 'CALENDAR_VERSION_MISSING');

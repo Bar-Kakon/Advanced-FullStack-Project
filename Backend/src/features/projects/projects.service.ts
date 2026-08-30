@@ -1,12 +1,17 @@
 import { Types } from 'mongoose';
 
 import type { CompanyContext, CompanyContextService } from '../companies/companyContext.service.js';
+import type { CompanyCalendarRepository } from '../calendar/companyCalendar.repository.js';
+import { configOrDefault } from '../calendar/companyCalendar.repository.js';
+import { resolveEffectiveCalendar, type WorkingCalendarConfig } from '../calendar/workingCalendar.types.js';
+import type { ProjectAccessRepository } from '../projectaccess/projectAccess.repository.js';
 import {
+  requireActiveCompany,
   requireMayCreateProject,
-  requireMayManageProject,
-  requireMayReadProjects,
-  type ProjectAuthority,
+  requireProjectPermission,
+  resolveProjectAccess,
 } from './projectAuthorization.js';
+import { calendarVersionMissing } from './project.errors.js';
 import type { ProjectDto, ProjectPageDto } from './project.dto.js';
 import type { ProjectRecord, TargetChangeRecord } from './project.model.js';
 import type { ProjectCursor, ProjectRepository, ProjectUpdate } from './project.repository.js';
@@ -32,6 +37,9 @@ import type { CreateProjectBody, UpdateProjectBody } from './projects.validation
 
 export interface ProjectsService {
   create(userId: string, body: CreateProjectBody): Promise<ProjectDto>;
+  adoptCurrentCalendar(userId: string, projectId: string, keepOverrides: boolean): Promise<ProjectDto>;
+  setCalendarOverrides(userId: string, projectId: string, overrides: unknown): Promise<ProjectDto>;
+  outdatedCalendarCount(userId: string): Promise<number>;
   list(userId: string, limit: number, cursor?: string): Promise<ProjectPageDto>;
   getOne(userId: string, projectId: string): Promise<ProjectDto>;
   update(userId: string, projectId: string, body: UpdateProjectBody): Promise<ProjectDto>;
@@ -42,6 +50,8 @@ export interface ProjectsDependencies {
   readonly projects: ProjectRepository;
   readonly companyContext: CompanyContextService;
   readonly execution: ProjectExecutionPort;
+  readonly calendars: CompanyCalendarRepository;
+  readonly access: ProjectAccessRepository;
 }
 
 const encodeCursor = ({ createdAt, id }: ProjectCursor): string =>
@@ -60,11 +70,23 @@ const decodeCursor = (raw: string | undefined): ProjectCursor | null => {
   }
 };
 
-const toDto = (project: ProjectRecord): ProjectDto => ({
+const toDto = (project: ProjectRecord, baseConfig?: WorkingCalendarConfig): ProjectDto => ({
   id: project._id.toString(),
   companyId: project.company.toString(),
   name: project.name,
   description: project.description ?? null,
+  projectType: project.projectType,
+  projectTypeOther: project.projectTypeOther ?? null,
+  size: project.size,
+  calendar: {
+    versionId: project.calendarVersion.toString(),
+    overrides: project.calendarOverrides ?? null,
+    effective:
+      baseConfig === undefined
+        ? null
+        : resolveEffectiveCalendar(baseConfig, project.calendarOverrides),
+    adoptionCount: project.calendarAdoptions.length,
+  },
   location: {
     place: project.location?.place ?? null,
     city: project.location?.city ?? null,
@@ -91,24 +113,55 @@ export const createProjectsService = ({
   projects,
   companyContext,
   execution,
+  calendars,
+  access,
 }: ProjectsDependencies): ProjectsService => {
   /** The caller's company is read from their session, never from the request body. */
-  const authorityFor = async (
-    userId: string,
-    require: (context: CompanyContext | null) => ProjectAuthority,
-  ) => require(await companyContext.forUser(userId));
+  const contextFor = async (userId: string) => {
+    const context = await companyContext.forUser(userId);
+    return { context, authority: requireActiveCompany(context, userId) };
+  };
 
-  const load = async (userId: string, projectId: string, require = requireMayReadProjects) => {
-    const context = await authorityFor(userId, require);
-    const project = await projects.findOwnedById(projectId, new Types.ObjectId(context.companyId));
-    // Another company's project, and one that never existed, answer identically (D16).
+  /**
+   * Loads a project the caller may reach, and works out what they may do with it. Not reachable and
+   * not existing answer identically (D16).
+   */
+  const load = async (userId: string, projectId: string) => {
+    const { context, authority } = await contextFor(userId);
+    const memberOf = await access.listActiveProjectIdsForUser(new Types.ObjectId(userId));
+
+    const project = await projects.findAccessibleById(
+      projectId,
+      new Types.ObjectId(authority.companyId),
+      memberOf,
+    );
     if (project === null) throw projectNotFound();
-    return { context, project };
+
+    const resolved = await resolveProjectAccess({
+      projectId: project._id,
+      projectCompany: project.company,
+      authority,
+      companyContext: context as CompanyContext,
+      access,
+    });
+
+    return { authority, project, resolved };
   };
 
   return {
     async create(userId, body) {
-      const context = await authorityFor(userId, requireMayCreateProject);
+      const context = requireMayCreateProject(await companyContext.forUser(userId), userId);
+
+      // A new project receives the contractor's schedule — pinned to the version current right now,
+      // so a later edit to the company default cannot reach back into it.
+      const current = await calendars.findCurrent(new Types.ObjectId(context.companyId));
+      const pinned =
+        current ??
+        (await calendars.append(
+          new Types.ObjectId(context.companyId),
+          configOrDefault(null),
+          new Types.ObjectId(userId),
+        ));
 
       const startDate = parseCalendarDate(body.startDate);
       const targetEndDate = parseCalendarDate(body.targetEndDate);
@@ -126,15 +179,21 @@ export const createProjectsService = ({
         // At creation the promise and the original are the same date, by definition.
         originalTargetEndDate: targetEndDate,
         overrunAllowanceDays: body.overrunAllowanceDays,
+        projectType: body.projectType,
+        ...(body.projectTypeOther ? { projectTypeOther: body.projectTypeOther } : {}),
+        size: body.size,
+        calendarVersion: pinned._id,
       });
 
       return toDto(created);
     },
 
     async list(userId, limit, cursor) {
-      const context = await authorityFor(userId, requireMayReadProjects);
-      const rows = await projects.listByCompany(
-        new Types.ObjectId(context.companyId),
+      const { authority } = await contextFor(userId);
+      const memberOf = await access.listActiveProjectIdsForUser(new Types.ObjectId(userId));
+      const rows = await projects.listAccessible(
+        new Types.ObjectId(authority.companyId),
+        memberOf,
         decodeCursor(cursor),
         limit + 1,
       );
@@ -142,7 +201,7 @@ export const createProjectsService = ({
       const page = rows.slice(0, limit);
       const last = page.at(-1);
       return {
-        projects: page.map(toDto),
+        projects: page.map((row) => toDto(row)),
         nextCursor:
           rows.length > limit && last !== undefined
             ? encodeCursor({ createdAt: last.createdAt, id: last._id })
@@ -152,14 +211,19 @@ export const createProjectsService = ({
 
     async getOne(userId, projectId) {
       const { project } = await load(userId, projectId);
-      return toDto(project);
+      const pinned = await calendars.findById(project.calendarVersion);
+      return toDto(project, configOrDefault(pinned));
     },
 
     async update(userId, projectId, body) {
-      const { project } = await load(userId, projectId, requireMayManageProject);
+      const { authority, project, resolved } = await load(userId, projectId);
+      requireProjectPermission(resolved, 'project.edit');
 
       const update: ProjectUpdate = {};
       if (body.name !== undefined) Object.assign(update, { name: body.name });
+      if (body.projectType !== undefined) Object.assign(update, { projectType: body.projectType });
+      if (body.projectTypeOther !== undefined) Object.assign(update, { projectTypeOther: body.projectTypeOther });
+      if (body.size !== undefined) Object.assign(update, { size: body.size });
       if (body.description !== undefined) Object.assign(update, { description: body.description });
       const clearLocation = body.location === null;
       if (body.location !== undefined && !clearLocation) {
@@ -186,7 +250,7 @@ export const createProjectsService = ({
             to: targetEndDate,
             overrunDaysFromOriginal: overrunFromOriginal(project.originalTargetEndDate, targetEndDate),
             changedAt: new Date(),
-            changedBy: new Types.ObjectId(userId),
+            changedBy: new Types.ObjectId(authority.userId),
           }
         : null;
 
@@ -195,8 +259,55 @@ export const createProjectsService = ({
       return toDto(updated);
     },
 
+    /** The only way a project moves to a newer company version. Never automatic. */
+    async adoptCurrentCalendar(userId, projectId, keepOverrides) {
+      const { authority, project, resolved } = await load(userId, projectId);
+      requireProjectPermission(resolved, 'project.calendar.manage');
+
+      const current = await calendars.findCurrent(project.company);
+      if (current === null) throw calendarVersionMissing();
+
+      const updated = await projects.adoptCalendarVersion(
+        project._id,
+        current._id,
+        {
+          fromVersion: project.calendarVersion,
+          toVersion: current._id,
+          adoptedAt: new Date(),
+          adoptedBy: new Types.ObjectId(authority.userId),
+          overridesKept: keepOverrides,
+        },
+        !keepOverrides,
+      );
+      if (updated === null) throw projectNotFound();
+      return toDto(updated);
+    },
+
+    async setCalendarOverrides(userId, projectId, overrides) {
+      const { project, resolved } = await load(userId, projectId);
+      requireProjectPermission(resolved, 'project.calendar.manage');
+
+      const updated = await projects.update(
+        project._id,
+        { calendarOverrides: overrides as never },
+        null,
+      );
+      if (updated === null) throw projectNotFound();
+      return toDto(updated);
+    },
+
+    /** How many of this company's projects still sit on an older pinned version. */
+    async outdatedCalendarCount(userId) {
+      const { authority } = await contextFor(userId);
+      const company = new Types.ObjectId(authority.companyId);
+      const current = await calendars.findCurrent(company);
+      if (current === null) return 0;
+      return projects.countOnOutdatedCalendar(company, current._id);
+    },
+
     async cancel(userId, projectId) {
-      const { context, project } = await load(userId, projectId, requireMayManageProject);
+      const { project, resolved } = await load(userId, projectId);
+      requireProjectPermission(resolved, 'project.cancel');
 
       // Pre-start only. The stored flags answer first; the port covers the case where execution
       // has begun but the flag has not been written yet.
@@ -204,7 +315,7 @@ export const createProjectsService = ({
         throw projectAlreadyStarted();
       }
 
-      const removed = await projects.deleteOwnedById(projectId, new Types.ObjectId(context.companyId));
+      const removed = await projects.deleteOwnedById(projectId, project.company);
       if (!removed) throw projectNotFound();
     },
   };

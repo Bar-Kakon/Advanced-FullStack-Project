@@ -12,6 +12,10 @@ export interface NewProject {
   readonly targetEndDate: Date;
   readonly originalTargetEndDate: Date;
   readonly overrunAllowanceDays: number;
+  readonly projectType: ProjectRecord['projectType'];
+  readonly projectTypeOther?: string;
+  readonly size: string;
+  readonly calendarVersion: Types.ObjectId;
 }
 
 export interface ProjectUpdate {
@@ -20,6 +24,10 @@ export interface ProjectUpdate {
   readonly location?: ProjectRecord['location'];
   readonly startDate?: Date;
   readonly targetEndDate?: Date;
+  readonly projectType?: ProjectRecord['projectType'];
+  readonly projectTypeOther?: string;
+  readonly size?: string;
+  readonly calendarOverrides?: ProjectRecord['calendarOverrides'];
 }
 
 /**
@@ -40,7 +48,23 @@ export interface ProjectRepository {
   create(project: NewProject): Promise<ProjectRecord>;
   /** Company is part of the filter, so another company's project is simply not found. */
   findOwnedById(id: string, company: Types.ObjectId): Promise<ProjectRecord | null>;
+  /** Reachable means owned by the caller's company OR one they participate in. */
+  findAccessibleById(id: string, company: Types.ObjectId, memberOf: readonly Types.ObjectId[]): Promise<ProjectRecord | null>;
+  listAccessible(
+    company: Types.ObjectId,
+    memberOf: readonly Types.ObjectId[],
+    cursor: ProjectCursor | null,
+    limit: number,
+  ): Promise<ProjectRecord[]>;
   listByCompany(company: Types.ObjectId, cursor: ProjectCursor | null, limit: number): Promise<ProjectRecord[]>;
+  countOnOutdatedCalendar(company: Types.ObjectId, currentVersion: Types.ObjectId): Promise<number>;
+  listOnOutdatedCalendar(company: Types.ObjectId, currentVersion: Types.ObjectId): Promise<ProjectRecord[]>;
+  adoptCalendarVersion(
+    id: Types.ObjectId,
+    toVersion: Types.ObjectId,
+    adoption: ProjectRecord['calendarAdoptions'][number],
+    clearOverrides: boolean,
+  ): Promise<ProjectRecord | null>;
   update(
     id: Types.ObjectId,
     update: ProjectUpdate,
@@ -65,6 +89,61 @@ export const projectRepository: ProjectRepository = {
     if (projectId === null) return null;
 
     return ProjectModel.findOne({ _id: projectId, company }).lean<ProjectRecord>().exec();
+  },
+
+  async findAccessibleById(id, company, memberOf) {
+    const projectId = toObjectId(id);
+    if (projectId === null) return null;
+
+    return ProjectModel.findOne({
+      _id: projectId,
+      $or: [{ company }, { _id: { $in: [...memberOf] } }],
+    })
+      .lean<ProjectRecord>()
+      .exec();
+  },
+
+  async listAccessible(company, memberOf, cursor, limit) {
+    const reach: Record<string, unknown>[] = [{ company }];
+    if (memberOf.length > 0) reach.push({ _id: { $in: [...memberOf] } });
+
+    const conditions: Record<string, unknown>[] = [{ $or: reach }];
+    if (cursor !== null) {
+      conditions.push({
+        $or: [
+          { createdAt: { $lt: cursor.createdAt } },
+          { createdAt: cursor.createdAt, _id: { $lt: cursor.id } },
+        ],
+      });
+    }
+
+    return ProjectModel.find({ $and: conditions })
+      .sort({ createdAt: -1, _id: -1 })
+      .limit(limit)
+      .lean<ProjectRecord[]>()
+      .exec();
+  },
+
+  async countOnOutdatedCalendar(company, currentVersion) {
+    return ProjectModel.countDocuments({ company, calendarVersion: { $ne: currentVersion } }).exec();
+  },
+
+  async listOnOutdatedCalendar(company, currentVersion) {
+    return ProjectModel.find({ company, calendarVersion: { $ne: currentVersion } })
+      .sort({ createdAt: -1 })
+      .lean<ProjectRecord[]>()
+      .exec();
+  },
+
+  /** The only path that moves a pin. Always explicit, always recorded. */
+  async adoptCalendarVersion(id, toVersion, adoption, clearOverrides) {
+    const operation: Record<string, unknown> = {
+      $set: { calendarVersion: toVersion },
+      $push: { calendarAdoptions: adoption },
+    };
+    if (clearOverrides) operation['$unset'] = { calendarOverrides: '' };
+
+    return ProjectModel.findByIdAndUpdate(id, operation, { new: true }).lean<ProjectRecord>().exec();
   },
 
   async listByCompany(company, cursor, limit) {

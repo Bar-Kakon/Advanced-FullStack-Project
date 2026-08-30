@@ -8,6 +8,7 @@
 import { CompanyModel } from '../src/features/companies/company.model.js';
 import { CompanyMembershipModel } from '../src/features/companies/companyMembership.model.js';
 import { ProjectModel } from '../src/features/projects/project.model.js';
+import { CompanyCalendarVersionModel } from '../src/features/calendar/companyCalendarVersion.model.js';
 import { createAccount, cleanUp } from './support/accounts.js';
 import { check, finish, request, section, startHarness } from './support/harness.js';
 
@@ -19,6 +20,10 @@ const day = (offset: number): string =>
 interface ProjectBody {
   project: {
     id: string;
+    projectType: string;
+    projectTypeOther: string | null;
+    size: string;
+    calendar: { versionId: string; overrides: Record<string, unknown> | null; adoptionCount: number };
     companyId: string;
     name: string;
     description: string | null;
@@ -59,6 +64,8 @@ const run = async (): Promise<void> => {
     startDate: day(0),
     targetEndDate: day(100),
     overrunAllowanceDays: 30,
+    projectType: 'building',
+    size: 'בניין 12 קומות',
   };
 
   section('Authentication');
@@ -237,6 +244,166 @@ const run = async (): Promise<void> => {
   check(
     (aliceList.body as { projects: { id: string }[] }).projects.some((p) => p.id === project.id),
     'The owning company sees it',
+  );
+
+  section('Project type — the four values, and free text kept apart');
+  const typed = (created.body as unknown as ProjectBody).project;
+  check(typed.projectType === 'building', 'The canonical type round-trips', typed.projectType);
+  check(typed.projectTypeOther === null, 'And carries no free text when it is not `other`');
+  check(typed.size === 'בניין 12 קומות', 'Size is stored as the free text it was given', typed.size);
+
+  const badType = await request(baseUrl, 'POST', '/api/projects', {
+    token: alice.token, json: { ...valid, projectType: 'tower' },
+  });
+  check(badType.status === 400, 'A type outside the four values is refused', badType.status);
+
+  const otherNoText = await request(baseUrl, 'POST', '/api/projects', {
+    token: alice.token, json: { ...valid, projectType: 'other' },
+  });
+  check(otherNoText.status === 400, '`other` without free text is refused', otherNoText.status);
+
+  const textWithoutOther = await request(baseUrl, 'POST', '/api/projects', {
+    token: alice.token, json: { ...valid, projectTypeOther: 'סככה' },
+  });
+  check(textWithoutOther.status === 400, 'Free text beside a canonical type is refused', textWithoutOther.status);
+
+  const otherOk = await request(baseUrl, 'POST', '/api/projects', {
+    token: alice.token, json: { ...valid, name: 'other type', projectType: 'other', projectTypeOther: 'מבנה חקלאי' },
+  });
+  check(otherOk.status === 201, '`other` with free text is accepted', otherOk.status);
+  const otherProject = (otherOk.body as unknown as ProjectBody).project;
+  check(otherProject.projectTypeOther === 'מבנה חקלאי', 'And the free text is stored separately');
+  const otherStored = await ProjectModel.findById(otherProject.id).lean().exec();
+  check(otherStored?.projectType === 'other', 'The enum still holds the canonical value only');
+
+  const noSize = await request(baseUrl, 'POST', '/api/projects', {
+    token: alice.token, json: { name: 'x', startDate: day(0), targetEndDate: day(9), overrunAllowanceDays: 1, projectType: 'villa' },
+  });
+  check(noSize.status === 400, 'Size is required', noSize.status);
+
+  section('Calendar — a project pins a version, and a company edit cannot move it');
+  const pinnedVersionId = typed.calendar.versionId;
+  check(typeof pinnedVersionId === 'string' && pinnedVersionId.length > 0, 'A new project pins a version');
+
+  const before = await request(baseUrl, 'GET', '/api/calendar/company', { token: alice.token });
+  const beforeVersion = (before.body as { current: { version: number } }).current.version;
+  check(beforeVersion >= 1, 'The company has a current version', beforeVersion);
+
+  const edited = await request(baseUrl, 'PUT', '/api/calendar/company', {
+    token: alice.token,
+    json: {
+      workingDays: ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday'],
+      hours: { startMinute: 360, endMinute: 900 },
+      sector: 'jewish',
+      worksCholHaMoed: true,
+      worksMemorialDays: false,
+    },
+  });
+  check(edited.status === 201, 'Editing the company default appends a new version', edited.status);
+  const newVersionId = (edited.body as { versionId: string }).versionId;
+  check(newVersionId !== pinnedVersionId, 'Which is a different version from the pinned one');
+
+  const afterEdit = await request(baseUrl, 'GET', `/api/projects/${typed.id}`, { token: alice.token });
+  const afterProject = (afterEdit.body as unknown as ProjectBody).project;
+  check(
+    afterProject.calendar.versionId === pinnedVersionId,
+    'THE LIVE PROJECT DID NOT MOVE — still pinned to its original version',
+    `${afterProject.calendar.versionId} vs ${pinnedVersionId}`,
+  );
+  const storedPin = await ProjectModel.findById(typed.id).lean().exec();
+  check(
+    storedPin?.calendarVersion?.toString() === pinnedVersionId,
+    'And the stored pin is unchanged too — no silent propagation',
+  );
+
+  section('Calendar — a NEW project gets the current version');
+  const fresh = await request(baseUrl, 'POST', '/api/projects', {
+    token: alice.token, json: { ...valid, name: 'after the edit' },
+  });
+  const freshProject = (fresh.body as unknown as ProjectBody).project;
+  check(
+    freshProject.calendar.versionId === newVersionId,
+    'A project created after the edit pins the NEW version',
+    `${freshProject.calendar.versionId} vs ${newVersionId}`,
+  );
+  check(freshProject.calendar.versionId !== pinnedVersionId, 'And not the old one');
+
+  section('Calendar — repeated company updates keep stacking versions');
+  for (const start of [300, 320, 340]) {
+    await request(baseUrl, 'PUT', '/api/calendar/company', {
+      token: alice.token,
+      json: {
+        workingDays: ['sunday', 'monday'], hours: { startMinute: start, endMinute: 900 },
+        sector: 'jewish', worksCholHaMoed: false, worksMemorialDays: false,
+      },
+    });
+  }
+  const chain = await CompanyCalendarVersionModel.find({ company: alice.companyId }).sort({ version: 1 }).lean().exec();
+  check(chain.length >= 5, 'Every edit appended a version rather than overwriting', `${chain.length} versions`);
+  check(
+    chain.every((v, i) => v.version === i + 1),
+    'The version numbers are a clean sequence',
+    chain.map((v) => v.version).join(','),
+  );
+  const stillPinned = await ProjectModel.findById(typed.id).lean().exec();
+  check(
+    stillPinned?.calendarVersion?.toString() === pinnedVersionId,
+    'And after four company edits the original project has STILL not moved',
+  );
+
+  section('Calendar — overrides, and that they survive adoption');
+  const overridden = await request(baseUrl, 'PUT', `/api/projects/${typed.id}/calendar/overrides`, {
+    token: alice.token,
+    json: { workingDays: ['sunday', 'monday', 'tuesday'], worksCholHaMoed: true },
+  });
+  check(overridden.status === 200, 'A project override is accepted', overridden.status);
+  const withOverride = (overridden.body as unknown as ProjectBody).project;
+  check(withOverride.calendar.overrides !== null, 'And is stored on the project');
+  check(
+    withOverride.calendar.versionId === pinnedVersionId,
+    'Overriding does not change which version is pinned',
+  );
+
+  section('Calendar — the outdated list is surfaced, not applied');
+  const outdated = await request(baseUrl, 'GET', '/api/projects/calendar/outdated', { token: alice.token });
+  check(outdated.status === 200, 'The company can ask which projects are behind', outdated.status);
+  check(
+    (outdated.body as { outdated: number }).outdated >= 1,
+    'And the pinned project is counted as behind',
+    (outdated.body as { outdated: number }).outdated,
+  );
+
+  section('Calendar — adoption is explicit, recorded, and keeps overrides when asked');
+  const adopted = await request(baseUrl, 'POST', `/api/projects/${typed.id}/calendar/adopt`, {
+    token: alice.token, json: { keepOverrides: true },
+  });
+  check(adopted.status === 200, 'Adoption succeeds when asked for explicitly', adopted.status);
+  const afterAdopt = (adopted.body as unknown as ProjectBody).project;
+  check(afterAdopt.calendar.versionId !== pinnedVersionId, 'The pin moved — but only because it was asked to');
+  check(afterAdopt.calendar.overrides !== null, 'The project keeps its own overrides across adoption');
+  check(afterAdopt.calendar.adoptionCount === 1, 'And the move is recorded in history', afterAdopt.calendar.adoptionCount);
+
+  const record = await ProjectModel.findById(typed.id).lean().exec();
+  const move = record?.calendarAdoptions?.[0];
+  check(move?.fromVersion?.toString() === pinnedVersionId, 'History names the version it came from');
+  check(move?.overridesKept === true, 'And records that the overrides were kept');
+
+  const dropped = await request(baseUrl, 'POST', `/api/projects/${freshProject.id}/calendar/adopt`, {
+    token: alice.token, json: { keepOverrides: false },
+  });
+  check(dropped.status === 200, 'Adoption can also discard overrides when asked', dropped.status);
+  check(
+    (dropped.body as unknown as ProjectBody).project.calendar.overrides === null,
+    'And then they are gone',
+  );
+
+  section('Calendar — historical reconstruction');
+  const versionRow = await CompanyCalendarVersionModel.findById(pinnedVersionId).lean().exec();
+  check(versionRow !== null, 'The version a project used is still readable afterwards');
+  check(
+    versionRow?.config?.hours?.startMinute === 420,
+    'And still says exactly what it said then — 07:00',
+    versionRow?.config?.hours?.startMinute,
   );
 
   section('Authority comes from a grant, never from a role name');

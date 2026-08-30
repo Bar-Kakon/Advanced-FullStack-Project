@@ -6,9 +6,13 @@ import { companyMembershipRepository } from '../companies/companyMembership.repo
 import { createCompanyContextService } from '../companies/companyContext.service.js';
 import { createProjectsController } from './projects.controller.js';
 import { projectRepository } from './project.repository.js';
+import { companyCalendarRepository } from '../calendar/companyCalendar.repository.js';
+import { projectAccessRepository } from '../projectaccess/projectAccess.repository.js';
 import { createProjectsService } from './projects.service.js';
 import { unbuiltTasksExecutionPort } from './projectLifecycle.service.js';
 import {
+  adoptCalendarBodySchema,
+  calendarOverridesSchema,
   createProjectBodySchema,
   projectListQuerySchema,
   projectParamsSchema,
@@ -24,6 +28,8 @@ export const createProjectsModule = (requireAccessToken: RequestHandler): Router
         companies: companyRepository,
       }),
       execution: unbuiltTasksExecutionPort,
+      calendars: companyCalendarRepository,
+      access: projectAccessRepository,
     }),
   );
 
@@ -34,11 +40,22 @@ export const createProjectsModule = (requireAccessToken: RequestHandler): Router
 
   router.post('/', validateRequest({ body: createProjectBodySchema }), controller.handleCreate);
   router.get('/', validateRequest({ query: projectListQuerySchema }), controller.handleList);
+  router.get('/calendar/outdated', controller.handleOutdatedCalendarCount);
   router.get('/:projectId', params, controller.handleGetOne);
   router.patch(
     '/:projectId',
     validateRequest({ params: projectParamsSchema, body: updateProjectBodySchema }),
     controller.handleUpdate,
+  );
+  router.post(
+    '/:projectId/calendar/adopt',
+    validateRequest({ params: projectParamsSchema, body: adoptCalendarBodySchema }),
+    controller.handleAdoptCalendar,
+  );
+  router.put(
+    '/:projectId/calendar/overrides',
+    validateRequest({ params: projectParamsSchema, body: calendarOverridesSchema }),
+    controller.handleSetCalendarOverrides,
   );
   router.delete('/:projectId', params, controller.handleCancel);
 
