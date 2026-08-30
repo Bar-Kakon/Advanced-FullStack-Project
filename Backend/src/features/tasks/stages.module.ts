@@ -75,7 +75,7 @@ export const createStagesModule = (requireAccessToken: RequestHandler): Router =
       const body = getValidated<{ name: string; isGate: boolean; order?: number }>(res, 'body');
 
       const { project, resolved } = await reachProject(getAuthenticatedUserId(res), projectId);
-      requireProjectPermission(resolved, 'project.edit');
+      requireProjectPermission(resolved, 'project.stage.manage');
 
       res.status(201).json({ stage: await stages.create(project._id, body) });
     },

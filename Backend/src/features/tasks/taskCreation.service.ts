@@ -310,7 +310,7 @@ export const createTaskCreationService = ({
           ];
         }),
         canAssignOthers: hasProjectPermission(resolved, 'task.assign'),
-        canManageStages: hasProjectPermission(resolved, 'project.edit'),
+        canManageStages: hasProjectPermission(resolved, 'project.stage.manage'),
       };
     },
   };

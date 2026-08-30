@@ -241,7 +241,35 @@ const run = async (): Promise<void> => {
     token: creator.token,
     json: { name: 'לא מורשה', isGate: false },
   });
-  check(stageByMember.status === 403, 'Someone without project.edit cannot create a stage', stageByMember.status);
+  check(stageByMember.status === 403,
+    'Someone without project.stage.manage cannot create a stage', stageByMember.status);
+
+  // Sequencing is its own grant: project.edit is project metadata and confers nothing here.
+  await request(baseUrl, 'PATCH', `/api/permissions/grants/${creatorMembership}`, {
+    token: gc.token,
+    json: { permissions: ['task.create', 'task.assign', 'project.edit'] },
+  });
+  const stageByEditor = await request(baseUrl, 'POST', `/api/projects/${projectId}/stages`, {
+    token: creator.token,
+    json: { name: 'עדיין לא מורשה', isGate: false },
+  });
+  check(stageByEditor.status === 403,
+    'and project.edit alone still cannot — it is project metadata only', stageByEditor.status);
+
+  await request(baseUrl, 'PATCH', `/api/permissions/grants/${creatorMembership}`, {
+    token: gc.token,
+    json: { permissions: ['task.create', 'task.assign', 'project.stage.manage'] },
+  });
+  const stageBySequencer = await request(baseUrl, 'POST', `/api/projects/${projectId}/stages`, {
+    token: creator.token,
+    json: { name: 'אינסטלציה', isGate: false },
+  });
+  check(stageBySequencer.status === 201,
+    'while project.stage.manage alone can, without project.edit', stageBySequencer.status);
+  await request(baseUrl, 'PATCH', `/api/permissions/grants/${creatorMembership}`, {
+    token: gc.token,
+    json: { permissions: ['task.create', 'task.assign'] },
+  });
 
   const onNewStage = await create(gc.token, projectTask({ stageId: newStage._id }));
   check(onNewStage.status === 201, 'and the new stage is immediately usable', onNewStage.status);
@@ -350,7 +378,7 @@ const run = async (): Promise<void> => {
     canManageStages: boolean;
   };
   check(window.startDate === iso(0) && window.endDate === iso(140), 'The window offered is the project start and the ceiling', window);
-  check(window.stages.length === 2, 'Both stages are offered', window.stages.length);
+  check(window.stages.length === 3, 'Every stage of the project is offered', window.stages.length);
   const assignableIds = window.assignees.map((row) => row.userId);
   check(
     assignableIds.includes(worker.userId.toString()) &&
@@ -361,7 +389,8 @@ const run = async (): Promise<void> => {
     window.assignees.every((row) => row.name.trim().length > 0),
     'and each one arrives with the name the picker prints, so no second call is needed',
   );
-  check(window.canManageStages === false, 'and a member without project.edit is told they cannot manage stages');
+  check(window.canManageStages === false,
+    'and a member without project.stage.manage is told they cannot manage stages');
 
   const refusedOptions = await request(baseUrl, 'GET', `/api/tasks/create-options/${projectId}`, { token: worker.token });
   check(refusedOptions.status === 403, 'Project options are refused without task.create', refusedOptions.status);
