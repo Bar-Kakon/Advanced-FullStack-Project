@@ -1340,4 +1340,83 @@ export const en: Strings = {
       notPermitted: 'You are not permitted to edit the company details.',
     },
   },
+
+  landing: {
+    documentTitle: 'FieldSync — תיאום עבודה באתר / Construction coordination',
+    metaDescription:
+      'FieldSync — a coordination platform for construction professionals: assign work, link the tasks that depend on each other, and manage dates and changes in one place.',
+    skip: 'Skip to content',
+    navLabel: 'Menu',
+    signIn: 'Sign in',
+    createAccount: 'Create account',
+
+    hero: {
+      title: 'Tasks, dates and dependencies — coordinated in one place, not over the phone.',
+      lede: 'FieldSync is a coordination platform for construction professionals: assign work, link the tasks that depend on each other, and manage dates and changes — all in one place.',
+    },
+
+    example: {
+      title: 'How one date change moves through the chain',
+      was: 'Original plan',
+      now: 'After the change',
+      dayLabel: 'Day',
+      rows: [
+        {
+          name: 'Piling & drilling',
+          meta: 'Takes two more days',
+          detail: 'Originally days 1 to 4. After the change, days 1 to 6.',
+        },
+        {
+          name: 'Foundation pour',
+          meta: 'Depends on piling · pushed 2 days',
+          detail: 'Originally days 5 to 8. After the change, days 7 to 10.',
+        },
+        {
+          name: 'Level 1 frame',
+          meta: 'Depends on foundation · pushed 2 days',
+          detail: 'Originally days 9 to 12. After the change, days 11 to 14.',
+        },
+        {
+          name: 'Electrical rough-in',
+          meta: 'Depends on foundation · pushed 2 days',
+          detail: 'Originally days 9 to 11. After the change, days 11 to 13.',
+        },
+      ],
+      note: 'An illustration of the dependency concept only — example data, not a product screenshot. One example project; every project has its own chain. Once the project dashboard screen is built, a real screenshot from it replaces this illustration.',
+    },
+
+    values: {
+      title: 'What is different here',
+      cards: [
+        {
+          title: 'Everyone is a first-class user',
+          body: 'The same contractor can be a GC on one project and a sub on another. Roles follow the work, not the person — and the platform mediates between the parties instead of serving one side.',
+        },
+        {
+          title: "Trust signals that aren't easily gamed",
+          body: 'The flexibility score is derived from how a contractor actually behaves when dates move — not from anything self-reported, and not from how active they are on the platform.',
+        },
+      ],
+    },
+
+    flow: {
+      title: 'How it works',
+      steps: [
+        'Assign work',
+        'Link dependencies',
+        'A date changes',
+        'The effect moves through the relevant dependency chain',
+        'The relevant participants coordinate and agree in one round',
+      ],
+      note: 'All of it stays inside the platform, so what was agreed about a date remains on the record.',
+    },
+
+    direct: {
+      title: 'Ready to start?',
+      lede: 'Creating an account takes a minute.',
+      cta: 'Create account',
+    },
+
+    footerNote: 'FieldSync — an academic prototype in development.',
+  },
 };
