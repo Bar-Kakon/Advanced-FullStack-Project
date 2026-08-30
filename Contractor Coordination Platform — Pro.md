@@ -1892,7 +1892,7 @@ My projects, and a row that acts inside an `Invited` project fails.
 >
 > **Format:** `[YYYY-MM-DD] What changed — why.`
 
-- `[2026-08-30]` **The two remaining Work Plans product questions are closed, and each is now enforced rather than implied.** Corrections on `feature/work-plans` (`8137841`), and **the whole feature merged into develop as `c52dee0`** — final develop **`c52dee0`**. Both questions were surfaced as open by the batch that built the feature, and both were answered by the owner before any further code was written.
+- `[2026-08-30]` **The two remaining Work Plans product questions are closed, and each is now enforced rather than implied.** Corrections on `feature/work-plans` (`8137841`), and **the whole feature merged into develop as `c52dee0`**, with this documentation following it. Both questions were surfaced as open by the batch that built the feature, and both were answered by the owner before any further code was written.
 
   **Closure 1 — version history is append-only.** A work-plan version is not ordinarily deleted. The supported lifecycle is: upload a version; it becomes current; an explicit action may mark an existing earlier version current again; every prior version stays readable. **Changing which version is current is not deletion, not overwrite and not a mutation of the old bytes** — it moves `isCurrent` and nothing else. There is no delete-version route, no delete-plan route, no destructive replace, no "remove old versions" cleanup and no UI delete control. An administrative or security deletion exception is **out of scope and deliberately not designed.**
 
