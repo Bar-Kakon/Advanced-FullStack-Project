@@ -46,6 +46,7 @@ const run = async (): Promise<void> => {
   const subB = await createAccount(baseUrl, MARKER, 3);
   const delegate = await createAccount(baseUrl, MARKER, 4);
   const outsider = await createAccount(baseUrl, MARKER, 5);
+  const stranger = await createAccount(baseUrl, MARKER, 6);
 
   const created = await post('/api/projects', gc.token, {
     name: 'אתר ההעברה', startDate: iso(0), targetEndDate: iso(150),
@@ -190,7 +191,141 @@ const run = async (): Promise<void> => {
   check(transferred?.delegation === undefined,
     'and the confidential arrangement is gone, because it is no longer confidential');
 
-  section('6. Somebody with no standing reaches none of it');
+  section('6. A delegate who is not on the project joins before responsibility moves');
+  const t4 = await mk('חשמל', subA.userId);
+  await TaskModel.updateOne(
+    { _id: t4._id },
+    { $set: { delegation: { delegate: stranger.userId, scope: 'whole', delegatedAt: new Date() } } },
+  ).exec();
+
+  const wrongTarget = await post(`/api/coordination/tasks/${t4._id.toString()}/handoff`, subA.token, {
+    toUserId: subB.userId.toString(), completedWorkAtHandover: 'x',
+  });
+  check(wrongTarget.status === 403,
+    'the responsible party may disclose their own delegate and nobody else', wrongTarget.status);
+
+  const idFree = await post(`/api/coordination/tasks/${t4._id.toString()}/handoff`, subA.token, {
+    completedWorkAtHandover: 'חשמל עד קומה 1',
+  });
+  check(idFree.status === 201,
+    'disclosure needs no id at all — the server resolves the delegator own delegate', idFree.status);
+  const idFreeHandoff = (idFree.body as { handoff: HandoffDto }).handoff;
+  check(idFreeHandoff.kind === 'delegation_disclosure',
+    'and it is a disclosure', idFreeHandoff.kind);
+
+  const held = await post(`/api/coordination/handoffs/${idFreeHandoff.id}/decision`, gc.token, {
+    accept: true,
+  });
+  check(held.status === 200, 'the authority accepts the transfer', held.status);
+  check((held.body as { handoff: HandoffDto }).handoff.state === 'awaiting_membership',
+    'but the transfer waits, because the incoming party is not on the project',
+    (held.body as { handoff: HandoffDto }).handoff.state);
+
+  const heldTask = await TaskModel.findById(t4._id).lean().exec();
+  check(heldTask?.assignee?.toString() === subA.userId.toString(),
+    'responsibility has not moved on the authority word alone');
+  check(heldTask?.delegation !== undefined,
+    'and the delegation is still standing, so nothing became public');
+
+  const invitation = await ProjectMembershipModel.findOne({ project, user: stranger.userId }).lean().exec();
+  check(invitation?.status === 'invited',
+    'an invitation was created for them instead', String(invitation?.status));
+  check((invitation?.permissions ?? []).length === 0 && invitation?.fullAuthority === false,
+    'carrying no authority of its own');
+
+  const heldPending = (await get('/api/coordination/pending-actions', gc.token)).body as {
+    totals: { handoffs: number };
+  };
+  check(heldPending.totals.handoffs === 0,
+    'management owes nothing while the invitation is out', String(heldPending.totals.handoffs));
+
+  const refused = await post(`/api/project-invitations/${invitation?._id.toString()}/decline`, stranger.token);
+  check(refused.status === 204 || refused.status === 200,
+    'the incoming party may refuse to join', refused.status);
+  check((await WorkHandoffModel.findById(idFreeHandoff.id).lean().exec())?.state === 'declined',
+    'and refusing the invitation is refusing the transfer');
+  const refusedTask = await TaskModel.findById(t4._id).lean().exec();
+  check(refusedTask?.assignee?.toString() === subA.userId.toString(),
+    'so responsibility stayed with the delegator');
+  check(refusedTask?.delegation !== undefined, 'and the delegation is untouched');
+
+  const again = await post(`/api/coordination/tasks/${t4._id.toString()}/handoff`, subA.token, {
+    completedWorkAtHandover: 'חשמל עד קומה 1',
+  });
+  const againId = (again.body as { handoff: HandoffDto }).handoff.id;
+  await post(`/api/coordination/handoffs/${againId}/decision`, gc.token, { accept: true });
+  const reissued = await ProjectMembershipModel.findOne({ project, user: stranger.userId }).lean().exec();
+  check(reissued?.status === 'invited', 'a refused offer can be made again', String(reissued?.status));
+
+  const joined = await post(`/api/project-invitations/${reissued?._id.toString()}/accept`, stranger.token);
+  check(joined.status === 204 || joined.status === 200, 'this time they join', joined.status);
+  check((await WorkHandoffModel.findById(againId).lean().exec())?.state === 'accepted',
+    'and joining is the third consent that completes the transfer');
+
+  const finallyMoved = await TaskModel.findById(t4._id).lean().exec();
+  check(finallyMoved?.assignee?.toString() === stranger.userId.toString(),
+    'responsibility is now theirs', String(finallyMoved?.assignee?.toString()));
+  check(finallyMoved?.previousAssignee?.toString() === subA.userId.toString(),
+    'and who carried it before is preserved');
+  check(finallyMoved?.delegation === undefined,
+    'the confidential arrangement is gone, because it is no longer confidential');
+  check((await ProjectMembershipModel.findOne({ project, user: stranger.userId }).lean().exec())?.status === 'active',
+    'and they hold a real membership rather than an implied one');
+
+  section('7. The screen is told which path it may offer, never a raw id');
+  const gcView = (await get(`/api/coordination/tasks/${t1._id.toString()}/handoff`, gc.token)).body as {
+    mode: string | null; delegateName: string | null; currentAssigneeId: string | null;
+  };
+  check(gcView.mode === 'authority', 'management is offered the authority path', String(gcView.mode));
+  check(gcView.currentAssigneeId === subB.userId.toString(),
+    'and told who currently holds it, so the picker can leave them out');
+  check(gcView.delegateName === null, 'management is never told of a delegate here');
+
+  const plainView = (await get(`/api/coordination/tasks/${t1._id.toString()}/handoff`, subB.token)).body as {
+    mode: string | null;
+  };
+  check(plainView.mode === null,
+    'a responsible party with no delegate is offered no handover at all', String(plainView.mode));
+
+  const t5 = await mk('ריצוף', subA.userId);
+  await TaskModel.updateOne(
+    { _id: t5._id },
+    { $set: { delegation: { delegate: delegate.userId, scope: 'whole', delegatedAt: new Date() } } },
+  ).exec();
+  const delegatorView = (await get(`/api/coordination/tasks/${t5._id.toString()}/handoff`, subA.token)).body as {
+    mode: string | null; delegateName: string | null;
+  };
+  check(delegatorView.mode === 'disclosure',
+    'the delegator is offered disclosure instead', String(delegatorView.mode));
+  check(delegatorView.delegateName !== null && delegatorView.delegateName !== '',
+    'named, because they chose that person themselves', String(delegatorView.delegateName));
+
+  const delegateOwnView = (await get(`/api/coordination/tasks/${t5._id.toString()}/handoff`, delegate.token)).body as {
+    mode: string | null;
+  };
+  check(delegateOwnView.mode === null,
+    'and the delegate is offered nothing — a delegate hands nothing on', String(delegateOwnView.mode));
+
+  const stuck = await post(`/api/coordination/tasks/${t5._id.toString()}/handoff`, subA.token, {
+    completedWorkAtHandover: 'ריצוף חדר אחד',
+  });
+  const stuckId = (stuck.body as { handoff: HandoffDto }).handoff.id;
+  await WorkHandoffModel.updateOne(
+    { _id: new Types.ObjectId(stuckId) },
+    { $set: { state: 'awaiting_membership' } },
+  ).exec();
+  const repaired = (await get(`/api/coordination/tasks/${t5._id.toString()}/handoff`, gc.token)).body as {
+    handoff: HandoffDto | null;
+  };
+  check(repaired.handoff === null,
+    'a transfer left waiting on somebody who is already a member completes on the next read',
+    JSON.stringify(repaired.handoff));
+  check((await WorkHandoffModel.findById(stuckId).lean().exec())?.state === 'accepted',
+    'so a failure between joining and transferring cannot strand responsibility');
+  check((await TaskModel.findById(t5._id).lean().exec())?.assignee?.toString() === delegate.userId.toString(),
+    'and responsibility really did move');
+
+  section('8. Somebody with no standing reaches none of it');
   const outsiderRead = await get(`/api/coordination/tasks/${t1._id.toString()}/handoff`, outsider.token);
   check(outsiderRead.status === 404, 'an unrelated account cannot read a handover', outsiderRead.status);
   const outsiderOpen = await post(`/api/coordination/tasks/${t1._id.toString()}/handoff`, outsider.token, {
@@ -204,7 +339,7 @@ const run = async (): Promise<void> => {
   check(strangerTarget.status === 409,
     'and work cannot be handed to somebody who is not on the project', strangerTarget.status);
 
-  section('7. Replacement scores only once the responsibility really moved');
+  section('9. Replacement scores only once the responsibility really moved');
   const t3 = await mk('איטום', subA.userId);
   const proposal = await post(`/api/tasks/${t3._id.toString()}/date-change`, subA.token, {
     deltaWorkingDays: 3,

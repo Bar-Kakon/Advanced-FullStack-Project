@@ -1,7 +1,13 @@
 import { Types } from 'mongoose';
 
 import type { DbSession } from '../../db/mongoose.js';
-import { WorkHandoffModel, type HandoffKind, type HandoffRecord } from './handoff.model.js';
+import {
+  OPEN_HANDOFF_STATES,
+  WorkHandoffModel,
+  type HandoffKind,
+  type HandoffRecord,
+  type HandoffState,
+} from './handoff.model.js';
 
 export interface NewHandoff {
   readonly project: Types.ObjectId;
@@ -17,12 +23,33 @@ export interface NewHandoff {
 export interface HandoffRepository {
   create(handoff: NewHandoff): Promise<HandoffRecord>;
   findById(id: string): Promise<HandoffRecord | null>;
-  findProposedForTask(task: Types.ObjectId): Promise<HandoffRecord | null>;
+  findOpenForTask(task: Types.ObjectId): Promise<HandoffRecord | null>;
+  findAwaitingMembership(
+    project: Types.ObjectId,
+    to: Types.ObjectId,
+    session?: DbSession,
+  ): Promise<HandoffRecord | null>;
   listAcceptedFrom(from: Types.ObjectId): Promise<HandoffRecord[]>;
-  listAwaiting(userId: Types.ObjectId): Promise<HandoffRecord[]>;
   listPendingFor(userId: Types.ObjectId, managedProjects: readonly Types.ObjectId[]): Promise<HandoffRecord[]>;
-  accept(id: Types.ObjectId, by: Types.ObjectId, at: Date, session?: DbSession): Promise<HandoffRecord | null>;
-  settle(id: Types.ObjectId, state: 'declined' | 'cancelled', by: Types.ObjectId, at: Date): Promise<HandoffRecord | null>;
+  holdForMembership(
+    id: Types.ObjectId,
+    membership: Types.ObjectId,
+  ): Promise<HandoffRecord | null>;
+  accept(
+    id: Types.ObjectId,
+    by: Types.ObjectId,
+    at: Date,
+    from: readonly HandoffState[],
+    session?: DbSession,
+  ): Promise<HandoffRecord | null>;
+  settle(
+    id: Types.ObjectId,
+    state: 'declined' | 'cancelled',
+    by: Types.ObjectId,
+    at: Date,
+    from: readonly HandoffState[],
+    session?: DbSession,
+  ): Promise<HandoffRecord | null>;
 }
 
 export const handoffRepository: HandoffRepository = {
@@ -36,22 +63,21 @@ export const handoffRepository: HandoffRepository = {
     return WorkHandoffModel.findById(new Types.ObjectId(id)).lean<HandoffRecord>().exec();
   },
 
-  async findProposedForTask(task) {
-    return WorkHandoffModel.findOne({ task, state: 'proposed' }).lean<HandoffRecord>().exec();
+  async findOpenForTask(task) {
+    return WorkHandoffModel.findOne({ task, state: { $in: [...OPEN_HANDOFF_STATES] } })
+      .lean<HandoffRecord>()
+      .exec();
+  },
+
+  async findAwaitingMembership(project, to, session) {
+    const query = WorkHandoffModel.findOne({ project, to, state: 'awaiting_membership' });
+    if (session) query.session(session);
+    return query.lean<HandoffRecord>().exec();
   },
 
   async listAcceptedFrom(from) {
     return WorkHandoffModel.find({ from, state: 'accepted' })
       .sort({ decidedAt: -1 })
-      .lean<HandoffRecord[]>()
-      .exec();
-  },
-
-  async listAwaiting(userId) {
-    return WorkHandoffModel.find({
-      state: 'proposed',
-      $or: [{ to: userId }, { from: userId }],
-    })
       .lean<HandoffRecord[]>()
       .exec();
   },
@@ -65,9 +91,19 @@ export const handoffRepository: HandoffRepository = {
       .exec();
   },
 
-  async accept(id, by, at, session) {
+  async holdForMembership(id, membership) {
     return WorkHandoffModel.findOneAndUpdate(
       { _id: id, state: 'proposed' },
+      { $set: { state: 'awaiting_membership', membership } },
+      { new: true },
+    )
+      .lean<HandoffRecord>()
+      .exec();
+  },
+
+  async accept(id, by, at, from, session) {
+    return WorkHandoffModel.findOneAndUpdate(
+      { _id: id, state: { $in: [...from] } },
       { $set: { state: 'accepted', decidedBy: by, decidedAt: at } },
       { new: true, ...(session ? { session } : {}) },
     )
@@ -75,9 +111,9 @@ export const handoffRepository: HandoffRepository = {
       .exec();
   },
 
-  async settle(id, state, by, at) {
+  async settle(id, state, by, at, from) {
     return WorkHandoffModel.findOneAndUpdate(
-      { _id: id, state: 'proposed' },
+      { _id: id, state: { $in: [...from] } },
       { $set: { state, decidedBy: by, decidedAt: at } },
       { new: true },
     )

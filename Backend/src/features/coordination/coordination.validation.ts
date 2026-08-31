@@ -89,7 +89,7 @@ export const alternativesBodySchema = Joi.object({
 export const handoffParamsSchema = Joi.object({ handoffId: objectId.required() });
 
 export const handoffBodySchema = Joi.object({
-  toUserId: objectId.required(),
+  toUserId: objectId,
   completedWorkAtHandover: Joi.string().trim().min(1).max(600).required(),
   proposalId: objectId,
 });

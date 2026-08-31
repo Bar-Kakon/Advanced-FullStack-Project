@@ -221,6 +221,16 @@ export interface Handoff {
   readonly viewerDecides: boolean;
 }
 
+export type HandoffMode = 'authority' | 'disclosure';
+
+export interface HandoffView {
+  readonly handoff: Handoff | null;
+  /** Which of the two initiation paths this viewer may take, decided by the server. */
+  readonly mode: HandoffMode | null;
+  readonly delegateName: string | null;
+  readonly currentAssigneeId: string | null;
+}
+
 export interface PendingActions {
   readonly proposals: number;
   readonly handoffs: number;

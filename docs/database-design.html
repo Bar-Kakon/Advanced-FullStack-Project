@@ -1847,19 +1847,22 @@ module.exports = mongoose.model('RescheduleProposal', proposalSchema);`
     { name: 'from / to', type: 'ObjectId', ref: 'users', req: true, note: 'The outgoing responsible party and the incoming one. `from` is frozen at open time, so a later change cannot rewrite who handed the work over.' },
     { name: 'kind', type: "'authority' | 'delegation_disclosure'", req: true, note: 'Two initiation paths, each needing a **second** party to agree. `authority` is opened by a `schedule.change.manage` holder and accepted by the **incoming party**, because responsibility must not land on somebody who never agreed. `delegation_disclosure` is opened by the responsible party naming **their own confidential delegate** and accepted by the **authority** — that is the only way a delegate ever becomes project-facing, and only the delegator can start it.' },
     { name: 'completedWorkAtHandover', type: 'String', req: true, note: '**Required, and the request is refused without it.** How much of the work was already done at the moment responsibility moved. It is **event-scoped handover information, not routine percentage-progress tracking** — this product has no progress percentage and this field does not introduce one.' },
-    { name: 'state', type: "'proposed' | 'accepted' | 'declined' | 'cancelled'", req: true, note: 'Responsibility moves on `accepted` and on nothing else. The transition is one filtered atomic update, so accepting twice changes nothing.' },
-    { name: 'decidedBy / decidedAt', type: 'ObjectId · Date', note: 'Who answered and when. `decidedAt` is what the Flexibility adapter compares against the proposal resolution time.' },
+    { name: 'state', type: "'proposed' | 'awaiting_membership' | 'accepted' | 'declined' | 'cancelled'", req: true, note: 'Responsibility moves on `accepted` and on nothing else. Every transition is one filtered atomic update, so accepting twice changes nothing. **`awaiting_membership` (2026-08-31)** is the closed rule that an incoming responsible party is never enrolled in a project without an act of their own: when the authority accepts a disclosure of somebody who is not already an active member, a project invitation is issued and the transfer waits here. Only three consents in a row finish it — the delegator discloses, the authority accepts, the incoming party accepts the invitation.' },
+    { name: 'membership', type: 'ObjectId | null', ref: 'projectmemberships', note: 'The invitation the transfer is waiting on, while `state` is `awaiting_membership`. Answering that invitation is what settles the handover: accepting completes it, declining declines it.' },
+    { name: 'decidedBy / decidedAt', type: 'ObjectId · Date', note: 'Who answered and when. `decidedAt` is what the Flexibility adapter compares against the proposal resolution time; on an invitation-gated transfer it is the incoming party joining, because that is the moment responsibility actually moved.' },
     { name: 'proposal', type: 'ObjectId | null', ref: 'rescheduleproposals', note: 'The proposal whose resolution called for the replacement, when there was one.' }
   ],
   indexes: [
-    { def: '{ task: 1, state: 1 }', serves: 'The open handover on one piece of work', why: '**Built.** It is what makes *only one handover may be open on a task* cheap to enforce.' },
+    { def: '{ task: 1, state: 1 }', serves: 'The open handover on one piece of work', why: '**Built.** It is what makes *only one handover may be open on a task* cheap to enforce — open meaning `proposed` **or** `awaiting_membership`, so a second offer cannot be opened while an invitation is out.' },
     { def: '{ from: 1, state: 1, decidedAt: -1 }', serves: 'Every completed transfer away from one professional', why: '**Built, and it serves Flexibility rather than a screen:** the adapter reads accepted rows for one person to decide whether a `replaced` resolution ever became a real replacement.' },
-    { def: '{ to: 1, state: 1 }', serves: 'What is waiting on the incoming party', why: '**Built.** One of the two halves of the viewer-scoped pending-action count.' }
+    { def: '{ to: 1, state: 1 }', serves: 'What is waiting on the incoming party', why: '**Built.** One of the two halves of the viewer-scoped pending-action count. An `awaiting_membership` row is deliberately **not** counted there — what that person owes is an invitation answer, which the invitations surface already asks for.' },
+    { def: '{ project: 1, to: 1, state: 1 }', serves: 'The transfer one person answering an invitation is completing', why: '**Built 2026-08-31.** Answering a project invitation looks here for a transfer waiting on exactly that person in exactly that project.' }
   ],
   why: [
     '**Its own collection, not fields on [[tasks]].** A transfer is an event with two parties, a decision and a moment — not a property of the work. Putting it on the task would keep only the latest one and lose the history the project audit needs.',
     '**Responsibility changes inside a transaction with the task.** Accepting sets `tasks.assignee` to the incoming party, records `previousAssignee`, and **clears any delegation** — a disclosed delegate is no longer confidential, and leaving the arrangement in place would keep hiding somebody who is now the responsible party.',
-    '**Two paths, never one.** An authority-opened transfer needs the incoming party to consent; a delegation disclosure needs the authority to accept. Neither side can move responsibility alone, which is what keeps a delegate from being exposed by anybody except the delegator.'
+    '**Two paths, never one.** An authority-opened transfer needs the incoming party to consent; a delegation disclosure needs the authority to accept. Neither side can move responsibility alone, which is what keeps a delegate from being exposed by anybody except the delegator.',
+    '**Nobody is enrolled in a project by somebody else’s decision.** The authority path already requires the incoming party to be an active member before the offer can even be made. The disclosure path could not require that without blocking the exact case it exists for, so instead the authority’s acceptance issues an **invitation** and the transfer waits: responsibility moves only when the incoming party answers it. Declining the invitation declines the transfer, and the delegation stays intact and confidential throughout.'
   ],
   relations: [
     { to: 'tasks', via: 'task', store: 'ref', card: 'N:1', why: 'The work whose responsibility moved.' },
@@ -1884,7 +1887,8 @@ module.exports = mongoose.model('RescheduleProposal', proposalSchema);`
   to:      { type: Schema.Types.ObjectId, ref: 'User', required: true },
   kind:    { type: String, enum: ['authority','delegation_disclosure'], required: true },
   completedWorkAtHandover: { type: String, required: true, maxlength: 600 },
-  state:   { type: String, enum: ['proposed','accepted','declined','cancelled'], default: 'proposed' },
+  state:   { type: String, enum: ['proposed','awaiting_membership','accepted','declined','cancelled'], default: 'proposed' },
+  membership: { type: Schema.Types.ObjectId, ref: 'ProjectMembership' },
   decidedBy: Schema.Types.ObjectId, decidedAt: Date,
   proposal:  { type: Schema.Types.ObjectId, ref: 'RescheduleProposal' }
 }, { timestamps: true });
@@ -1892,6 +1896,7 @@ module.exports = mongoose.model('RescheduleProposal', proposalSchema);`
 handoffSchema.index({ task: 1, state: 1 });
 handoffSchema.index({ from: 1, state: 1, decidedAt: -1 });
 handoffSchema.index({ to: 1, state: 1 });
+handoffSchema.index({ project: 1, to: 1, state: 1 });
 
 module.exports = mongoose.model('WorkHandoff', handoffSchema);`
 },

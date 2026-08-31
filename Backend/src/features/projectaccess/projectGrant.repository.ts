@@ -1,5 +1,6 @@
 import { Types } from 'mongoose';
 
+import type { DbSession } from '../../db/mongoose.js';
 import {
   ProjectMembershipModel,
   type ProjectMembershipRecord,
@@ -30,7 +31,11 @@ export interface ProjectGrantRepository {
   invite(grant: Omit<NewGrant, 'status'>): Promise<ProjectMembershipRecord>;
   findById(id: string): Promise<ProjectMembershipRecord | null>;
   update(id: Types.ObjectId, update: GrantUpdate): Promise<ProjectMembershipRecord | null>;
-  respond(id: Types.ObjectId, status: Extract<ProjectMembershipStatus, 'active' | 'declined'>): Promise<ProjectMembershipRecord | null>;
+  respond(
+    id: Types.ObjectId,
+    status: Extract<ProjectMembershipStatus, 'active' | 'declined'>,
+    session?: DbSession,
+  ): Promise<ProjectMembershipRecord | null>;
   revoke(id: Types.ObjectId): Promise<boolean>;
   /** A cancelled project takes its memberships and open invitations with it. */
   deleteByProject(project: Types.ObjectId): Promise<number>;
@@ -89,11 +94,11 @@ export const projectGrantRepository: ProjectGrantRepository = {
   },
 
   /** Only an open invitation may be answered, so a double submit cannot revive a removed row. */
-  async respond(id, status) {
+  async respond(id, status, session) {
     return ProjectMembershipModel.findOneAndUpdate(
       { _id: id, status: 'invited' },
       { $set: { status, respondedAt: new Date() } },
-      { new: true },
+      { new: true, ...(session ? { session } : {}) },
     )
       .lean<ProjectMembershipRecord>()
       .exec();

@@ -3,8 +3,16 @@ import { Schema, model, type Types } from 'mongoose';
 export const HANDOFF_KINDS = ['authority', 'delegation_disclosure'] as const;
 export type HandoffKind = (typeof HANDOFF_KINDS)[number];
 
-export const HANDOFF_STATES = ['proposed', 'accepted', 'declined', 'cancelled'] as const;
+export const HANDOFF_STATES = [
+  'proposed',
+  'awaiting_membership',
+  'accepted',
+  'declined',
+  'cancelled',
+] as const;
 export type HandoffState = (typeof HANDOFF_STATES)[number];
+
+export const OPEN_HANDOFF_STATES = ['proposed', 'awaiting_membership'] as const;
 
 export interface HandoffRecord {
   readonly _id: Types.ObjectId;
@@ -17,6 +25,7 @@ export interface HandoffRecord {
   readonly initiatedAt: Date;
   readonly completedWorkAtHandover: string;
   readonly state: HandoffState;
+  readonly membership?: Types.ObjectId;
   readonly decidedBy?: Types.ObjectId;
   readonly decidedAt?: Date;
   readonly proposal?: Types.ObjectId;
@@ -35,6 +44,7 @@ const handoffSchema = new Schema(
     initiatedAt: { type: Date, required: true, default: () => new Date() },
     completedWorkAtHandover: { type: String, required: true, trim: true, maxlength: 600 },
     state: { type: String, enum: HANDOFF_STATES, required: true, default: 'proposed' },
+    membership: { type: Schema.Types.ObjectId, ref: 'ProjectMembership' },
     decidedBy: { type: Schema.Types.ObjectId, ref: 'User' },
     decidedAt: { type: Date },
     proposal: { type: Schema.Types.ObjectId, ref: 'RescheduleProposal' },
@@ -45,5 +55,6 @@ const handoffSchema = new Schema(
 handoffSchema.index({ task: 1, state: 1 });
 handoffSchema.index({ from: 1, state: 1, decidedAt: -1 });
 handoffSchema.index({ to: 1, state: 1 });
+handoffSchema.index({ project: 1, to: 1, state: 1 });
 
 export const WorkHandoffModel = model('WorkHandoff', handoffSchema);

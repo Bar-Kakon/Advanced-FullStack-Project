@@ -192,6 +192,15 @@ export interface HandoffDto {
   readonly viewerDecides: boolean;
 }
 
+export type HandoffMode = 'authority' | 'disclosure';
+
+export interface HandoffViewDto {
+  readonly handoff: HandoffDto | null;
+  readonly mode: HandoffMode | null;
+  readonly delegateName: string | null;
+  readonly currentAssigneeId: string | null;
+}
+
 export interface PendingActionsDto {
   readonly proposals: number;
   readonly handoffs: number;

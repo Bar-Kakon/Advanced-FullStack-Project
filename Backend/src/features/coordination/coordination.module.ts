@@ -8,6 +8,7 @@ import { companyRepository } from '../companies/company.repository.js';
 import { companyMembershipRepository } from '../companies/companyMembership.repository.js';
 import { createCompanyContextService } from '../companies/companyContext.service.js';
 import { projectAccessRepository } from '../projectaccess/projectAccess.repository.js';
+import { projectGrantRepository } from '../projectaccess/projectGrant.repository.js';
 import { participantRepository } from '../projectmembers/participant.repository.js';
 import { projectRepository } from '../projects/project.repository.js';
 import { parseCalendarDate } from '../projects/projectDates.js';
@@ -74,6 +75,7 @@ export const buildCoordinationService = (): CoordinationService =>
     audit: auditRepository,
     projects: projectRepository,
     access: projectAccessRepository,
+    grants: projectGrantRepository,
     calendars: companyCalendarRepository,
     participants: participantRepository,
     companyContext: createCompanyContextService({
@@ -252,7 +254,7 @@ export const createCoordinationModule = (
 
   router.get('/tasks/:taskId/handoff', validateRequest({ params: taskParamsSchema }), async (req, res) => {
     const { taskId } = getValidated<{ taskId: string }>(res, 'params');
-    res.json({ handoff: await service.handoffForTask(getAuthenticatedUserId(res), taskId) });
+    res.json(await service.handoffViewFor(getAuthenticatedUserId(res), taskId));
   });
 
   router.post(
@@ -260,7 +262,7 @@ export const createCoordinationModule = (
     validateRequest({ params: taskParamsSchema, body: handoffBodySchema }),
     async (req, res) => {
       const { taskId } = getValidated<{ taskId: string }>(res, 'params');
-      const body = getValidated<{ toUserId: string; completedWorkAtHandover: string; proposalId?: string }>(res, 'body');
+      const body = getValidated<{ toUserId?: string; completedWorkAtHandover: string; proposalId?: string }>(res, 'body');
       res.status(201).json({
         handoff: await service.initiateHandoff(getAuthenticatedUserId(res), taskId, body),
       });

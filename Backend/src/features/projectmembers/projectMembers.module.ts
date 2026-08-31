@@ -9,6 +9,7 @@ import { permissionTemplateRepository } from '../projectaccess/permissionTemplat
 import { projectAccessRepository } from '../projectaccess/projectAccess.repository.js';
 import { projectGrantRepository } from '../projectaccess/projectGrant.repository.js';
 import { projectRepository } from '../projects/project.repository.js';
+import type { MembershipOutcomeListener } from './membershipOutcome.port.js';
 import { participantRepository } from './participant.repository.js';
 import { createProjectInvitationsService } from './projectInvitations.service.js';
 import {
@@ -74,13 +75,17 @@ export const createProjectMembersModule = (
 };
 
 /** The other side of the same rows: what an invited person sees, and how they answer. */
-export const createProjectInvitationsModule = (requireAccessToken: RequestHandler): Router => {
+export const createProjectInvitationsModule = (
+  requireAccessToken: RequestHandler,
+  outcomes?: MembershipOutcomeListener,
+): Router => {
   const controller = createProjectInvitationsController(
     createProjectInvitationsService({
       projects: projectRepository,
       access: projectAccessRepository,
       grants: projectGrantRepository,
       participants: participantRepository,
+      ...(outcomes === undefined ? {} : { outcomes }),
     }),
   );
 

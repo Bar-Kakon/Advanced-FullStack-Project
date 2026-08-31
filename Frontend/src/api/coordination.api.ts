@@ -2,6 +2,7 @@ import { api } from './client';
 import type {
   DateChangeInput,
   Handoff,
+  HandoffView,
   ImpactPreview,
   ItemDecision,
   JustifiedDeclineReason,
@@ -122,17 +123,20 @@ export const selectAlternative = async (proposalId: string, token: string): Prom
   return data.proposal;
 };
 
-export const fetchHandoff = async (taskId: string, signal?: AbortSignal): Promise<Handoff | null> => {
-  const { data } = await api.get<{ handoff: Handoff | null }>(
+export const fetchHandoffView = async (
+  taskId: string,
+  signal?: AbortSignal,
+): Promise<HandoffView> => {
+  const { data } = await api.get<HandoffView>(
     `/coordination/tasks/${taskId}/handoff`,
     signal ? { signal } : {},
   );
-  return data.handoff;
+  return data;
 };
 
 export const initiateHandoff = async (
   taskId: string,
-  input: { toUserId: string; completedWorkAtHandover: string },
+  input: { toUserId?: string; completedWorkAtHandover: string },
 ): Promise<Handoff> => {
   const { data } = await api.post<{ handoff: Handoff }>(`/coordination/tasks/${taskId}/handoff`, input);
   return data.handoff;

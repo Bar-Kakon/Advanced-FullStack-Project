@@ -15,6 +15,7 @@ export const AUDIT_ACTIONS = [
   'proposal.alternatives_requested',
   'proposal.alternative_selected',
   'work.handoff_initiated',
+  'work.handoff_awaiting_membership',
   'work.handoff_accepted',
   'work.handoff_declined',
   'proposal.cancelled',

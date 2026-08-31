@@ -58,5 +58,8 @@ export const handoffNeedsCompletionRecord = (): AppError =>
 export const handoffTargetInvalid = (): AppError =>
   new AppError('That person cannot take this work over', 409, 'HANDOFF_TARGET_INVALID');
 
+export const handoffResponsibilityMoved = (): AppError =>
+  new AppError('Responsibility for that work has already moved', 409, 'HANDOFF_STALE');
+
 export const alternativeNotFound = (): AppError =>
   new AppError('That alternative is not available', 404, 'ALTERNATIVE_NOT_FOUND');

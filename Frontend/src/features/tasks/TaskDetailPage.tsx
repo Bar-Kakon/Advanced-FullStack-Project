@@ -190,8 +190,7 @@ export const TaskDetailPage = () => {
 
             <HandoffPanel
               taskId={task.id}
-              canInitiate={task.viewer.canRequestDateChange}
-              hasDelegation={task.delegation !== null}
+              projectId={task.project?.id ?? null}
               onResponsibilityChanged={() => void reload()}
             />
 

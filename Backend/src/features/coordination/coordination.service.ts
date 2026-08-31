@@ -6,6 +6,7 @@ import { workingDaysBetween } from '../calendar/workingDay.js';
 import { NoWorkingDaysError } from '../calendar/workingDay.js';
 import type { CompanyContextService } from '../companies/companyContext.service.js';
 import type { ProjectAccessRepository } from '../projectaccess/projectAccess.repository.js';
+import type { ProjectGrantRepository } from '../projectaccess/projectGrant.repository.js';
 import { effectiveProjectPermissions } from '../projectaccess/projectPermission.js';
 import type { ParticipantRepository } from '../projectmembers/participant.repository.js';
 import type { ProjectRecord } from '../projects/project.model.js';
@@ -27,7 +28,7 @@ import {
   type AlternativesConstraints,
   type ProjectGraph,
 } from './cascade.service.js';
-import type { HandoffRecord } from './handoff.model.js';
+import type { HandoffRecord, HandoffState } from './handoff.model.js';
 import type { HandoffRepository } from './handoff.repository.js';
 import {
   mayAdjustImpact,
@@ -45,6 +46,8 @@ import type {
   AuditEntryDto,
   ExplanationEntryDto,
   HandoffDto,
+  HandoffMode,
+  HandoffViewDto,
   ImpactPreviewDto,
   PendingActionsDto,
   ProposalDto,
@@ -62,6 +65,7 @@ import {
   handoffAlreadyOpen,
   handoffNeedsCompletionRecord,
   handoffNotFound,
+  handoffResponsibilityMoved,
   handoffTargetInvalid,
   notARespondent,
   notPermittedToHandOff,
@@ -107,6 +111,8 @@ const toHandoffDto = (
 const AUDIT_PAGE = 100;
 const MS_PER_HOUR = 3_600_000;
 
+class ResponsibilityAlreadyMoved extends Error {}
+
 export interface RequestInput {
   readonly changes: RequestedChanges;
   readonly reason?: string;
@@ -130,7 +136,7 @@ export interface AlternativesInput {
 }
 
 export interface HandoffInput {
-  readonly toUserId: string;
+  readonly toUserId?: string;
   readonly completedWorkAtHandover: string;
   readonly proposalId?: string;
 }
@@ -167,7 +173,9 @@ export interface CoordinationService {
   selectAlternative(userId: string, proposalId: string, token: string): Promise<ProposalDto>;
   initiateHandoff(userId: string, taskId: string, input: HandoffInput): Promise<HandoffDto>;
   decideHandoff(userId: string, handoffId: string, accept: boolean): Promise<HandoffDto>;
-  handoffForTask(userId: string, taskId: string): Promise<HandoffDto | null>;
+  handoffViewFor(userId: string, taskId: string): Promise<HandoffViewDto>;
+  completeAfterMembership(userId: string, projectId: string): Promise<void>;
+  abandonAfterMembershipDeclined(userId: string, projectId: string): Promise<void>;
   pendingActionsFor(userId: string): Promise<ReadonlyMap<string, PendingActionsDto>>;
   pendingActionTotals(userId: string): Promise<PendingActionsDto>;
   pendingFor(userId: string, taskIds: readonly string[]): Promise<ReadonlyMap<string, boolean>>;
@@ -181,6 +189,7 @@ export interface CoordinationDependencies {
   readonly audit: AuditRepository;
   readonly projects: ProjectRepository;
   readonly access: ProjectAccessRepository;
+  readonly grants: ProjectGrantRepository;
   readonly calendars: CompanyCalendarRepository;
   readonly participants: ParticipantRepository;
   readonly companyContext: CompanyContextService;
@@ -193,6 +202,7 @@ export const createCoordinationService = ({
   audit,
   projects,
   access,
+  grants,
   calendars,
   participants,
   companyContext,
@@ -249,6 +259,77 @@ export const createCoordinationService = ({
 
   const nameOf = async (id: Types.ObjectId): Promise<string> =>
     (await namesOf([id])).get(id.toString()) ?? '';
+
+  const standsAsMember = async (handoff: HandoffRecord): Promise<boolean> =>
+    (await access.findActiveMembership(handoff.project, handoff.to)) !== null;
+
+  const companyOf = async (user: Types.ObjectId): Promise<{ company?: Types.ObjectId }> => {
+    const [person] = await participants.findByIds([user]);
+    return person?.companyId ? { company: person.companyId } : {};
+  };
+
+  const moveResponsibility = async (
+    handoff: HandoffRecord,
+    by: Types.ObjectId,
+    at: Date,
+    from: readonly HandoffState[],
+  ): Promise<HandoffRecord | null> => {
+    try {
+      return await transactions.run(async (session) => {
+        const won = await handoffs.accept(handoff._id, by, at, from, session);
+        if (won === null) throw new ResponsibilityAlreadyMoved();
+
+        const moved = await TaskModel.updateOne(
+          { _id: won.task, assignee: won.from },
+          { $set: { assignee: won.to, previousAssignee: won.from }, $unset: { delegation: '' } },
+          { session },
+        ).exec();
+        if (moved.matchedCount === 0) throw new ResponsibilityAlreadyMoved();
+        return won;
+      });
+    } catch (error) {
+      if (error instanceof ResponsibilityAlreadyMoved) return null;
+      throw error;
+    }
+  };
+
+  const appendTransferEntry = async (
+    handoff: HandoffRecord,
+    action: 'work.handoff_accepted' | 'work.handoff_declined',
+  ): Promise<void> => {
+    const task = await TaskModel.findById(handoff.task).lean<TaskRecord>().exec();
+    await audit.append([
+      {
+        project: handoff.project,
+        task: handoff.task,
+        actor: handoff.from,
+        actorName: await nameOf(handoff.from),
+        action,
+        parties: [handoff.from, handoff.to],
+        details: { taskTitle: task?.title ?? null },
+        partyDetails: { taskTitle: task?.title ?? null },
+      },
+    ]);
+  };
+
+  const completeTransfer = async (handoff: HandoffRecord): Promise<HandoffRecord | null> => {
+    const at = new Date();
+    const settled = await moveResponsibility(handoff, handoff.to, at, ['awaiting_membership']);
+    if (settled === null) {
+      await handoffs.settle(handoff._id, 'cancelled', handoff.to, at, ['awaiting_membership']);
+      return null;
+    }
+    await appendTransferEntry(settled, 'work.handoff_accepted');
+    return settled;
+  };
+
+  const awaitingFor = async (userId: string, projectId: string): Promise<HandoffRecord | null> => {
+    if (!Types.ObjectId.isValid(userId) || !Types.ObjectId.isValid(projectId)) return null;
+    return handoffs.findAwaitingMembership(
+      new Types.ObjectId(projectId),
+      new Types.ObjectId(userId),
+    );
+  };
 
   const pendingBaseline = async (
     projectId: Types.ObjectId,
@@ -1211,26 +1292,29 @@ export const createCoordinationService = ({
       const { project, viewer } = await reach(userId, (task.project as Types.ObjectId).toString());
 
       if (input.completedWorkAtHandover.trim() === '') throw handoffNeedsCompletionRecord();
-      if (!Types.ObjectId.isValid(input.toUserId)) throw handoffTargetInvalid();
 
       const from = task.assignee;
       if (from === undefined) throw handoffTargetInvalid();
 
-      const to = new Types.ObjectId(input.toUserId);
+      const delegate = from.toString() === userId ? task.delegation?.delegate : undefined;
+      if (input.toUserId !== undefined && !Types.ObjectId.isValid(input.toUserId)) {
+        throw handoffTargetInvalid();
+      }
+
+      const to =
+        input.toUserId === undefined ? delegate : new Types.ObjectId(input.toUserId);
+      if (to === undefined) throw handoffTargetInvalid();
       if (to.equals(from)) throw handoffTargetInvalid();
 
-      const disclosesOwnDelegate =
-        from.toString() === userId && task.delegation?.delegate.toString() === input.toUserId;
-
       let kind: HandoffRecord['kind'];
-      if (disclosesOwnDelegate) kind = 'delegation_disclosure';
+      if (delegate !== undefined && delegate.equals(to)) kind = 'delegation_disclosure';
       else if (viewer.managesSchedule) {
         const membership = await access.findActiveMembership(project._id, to);
         if (membership === null) throw handoffTargetInvalid();
         kind = 'authority';
       } else throw notPermittedToHandOff();
 
-      if ((await handoffs.findProposedForTask(task._id)) !== null) throw handoffAlreadyOpen();
+      if ((await handoffs.findOpenForTask(task._id)) !== null) throw handoffAlreadyOpen();
 
       const actor = new Types.ObjectId(userId);
       const created = await handoffs.create({
@@ -1269,6 +1353,8 @@ export const createCoordinationService = ({
         throw handoffNotFound();
       });
 
+      if (handoff.state !== 'proposed') throw handoffNotFound();
+
       const decides =
         handoff.kind === 'authority'
           ? handoff.to.toString() === userId
@@ -1280,23 +1366,25 @@ export const createCoordinationService = ({
       const task = await TaskModel.findById(handoff.task).lean<TaskRecord>().exec();
 
       let settled: HandoffRecord | null;
-      if (accept) {
-        settled = await transactions.run(async (session) => {
-          const won = await handoffs.accept(handoff._id, actor, at, session);
-          if (won === null) return null;
+      let heldForMembership = false;
 
-          await TaskModel.updateOne(
-            { _id: won.task, assignee: won.from },
-            {
-              $set: { assignee: won.to, previousAssignee: won.from },
-              $unset: { delegation: '' },
-            },
-            { session },
-          ).exec();
-          return won;
-        });
+      if (!accept) {
+        settled = await handoffs.settle(handoff._id, 'declined', actor, at, ['proposed']);
+      } else if (await standsAsMember(handoff)) {
+        settled = await moveResponsibility(handoff, actor, at, ['proposed']);
+        if (settled === null) throw handoffResponsibilityMoved();
       } else {
-        settled = await handoffs.settle(handoff._id, 'declined', actor, at);
+        const invitation = await grants.invite({
+          project: handoff.project,
+          user: handoff.to,
+          ...(await companyOf(handoff.to)),
+          projectRole: 'subcontractor',
+          permissions: [],
+          fullAuthority: false,
+          invitedBy: handoff.kind === 'authority' ? handoff.initiatedBy : actor,
+        });
+        settled = await handoffs.holdForMembership(handoff._id, invitation._id);
+        heldForMembership = true;
       }
       if (settled === null) throw handoffNotFound();
 
@@ -1306,7 +1394,11 @@ export const createCoordinationService = ({
           task: settled.task,
           actor: settled.from,
           actorName: await nameOf(settled.from),
-          action: accept ? 'work.handoff_accepted' : 'work.handoff_declined',
+          action: heldForMembership
+            ? 'work.handoff_awaiting_membership'
+            : accept
+              ? 'work.handoff_accepted'
+              : 'work.handoff_declined',
           parties: [settled.from, settled.to],
           details: { taskTitle: task?.title ?? null },
           partyDetails: { taskTitle: task?.title ?? null },
@@ -1321,26 +1413,73 @@ export const createCoordinationService = ({
       );
     },
 
-    async handoffForTask(userId, taskId) {
-      const task = await loadTask(taskId);
+    async completeAfterMembership(userId, projectId) {
+      const handoff = await awaitingFor(userId, projectId);
+      if (handoff === null) return;
+      await completeTransfer(handoff);
+    },
+
+    async abandonAfterMembershipDeclined(userId, projectId) {
+      const handoff = await awaitingFor(userId, projectId);
+      if (handoff === null) return;
+
+      const settled = await handoffs.settle(handoff._id, 'declined', handoff.to, new Date(), [
+        'awaiting_membership',
+      ]);
+      if (settled === null) return;
+      await appendTransferEntry(settled, 'work.handoff_declined');
+    },
+
+    async handoffViewFor(userId, taskId) {
+      let task = await loadTask(taskId);
       const { viewer } = await reach(userId, (task.project as Types.ObjectId).toString());
 
-      const handoff = await handoffs.findProposedForTask(task._id);
-      if (handoff === null) return null;
+      let open = await handoffs.findOpenForTask(task._id);
+      if (open !== null && open.state === 'awaiting_membership' && (await standsAsMember(open))) {
+        await completeTransfer(open);
+        task = await loadTask(taskId);
+        open = null;
+      }
 
-      const involved =
-        handoff.from.toString() === userId ||
-        handoff.to.toString() === userId ||
-        viewer.managesSchedule;
-      if (!involved) return null;
+      if (open !== null) {
+        const involved =
+          open.from.toString() === userId ||
+          open.to.toString() === userId ||
+          viewer.managesSchedule;
+        return {
+          handoff: involved
+            ? toHandoffDto(
+                open,
+                task.title,
+                userId,
+                viewer.managesSchedule,
+                await namesOf([open.from, open.to]),
+              )
+            : null,
+          mode: null,
+          delegateName: null,
+          currentAssigneeId: null,
+        };
+      }
 
-      return toHandoffDto(
-        handoff,
-        task.title,
-        userId,
-        viewer.managesSchedule,
-        await namesOf([handoff.from, handoff.to]),
-      );
+      const settled = task.completedAt !== undefined || task.orphanedAt !== undefined;
+      const isAssignee = task.assignee?.toString() === userId;
+
+      let mode: HandoffMode | null = null;
+      if (!settled && task.assignee !== undefined) {
+        if (isAssignee && task.delegation !== undefined) mode = 'disclosure';
+        else if (viewer.managesSchedule) mode = 'authority';
+      }
+
+      return {
+        handoff: null,
+        mode,
+        delegateName:
+          mode === 'disclosure' && task.delegation !== undefined
+            ? await nameOf(task.delegation.delegate)
+            : null,
+        currentAssigneeId: mode === null ? null : (task.assignee?.toString() ?? null),
+      };
     },
 
     async pendingActionsFor(userId) {
