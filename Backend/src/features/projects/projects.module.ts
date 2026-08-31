@@ -11,6 +11,7 @@ import { companyCalendarRepository } from '../calendar/companyCalendar.repositor
 import { projectAccessRepository } from '../projectaccess/projectAccess.repository.js';
 import { projectGrantRepository } from '../projectaccess/projectGrant.repository.js';
 import { createProjectsService } from './projects.service.js';
+import { planCapacityAdapter } from '../billing/planCapacity.adapter.js';
 import { taskExecutionAdapter } from '../tasks/taskExecution.adapter.js';
 import { buildCoordinationService } from '../coordination/coordination.module.js';
 import {
@@ -37,6 +38,7 @@ export const createProjectsModule = (requireAccessToken: RequestHandler): Router
       access: projectAccessRepository,
       grants: projectGrantRepository,
       pendingActions: { forUser: (userId) => coordination.pendingActionsFor(userId) },
+      planCapacity: planCapacityAdapter,
     }),
   );
 

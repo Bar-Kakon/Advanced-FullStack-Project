@@ -13,7 +13,8 @@ import {
   requireProjectPermission,
   resolveProjectAccess,
 } from './projectAuthorization.js';
-import { calendarVersionMissing } from './project.errors.js';
+import { calendarVersionMissing, projectPlanLimitReached } from './project.errors.js';
+import type { PlanCapacityPort } from './planCapacity.port.js';
 import type { ProjectDto, ProjectPageDto } from './project.dto.js';
 import { toProjectDto } from './project.mapper.js';
 import type { ProjectRecord, TargetChangeRecord } from './project.model.js';
@@ -61,6 +62,7 @@ export interface ProjectsDependencies {
   readonly access: ProjectAccessRepository;
   readonly grants: ProjectGrantRepository;
   readonly pendingActions: PendingActionsPort;
+  readonly planCapacity: PlanCapacityPort;
 }
 
 const encodeCursor = ({ createdAt, id }: ProjectCursor): string =>
@@ -87,6 +89,7 @@ export const createProjectsService = ({
   access,
   grants,
   pendingActions,
+  planCapacity,
 }: ProjectsDependencies): ProjectsService => {
   /** The caller's company is read from their session, never from the request body. */
   const contextFor = async (userId: string) => {
@@ -124,6 +127,12 @@ export const createProjectsService = ({
   return {
     async create(userId, body) {
       const context = requireMayCreateProject(await companyContext.forUser(userId), userId);
+
+      // Server-authoritative, and checked before anything is written. Hiding the control on the
+      // client is a courtesy to the person; this is the enforcement.
+      if (!(await planCapacity.mayOpenAnotherProject(context.companyId))) {
+        throw projectPlanLimitReached();
+      }
 
       // A new project receives the contractor's schedule — pinned to the version current right now,
       // so a later edit to the company default cannot reach back into it.

@@ -86,6 +86,13 @@ export const en: Strings = {
       decline: 'Rely on notifications inside FieldSync only',
       changeable: 'This choice can be changed later in Notification Settings.',
     },
+
+    googleOnboarding: {
+      notice: 'Google identified you as {email}. A few business details are still needed to finish signing up.',
+      emailLocked: 'This address comes from the Google account and cannot be edited.',
+      noPassword: 'The account opens with no password, and you sign in through Google.',
+      submit: 'Finish signing up',
+    },
   },
 
   specialtyCategories: {
@@ -319,6 +326,7 @@ export const en: Strings = {
     accountMenu: 'Account menu',
     account: {
       myProfile: 'My profile',
+      subscriptions: 'Plans & subscription',
       settings: 'Settings',
       logOut: 'Log out',
     },
@@ -360,6 +368,16 @@ export const en: Strings = {
       passwordRequired: 'Enter a password.',
       network: 'We could not reach the server. Check your connection and try again.',
       generic: 'Something went wrong. Please try again.',
+    },
+
+    googleErrors: {
+      linkRequired:
+        'That address already has an account with a password. Sign in with your password, then connect Google from your account.',
+      identityClaimed: 'This Google account is already connected to a different FieldSync account.',
+      emailNotVerified: 'Google has not verified the email address on that account.',
+      notConfigured: 'Google sign-in is unavailable right now. You can sign in with email and password.',
+      credential: 'We could not verify that Google account. Please try again.',
+      cancelled: 'Google sign-in was stopped.',
     },
   },
 
@@ -1836,6 +1854,132 @@ export const en: Strings = {
       notFound: 'The report is not available.',
       network: 'No connection to the server. Please try again.',
       unknown: 'The action failed. Please try again.',
+    },
+  },
+
+  subscriptions: {
+    documentTitle: 'תוכניות ומנוי / Plans & subscription — FieldSync',
+    title: 'Plans & subscription',
+    lede: 'Choose the plan that fits how you work. Upgrade, downgrade or cancel at any time — your projects are kept either way.',
+    loading: 'Loading plans…',
+    retry: 'Try again',
+    loadFailed: 'The plans could not be loaded.',
+
+    planNames: { free: 'Free', basic: 'Basic', premium: 'Premium' },
+    taglines: {
+      free: 'For running your own day-to-day work, and working on other people’s projects.',
+      basic: 'For running several sites at once, with more planning room.',
+      premium: 'For high-volume work, with full privacy over who actually does the job.',
+    },
+
+    currentFlag: 'Your plan',
+    popularFlag: 'Most popular',
+    freePrice: 'Free',
+    forever: 'forever',
+    perMonth: '/ month',
+    currentPlan: 'Current plan',
+    upgradeTo: 'Upgrade to {plan}',
+    downgradeTo: 'Move to {plan}',
+    cancelPlan: 'Cancel subscription',
+
+    checkoutUnavailable: 'Payment is not available yet. The Free plan stays active with no time limit.',
+    checkoutUnavailableShort: 'Payment is not available yet',
+
+    period: {
+      renews: 'This plan renews on {date}.',
+      scheduled: 'The {plan} plan takes effect on {date}.',
+      canceled: 'The subscription ends on {date}, and the account moves to the Free plan.',
+      keepPlan: 'Cancel the scheduled change',
+      pastDue: 'The billing period has ended. The account is on the Free plan.',
+    },
+
+    compare: {
+      title: 'Plan comparison',
+      lede: 'Every row here differs between the plans — this is exactly what an upgrade changes.',
+      capability: 'Capability',
+      included: 'Included',
+      notIncluded: 'Not included',
+      unlimited: 'Unlimited',
+      megabytes: '{n}MB',
+      lastDays: 'Last {n} days',
+      months: '{n} months',
+      complete: 'Complete',
+    },
+
+    rows: {
+      activeProjects: 'Projects I manage',
+      activeDelegations: 'Active confidential delegations',
+      privateExecutionLayer: 'Private workspace',
+      agreementForm: 'Automatic task creation',
+      moderatedThreads: 'Moderated project conversations',
+      muteControls: 'Mute settings',
+      fileMaxBytes: 'File uploads',
+      auditRetentionDays: 'Project history',
+      notificationChannels: 'Notification channels',
+      connections: 'Professional network',
+      supportTier: 'Support',
+    },
+
+    channels: {
+      inApp: 'In the app',
+      inAppAndEmail: 'In the app and by email',
+      inAppEmailAndDigest: 'In the app, by email and a daily summary',
+    },
+
+    support: { community: 'Help center', email: 'Email', priority: 'Priority email' },
+
+    common: {
+      title: 'Included in every plan',
+      lede: 'These capabilities are the same on every plan and do not change when you upgrade.',
+      everyPlan: 'Every plan',
+      rows: [
+        { label: 'Tasks per project', value: 'Unlimited' },
+        { label: 'Team members per project', value: 'Unlimited' },
+        { label: 'Projects I do not manage', value: 'Unlimited' },
+        { label: 'Date change requests', value: 'Included' },
+        { label: 'Stage dependencies', value: 'Included, with conflict checks' },
+        { label: 'Versioned work plans', value: 'Included, the history is kept' },
+        { label: 'Public profile and flexibility score', value: 'Included' },
+      ],
+    },
+
+    faq: {
+      title: 'Frequently asked questions',
+      items: [
+        {
+          q: 'What counts as an active confidential delegation?',
+          a: 'A delegation stays active while the task passed on is still open. Once it is completed, the slot frees up for the next one. On every plan, the contractor above never sees who the work was passed to.',
+        },
+        {
+          q: 'Do the subcontractors I invite have to pay?',
+          a: 'No. Joining someone else’s project, receiving tasks, updating status, and both opening and answering date change requests are all included in the Free plan, without limit.',
+        },
+        {
+          q: 'What happens to my projects if I downgrade?',
+          a: 'Nothing is deleted. The move to the lower plan takes effect at the end of the current billing period, and the current plan keeps working normally until then.',
+        },
+        {
+          q: 'Can I cancel at any time?',
+          a: 'Yes. Cancellation takes effect at the end of the current billing cycle, and the plan keeps working normally until then. There is no minimum term.',
+        },
+        {
+          q: 'Which currency am I billed in?',
+          a: 'Shekels. The price shown is the final price, VAT included.',
+        },
+      ],
+    },
+
+    note: 'Prices include VAT · billed monthly · cancel at any time.',
+    provisional: 'Prices and limits are provisional and may change.',
+
+    errors: {
+      alreadyOnPlan: 'That is already the current plan.',
+      notPurchasable: 'That plan cannot be purchased.',
+      noActiveSubscription: 'There is no active subscription to change.',
+      providerNotConfigured: 'Payment is unavailable right now.',
+      checkoutFailed: 'We could not open the payment page. Please try again.',
+      network: 'We could not reach the server. Check the connection and try again.',
+      unknown: 'We could not complete that right now.',
     },
   },
 

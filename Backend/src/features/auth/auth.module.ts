@@ -10,6 +10,8 @@ import { userRepository } from '../users/user.repository.js';
 import { createAuthController } from './auth.controller.js';
 import { createAuthRouter } from './auth.routes.js';
 import { createAuthService } from './auth.service.js';
+import { createGoogleAuthService } from './googleAuth.service.js';
+import { createGoogleIdentityService } from './googleIdentity.service.js';
 import { passwordService } from './password.service.js';
 import { createPasswordResetService } from './passwordReset.service.js';
 import { passwordResetTokenRepository } from './passwordResetToken.repository.js';
@@ -52,17 +54,26 @@ export const createAuthModule = (config: AppConfig): AuthModule => {
     refreshTokenStore: refreshTokenRepository,
   });
 
+  const companyContext = createCompanyContextService({
+    memberships: companyMembershipRepository,
+    companies: companyRepository,
+  });
+
   const authService = createAuthService({
     users: userRepository,
     passwords: passwordService,
     refreshTokens,
     refreshTokenStore: refreshTokenRepository,
     tokenPair,
-    companyContext: createCompanyContextService({
-      memberships: companyMembershipRepository,
-      companies: companyRepository,
-    }),
+    companyContext,
   });
+
+  // Absent credentials are supported, as they are for Google Maps: the Google routes answer
+  // GOOGLE_AUTH_NOT_CONFIGURED and password login is untouched.
+  const googleIdentity =
+    config.googleAuth.clientId === undefined
+      ? null
+      : createGoogleIdentityService(config.googleAuth.clientId);
 
   const registrationService = createRegistrationService({
     users: userRepository,
@@ -71,7 +82,13 @@ export const createAuthModule = (config: AppConfig): AuthModule => {
     passwords: passwordService,
     transactions: { run: runInTransaction },
     termsVersion: config.terms.version,
+    googleIdentity,
   });
+
+  const googleAuthService =
+    googleIdentity === null
+      ? null
+      : createGoogleAuthService({ users: userRepository, googleIdentity, tokenPair, companyContext });
 
   const passwordResetService = createPasswordResetService({
     users: userRepository,
@@ -88,7 +105,13 @@ export const createAuthModule = (config: AppConfig): AuthModule => {
 
   return {
     router: createAuthRouter(
-      createAuthController({ authService, registrationService, passwordResetService, cookie }),
+      createAuthController({
+        authService,
+        registrationService,
+        passwordResetService,
+        cookie,
+        googleAuthService,
+      }),
       requireAccessToken,
     ),
     requireAccessToken,

@@ -1324,3 +1324,32 @@ html[data-lang="en"] {
 }
 .email-choice__body--note { color: var(--text); }
 .email-choice__label { font-size: 15.5px; line-height: 1.4; }
+
+/* ═══ Google sign-in ═══════════════════════════════════════════════════════════
+   Google's script renders its own button inside this wrapper. Its appearance is
+   governed by Google's branding rules and is deliberately not restyled here; the
+   wrapper only places it and matches the width of the controls above it. */
+.google-signin { display: flex; justify-content: center; width: 100%; }
+.google-signin__host { width: 100%; display: flex; justify-content: center; }
+
+/* While a credential is in flight. `inert` already removes it from the tab order;
+   this is the visible half of the same statement. */
+.google-signin--busy { opacity: 0.55; cursor: progress; }
+
+/* An explanatory line inside a form — the Google onboarding notice, and the note
+   that stands where the password fields would be. Never an error: it uses the
+   muted text token, not the error one. */
+.form-note {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--text-mute);
+}
+
+.form-note--google {
+  padding: 10px 14px;
+  border: 1px solid var(--secondary-30);
+  border-radius: var(--r-sm);
+  background: var(--secondary-15);
+  color: var(--text-soft);
+}

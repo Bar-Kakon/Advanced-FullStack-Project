@@ -57,7 +57,11 @@
     "migrate:report-indexes": "tsx scripts/migrate-report-indexes.ts",
     "seed:moderation": "tsx scripts/seed-moderation.ts",
     "admin:grant": "tsx scripts/grant-platform-admin.ts grant",
-    "admin:revoke": "tsx scripts/grant-platform-admin.ts revoke"
+    "admin:revoke": "tsx scripts/grant-platform-admin.ts revoke",
+    "seed:plans": "tsx scripts/seed-plans.ts",
+    "provision:paypal-plans": "tsx scripts/provision-paypal-plans.ts",
+    "billing:sweep": "tsx scripts/billing-sweep.ts",
+    "verify:subscriptions": "tsx scripts/verify-subscriptions.ts"
   },
   "dependencies": {
     "@types/nodemailer": "^8.0.1",
@@ -67,6 +71,7 @@
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "express-rate-limit": "^8.7.0",
+    "google-auth-library": "^11.0.2",
     "helmet": "^8.3.0",
     "joi": "^18.2.5",
     "jsonwebtoken": "^9.0.3",

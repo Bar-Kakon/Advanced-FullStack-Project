@@ -98,9 +98,18 @@ export interface RegisterPayload {
   /** Employee only. Part of what identifies the seat being claimed. */
   readonly companyPosition?: CompanyPosition;
   readonly email: string;
-  readonly password: string;
-  /** Validated by the server and never stored. Required, so it is always sent. */
-  readonly confirmPassword: string;
+  /**
+   * Both absent when `googleIdToken` is present, and refused by the server in that case rather
+   * than ignored: a Google account is opened with no password at all.
+   */
+  readonly password?: string;
+  /** Validated by the server and never stored. */
+  readonly confirmPassword?: string;
+  /**
+   * A Google ID token, present exactly when this registration completes a Google sign-in. The
+   * server verifies it against Google again and refuses an email that is not the verified one.
+   */
+  readonly googleIdToken?: string;
   /** Step 1's first choice. It decides which taxonomy `specialty` is read against. */
   readonly registrationCategory: RegistrationCategory;
   readonly specialty: Specialty;

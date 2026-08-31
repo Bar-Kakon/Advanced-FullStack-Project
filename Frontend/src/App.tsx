@@ -16,6 +16,7 @@ import { RegisterPage } from './features/register/RegisterPage';
 import { PersonalDashboardPage } from './features/dashboard/PersonalDashboardPage';
 import { MyProfilePage } from './features/profile/MyProfilePage';
 import { EditProfilePage } from './features/profile/EditProfilePage';
+import { SubscriptionsPage } from './features/subscriptions/SubscriptionsPage';
 import { BrowsePage } from './features/browse/BrowsePage';
 import { MyNetworkPage } from './features/network/MyNetworkPage';
 import { MyProjectsPage } from './features/projects/MyProjectsPage';
@@ -64,6 +65,10 @@ export const App = () => (
             {/* A profile belongs to the person, so it stays reachable while a company decides. */}
             <Route path="/profile" element={<MyProfilePage />} />
             <Route path="/profile/edit" element={<EditProfilePage />} />
+            {/* An account-level screen, so it sits beside the profile rather than inside
+                MembershipRoute: what somebody's plan is does not depend on a company approving
+                them, and being kept out of it would be the wrong reason to hide their billing. */}
+            <Route path="/subscriptions" element={<SubscriptionsPage />} />
             <Route path="/waiting-for-approval" element={<WaitingForApprovalPage />} />
 
             <Route element={<MembershipRoute />}>

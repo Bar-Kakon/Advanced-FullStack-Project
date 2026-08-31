@@ -12,9 +12,19 @@ import type {
 import type { Availability } from '../companies/company.model.js';
 import type { CompanyPosition } from '../companies/companyMembership.model.js';
 import type { CompanyRepository, NewCompany } from '../companies/company.repository.js';
-import type { UserRecord } from '../users/user.model.js';
+import type { ProviderIdentity, UserRecord } from '../users/user.model.js';
 import type { NewUser, UserRepository } from '../users/user.repository.js';
-import { emailAlreadyRegistered, invitationAmbiguous, invitationNotFound } from './auth.errors.js';
+import {
+  emailAlreadyRegistered,
+  googleAuthNotConfigured,
+  googleEmailMismatch,
+  googleEmailNotVerified,
+  googleIdentityClaimed,
+  invalidGoogleCredential,
+  invitationAmbiguous,
+  invitationNotFound,
+} from './auth.errors.js';
+import type { GoogleIdentityService } from './googleIdentity.service.js';
 import type { RegisterBody } from './auth.validation.js';
 
 /** What the schema guarantees once `standing` is `owner`: the owner-only fields are present. */
@@ -47,7 +57,18 @@ export interface RegistrationDependencies {
   readonly transactions: TransactionRunner;
   /** The Terms version currently in force, from config — never taken from the request body. */
   readonly termsVersion: string;
+  /** `null` when this deployment has no OAuth client, which makes the Google path unreachable. */
+  readonly googleIdentity: GoogleIdentityService | null;
 }
+
+/**
+ * What the account is opened with: a password hash, or a provider link, and never both at once and
+ * never neither. Making it one value rather than two optional fields is what keeps a Google
+ * account from acquiring an invented password on some later edit.
+ */
+type RegistrationCredential =
+  | { readonly passwordHash: string }
+  | { readonly identities: readonly ProviderIdentity[] };
 
 const DUPLICATE_KEY_CODE = 11000;
 
@@ -87,9 +108,13 @@ const toNewCompany = (input: OwnerRegisterBody): NewCompany => ({
  * `true`, and the version plus the timestamp are what make that provable after the Terms change.
  * The boolean itself is not stored — it carries no information the dated record does not.
  */
-const toNewUser = (input: RegisterBody, passwordHash: string, termsVersion: string): NewUser => ({
+const toNewUser = (
+  input: RegisterBody,
+  credential: RegistrationCredential,
+  termsVersion: string,
+): NewUser => ({
   email: input.email,
-  passwordHash,
+  ...credential,
   firstName: input.firstName,
   lastName: input.lastName,
   registrationCategory: input.registrationCategory,
@@ -135,7 +160,37 @@ export const createRegistrationService = ({
   passwords,
   transactions,
   termsVersion,
+  googleIdentity,
 }: RegistrationDependencies): RegistrationService => {
+  /**
+   * Which credential opens this account, decided once and before the transaction.
+   *
+   * On the Google path the token is verified against Google again here, rather than trusted from
+   * whatever the sign-in call returned a moment earlier: the client holds that value in between,
+   * so it is input like any other. The verified address must be the one being registered, or an
+   * account could be opened under a mailbox nobody has proved they hold.
+   */
+  const credentialFor = async (input: RegisterBody): Promise<RegistrationCredential> => {
+    if (input.googleIdToken === undefined) {
+      return { passwordHash: await passwords.hash(input.password as string) };
+    }
+
+    if (googleIdentity === null) throw googleAuthNotConfigured();
+
+    const identity = await googleIdentity.verify(input.googleIdToken);
+    if (identity === null) throw invalidGoogleCredential();
+    if (!identity.emailVerified) throw googleEmailNotVerified();
+    if (identity.email !== input.email) throw googleEmailMismatch();
+
+    if ((await users.findByProviderIdentity('google', identity.subject)) !== null) {
+      throw googleIdentityClaimed();
+    }
+
+    return {
+      identities: [{ provider: 'google', subject: identity.subject, linkedAt: new Date() }],
+    };
+  };
+
   /**
    * The approved matching model: an open seat, in a company holding that name, opened for that
    * person under that job title. Company names are deliberately not unique, so every company of
@@ -163,14 +218,14 @@ export const createRegistrationService = ({
    * them all commit together or none of them exists. There is no state in which an account is half
    * created — no orphan company, and no user who belongs to nothing.
    *
-   * The duplicate check and the bcrypt hash run *before* the transaction opens. Hashing is a
-   * quarter-second of CPU, and holding a transaction open across it would widen the window for
-   * write conflicts to no purpose.
+   * The duplicate check and the credential both resolve *before* the transaction opens. Hashing is
+   * a quarter-second of CPU and verifying a Google token is a network call; holding a transaction
+   * open across either would widen the window for write conflicts to no purpose.
    */
   async register(input) {
     if (await users.existsByEmail(input.email)) throw emailAlreadyRegistered();
 
-    const passwordHash = await passwords.hash(input.password);
+    const credential = await credentialFor(input);
 
     /*
      * An employee claims a seat their employer already opened. The match is made BEFORE the
@@ -184,7 +239,7 @@ export const createRegistrationService = ({
     try {
       const user = await transactions.run(async (session): Promise<UserRecord> => {
         const created = await users.create(
-          toNewUser(input, passwordHash, termsVersion),
+          toNewUser(input, credential, termsVersion),
           session,
         );
 

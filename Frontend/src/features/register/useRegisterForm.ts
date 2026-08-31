@@ -28,12 +28,41 @@ const REQUIRED: readonly FieldName[] = [
   'city', 'region', 'password', 'confirmPassword',
 ];
 
+/** The same list without the two password fields, which the Google path does not have at all. */
+const REQUIRED_WITH_GOOGLE: readonly FieldName[] = REQUIRED.filter(
+  (field) => field !== 'password' && field !== 'confirmPassword',
+);
+
+/**
+ * What a verified Google sign-in contributes to Register: the identity, and nothing else.
+ *
+ * There is deliberately no registration category, no specialty and no business here — Google does
+ * not know them, and defaulting any of them would put somebody into a trade they never chose.
+ */
+export interface GoogleRegistration {
+  readonly idToken: string;
+  readonly email: string;
+  readonly firstName: string;
+  readonly lastName: string;
+}
+
+const withGoogle = (google: GoogleRegistration | null): RegisterFormValues =>
+  google === null
+    ? emptyRegisterForm
+    : {
+        ...emptyRegisterForm,
+        email: google.email,
+        firstName: google.firstName,
+        lastName: google.lastName,
+        googleIdToken: google.idToken,
+      };
+
 /**
  * `onSuccess` rather than a success state of its own: registration ends by going to Login, and
  * where a screen navigates is the page's business, not this hook's.
  */
-export const useRegisterForm = (onSuccess: () => void) => {
-  const [values, setValues] = useState<RegisterFormValues>(emptyRegisterForm);
+export const useRegisterForm = (onSuccess: () => void, google: GoogleRegistration | null = null) => {
+  const [values, setValues] = useState<RegisterFormValues>(() => withGoogle(google));
   const [step, setStep] = useState<RegisterStep>('details');
   // Which fields the user has actually finished with. Errors stay hidden until then, so a pristine
   // form is never scolded for being empty — the same rule the static screen's `.touched` class had.
@@ -94,6 +123,9 @@ export const useRegisterForm = (onSuccess: () => void) => {
     setTouched((prev) => (prev[field] ? prev : { ...prev, [field]: true }));
   }, []);
 
+  /** Whether this registration is completing a Google sign-in rather than setting a password. */
+  const viaGoogle = values.googleIdToken !== null;
+
   const errors = useMemo(() => {
     const emailBad = values.email.length > 0 && !EMAIL_PATTERN.test(values.email.trim());
     const passwordBad = values.password.length > 0 && values.password.length < MIN_PASSWORD_LENGTH;
@@ -104,18 +136,23 @@ export const useRegisterForm = (onSuccess: () => void) => {
   }, [values.email, values.password, values.confirmPassword]);
 
   const detailsComplete = useMemo(() => {
-    const filled = REQUIRED.every((f) => String(values[f]).trim().length > 0);
+    const required = viaGoogle ? REQUIRED_WITH_GOOGLE : REQUIRED;
+    const filled = required.every((f) => String(values[f]).trim().length > 0);
     const otherOk =
       !isOtherSpecialty(values.registrationCategory, values.specialty)
       || values.specialtyOther.trim().length > 0;
     // An employee is claiming a seat, and the position is one of the three values it is matched on.
     const positionOk = values.standing !== 'employee' || values.companyPosition !== '';
-    const matches = values.password === values.confirmPassword;
-    return (
-      filled && otherOk && positionOk && matches
-      && !errors.email && !errors.password && values.password.length >= MIN_PASSWORD_LENGTH
-    );
-  }, [values, errors.email, errors.password]);
+    // The Google path has no password to check, and asking for one would be inventing a credential
+    // the account is deliberately opened without.
+    const passwordOk =
+      viaGoogle
+      || (values.password === values.confirmPassword
+        && !errors.password
+        && values.password.length >= MIN_PASSWORD_LENGTH);
+
+    return filled && otherOk && positionOk && passwordOk && !errors.email;
+  }, [values, viaGoogle, errors.email, errors.password]);
 
   // Step 2 asks for the Terms and one of the two delivery answers. Declining email is a complete
   // answer, which is why this reads for a chosen boolean rather than for a true one.
@@ -148,7 +185,7 @@ export const useRegisterForm = (onSuccess: () => void) => {
 
   return {
     values, setValue, setStanding, setCategory, setSpecialty,
-    touched, markTouched, errors,
+    touched, markTouched, errors, viaGoogle,
     step, goNext, goBack, detailsComplete, isComplete,
     submitting, failure, submit,
   };

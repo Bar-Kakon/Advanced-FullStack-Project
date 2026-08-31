@@ -5,6 +5,7 @@ import { validateRequest } from '../../middleware/validateRequest.js';
 import type { AuthController } from './auth.controller.js';
 import {
   forgotPasswordBodySchema,
+  googleCredentialBodySchema,
   loginBodySchema,
   registerBodySchema,
   resetPasswordBodySchema,
@@ -44,6 +45,27 @@ export const createAuthRouter = (
 
   // Unauthenticated on purpose: an expired Access Token must not trap somebody in a session.
   router.post('/logout', controller.handleLogout);
+
+  /*
+   * Google sign-in sits beside Login rather than replacing it, and ends at the same place: a token
+   * pair and the same Refresh cookie. It is limited like Login because each attempt costs a
+   * signature verification.
+   */
+  router.post(
+    '/google',
+    createAuthRateLimiter('googleSignIn'),
+    validateRequest({ body: googleCredentialBodySchema }),
+    controller.handleGoogleSignIn,
+  );
+
+  // Authenticated: linking requires proving the FieldSync account first, which is what makes the
+  // link safe on an email registration never verified.
+  router.post(
+    '/google/link',
+    requireAccessToken,
+    validateRequest({ body: googleCredentialBodySchema }),
+    controller.handleGoogleLink,
+  );
 
   // The only authenticated route in this feature, and the only one that reads rather than writes.
   router.get('/me', requireAccessToken, controller.handleMe);

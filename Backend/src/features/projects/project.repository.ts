@@ -57,6 +57,8 @@ export interface ProjectRepository {
     limit: number,
   ): Promise<ProjectRecord[]>;
   listByCompany(company: Types.ObjectId, cursor: ProjectCursor | null, limit: number): Promise<ProjectRecord[]>;
+  /** How many projects the business owns. What the plan's project capacity is measured against. */
+  countByCompany(company: Types.ObjectId): Promise<number>;
   countOnOutdatedCalendar(company: Types.ObjectId, currentVersion: Types.ObjectId): Promise<number>;
   listOnOutdatedCalendar(company: Types.ObjectId, currentVersion: Types.ObjectId): Promise<ProjectRecord[]>;
   adoptCalendarVersion(
@@ -129,6 +131,10 @@ export const projectRepository: ProjectRepository = {
       .limit(limit)
       .lean<ProjectRecord[]>()
       .exec();
+  },
+
+  async countByCompany(company) {
+    return ProjectModel.countDocuments({ company }).exec();
   },
 
   async countOnOutdatedCalendar(company, currentVersion) {

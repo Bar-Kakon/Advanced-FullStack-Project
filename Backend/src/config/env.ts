@@ -43,6 +43,37 @@ export interface GoogleMapsConfig {
   readonly timeoutMs: number;
 }
 
+/**
+ * The OAuth client every Google ID token must be issued for. It is a public identifier rather than
+ * a secret: the server needs it as the audience to verify against, and the browser needs the same
+ * value to obtain a token at all.
+ *
+ * Absent is supported. The Google endpoints answer GOOGLE_AUTH_NOT_CONFIGURED and password login
+ * is untouched, rather than the process refusing to start.
+ */
+export interface GoogleAuthConfig {
+  readonly clientId: string | undefined;
+}
+
+/**
+ * Billing provider credentials, all three together or none — the same rule SMTP follows, for the
+ * same reason: a partial set is a deployment that looks able to take money and fails at the first
+ * checkout.
+ *
+ * With none of them set the provider is `none`. Free works completely, the plan comparison
+ * renders, and checkout answers BILLING_PROVIDER_NOT_CONFIGURED instead of pretending.
+ */
+export type BillingConfig =
+  | {
+      readonly provider: 'paypal';
+      readonly clientId: string;
+      readonly clientSecret: string;
+      readonly webhookId: string;
+      readonly baseUrl: string;
+      readonly timeoutMs: number;
+    }
+  | { readonly provider: 'none' };
+
 export interface AppConfig {
   readonly nodeEnv: NodeEnv;
   readonly port: number;
@@ -53,7 +84,14 @@ export interface AppConfig {
   readonly mail: MailConfig;
   /** Base URL of the React client. The reset link is built against it. */
   readonly frontendUrl: string;
+  /**
+   * Where this API is reachable from the public internet, including the `/api` prefix. The payment
+   * provider posts its callbacks to it, so it cannot be inferred from a request.
+   */
+  readonly apiPublicUrl: string;
   readonly googleMaps: GoogleMapsConfig;
+  readonly googleAuth: GoogleAuthConfig;
+  readonly billing: BillingConfig;
 }
 
 interface RawEnv {
@@ -74,6 +112,13 @@ interface RawEnv {
   readonly MAIL_FROM?: string;
   readonly GOOGLE_MAPS_API_KEY?: string;
   readonly GOOGLE_MAPS_TIMEOUT_MS: number;
+  readonly GOOGLE_OAUTH_CLIENT_ID?: string;
+  readonly PAYPAL_CLIENT_ID?: string;
+  readonly PAYPAL_CLIENT_SECRET?: string;
+  readonly PAYPAL_WEBHOOK_ID?: string;
+  readonly PAYPAL_BASE_URL: string;
+  readonly PAYPAL_TIMEOUT_MS: number;
+  readonly API_PUBLIC_URL?: string;
 }
 
 const MIN_SECRET_LENGTH = 32;
@@ -110,6 +155,21 @@ const rawEnvSchema: Joi.ObjectSchema<RawEnv> = Joi.object({
 
   GOOGLE_MAPS_API_KEY: Joi.string().trim().min(1).optional(),
   GOOGLE_MAPS_TIMEOUT_MS: Joi.number().integer().min(1000).max(30000).default(8000),
+
+  GOOGLE_OAUTH_CLIENT_ID: Joi.string().trim().min(1).optional(),
+
+  PAYPAL_CLIENT_ID: Joi.string().trim().min(1).optional(),
+  PAYPAL_CLIENT_SECRET: Joi.string().trim().min(1).optional(),
+  PAYPAL_WEBHOOK_ID: Joi.string().trim().min(1).optional(),
+  // Defaults to the sandbox. Production is an explicit act, never something a missing value does.
+  PAYPAL_BASE_URL: Joi.string()
+    .uri({ scheme: ['https'] })
+    .default('https://api-m.sandbox.paypal.com'),
+  PAYPAL_TIMEOUT_MS: Joi.number().integer().min(1000).max(30000).default(10000),
+
+  API_PUBLIC_URL: Joi.string()
+    .uri({ scheme: ['http', 'https'] })
+    .optional(),
 }).unknown(true);
 
 /**
@@ -137,6 +197,57 @@ const buildMailConfig = (value: RawEnv): MailConfig => {
     pass: value.SMTP_PASS as string,
     from: value.MAIL_FROM as string,
   };
+};
+
+/**
+ * All three PayPal values or none, for the reason `buildMailConfig` gives: two out of three is a
+ * deployment that boots, renders a checkout button and fails the moment somebody presses it.
+ *
+ * The webhook id belongs in the same set rather than beside it. Without it no callback can be
+ * verified, so a deployment holding only the two credentials would take payments and never be able
+ * to prove one arrived.
+ */
+const buildBillingConfig = (value: RawEnv): BillingConfig => {
+  const supplied = [value.PAYPAL_CLIENT_ID, value.PAYPAL_CLIENT_SECRET, value.PAYPAL_WEBHOOK_ID];
+  const present = supplied.filter((entry) => entry !== undefined && entry !== '');
+
+  if (present.length === 0) return { provider: 'none' };
+
+  if (present.length !== supplied.length) {
+    throw new Error(
+      'PayPal is partially configured. Set PAYPAL_CLIENT_ID, PAYPAL_CLIENT_SECRET and ' +
+        'PAYPAL_WEBHOOK_ID together, or leave all three unset to run without checkout.',
+    );
+  }
+
+  return {
+    provider: 'paypal',
+    clientId: value.PAYPAL_CLIENT_ID as string,
+    clientSecret: value.PAYPAL_CLIENT_SECRET as string,
+    webhookId: value.PAYPAL_WEBHOOK_ID as string,
+    baseUrl: normaliseBaseUrl(value.PAYPAL_BASE_URL),
+    timeoutMs: value.PAYPAL_TIMEOUT_MS,
+  };
+};
+
+/**
+ * Where the payment provider posts its callbacks. It cannot be inferred from an incoming request,
+ * because the request that needs it comes from the provider rather than from this server.
+ *
+ * Required only when a provider is configured, and refused rather than defaulted: a callback URL
+ * pointing at localhost is a deployment that takes payments and never hears the outcome.
+ */
+const buildApiPublicUrl = (value: RawEnv, billing: BillingConfig): string => {
+  if (value.API_PUBLIC_URL !== undefined) return normaliseBaseUrl(value.API_PUBLIC_URL);
+
+  if (billing.provider !== 'none') {
+    throw new Error(
+      'API_PUBLIC_URL must be set when a payment provider is configured: it is where the ' +
+        'provider posts payment callbacks, and it cannot be derived from an incoming request.',
+    );
+  }
+
+  return '';
 };
 
 /** Trailing slash removed once here, so no caller has to think about double slashes in a link. */
@@ -184,6 +295,8 @@ export const loadConfig = (source: NodeJS.ProcessEnv = process.env): AppConfig =
     throw new Error(`Invalid environment configuration:\n${problems}`);
   }
 
+  const billing = buildBillingConfig(value);
+
   return {
     nodeEnv: value.NODE_ENV,
     port: value.PORT,
@@ -194,5 +307,8 @@ export const loadConfig = (source: NodeJS.ProcessEnv = process.env): AppConfig =
     mail: buildMailConfig(value),
     frontendUrl: normaliseBaseUrl(value.FRONTEND_URL),
     googleMaps: { apiKey: value.GOOGLE_MAPS_API_KEY, timeoutMs: value.GOOGLE_MAPS_TIMEOUT_MS },
+    apiPublicUrl: buildApiPublicUrl(value, billing),
+    googleAuth: { clientId: value.GOOGLE_OAUTH_CLIENT_ID },
+    billing,
   };
 };

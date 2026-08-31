@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="he">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>תוכניות ומנוי / Plans &amp; subscription — FieldSync</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <!-- Same font stack as login / register / browse-contractors -->
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=IBM+Plex+Mono:wght@400;500&family=Heebo:wght@400;500;600;700&family=Frank+Ruhl+Libre:wght@500;700&display=swap"
+    rel="stylesheet" />
+  <link rel="stylesheet" href="subscriptions.css" />
+</head>
+<body>
+
+  <!-- CSS-only bilingual toggle: Hebrew (default) / English -->
+  <input type="radio" name="lang" id="lang-he" class="lang-radio" checked>
+  <input type="radio" name="lang" id="lang-en" class="lang-radio">
+
+  <div class="app">
+
+    <!-- ═══ REUSABLE APP NAVBAR (.app-nav) ═══ -->
+    <header class="app-nav">
+      <div class="app-nav__inner">
+
+        <a href="#" class="app-nav__brand" aria-label="FieldSync — home">
+          <span class="app-nav__mark" aria-hidden="true">
+            <svg width="26" height="26" viewBox="0 0 40 40" fill="none">
+              <circle cx="8"  cy="20" r="6" fill="rgba(199,184,157,0.30)" stroke="rgba(255,253,248,0.92)" stroke-width="2"/>
+              <circle cx="32" cy="8"  r="6" fill="rgba(199,184,157,0.30)" stroke="rgba(255,253,248,0.92)" stroke-width="2"/>
+              <circle cx="32" cy="32" r="6" fill="rgba(199,184,157,0.30)" stroke="rgba(255,253,248,0.92)" stroke-width="2"/>
+              <line x1="14" y1="17" x2="26" y2="11" stroke="rgba(255,253,248,0.55)" stroke-width="1.5" stroke-dasharray="3 2"/>
+              <line x1="14" y1="23" x2="26" y2="29" stroke="rgba(255,253,248,0.55)" stroke-width="1.5" stroke-dasharray="3 2"/>
+              <line x1="32" y1="14" x2="32" y2="26" stroke="rgba(255,253,248,0.40)" stroke-width="1.5" stroke-dasharray="3 2"/>
+            </svg>
+          </span>
+          <span class="app-nav__name">FieldSync</span>
+        </a>
+
+        <nav class="app-nav__links" aria-label="Main">
+          <a href="browse-contractors.html" class="app-nav__link">
+            <span class="he-text">עיון בקבלנים</span>
+            <span class="en-text">Browse</span>
+          </a>
+          <a href="#" class="app-nav__link">
+            <span class="he-text">הרשת שלי</span>
+            <span class="en-text">Network</span>
+          </a>
+          <a href="#" class="app-nav__link">
+            <span class="he-text">פרויקטים</span>
+            <span class="en-text">Projects</span>
+          </a>
+          <a href="#" class="app-nav__link">
+            <span class="he-text">המשימות שלי</span>
+            <span class="en-text">My Tasks</span>
+          </a>
+        </nav>
+
+        <div class="app-nav__actions">
+
+          <button type="button" class="nav-icon-btn has-dot" aria-label="Notifications">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/>
+              <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+            </svg>
+          </button>
+
+          <button type="button" class="nav-profile is-open-context" aria-label="Account menu" aria-haspopup="true">
+            <span class="nav-profile__avatar" aria-hidden="true">
+              <span class="he-text">בכ</span><span class="en-text">BK</span>
+            </span>
+            <span class="nav-profile__name">
+              <span class="he-text">בר כאכון</span>
+              <span class="en-text">Bar Kakon</span>
+            </span>
+            <svg class="nav-profile__chevron" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                 stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M6 9l6 6 6-6"/>
+            </svg>
+          </button>
+
+          <div class="lang-switch" role="group" aria-label="Language / שפה">
+            <svg class="lang-switch__globe" width="15" height="15" viewBox="0 0 24 24"
+                 fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
+              <circle cx="12" cy="12" r="9"/>
+              <path d="M3 12h18M12 3c2.5 2.7 2.5 15.3 0 18M12 3c-2.5 2.7-2.5 15.3 0 18"/>
+            </svg>
+            <label for="lang-he" class="lang-switch__btn">עב</label>
+            <span class="lang-switch__sep" aria-hidden="true"></span>
+            <label for="lang-en" class="lang-switch__btn">EN</label>
+          </div>
+
+        </div>
+      </div>
+    </header>
+
+    <!-- ═══ SUBSCRIPTIONS — page body ═══ -->
+    <main class="plans">
+
+      <header class="plans__head">
+        <h1 class="plans__title">
+          <span class="he-text">תוכניות ומנוי</span>
+          <span class="en-text">Plans &amp; subscription</span>
+        </h1>
+        <p class="plans__sub">
+          <span class="he-text">בחרו את התוכנית שמתאימה לקצב העבודה שלכם. אפשר לשדרג, לרדת תוכנית או לבטל בכל שלב — הפרויקטים שלכם נשמרים בכל מקרה.</span>
+          <span class="en-text">Choose the plan that fits how you work. Upgrade, downgrade or cancel at any time — your projects are kept either way.</span>
+        </p>
+      </header>
+
+      <!-- Usage strip: only what the cards cannot show — this period's usage -->
+      <section class="usage" aria-label="Usage this week">
+        <p class="usage__main">
+          <span class="he-text">השבוע יצרתם <bdi>1</bdi> מתוך <bdi>3</bdi> סימולציות חזותיות.</span>
+          <span class="en-text">You have created <bdi>1</bdi> of <bdi>3</bdi> visual simulations this week.</span>
+        </p>
+        <a href="#" class="usage__link">
+          <span class="he-text">היסטוריית חיובים</span>
+          <span class="en-text">Billing history</span>
+        </a>
+      </section>
+
+      <!-- ── Plan cards: quick overview only; the detail lives in the table ── -->
+      <ul class="plan-grid">
+
+        <!-- 1 · Free -->
+        <li class="plan-card plan-card--current">
+          <span class="plan-card__flag">
+            <span class="he-text">התוכנית שלכם</span>
+            <span class="en-text">Your plan</span>
+          </span>
+
+          <h2 class="plan-card__name">
+            <span class="he-text">חינמית</span>
+            <span class="en-text">Free</span>
+          </h2>
+          <p class="plan-card__tagline">
+            <span class="he-text">לניהול העבודה השוטפת שלכם, ולעבודה בפרויקטים של אחרים.</span>
+            <span class="en-text">For running your own day-to-day work, and working on other people's projects.</span>
+          </p>
+
+          <p class="plan-card__price">
+            <span class="he-text"><bdi class="plan-card__amount">חינם</bdi></span>
+            <span class="en-text"><bdi class="plan-card__amount">Free</bdi></span>
+            <span class="plan-card__cycle">
+              <span class="he-text">לתמיד</span>
+              <span class="en-text">forever</span>
+            </span>
+          </p>
+
+          <ul class="feat-list">
+            <li class="feat">
+              <span class="he-text">פרופיל ציבורי וציון גמישות</span>
+              <span class="en-text">Public profile and flexibility score</span>
+            </li>
+            <li class="feat">
+              <span class="he-text">משימות, חברי צוות ופרויקטים בהשתתפותכם — ללא הגבלה</span>
+              <span class="en-text">Unlimited tasks, team members and projects you join</span>
+            </li>
+            <li class="feat">
+              <span class="he-text"><bdi>5</bdi> פרויקטים בניהולכם</span>
+              <span class="en-text"><bdi>5</bdi> projects you manage</span>
+            </li>
+            <li class="feat">
+              <span class="he-text"><bdi>3</bdi> סימולציות חזותיות בשבוע</span>
+              <span class="en-text"><bdi>3</bdi> visual simulations per week</span>
+            </li>
+            <li class="feat">
+              <span class="he-text">האצלה חסויה פעילה אחת</span>
+              <span class="en-text">One active confidential delegation</span>
+            </li>
+          </ul>
+
+          <button type="button" class="btn btn--muted btn--full" disabled>
+            <span class="he-text">התוכנית הנוכחית</span>
+            <span class="en-text">Current plan</span>
+          </button>
+        </li>
+
+        <!-- 2 · Basic -->
+        <li class="plan-card plan-card--featured">
+          <span class="plan-card__flag plan-card__flag--pop">
+            <span class="he-text">הנבחרת ביותר</span>
+            <span class="en-text">Most popular</span>
+          </span>
+
+          <h2 class="plan-card__name">
+            <span class="he-text">בסיסית</span>
+            <span class="en-text">Basic</span>
+          </h2>
+          <p class="plan-card__tagline">
+            <span class="he-text">לקבלנים שמנהלים כמה אתרים במקביל וצריכים יותר מרחב תכנון.</span>
+            <span class="en-text">For contractors running several sites at once who need more planning room.</span>
+          </p>
+
+          <p class="plan-card__price">
+            <span class="he-text"><bdi class="plan-card__amount">₪60</bdi></span>
+            <span class="en-text"><bdi class="plan-card__amount">$20</bdi></span>
+            <span class="plan-card__cycle">
+              <span class="he-text">לחודש</span>
+              <span class="en-text">/ month</span>
+            </span>
+          </p>
+
+          <ul class="feat-list">
+            <li class="feat-list__lead">
+              <span class="he-text">כל מה שבחינמית, ובנוסף:</span>
+              <span class="en-text">Everything in Free, plus:</span>
+            </li>
+            <li class="feat">
+              <span class="he-text"><bdi>25</bdi> פרויקטים בניהולכם</span>
+              <span class="en-text"><bdi>25</bdi> projects you manage</span>
+            </li>
+            <li class="feat">
+              <span class="he-text"><bdi>10</bdi> סימולציות חזותיות בשבוע</span>
+              <span class="en-text"><bdi>10</bdi> visual simulations per week</span>
+            </li>
+            <li class="feat">
+              <span class="he-text"><bdi>5</bdi> האצלות חסויות פעילות</span>
+              <span class="en-text"><bdi>5</bdi> active confidential delegations</span>
+            </li>
+            <li class="feat">
+              <span class="he-text">קבצים עד <bdi>30MB</bdi> עם <bdi>5</bdi> הגרסאות האחרונות, ו<bdi>12</bdi> חודשי היסטוריה</span>
+              <span class="en-text">Files up to <bdi>30MB</bdi> with the last <bdi>5</bdi> versions, and <bdi>12</bdi> months of history</span>
+            </li>
+            <li class="feat">
+              <span class="he-text">התראות במייל, ניהול שיחות בפרויקט והגדרות השתקה</span>
+              <span class="en-text">Email notifications, moderated project conversations and mute settings</span>
+            </li>
+          </ul>
+
+          <button type="button" class="btn btn--primary btn--full">
+            <span class="he-text">שדרוג לבסיסית</span>
+            <span class="en-text">Upgrade to Basic</span>
+          </button>
+        </li>
+
+        <!-- 3 · Premium -->
+        <li class="plan-card">
+          <h2 class="plan-card__name">
+            <span class="he-text">פרימיום</span>
+            <span class="en-text">Premium</span>
+          </h2>
+          <p class="plan-card__tagline">
+            <span class="he-text">לעבודה בהיקף גדול, עם פרטיות מלאה על מי שמבצע בפועל.</span>
+            <span class="en-text">For high-volume work, with full privacy over who actually does the job.</span>
+          </p>
+
+          <p class="plan-card__price">
+            <span class="he-text"><bdi class="plan-card__amount">₪105</bdi></span>
+            <span class="en-text"><bdi class="plan-card__amount">$35</bdi></span>
+            <span class="plan-card__cycle">
+              <span class="he-text">לחודש</span>
+              <span class="en-text">/ month</span>
+            </span>
+          </p>
+
+          <ul class="feat-list">
+            <li class="feat-list__lead">
+              <span class="he-text">כל מה שבבסיסית, ובנוסף:</span>
+              <span class="en-text">Everything in Basic, plus:</span>
+            </li>
+            <li class="feat">
+              <span class="he-text"><bdi>100</bdi> פרויקטים בניהולכם ו<bdi>60</bdi> סימולציות חזותיות בשבוע</span>
+              <span class="en-text"><bdi>100</bdi> projects you manage and <bdi>60</bdi> visual simulations per week</span>
+            </li>
+            <li class="feat">
+              <span class="he-text">האצלות חסויות ללא הגבלה</span>
+              <span class="en-text">Unlimited confidential delegations</span>
+            </li>
+            <li class="feat feat--star">
+              <span class="he-text">מרחב עבודה פרטי: תת-משימות והערות שרק אתם רואים</span>
+              <span class="en-text">Private workspace: sub-tasks and notes only you see</span>
+            </li>
+            <li class="feat feat--star">
+              <span class="he-text">יצירת משימה אוטומטית מתוך הסכמה</span>
+              <span class="en-text">Automatic task creation from an agreement</span>
+            </li>
+            <li class="feat">
+              <span class="he-text">היסטוריית פרויקט מלאה וכל גרסאות הקבצים</span>
+              <span class="en-text">Complete project history and every file version</span>
+            </li>
+            <li class="feat">
+              <span class="he-text">סיכום יומי במייל ותמיכה בעדיפות</span>
+              <span class="en-text">Daily email summary and priority support</span>
+            </li>
+          </ul>
+
+          <button type="button" class="btn btn--primary btn--full">
+            <span class="he-text">שדרוג לפרימיום</span>
+            <span class="en-text">Upgrade to Premium</span>
+          </button>
+        </li>
+
+      </ul>
+
+      <!-- ── Full comparison: differences first, then what every plan includes ── -->
+      <section class="compare" aria-labelledby="compare-title">
+        <h2 class="section-title" id="compare-title">
+          <span class="he-text">השוואת תוכניות</span>
+          <span class="en-text">Plan comparison</span>
+        </h2>
+        <p class="compare__lede">
+          <span class="he-text">כל שורה כאן משתנה בין התוכניות — זה בדיוק מה שמשתדרג.</span>
+          <span class="en-text">Every row here differs between the plans — this is exactly what an upgrade changes.</span>
+        </p>
+
+        <div class="compare__scroll">
+          <table class="compare__table">
+            <thead>
+              <tr>
+                <th scope="col" class="compare__feature-col">
+                  <span class="he-text">יכולת</span>
+                  <span class="en-text">Capability</span>
+                </th>
+                <th scope="col">
+                  <span class="he-text">חינמית</span>
+                  <span class="en-text">Free</span>
+                </th>
+                <th scope="col" class="is-featured">
+                  <span class="he-text">בסיסית</span>
+                  <span class="en-text">Basic</span>
+                </th>
+                <th scope="col">
+                  <span class="he-text">פרימיום</span>
+                  <span class="en-text">Premium</span>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+
+              <tr>
+                <th scope="row">
+                  <span class="he-text">פרויקטים בניהולכם</span>
+                  <span class="en-text">Projects you manage</span>
+                </th>
+                <td><bdi>5</bdi></td>
+                <td class="is-featured"><bdi>25</bdi></td>
+                <td><bdi>100</bdi></td>
+              </tr>
+
+              <tr>
+                <th scope="row">
+                  <span class="he-text">סימולציות חזותיות</span>
+                  <span class="en-text">Visual simulations</span>
+                </th>
+                <td><span class="he-text"><bdi>3</bdi> בשבוע</span><span class="en-text"><bdi>3</bdi> per week</span></td>
+                <td class="is-featured"><span class="he-text"><bdi>10</bdi> בשבוע</span><span class="en-text"><bdi>10</bdi> per week</span></td>
+                <td><span class="he-text"><bdi>60</bdi> בשבוע</span><span class="en-text"><bdi>60</bdi> per week</span></td>
+              </tr>
+
+              <tr>
+                <th scope="row">
+                  <span class="he-text">האצלות חסויות פעילות</span>
+                  <span class="en-text">Active confidential delegations</span>
+                </th>
+                <td><bdi>1</bdi></td>
+                <td class="is-featured"><bdi>5</bdi></td>
+                <td><span class="he-text">ללא הגבלה</span><span class="en-text">Unlimited</span></td>
+              </tr>
+
+              <tr>
+                <th scope="row">
+                  <span class="he-text">מרחב עבודה פרטי</span>
+                  <span class="en-text">Private workspace</span>
+                </th>
+                <td><span class="mark mark--no" role="img" aria-label="Not included"></span></td>
+                <td class="is-featured"><span class="mark mark--no" role="img" aria-label="Not included"></span></td>
+                <td><span class="mark mark--yes" role="img" aria-label="Included"></span></td>
+              </tr>
+
+              <tr>
+                <th scope="row">
+                  <span class="he-text">יצירת משימה אוטומטית</span>
+                  <span class="en-text">Automatic task creation</span>
+                </th>
+                <td><span class="mark mark--no" role="img" aria-label="Not included"></span></td>
+                <td class="is-featured"><span class="mark mark--no" role="img" aria-label="Not included"></span></td>
+                <td><span class="mark mark--yes" role="img" aria-label="Included"></span></td>
+              </tr>
+
+              <tr>
+                <th scope="row">
+                  <span class="he-text">ניהול שיחות בפרויקט</span>
+                  <span class="en-text">Moderated project conversations</span>
+                </th>
+                <td><span class="mark mark--no" role="img" aria-label="Not included"></span></td>
+                <td class="is-featured"><span class="mark mark--yes" role="img" aria-label="Included"></span></td>
+                <td><span class="mark mark--yes" role="img" aria-label="Included"></span></td>
+              </tr>
+
+              <tr>
+                <th scope="row">
+                  <span class="he-text">הגדרות השתקה</span>
+                  <span class="en-text">Mute settings</span>
+                </th>
+                <td><span class="mark mark--no" role="img" aria-label="Not included"></span></td>
+                <td class="is-featured"><span class="mark mark--yes" role="img" aria-label="Included"></span></td>
+                <td><span class="mark mark--yes" role="img" aria-label="Included"></span></td>
+              </tr>
+
+              <tr>
+                <th scope="row">
+                  <span class="he-text">העלאת קבצים</span>
+                  <span class="en-text">File uploads</span>
+                </th>
+                <td><bdi>10MB</bdi></td>
+                <td class="is-featured"><bdi>30MB</bdi></td>
+                <td><bdi>30MB</bdi></td>
+              </tr>
+
+              <tr>
+                <th scope="row">
+                  <span class="he-text">היסטוריית גרסאות</span>
+                  <span class="en-text">Version history</span>
+                </th>
+                <td><span class="he-text">הגרסה האחרונה בלבד</span><span class="en-text">Latest version only</span></td>
+                <td class="is-featured"><span class="he-text"><bdi>5</bdi> הגרסאות האחרונות</span><span class="en-text">Last <bdi>5</bdi> versions</span></td>
+                <td><span class="he-text">כל הגרסאות</span><span class="en-text">Every version</span></td>
+              </tr>
+
+              <tr>
+                <th scope="row">
+                  <span class="he-text">היסטוריית פרויקט</span>
+                  <span class="en-text">Project history</span>
+                </th>
+                <td><span class="he-text"><bdi>30</bdi> ימים אחרונים</span><span class="en-text">Last <bdi>30</bdi> days</span></td>
+                <td class="is-featured"><span class="he-text"><bdi>12</bdi> חודשים</span><span class="en-text"><bdi>12</bdi> months</span></td>
+                <td><span class="he-text">מלאה</span><span class="en-text">Complete</span></td>
+              </tr>
+
+              <tr>
+                <th scope="row">
+                  <span class="he-text">ערוצי התראות</span>
+                  <span class="en-text">Notification channels</span>
+                </th>
+                <td><span class="he-text">בתוך המערכת</span><span class="en-text">In the app</span></td>
+                <td class="is-featured"><span class="he-text">במערכת ובמייל</span><span class="en-text">In the app and by email</span></td>
+                <td><span class="he-text">במערכת, במייל וסיכום יומי</span><span class="en-text">In the app, by email and a daily summary</span></td>
+              </tr>
+
+              <tr>
+                <th scope="row">
+                  <span class="he-text">רשת אנשי קשר</span>
+                  <span class="en-text">Professional network</span>
+                </th>
+                <td><bdi>50</bdi></td>
+                <td class="is-featured"><bdi>500</bdi></td>
+                <td><span class="he-text">ללא הגבלה</span><span class="en-text">Unlimited</span></td>
+              </tr>
+
+              <tr>
+                <th scope="row">
+                  <span class="he-text">תמיכה</span>
+                  <span class="en-text">Support</span>
+                </th>
+                <td><span class="he-text">מרכז עזרה</span><span class="en-text">Help center</span></td>
+                <td class="is-featured"><span class="he-text">מייל</span><span class="en-text">Email</span></td>
+                <td><span class="he-text">מייל בעדיפות</span><span class="en-text">Priority email</span></td>
+              </tr>
+
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ── Common capabilities: same on every plan, so no per-tier columns ── -->
+      <section class="compare compare--common" aria-labelledby="common-title">
+        <h2 class="section-title" id="common-title">
+          <span class="he-text">כלול בכל תוכנית</span>
+          <span class="en-text">Included in every plan</span>
+        </h2>
+        <p class="compare__lede">
+          <span class="he-text">היכולות הבאות זהות בכל התוכניות ואינן משתנות עם השדרוג.</span>
+          <span class="en-text">These capabilities are the same on every plan and do not change when you upgrade.</span>
+        </p>
+
+        <div class="compare__scroll">
+          <table class="compare__table">
+            <thead>
+              <tr>
+                <th scope="col" class="compare__feature-col">
+                  <span class="he-text">יכולת</span>
+                  <span class="en-text">Capability</span>
+                </th>
+                <th scope="col">
+                  <span class="he-text">בכל תוכנית</span>
+                  <span class="en-text">Every plan</span>
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+
+              <tr>
+                <th scope="row">
+                  <span class="he-text">משימות לפרויקט</span>
+                  <span class="en-text">Tasks per project</span>
+                </th>
+                <td><span class="he-text">ללא הגבלה</span><span class="en-text">Unlimited</span></td>
+              </tr>
+
+              <tr>
+                <th scope="row">
+                  <span class="he-text">חברי צוות לפרויקט</span>
+                  <span class="en-text">Team members per project</span>
+                </th>
+                <td><span class="he-text">ללא הגבלה</span><span class="en-text">Unlimited</span></td>
+              </tr>
+
+              <tr>
+                <th scope="row">
+                  <span class="he-text">פרויקטים בהשתתפותכם</span>
+                  <span class="en-text">Projects you join</span>
+                </th>
+                <td><span class="he-text">ללא הגבלה</span><span class="en-text">Unlimited</span></td>
+              </tr>
+
+              <tr>
+                <th scope="row">
+                  <span class="he-text">בקשות לשינוי תאריך</span>
+                  <span class="en-text">Date change requests</span>
+                </th>
+                <td><span class="he-text">כלול</span><span class="en-text">Included</span></td>
+              </tr>
+
+              <tr>
+                <th scope="row">
+                  <span class="he-text">תלויות בין משימות</span>
+                  <span class="en-text">Task dependencies</span>
+                </th>
+                <td><span class="he-text">כלול, עם בדיקת התנגשויות</span><span class="en-text">Included, with conflict checks</span></td>
+              </tr>
+
+              <tr>
+                <th scope="row">
+                  <span class="he-text">פרופיל ציבורי וציון גמישות</span>
+                  <span class="en-text">Public profile and flexibility score</span>
+                </th>
+                <td><span class="he-text">כלול</span><span class="en-text">Included</span></td>
+              </tr>
+
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ── FAQ — native <details>, no JS ── -->
+      <section class="faq" aria-labelledby="faq-title">
+        <h2 class="section-title" id="faq-title">
+          <span class="he-text">שאלות נפוצות</span>
+          <span class="en-text">Frequently asked questions</span>
+        </h2>
+
+        <details class="faq__item">
+          <summary class="faq__q">
+            <span class="he-text">מהי סימולציה חזותית?</span>
+            <span class="en-text">What is a visual simulation?</span>
+          </summary>
+          <p class="faq__a">
+            <span class="he-text">ייצוג חזותי שהסימולטור בונה עבורכם מהנתונים והבחירות שהזנתם. התוכנית שלכם קובעת כמה סימולציות אפשר ליצור בכל שבוע, והמכסה מתחדשת בכל יום שני.</span>
+            <span class="en-text">A visual representation the simulator builds for you from the details and choices you enter. Your plan sets how many you can create each week, and the allowance renews every Monday.</span>
+          </p>
+        </details>
+
+        <details class="faq__item">
+          <summary class="faq__q">
+            <span class="he-text">מה נחשב האצלה חסויה פעילה?</span>
+            <span class="en-text">What counts as an active confidential delegation?</span>
+          </summary>
+          <p class="faq__a">
+            <span class="he-text">האצלה נחשבת פעילה כל עוד המשימה שהעברתם עדיין פתוחה. ברגע שהיא מסתיימת, המקום מתפנה להאצלה הבאה. בכל התוכניות, הקבלן שמעליכם אינו רואה למי העברתם את העבודה.</span>
+            <span class="en-text">A delegation stays active while the task you passed on is still open. Once it is completed, the slot frees up for the next one. On every plan, the contractor above you never sees who you passed the work to.</span>
+          </p>
+        </details>
+
+        <details class="faq__item">
+          <summary class="faq__q">
+            <span class="he-text">קבלני המשנה שאני מזמין צריכים לשלם?</span>
+            <span class="en-text">Do the subcontractors I invite have to pay?</span>
+          </summary>
+          <p class="faq__a">
+            <span class="he-text">לא. הצטרפות לפרויקט של מישהו אחר, קבלת משימות, עדכון סטטוס, פתיחת בקשות לשינוי תאריך ומענה להן — הכול כלול בתוכנית החינמית וללא הגבלה.</span>
+            <span class="en-text">No. Joining someone else's project, receiving tasks, updating status, and both opening and answering reschedule requests are all included in the Free plan, without limit.</span>
+          </p>
+        </details>
+
+        <details class="faq__item">
+          <summary class="faq__q">
+            <span class="he-text">מה קורה לפרויקטים שלי אם אני יורד תוכנית?</span>
+            <span class="en-text">What happens to my projects if I downgrade?</span>
+          </summary>
+          <p class="faq__a">
+            <span class="he-text">שום דבר לא נמחק. פרויקטים שמעל המכסה החדשה עוברים למצב קריאה בלבד — אפשר לצפות בהם, בהיסטוריה ובקבצים, אך לא לערוך — עד שתחזרו למכסה או תשדרגו שוב.</span>
+            <span class="en-text">Nothing is deleted. Projects above the new limit become read-only — you can still view them, their history and their files, but not edit — until you are back under the limit or upgrade again.</span>
+          </p>
+        </details>
+
+        <details class="faq__item">
+          <summary class="faq__q">
+            <span class="he-text">אפשר לבטל בכל שלב?</span>
+            <span class="en-text">Can I cancel at any time?</span>
+          </summary>
+          <p class="faq__a">
+            <span class="he-text">כן. הביטול נכנס לתוקף בסוף מחזור החיוב הנוכחי, ועד אז התוכנית ממשיכה לעבוד כרגיל. אין התחייבות לתקופה.</span>
+            <span class="en-text">Yes. Cancellation takes effect at the end of the current billing cycle, and the plan keeps working normally until then. There is no minimum term.</span>
+          </p>
+        </details>
+
+        <details class="faq__item">
+          <summary class="faq__q">
+            <span class="he-text">באיזה מטבע אני מחויב?</span>
+            <span class="en-text">Which currency am I billed in?</span>
+          </summary>
+          <p class="faq__a">
+            <span class="he-text">במטבע של החשבון שלכם: שקלים לחשבונות בישראל, דולרים לחשבונות מחוץ לישראל. בשני המקרים המחיר המוצג הוא המחיר הסופי, כולל מס.</span>
+            <span class="en-text">In your account's currency: shekels for accounts in Israel, US dollars for accounts elsewhere. In both cases the price shown is the final price, tax included.</span>
+          </p>
+        </details>
+      </section>
+
+      <p class="plans__note">
+        <span class="he-text">כל המחירים כוללים מס · החיוב חודשי ומתחדש אוטומטית · אפשר לבטל בכל שלב.</span>
+        <span class="en-text">All prices include tax · billed monthly, renews automatically · cancel at any time.</span>
+      </p>
+
+    </main>
+  </div>
+
+  <!-- Keeps the language choice across screens (localStorage) -->
+  <script src="lang.js"></script>
+
+</body>
+</html>

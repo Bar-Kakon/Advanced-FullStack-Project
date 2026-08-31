@@ -31,6 +31,11 @@ export interface ForgotPasswordBody {
   readonly email: string;
 }
 
+/** The one credential both Google routes take. Sign-in and linking read the same shape. */
+export interface GoogleCredentialBody {
+  readonly idToken: string;
+}
+
 export interface ResetPasswordBody {
   readonly token: string;
   readonly password: string;
@@ -47,8 +52,14 @@ export interface RegisterBody {
   /** Employee only. Part of what identifies the seat being claimed. */
   readonly companyPosition?: CompanyPosition;
   readonly email: string;
-  readonly password: string;
-  readonly confirmPassword: string;
+  /** Both absent on the Google path: that account is opened with no local password at all. */
+  readonly password?: string;
+  readonly confirmPassword?: string;
+  /**
+   * A Google ID token, re-verified by the server rather than trusted from an earlier call. Present
+   * exactly when this registration is completing a Google sign-in.
+   */
+  readonly googleIdToken?: string;
   /** Step 1's first choice. It decides which taxonomy `specialty` is read against. */
   readonly registrationCategory: RegistrationCategory;
   readonly specialty: Specialty;
@@ -79,6 +90,8 @@ const MAX_SPECIALTY_OTHER_LENGTH = 60;
 const MAX_PHONE_LENGTH = 30;
 /** The issued token is 64 hex characters; the bound is slack, not a format check. */
 const MAX_RESET_TOKEN_LENGTH = 200;
+/** A signed JWT with a certificate chain behind it. Bounded so nothing unbounded reaches Google. */
+const MAX_GOOGLE_TOKEN_LENGTH = 4096;
 
 const email = Joi.string().trim().lowercase().email().max(MAX_EMAIL_LENGTH).required();
 
@@ -93,6 +106,14 @@ export const loginBodySchema = Joi.object<LoginBody>({
 });
 
 export const forgotPasswordBodySchema = Joi.object<ForgotPasswordBody>({ email });
+
+/**
+ * Bounded but not shape-checked, for the reason the reset token is not: a malformed credential and
+ * a forged one are the same event to the person holding it, and both take the same 401.
+ */
+export const googleCredentialBodySchema = Joi.object<GoogleCredentialBody>({
+  idToken: Joi.string().trim().min(1).max(MAX_GOOGLE_TOKEN_LENGTH).required(),
+});
 
 /**
  * `token` is bounded but not shape-checked. A malformed token and a wrong one are the same event
@@ -141,11 +162,28 @@ export const registerBodySchema = Joi.object<RegisterBody>({
   }),
 
   email,
-  password: Joi.string().min(MIN_PASSWORD_LENGTH).max(MAX_PASSWORD_LENGTH).required(),
-  confirmPassword: Joi.string()
-    .required()
-    .valid(Joi.ref('password'))
-    .messages({ 'any.only': 'confirmPassword must match password' }),
+
+  /*
+   * Exactly one credential opens an account. On the Google path both password fields are refused
+   * rather than ignored: accepting and discarding them is what `specialtyOther`'s `forbidden()`
+   * exists to avoid, and a Google account must not be given a password nobody chose. A person who
+   * later wants one uses Forgot password, which is unchanged.
+   */
+  googleIdToken: Joi.string().trim().min(1).max(MAX_GOOGLE_TOKEN_LENGTH).optional(),
+
+  password: Joi.when('googleIdToken', {
+    is: Joi.exist(),
+    then: Joi.any().forbidden(),
+    otherwise: Joi.string().min(MIN_PASSWORD_LENGTH).max(MAX_PASSWORD_LENGTH).required(),
+  }),
+  confirmPassword: Joi.when('googleIdToken', {
+    is: Joi.exist(),
+    then: Joi.any().forbidden(),
+    otherwise: Joi.string()
+      .required()
+      .valid(Joi.ref('password'))
+      .messages({ 'any.only': 'confirmPassword must match password' }),
+  }),
 
   // Asked first in Step 1, because it decides which list the next field is read against.
   registrationCategory: Joi.string()
