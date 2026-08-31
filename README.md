@@ -48,7 +48,8 @@ docs/                         database design and decision map
 Backend domains under `Backend/src/features/`: `auth`, `users`, `companies`, `projects`,
 `projectaccess`, `projectmembers`, `projectdashboard`, `tasks`, `coordination`, `workplans`,
 `calendar`, `flexibility`, `browse`, `network`, `connections`, `blocks`, `mutes`, `reports`,
-`moderation`, `billing`, `contact`, `dashboard`, `files`, `location`, `ratings`, `workentries`.
+`moderation`, `billing`, `contact`, `dashboard`, `files`, `location`, `ratings`, `workentries`,
+`messaging`, `notifications`, `settings`, `scheduleexceptions`.
 
 ---
 
@@ -107,27 +108,101 @@ shows its persisted send time, with the date rendered once per calendar day.
 blocking notices appear in-app on every plan and open a 90-minute grace window before the email is
 sent, cancelled if the notice is read inside it. Non-blocking events aggregate into a daily digest.
 Settings holds language, notification preferences, operational email opt-in and contact visibility.
-Project mute suppresses the email channel and digest inclusion and never a blocking in-app notice.
+Mute has all three approved scopes — project, conversation and contractor — on one canonical model.
+It is a delivery preference and nothing else: a muted target still writes its domain event, still
+delivers a blocking in-app notice, and loses only the email channel and digest inclusion. It never
+changes access, authority or domain state, and it is not a block.
 
 **Edit Task and Schedule Exceptions.** Editing an existing task is gated on its own `task.edit`
 permission, never on `task.create`; committed project dates still change through the
 Proposal/Cascade path. Schedule exceptions record working days that will not be worked and rest
 days that will, with an approval workflow and an append-only history.
 
-**Redux.** `Frontend/src/store/` holds the state that is genuinely shared across screens: the UI
-language (`uiSlice`, read by every screen and written by the navbar toggle) and session-derived
-client state (`sessionSlice` — the signed-in user and the navbar notification count). Server data
-stays with its own API modules and is not duplicated into the store.
+**Redux.** `Frontend/src/store/` holds exactly the state that is genuinely shared across screens:
+the UI language (`uiSlice` — read by every screen through `useLanguage`, written by the navbar
+toggle) and the unread notification count (`sessionSlice` — fetched once per mount and rendered by
+the navbar on every screen). Who is signed in is deliberately NOT in the store: route guards read
+it synchronously on the first render and it must survive a reload, so it stays owned by
+`AuthContext` over `tokenStorage`. Server data keeps to its own API modules and is never copied
+into Redux, and no form state goes near it.
 
 **Lazy loading.** Every route past the entry screens is code-split with `React.lazy` behind a single `Suspense` inside the
 router. Landing, Login and the 404 screen stay in the initial bundle because they are the first
-paint. The production build emits 68 chunks and no longer trips the 500 kB chunk warning.
+paint. The production build emits 69 chunks and no longer trips the 500 kB chunk warning.
 
 ### Known gaps
 
 Real-time delivery is out of scope: the notification count and conversation history are as fresh as
 the screen the person just opened. Message attachments are modelled but no upload endpoint is wired
 to them yet.
+
+---
+
+## Deployment structure
+
+Two services, deployed separately, talking over HTTPS.
+
+```
+  Browser
+     |
+     |  https  (VITE_API_URL)
+     v
+  Vercel  ──────────────►  Render  ──────────────►  MongoDB Atlas
+  React SPA                Express API
+  static build             long-lived process
+                                |
+                                └──►  PayPal Sandbox webhook
+                                      POST {API_PUBLIC_URL}/api/billing/provider-events
+```
+
+**Frontend — Vercel.** A static Vite build; there is no server-side rendering and no Node runtime.
+Build command `npm run build`, output directory `dist`, root directory `Frontend`. Because the
+router owns every path, Vercel must rewrite unmatched requests to `index.html`, or a refresh on
+`/messages` returns a 404 from the CDN rather than reaching React.
+
+**Backend — Render.** A Node web service running the compiled Express app: build `npm install &&
+npm run build`, start `npm start`, root directory `Backend`. It needs a persistent URL because
+PayPal posts callbacks to it, which is what `API_PUBLIC_URL` names.
+
+**The two must agree on three values, or authentication silently fails:**
+
+1. `VITE_API_URL` (Vercel) points at the Render service, including the `/api` prefix.
+2. `CORS_ORIGINS` (Render) names the exact Vercel origin. It can never be `*` — the refresh token
+   travels as a credentialed cookie, and the specification forbids a wildcard origin with
+   credentials.
+3. `FRONTEND_URL` (Render) is the Vercel origin, because password-reset emails build their link
+   from it.
+
+Cross-site cookies also require the Render service to be reached over HTTPS, which it is by
+default.
+
+## Before production traffic
+
+Run once against the production database, from `Backend/`, after the environment is set:
+
+```bash
+npm run seed:plans                    # the plan catalogue the Subscriptions screen reads
+npm run migrate:report-indexes        # the partial unique index behind one-open-report-per-pair
+npm run migrate:membership-uniqueness # one active company membership per person
+npm run migrate:work-plan-indexes     # work-plan version indexes
+npm run migrate:owner-main-contractor # backfills the owner seat's company position
+npm run migrate:rating-context        # rating work-context backfill
+```
+
+Every one is idempotent and safe to re-run. Mongoose creates ordinary indexes on connection; these
+scripts exist for the partial and unique ones, which a schema definition alone will not repair on a
+collection that already holds rows.
+
+To grant the first platform administrator:
+
+```bash
+npm run admin:grant <email>
+```
+
+Once the Render URL exists, create the PayPal Sandbox webhook against
+`{API_PUBLIC_URL}/api/billing/provider-events`, subscribed to the events listed in
+`Backend/.env.example`, then set `PAYPAL_WEBHOOK_ID` and `API_PUBLIC_URL` and redeploy. Plans must
+also exist at PayPal: `npm run provision:paypal-plans` (idempotent).
 
 ---
 
@@ -173,6 +248,7 @@ rather than booting into a deployment that looks configured and fails on first u
 ```bash
 cd Frontend
 npm install
+cp .env.example .env      # then fill it in
 npm run dev               # http://localhost:5173
 ```
 
@@ -221,6 +297,7 @@ npm run verify:edit-task          # task.edit, and the date boundary
 npm run verify:notifications      # classes, grace window and digest
 npm run verify:settings           # preferences and entitlements
 npm run verify:schedule-exceptions
+npm run verify:mute               # project, conversation and contractor scopes
 npm run verify:platform-audit     # platform audit log, account deletion and restoration
 npm run verify:moderation         # moderation queue and authority
 npm run verify:reports            # user reports
@@ -260,15 +337,25 @@ subscribed to the subscription and payment events listed in `Backend/.env.exampl
 `PAYPAL_WEBHOOK_ID`. Plans must also exist at PayPal — `npm run provision:paypal-plans` creates the
 product and one billing plan per paid tier, and is idempotent.
 
-> **Current status.** The Sandbox credentials are valid and the app has no webhook yet, because
-> creating one requires a public HTTPS URL for the backend and this project has no deployment. The
-> three PayPal variables are therefore left unset, which is the supported `none` state: the server
-> starts normally and the Free plan works. Setting a real `API_PUBLIC_URL` is what unblocks it.
+> **Webhook status.** The Sandbox credentials are valid; the webhook is created once the backend
+> has its public Render URL, because PayPal will not accept a `localhost` callback. Until then the
+> three PayPal variables stay unset together, which is the supported `none` state: the server
+> starts normally, the Free plan and the plan comparison work, and checkout answers
+> `BILLING_PROVIDER_NOT_CONFIGURED` rather than pretending. Setting `API_PUBLIC_URL` to the Render
+> URL and adding `PAYPAL_WEBHOOK_ID` is the whole remaining step.
 
-## Live URL
+## Live URLs
 
-Not deployed yet. The application runs locally as described above.
+| Surface | URL |
+| --- | --- |
+| Frontend (Vercel) | _pending deployment_ |
+| Backend API (Render) | _pending deployment_ |
+
+Both are filled in once the two services are live. Until then the application runs locally exactly
+as described above.
 
 ## Screenshots
 
-_To be added before submission._
+_To be added before submission._ Intended set: Landing, Register (both steps), Personal dashboard,
+My projects, Project dashboard, Stage graph, Task detail, Messages (thread with a work agreement),
+Notifications, Settings, Subscriptions and the Admin audit log — each in Hebrew and English.
