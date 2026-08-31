@@ -168,7 +168,16 @@ export const useRegisterForm = (onSuccess: () => void, google: GoogleRegistratio
     setValues((prev) =>
       prev.registrationCategory === next
         ? prev
-        : { ...prev, registrationCategory: next, specialty: '', specialtyOther: '', drillingTypes: [] },
+        : {
+            ...prev,
+            registrationCategory: next,
+            specialty: '',
+            specialtyOther: '',
+            drillingTypes: [],
+            // Belongs to the contractor route alone, so it leaves with it rather than being
+            // carried into a route whose form never shows it.
+            ...(next === 'contractor' ? {} : { contractorCategory: '' as const }),
+          },
     );
     setFailure(null);
   }, []);
@@ -248,7 +257,7 @@ export const useRegisterForm = (onSuccess: () => void, google: GoogleRegistratio
 
     if (values.standing === 'employee') {
       if (values.companyPosition === '') issues.companyPosition = 'required';
-    } else if (values.contractorCategory === '') {
+    } else if (values.registrationCategory === 'contractor' && values.contractorCategory === '') {
       issues.contractorCategory = 'required';
     }
 
