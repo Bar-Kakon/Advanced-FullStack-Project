@@ -228,6 +228,22 @@ export const ProjectDashboardPage = () => {
 
             <CalendarVersionPanel calendar={data.calendar} />
 
+            {/* The pinned version answers what an ordinary week looks like; the exceptions screen
+                is where the dates that are not ordinary live. Reachable by every member, because
+                a professional raises their own request there. */}
+            <section className="panel">
+              <div className="panel__head">
+                <h2 className="panel__title">{t.scheduleExceptions.title}</h2>
+                <Link
+                  to={`/projects/${projectId}/schedule-exceptions`}
+                  className="btn btn--ghost btn--sm"
+                >
+                  {t.scheduleExceptions.title}
+                </Link>
+              </div>
+              <p className="panel__lede">{t.scheduleExceptions.lede}</p>
+            </section>
+
             <section className="panel" aria-labelledby="tasks-title">
               <div className="panel__head">
                 <h2 id="tasks-title" className="panel__title">{copy.tasks.title}</h2>

@@ -1,5 +1,7 @@
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 
+import { fetchUnreadCount } from '../api/notifications.api';
 import { useAuth } from '../auth/useAuth';
 import { useLanguage } from '../i18n/useLanguage';
 import { AccountMenu } from './AccountMenu';
@@ -19,6 +21,22 @@ import { LanguageSwitch } from './LanguageSwitch';
 export const AppNav = ({ name, initials }: { name: string; initials: string }) => {
   const { t } = useLanguage();
   const { user } = useAuth();
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  /**
+   * Fetched once when a screen mounts. Real-time delivery is explicitly out of scope, and polling
+   * would cost a request a second for a number that changes rarely — so the count is as fresh as
+   * the screen the person just opened.
+   */
+  useEffect(() => {
+    const controller = new AbortController();
+    fetchUnreadCount(controller.signal)
+      .then(setUnreadCount)
+      .catch(() => {
+        // A marker nobody can read is not worth an error state; the centre itself reports failure.
+      });
+    return () => controller.abort();
+  }, []);
 
   // Hiding is a courtesy; the API refuses either way.
   const showEmployees =
@@ -57,13 +75,18 @@ export const AppNav = ({ name, initials }: { name: string; initials: string }) =
         </nav>
 
         <div className="app-nav__actions">
-          <button type="button" className="nav-icon-btn" aria-label={t.nav.notifications} disabled>
+          <Link to="/notifications" className="nav-icon-btn" aria-label={t.nav.notifications}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                  strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
               <path d="M13.73 21a2 2 0 0 1-3.46 0" />
             </svg>
-          </button>
+            {unreadCount > 0 ? (
+              <span className="nav-badge" aria-label={t.notifications.unreadBadge}>
+                {unreadCount > 99 ? '99+' : unreadCount}
+              </span>
+            ) : null}
+          </Link>
 
           <AccountMenu name={name} initials={initials} />
 

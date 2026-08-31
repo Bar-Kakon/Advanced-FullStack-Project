@@ -75,6 +75,13 @@ export const TaskDetailPage = () => {
             <p className="profile__sub">{copy.title}</p>
           </div>
           <div className="profile__head-actions">
+            {/* Offered to everyone who can reach the task; the edit screen asks the server what
+                this viewer may actually change before drawing a single field. */}
+            {task === null ? null : (
+              <Link to={`/tasks/${task.id}/edit`} className="btn btn--ghost btn--sm">
+                {t.editTask.title}
+              </Link>
+            )}
             <Link to="/tasks" className="btn btn--ghost btn--sm">{copy.back}</Link>
           </div>
         </header>

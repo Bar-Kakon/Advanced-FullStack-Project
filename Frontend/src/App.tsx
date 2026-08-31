@@ -29,6 +29,10 @@ import { CreateTaskPage } from './features/tasks/CreateTaskPage';
 import { TaskDetailPage } from './features/tasks/TaskDetailPage';
 import { ProposalReviewPage } from './features/coordination/ProposalReviewPage';
 import { StageGraphPage } from './features/coordination/StageGraphPage';
+import { NotificationsPage } from './features/notifications/NotificationsPage';
+import { SettingsPage } from './features/settings/SettingsPage';
+import { ScheduleExceptionsPage } from './features/scheduleexceptions/ScheduleExceptionsPage';
+import { EditTaskPage } from './features/tasks/EditTaskPage';
 import { EmployeeManagementPage } from './features/employees/EmployeeManagementPage';
 import { EmployeeOnboardingPage } from './features/employees/EmployeeOnboardingPage';
 import { WaitingForApprovalPage } from './features/employees/WaitingForApprovalPage';
@@ -69,6 +73,11 @@ export const App = () => (
                 MembershipRoute: what somebody's plan is does not depend on a company approving
                 them, and being kept out of it would be the wrong reason to hide their billing. */}
             <Route path="/subscriptions" element={<SubscriptionsPage />} />
+            {/* Account-level, so they sit beside the profile rather than inside MembershipRoute:
+                what somebody's preferences are does not depend on a company approving them, and a
+                notification about an invitation has to be readable before one is accepted. */}
+            <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/notifications" element={<NotificationsPage />} />
             <Route path="/waiting-for-approval" element={<WaitingForApprovalPage />} />
 
             <Route element={<MembershipRoute />}>
@@ -93,9 +102,15 @@ export const App = () => (
               <Route path="/tasks" element={<MyTasksPage />} />
               {/* Ahead of `:taskId`, or the literal path would be read as a task id. */}
               <Route path="/tasks/new" element={<CreateTaskPage />} />
+              {/* Ahead of `:taskId` would be wrong here — `edit` is a suffix, not a whole path. */}
               <Route path="/tasks/:taskId" element={<TaskDetailPage />} />
+              <Route path="/tasks/:taskId/edit" element={<EditTaskPage />} />
               <Route path="/proposals/:proposalId" element={<ProposalReviewPage />} />
               <Route path="/projects/:projectId/stages" element={<StageGraphPage />} />
+              <Route
+                path="/projects/:projectId/schedule-exceptions"
+                element={<ScheduleExceptionsPage />}
+              />
             </Route>
           </Route>
 
