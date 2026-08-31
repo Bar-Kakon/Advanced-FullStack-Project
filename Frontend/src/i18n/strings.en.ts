@@ -57,6 +57,7 @@ export const en: Strings = {
     officePhone: { label: 'Office phone', placeholder: '03-1234567' },
     businessPhone: { label: 'Business phone', placeholder: '050-1234567' },
     availability: { label: 'Availability', hint: 'You can change this at any time from your profile.' },
+    contractorCategory: { label: 'Type of business', hint: 'It decides which capabilities the account has.' },
     standing: {
       label: 'How are you joining Blokta?',
       placeholder: 'Select…',
@@ -2306,6 +2307,15 @@ export const en: Strings = {
     removedMessage: 'This message was removed',
     composerPlaceholder: 'Write a message',
     send: 'Send',
+    report: 'Report',
+    reported: 'Report sent',
+    cancel: 'Cancel',
+    reportReasons: { spam: 'Spam', harassment: 'Harassment', impersonation: 'Impersonation', other: 'Other' },
+    muteConversation: 'Mute conversation',
+    unmuteConversation: 'Unmute conversation',
+    muteContractor: 'Mute this contact',
+    unmuteContractor: 'Unmute this contact',
+    deleteChat: 'Delete chat',
     acceptAgreement: 'Accept agreement',
     declineAgreement: 'Decline agreement',
     agreementStates: {
@@ -2315,4 +2325,5 @@ export const en: Strings = {
       withdrawn: 'Withdrawn',
     },
   },
+  contractorCategories: { main_contractor: 'Main Execution Contractor', subcontractor: 'Subcontractor' },
 };

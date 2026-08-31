@@ -5,6 +5,7 @@ import { ButtonSpinner } from '../../components/ButtonSpinner';
 import { FormAlert } from '../../components/FormAlert';
 import { useAuth } from '../../auth/useAuth';
 import { useLanguage } from '../../i18n/useLanguage';
+import { localeOf } from '../../i18n/dateFormat';
 import { useDocumentTitle } from '../../routes/useDocumentTitle';
 import { useScreenStylesheet } from '../../styles/useScreenStylesheet';
 import { initialsOf } from '../profile/profileModel';
@@ -45,7 +46,7 @@ export const NotificationsPage = () => {
   useDocumentTitle(t.notifications.documentTitle);
 
   const name = `${user?.firstName ?? ''} ${user?.lastName ?? ''}`.trim();
-  const formatter = new Intl.DateTimeFormat(lang === 'he' ? 'he-IL' : 'en-GB', {
+  const formatter = new Intl.DateTimeFormat(localeOf(lang), {
     dateStyle: 'short',
     timeStyle: 'short',
   });

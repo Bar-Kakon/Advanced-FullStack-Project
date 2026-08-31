@@ -1,6 +1,7 @@
 import { AppNav } from '../../components/AppNav';
 import { useAuth } from '../../auth/useAuth';
 import { useLanguage } from '../../i18n/useLanguage';
+import { localeOf } from '../../i18n/dateFormat';
 import { useDocumentTitle } from '../../routes/useDocumentTitle';
 import { useScreenStylesheet } from '../../styles/useScreenStylesheet';
 import { initialsOf } from '../profile/profileModel';
@@ -36,7 +37,7 @@ export const AuditLogPage = () => {
   const lastName = user?.lastName ?? '';
 
   const stamp = (iso: string): string =>
-    new Date(iso).toLocaleString(lang === 'he' ? 'he-IL' : 'en-GB');
+    new Date(iso).toLocaleString(localeOf(lang));
 
   return (
     <div className="app">

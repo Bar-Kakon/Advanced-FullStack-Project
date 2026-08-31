@@ -6,6 +6,7 @@ import { ButtonSpinner } from '../../components/ButtonSpinner';
 import { FormAlert } from '../../components/FormAlert';
 import { useAuth } from '../../auth/useAuth';
 import { useLanguage } from '../../i18n/useLanguage';
+import { formatCalendarDate } from '../../i18n/dateFormat';
 import { useDocumentTitle } from '../../routes/useDocumentTitle';
 import { useScreenStylesheet } from '../../styles/useScreenStylesheet';
 import { initialsOf } from '../profile/profileModel';
@@ -28,14 +29,6 @@ import profileCss from '../profile/profile.css?inline';
 import tasksCss from '../tasks/tasks.css?inline';
 import coordinationCss from './coordination.css?inline';
 
-const displayDate = (iso: string, lang: 'he' | 'en'): string => {
-  const [year, month, day] = iso.slice(0, 10).split('-').map(Number);
-  if (!year || !month || !day) return iso;
-  return new Date(Date.UTC(year, month - 1, day)).toLocaleDateString(
-    lang === 'he' ? 'he-IL' : 'en-GB',
-    { year: 'numeric', month: 'short', day: 'numeric', timeZone: 'UTC' },
-  );
-};
 
 const defaultResolutionFor = (item: ProposalItem): ItemResolution => {
   if (item.excluded) return 'none';
@@ -71,7 +64,7 @@ export const ProposalReviewPage = () => {
   const [decisions, setDecisions] = useState<Record<string, ItemResolution>>({});
   const [note, setNote] = useState('');
 
-  const date = (value: string): string => displayDate(value, lang);
+  const date = (value: string): string => formatCalendarDate(value, lang);
 
   const send = (item: ProposalItem): void => {
     void act(async () => {
