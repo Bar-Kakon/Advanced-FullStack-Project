@@ -6,6 +6,8 @@
  * it is not styled, ordered or worded as the lesser one, because refusing email removes nothing
  * from the platform.
  */
+
+import { Bidi } from '../../../components/Bidi';
 export const EmailNotificationChoice = ({
   copy, value, onChange,
 }: {
@@ -26,7 +28,7 @@ export const EmailNotificationChoice = ({
       <span className="form-label__text">{copy.legend}</span>
     </legend>
 
-    <p className="email-choice__body">{copy.body}</p>
+    <p className="email-choice__body"><Bidi text={copy.body} /></p>
     <p className="email-choice__body">{copy.inApp}</p>
     <p className="email-choice__body email-choice__body--note">{copy.optOut}</p>
 
