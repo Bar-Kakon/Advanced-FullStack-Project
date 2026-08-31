@@ -13,7 +13,8 @@ import { InputWarning } from './InputWarning';
  */
 export const PasswordField = ({
   id, name, label, value, onChange, onBlur, placeholder, hint, error, touched = false, toggleLabel,
-  minLength, maxLength, className = '', autoComplete = 'new-password', withWarning = false, children,
+  minLength, maxLength, className = '', autoComplete = 'new-password', withWarning = false,
+  invalid = false, children,
 }: {
   id: string;
   /** The wire field name, which is not always the element id — `confirmPassword` vs the
@@ -35,6 +36,8 @@ export const PasswordField = ({
   autoComplete?: 'new-password' | 'current-password';
   /** Renders the in-field hard-hat the auth screens position beside the reveal toggle. */
   withWarning?: boolean;
+  /** Carries the red state for a rule the browser cannot see, such as the two entries differing. */
+  invalid?: boolean;
   /** Anything that belongs under the field, such as login's forgot-password link. */
   children?: ReactNode;
 }) => {
@@ -45,7 +48,8 @@ export const PasswordField = ({
       <FieldLabel htmlFor={id} text={label} />
       <div className="input-wrapper">
         <input
-          className={`form-input${touched ? ' touched' : ''}`}
+          className={`form-input${touched ? ' touched' : ''}${invalid ? ' is-invalid' : ''}`}
+          aria-invalid={invalid}
           id={id}
           name={name}
           type={revealed ? 'text' : 'password'}

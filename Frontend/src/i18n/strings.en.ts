@@ -39,10 +39,11 @@ export const en: Strings = {
     signIn: 'Sign in',
     secureNote: 'TLS · end-to-end encrypted session',
     togglePassword: 'Toggle password visibility',
+    required: 'This field is required',
 
-    firstName: { label: 'First name', placeholder: 'John' },
-    lastName: { label: 'Last name', placeholder: 'Smith' },
-    companyName: { label: 'Company name', placeholder: 'Smith Contracting Ltd.' },
+    firstName: { label: 'First name', placeholder: 'John', error: 'A name must contain at least one letter' },
+    lastName: { label: 'Last name', placeholder: 'Smith', error: 'A name must contain at least one letter' },
+    companyName: { label: 'Company name', placeholder: 'Smith Contracting Ltd.', error: 'The company name must contain at least one letter' },
     email: { label: 'Email address', placeholder: 'you@example.com', error: 'Please enter a valid email address' },
     registrationCategory: {
       label: 'Registration route',
@@ -50,12 +51,12 @@ export const en: Strings = {
       hint: 'The route decides which specialties are offered below.',
     },
     specialty: { label: 'Primary specialty', placeholder: 'Select your specialty…', hint: 'You can add or change specialties later' },
-    specialtyOther: { label: 'Specify your specialty', placeholder: 'e.g. scaffolding, landscaping, elevators' },
+    specialtyOther: { label: 'Specify your specialty', placeholder: 'e.g. scaffolding, landscaping, elevators', error: 'Describe the specialty in words' },
     drillingTypes: { label: 'Drilling types', hint: 'Select the drilling types that apply.' },
-    city: { label: 'City', placeholder: 'Tel Aviv' },
+    city: { label: 'City', placeholder: 'Tel Aviv', error: 'A city name must contain at least one letter' },
     region: { label: 'Region', placeholder: 'Select a region…' },
-    officePhone: { label: 'Office phone', placeholder: '03-1234567' },
-    businessPhone: { label: 'Business phone', placeholder: '050-1234567' },
+    officePhone: { label: 'Office phone', placeholder: '03-1234567', error: 'A phone number may contain digits, spaces, hyphens, parentheses and + only, with at least 7 digits' },
+    businessPhone: { label: 'Business phone', placeholder: '050-1234567', error: 'A phone number may contain digits, spaces, hyphens, parentheses and + only, with at least 7 digits' },
     availability: { label: 'Availability', hint: 'You can change this at any time from your profile.' },
     contractorCategory: { label: 'Type of business', hint: 'It decides which capabilities the account has.' },
     standing: {
@@ -68,7 +69,7 @@ export const en: Strings = {
     companyPosition: { label: 'Position in the company', placeholder: 'Select a position…' },
     password: { label: 'Password', placeholder: '••••••••', hint: 'At least 8 characters', error: 'Password must be at least 8 characters' },
     confirmPassword: { label: 'Confirm password', placeholder: '••••••••', error: "Passwords don't match" },
-    terms: { before: 'I have read and agree to the ', tos: 'Terms of Use', open: 'Open the Terms of Use' },
+    terms: { before: 'I have read and agree to the ', tos: 'Terms of Use', open: 'Open the Terms of Use', error: 'Please accept the Terms of Use to continue' },
 
     steps: {
       label: 'Registration steps',

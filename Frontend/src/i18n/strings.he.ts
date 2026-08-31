@@ -39,10 +39,12 @@ export const he = {
     signIn: 'התחברות',
     secureNote: 'TLS · חיבור מוצפן מקצה לקצה',
     togglePassword: 'הצגת סיסמה',
+    /** One sentence for every field left empty, so a missing answer always reads the same. */
+    required: 'זהו שדה חובה',
 
-    firstName: { label: 'שם פרטי', placeholder: 'ישראל' },
-    lastName: { label: 'שם משפחה', placeholder: 'ישראלי' },
-    companyName: { label: 'שם חברה', placeholder: 'ישראלי בנייה בע״מ' },
+    firstName: { label: 'שם פרטי', placeholder: 'ישראל', error: 'השם חייב לכלול לפחות אות אחת' },
+    lastName: { label: 'שם משפחה', placeholder: 'ישראלי', error: 'השם חייב לכלול לפחות אות אחת' },
+    companyName: { label: 'שם חברה', placeholder: 'ישראלי בנייה בע״מ', error: 'שם החברה חייב לכלול לפחות אות אחת' },
     email: { label: 'כתובת אימייל', placeholder: 'you@example.com', error: 'יש להזין כתובת אימייל תקינה' },
     registrationCategory: {
       label: 'מסלול הרשמה',
@@ -50,12 +52,14 @@ export const he = {
       hint: 'המסלול קובע אילו תחומים מוצגים בהמשך.',
     },
     specialty: { label: 'תחום עיקרי', placeholder: 'בחירת תחום…', hint: 'אפשר להוסיף ולשנות תחומים בהמשך' },
-    specialtyOther: { label: 'פירוט התחום', placeholder: 'לדוגמה: פיגומים, גינון, מעליות' },
+    specialtyOther: { label: 'פירוט התחום', placeholder: 'לדוגמה: פיגומים, גינון, מעליות', error: 'יש לפרט את התחום במילים' },
     drillingTypes: { label: 'תחומי קידוח', hint: 'אפשר לסמן את סוגי הקידוח הרלוונטיים.' },
-    city: { label: 'עיר', placeholder: 'תל אביב' },
+    city: { label: 'עיר', placeholder: 'תל אביב', error: 'שם היישוב חייב לכלול לפחות אות אחת' },
     region: { label: 'אזור', placeholder: 'בחירת אזור…' },
-    officePhone: { label: 'טלפון משרד', placeholder: '03-1234567' },
-    businessPhone: { label: 'טלפון עסקי', placeholder: '050-1234567' },
+    // The same sentence on both numbers: it describes the shape of a phone number, and that does
+    // not change between the office line and the business one.
+    officePhone: { label: 'טלפון משרד', placeholder: '03-1234567', error: 'מספר טלפון יכול לכלול ספרות, רווח, מקף, סוגריים ו-+ בלבד, ולפחות 7 ספרות' },
+    businessPhone: { label: 'טלפון עסקי', placeholder: '050-1234567', error: 'מספר טלפון יכול לכלול ספרות, רווח, מקף, סוגריים ו-+ בלבד, ולפחות 7 ספרות' },
     availability: { label: 'זמינות', hint: 'אפשר לשנות בכל שלב בפרופיל.' },
     contractorCategory: { label: 'סוג העסק', hint: 'קובע אילו יכולות זמינות לחשבון.' },
     standing: {
@@ -69,7 +73,7 @@ export const he = {
     companyPosition: { label: 'תפקיד בחברה', placeholder: 'בחירת תפקיד…' },
     password: { label: 'סיסמה', placeholder: '••••••••', hint: 'לפחות 8 תווים', error: 'הסיסמה חייבת להכיל לפחות 8 תווים' },
     confirmPassword: { label: 'אימות סיסמה', placeholder: '••••••••', error: 'הסיסמאות אינן תואמות' },
-    terms: { before: 'אישור קריאה והסכמה ל', tos: 'תנאי השימוש', open: 'פתיחת תנאי השימוש' },
+    terms: { before: 'אישור קריאה והסכמה ל', tos: 'תנאי השימוש', open: 'פתיחת תנאי השימוש', error: 'יש לאשר את תנאי השימוש כדי להמשיך' },
 
     steps: {
       label: 'שלבי ההרשמה',
