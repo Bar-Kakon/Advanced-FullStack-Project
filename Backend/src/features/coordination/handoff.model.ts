@@ -26,6 +26,8 @@ export interface HandoffRecord {
   readonly completedWorkAtHandover: string;
   readonly state: HandoffState;
   readonly membership?: Types.ObjectId;
+  readonly completionAttempts: number;
+  readonly lastAttemptAt?: Date;
   readonly decidedBy?: Types.ObjectId;
   readonly decidedAt?: Date;
   readonly proposal?: Types.ObjectId;
@@ -45,6 +47,8 @@ const handoffSchema = new Schema(
     completedWorkAtHandover: { type: String, required: true, trim: true, maxlength: 600 },
     state: { type: String, enum: HANDOFF_STATES, required: true, default: 'proposed' },
     membership: { type: Schema.Types.ObjectId, ref: 'ProjectMembership' },
+    completionAttempts: { type: Number, required: true, default: 0 },
+    lastAttemptAt: { type: Date },
     decidedBy: { type: Schema.Types.ObjectId, ref: 'User' },
     decidedAt: { type: Date },
     proposal: { type: Schema.Types.ObjectId, ref: 'RescheduleProposal' },
@@ -56,5 +60,6 @@ handoffSchema.index({ task: 1, state: 1 });
 handoffSchema.index({ from: 1, state: 1, decidedAt: -1 });
 handoffSchema.index({ to: 1, state: 1 });
 handoffSchema.index({ project: 1, to: 1, state: 1 });
+handoffSchema.index({ state: 1, lastAttemptAt: 1 });
 
 export const WorkHandoffModel = model('WorkHandoff', handoffSchema);

@@ -29,6 +29,8 @@ export interface HandoffRepository {
     to: Types.ObjectId,
     session?: DbSession,
   ): Promise<HandoffRecord | null>;
+  listAwaitingMembership(limit: number): Promise<HandoffRecord[]>;
+  noteAttempt(id: Types.ObjectId, at: Date): Promise<void>;
   listAcceptedFrom(from: Types.ObjectId): Promise<HandoffRecord[]>;
   listPendingFor(userId: Types.ObjectId, managedProjects: readonly Types.ObjectId[]): Promise<HandoffRecord[]>;
   holdForMembership(
@@ -73,6 +75,21 @@ export const handoffRepository: HandoffRepository = {
     const query = WorkHandoffModel.findOne({ project, to, state: 'awaiting_membership' });
     if (session) query.session(session);
     return query.lean<HandoffRecord>().exec();
+  },
+
+  async listAwaitingMembership(limit) {
+    return WorkHandoffModel.find({ state: 'awaiting_membership' })
+      .sort({ lastAttemptAt: 1, _id: 1 })
+      .limit(limit)
+      .lean<HandoffRecord[]>()
+      .exec();
+  },
+
+  async noteAttempt(id, at) {
+    await WorkHandoffModel.updateOne(
+      { _id: id, state: 'awaiting_membership' },
+      { $inc: { completionAttempts: 1 }, $set: { lastAttemptAt: at } },
+    ).exec();
   },
 
   async listAcceptedFrom(from) {

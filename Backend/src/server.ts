@@ -5,6 +5,11 @@ import { config as loadEnvFile } from 'dotenv';
 import { createApp } from './app.js';
 import { loadConfig } from './config/env.js';
 import { connectToDatabase, disconnectFromDatabase } from './db/mongoose.js';
+import { buildCoordinationService } from './features/coordination/coordination.module.js';
+import {
+  createTransferWorker,
+  type TransferWorker,
+} from './features/coordination/responsibilityTransfer.worker.js';
 import { logger } from './shared/logger.js';
 
 const SHUTDOWN_SIGNALS = ['SIGINT', 'SIGTERM'] as const;
@@ -16,17 +21,18 @@ const closeHttpServer = async (server: Server): Promise<void> =>
     server.close((error) => (error ? reject(error) : resolve()));
   });
 
-const shutdown = async (server: Server, signal: string): Promise<void> => {
+const shutdown = async (server: Server, worker: TransferWorker, signal: string): Promise<void> => {
   logger.info('Shutting down', { signal });
+  worker.stop();
   await closeHttpServer(server);
   await disconnectFromDatabase();
   logger.info('Shutdown complete');
 };
 
-const registerShutdownHandlers = (server: Server): void => {
+const registerShutdownHandlers = (server: Server, worker: TransferWorker): void => {
   for (const signal of SHUTDOWN_SIGNALS) {
     process.once(signal, () => {
-      shutdown(server, signal).catch((error: unknown) => {
+      shutdown(server, worker, signal).catch((error: unknown) => {
         logger.error('Shutdown failed', { error: describe(error) });
         process.exit(1);
       });
@@ -44,7 +50,10 @@ const startServer = async (): Promise<void> => {
     logger.info('API server listening', { port: config.port, nodeEnv: config.nodeEnv });
   });
 
-  registerShutdownHandlers(server);
+  const transfers = createTransferWorker(buildCoordinationService());
+  transfers.start();
+
+  registerShutdownHandlers(server, transfers);
 };
 
 startServer().catch((error: unknown) => {

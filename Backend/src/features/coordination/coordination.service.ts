@@ -111,6 +111,8 @@ const toHandoffDto = (
 const AUDIT_PAGE = 100;
 const MS_PER_HOUR = 3_600_000;
 
+const TRANSFER_SWEEP_BATCH = 50;
+
 class ResponsibilityAlreadyMoved extends Error {}
 
 export interface RequestInput {
@@ -139,6 +141,13 @@ export interface HandoffInput {
   readonly toUserId?: string;
   readonly completedWorkAtHandover: string;
   readonly proposalId?: string;
+}
+
+export interface TransferSweepResult {
+  readonly examined: number;
+  readonly completed: number;
+  readonly declined: number;
+  readonly waiting: number;
 }
 
 export interface ResolveInput {
@@ -176,6 +185,7 @@ export interface CoordinationService {
   handoffViewFor(userId: string, taskId: string): Promise<HandoffViewDto>;
   completeAfterMembership(userId: string, projectId: string): Promise<void>;
   abandonAfterMembershipDeclined(userId: string, projectId: string): Promise<void>;
+  settleAwaitingTransfers(limit?: number): Promise<TransferSweepResult>;
   pendingActionsFor(userId: string): Promise<ReadonlyMap<string, PendingActionsDto>>;
   pendingActionTotals(userId: string): Promise<PendingActionsDto>;
   pendingFor(userId: string, taskIds: readonly string[]): Promise<ReadonlyMap<string, boolean>>;
@@ -321,6 +331,15 @@ export const createCoordinationService = ({
     }
     await appendTransferEntry(settled, 'work.handoff_accepted');
     return settled;
+  };
+
+  const abandonTransfer = async (handoff: HandoffRecord): Promise<boolean> => {
+    const settled = await handoffs.settle(handoff._id, 'declined', handoff.to, new Date(), [
+      'awaiting_membership',
+    ]);
+    if (settled === null) return false;
+    await appendTransferEntry(settled, 'work.handoff_declined');
+    return true;
   };
 
   const awaitingFor = async (userId: string, projectId: string): Promise<HandoffRecord | null> => {
@@ -1422,12 +1441,30 @@ export const createCoordinationService = ({
     async abandonAfterMembershipDeclined(userId, projectId) {
       const handoff = await awaitingFor(userId, projectId);
       if (handoff === null) return;
+      await abandonTransfer(handoff);
+    },
 
-      const settled = await handoffs.settle(handoff._id, 'declined', handoff.to, new Date(), [
-        'awaiting_membership',
-      ]);
-      if (settled === null) return;
-      await appendTransferEntry(settled, 'work.handoff_declined');
+    async settleAwaitingTransfers(limit = TRANSFER_SWEEP_BATCH) {
+      const rows = await handoffs.listAwaitingMembership(limit);
+      const at = new Date();
+      let completed = 0;
+      let declined = 0;
+      let waiting = 0;
+
+      for (const handoff of rows) {
+        await handoffs.noteAttempt(handoff._id, at);
+        const membership = await access.findMembership(handoff.project, handoff.to);
+
+        if (membership?.status === 'active') {
+          if ((await completeTransfer(handoff)) !== null) completed += 1;
+        } else if (membership === null || membership.status !== 'invited') {
+          if (await abandonTransfer(handoff)) declined += 1;
+        } else {
+          waiting += 1;
+        }
+      }
+
+      return { examined: rows.length, completed, declined, waiting };
     },
 
     async handoffViewFor(userId, taskId) {

@@ -1,7 +1,9 @@
 import { Types } from 'mongoose';
 
 import { AuditEntryModel } from '../src/features/coordination/auditEntry.model.js';
+import { buildCoordinationService } from '../src/features/coordination/coordination.module.js';
 import { WorkHandoffModel } from '../src/features/coordination/handoff.model.js';
+import { createTransferWorker } from '../src/features/coordination/responsibilityTransfer.worker.js';
 import { RescheduleProposalModel } from '../src/features/coordination/proposal.model.js';
 import { ProjectMembershipModel } from '../src/features/projectaccess/projectMembership.model.js';
 import { ProjectModel } from '../src/features/projects/project.model.js';
@@ -47,6 +49,7 @@ const run = async (): Promise<void> => {
   const delegate = await createAccount(baseUrl, MARKER, 4);
   const outsider = await createAccount(baseUrl, MARKER, 5);
   const stranger = await createAccount(baseUrl, MARKER, 6);
+  const joiner = await createAccount(baseUrl, MARKER, 7);
 
   const created = await post('/api/projects', gc.token, {
     name: 'אתר ההעברה', startDate: iso(0), targetEndDate: iso(150),
@@ -325,7 +328,62 @@ const run = async (): Promise<void> => {
   check((await TaskModel.findById(t5._id).lean().exec())?.assignee?.toString() === delegate.userId.toString(),
     'and responsibility really did move');
 
-  section('8. Somebody with no standing reaches none of it');
+  section('8. An approved transfer completes on its own, without anybody opening the work');
+  const worker = createTransferWorker(buildCoordinationService());
+
+  const t6 = await mk('גבס', subA.userId);
+  await TaskModel.updateOne(
+    { _id: t6._id },
+    { $set: { delegation: { delegate: joiner.userId, scope: 'whole', delegatedAt: new Date() } } },
+  ).exec();
+  const offered = await post(`/api/coordination/tasks/${t6._id.toString()}/handoff`, subA.token, {
+    completedWorkAtHandover: 'גבס בקומה 1',
+  });
+  const heldId = (offered.body as { handoff: HandoffDto }).handoff.id;
+  await post(`/api/coordination/handoffs/${heldId}/decision`, gc.token, { accept: true });
+
+  const waitSweep = await worker.runOnce();
+  check(waitSweep.waiting === 1 && waitSweep.completed === 0,
+    'an unanswered invitation is left alone rather than forced', JSON.stringify(waitSweep));
+  const afterOne = await WorkHandoffModel.findById(heldId).lean().exec();
+  check(afterOne?.state === 'awaiting_membership', 'the transfer is still waiting on the person');
+  check((afterOne?.completionAttempts ?? 0) === 1,
+    'and the attempt is recorded on the row itself', String(afterOne?.completionAttempts));
+
+  await worker.runOnce();
+  const afterTwo = await WorkHandoffModel.findById(heldId).lean().exec();
+  check((afterTwo?.completionAttempts ?? 0) === 2,
+    'a second sweep tries again — this is a retry, not one chance',
+    String(afterTwo?.completionAttempts));
+  check((await TaskModel.findById(t6._id).lean().exec())?.delegation !== undefined,
+    'the delegation stays confidential for as long as the transfer is unfinished');
+
+  const invited = await ProjectMembershipModel.findOne({ project, user: joiner.userId }).lean().exec();
+  await ProjectMembershipModel.updateOne(
+    { _id: invited?._id },
+    { $set: { status: 'active', respondedAt: new Date() } },
+  ).exec();
+  check((await WorkHandoffModel.findById(heldId).lean().exec())?.state === 'awaiting_membership',
+    'the invitation is answered, and the immediate consumer never ran');
+
+  const settleSweep = await worker.runOnce();
+  check(settleSweep.completed === 1,
+    'the durable retry settles it with no request and no screen involved', JSON.stringify(settleSweep));
+  check((await WorkHandoffModel.findById(heldId).lean().exec())?.state === 'accepted',
+    'the handover is accepted');
+  const sweptTask = await TaskModel.findById(t6._id).lean().exec();
+  check(sweptTask?.assignee?.toString() === joiner.userId.toString(),
+    'responsibility moved without anybody reading the work', String(sweptTask?.assignee?.toString()));
+  check(sweptTask?.delegation === undefined,
+    'and the delegation is cleared exactly as on the direct path');
+
+  const repeatSweep = await worker.runOnce();
+  check(repeatSweep.examined === 0 && repeatSweep.completed === 0,
+    'a repeated sweep finds nothing left to do', JSON.stringify(repeatSweep));
+  check((await AuditEntryModel.countDocuments({ task: t6._id, action: 'work.handoff_accepted' })) === 1,
+    'so a retried completion records one transfer, never two');
+
+  section('9. Somebody with no standing reaches none of it');
   const outsiderRead = await get(`/api/coordination/tasks/${t1._id.toString()}/handoff`, outsider.token);
   check(outsiderRead.status === 404, 'an unrelated account cannot read a handover', outsiderRead.status);
   const outsiderOpen = await post(`/api/coordination/tasks/${t1._id.toString()}/handoff`, outsider.token, {
