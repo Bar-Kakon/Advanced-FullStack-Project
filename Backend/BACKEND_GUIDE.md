@@ -2,7 +2,7 @@
 
 Express + Mongoose API server for the Contractor Coordination Platform. TypeScript only.
 
-The project source of truth is [`../Contractor Coordination Platform — Pro.md`](../Contractor%20Coordination%20Platform%20—%20Pro.md);
+The project source of truth is [`../PROJECT_DECISIONS.md`](../PROJECT_DECISIONS.md);
 the schema reference is [`../docs/database-design.html`](../docs/database-design.html). Permanent
 rules for working on this directory are in [`CLAUDE.md`](CLAUDE.md).
 

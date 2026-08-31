@@ -224,18 +224,6 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   color: var(--surface);
 }
 
-.brand-logo__badge {
-  font-family: var(--font-mono);
-  font-size: 12px;
-  font-weight: 500;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--primary);
-  background: var(--secondary);
-  padding: 3px 8px;
-  border-radius: 999px;
-}
-
 /* Headline copy — the "// PLATFORM ACCESS" mono eyebrow is gone, and its rule with it.
    Its removal on login and register was requested by the owner on 2026-06-17, to be made the
    next time these screens were touched; register dropped it on 2026-06-28 and this is login's

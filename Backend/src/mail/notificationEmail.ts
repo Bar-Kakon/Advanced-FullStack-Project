@@ -7,7 +7,7 @@ import type { MailMessage } from './mailer.js';
  * digest of what did not need immediate attention.
  *
  * Both are delivery only. Neither carries an approve, a decline or any other response — every
- * operational action happens inside FieldSync, so the only control an email offers is a link back
+ * operational action happens inside Blokta, so the only control an email offers is a link back
  * to the screen that owns the decision.
  *
  * Written in the account's own `users.language`, the same preference every screen reads.
@@ -32,9 +32,9 @@ const WORDING: Record<UserLanguage, Wording> = {
   he: {
     dir: 'rtl',
     align: 'right',
-    brand: 'FieldSync',
-    openLabel: 'פתיחה ב-FieldSync',
-    digestSubject: 'סיכום יומי — FieldSync',
+    brand: 'Blokta',
+    openLabel: 'פתיחה ב-Blokta',
+    digestSubject: 'סיכום יומי — Blokta',
     digestHeading: 'הסיכום היומי',
     digestIntro: (count) =>
       count === 1 ? 'עדכון אחד מהיום שטרם נצפה:' : `${count} עדכונים מהיום שטרם נצפו:`,
@@ -65,9 +65,9 @@ const WORDING: Record<UserLanguage, Wording> = {
   en: {
     dir: 'ltr',
     align: 'left',
-    brand: 'FieldSync',
-    openLabel: 'Open in FieldSync',
-    digestSubject: 'Daily summary — FieldSync',
+    brand: 'Blokta',
+    openLabel: 'Open in Blokta',
+    digestSubject: 'Daily summary — Blokta',
     digestHeading: 'Your daily summary',
     digestIntro: (count) =>
       count === 1 ? 'One update from today that you have not seen:' : `${count} updates from today that you have not seen:`,
