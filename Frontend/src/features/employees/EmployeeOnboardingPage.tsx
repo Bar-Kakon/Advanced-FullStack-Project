@@ -30,7 +30,7 @@ export const EmployeeOnboardingPage = () => {
     { id: 'edit-profile.css', css: editProfileCss },
     { id: 'employees.css', css: employeesCss },
   );
-  useDocumentTitle('הוספת העובדים שלכם / Add your employees — Blokta');
+  useDocumentTitle('הוספת עובדים / Add employees — Blokta');
 
   const complete = useCallback(
     async (which: 'skip' | 'finish'): Promise<void> => {

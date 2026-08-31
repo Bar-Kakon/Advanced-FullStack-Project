@@ -46,7 +46,7 @@ export const BrowsePage = () => {
     { id: 'browse.css', css: browseCss },
     { id: 'place.css', css: placeCss },
   );
-  useDocumentTitle('עיון בקבלנים / Browse contractors — Blokta');
+  useDocumentTitle('חיפוש בעלי מקצוע / Find professionals — Blokta');
 
   useEffect(() => {
     if (selectedId === null) {

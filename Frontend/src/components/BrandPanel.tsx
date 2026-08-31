@@ -12,7 +12,6 @@
  * that the kicker is not reused.
  */
 export interface BrandPanelContent {
-  readonly beta: string;
   readonly headline: string;
   readonly sub: string;
   readonly featuresLabel: string;
@@ -40,7 +39,6 @@ export const BrandPanel = ({ content }: { content: BrandPanelContent }) => (
           </svg>
         </span>
         <span className="brand-logo__name">Blokta</span>
-        <span className="brand-logo__badge">{content.beta}</span>
       </div>
 
       <div className="brand-copy">
