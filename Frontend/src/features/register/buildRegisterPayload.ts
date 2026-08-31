@@ -150,7 +150,9 @@ export const buildRegisterPayload = (values: RegisterFormValues): RegisterPayloa
     ...(businessPhone ? { businessPhone } : {}),
     ...(isEmployee ? {} : { availability: values.availability }),
     // Owner only. An employee inherits their company's, and the server refuses the field there.
-    ...(isEmployee || values.contractorCategory === ''
+    ...(isEmployee
+      || values.registrationCategory !== 'contractor'
+      || values.contractorCategory === ''
       ? {}
       : { contractorCategory: values.contractorCategory }),
     acceptedTerms: true,

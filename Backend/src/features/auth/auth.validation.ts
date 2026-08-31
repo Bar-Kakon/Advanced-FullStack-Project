@@ -169,11 +169,18 @@ export const registerBodySchema = Joi.object<RegisterBody>({
 
   // The owner classifies the business they are creating. An employee is refused it rather than
   // ignored: their classification is the company's, and a claimed one would be trusted input.
+  // Contractor route only. `קבלן ביצוע ראשי` / `קבלן משנה` classifies a CONTRACTING business, so a
+  // supplier or an architectural professional is refused it rather than asked to pick one — and it
+  // is refused rather than ignored, so no account is silently classified as something it is not.
   contractorCategory: Joi.when('standing', {
     is: 'owner',
-    then: Joi.string()
-      .valid(...CONTRACTOR_CATEGORIES)
-      .required(),
+    then: Joi.when('registrationCategory', {
+      is: 'contractor',
+      then: Joi.string()
+        .valid(...CONTRACTOR_CATEGORIES)
+        .required(),
+      otherwise: Joi.any().forbidden(),
+    }),
     otherwise: Joi.any().forbidden(),
   }),
 

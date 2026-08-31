@@ -27,10 +27,15 @@ import {
 import type { GoogleIdentityService } from './googleIdentity.service.js';
 import type { RegisterBody } from './auth.validation.js';
 
-/** What the schema guarantees once `standing` is `owner`: the owner-only fields are present. */
+/**
+ * What the schema guarantees once `standing` is `owner`: the owner-only fields are present.
+ * `contractorCategory` stays optional, because only the contractor route carries one — a supplier
+ * and an architectural professional create an unclassified company, which every eligibility check
+ * already reads as not eligible.
+ */
 type OwnerRegisterBody = RegisterBody & {
   readonly availability: Availability;
-  readonly contractorCategory: ContractorCategory;
+  readonly contractorCategory?: ContractorCategory;
 };
 
 /** And once it is `employee`: the two values their invitation is matched on. */
@@ -100,7 +105,7 @@ const isDuplicateEmailError = (error: unknown): boolean => {
 const toNewCompany = (input: OwnerRegisterBody): NewCompany => ({
   name: input.companyName,
   availability: input.availability,
-  contractorCategory: input.contractorCategory,
+  ...(input.contractorCategory === undefined ? {} : { contractorCategory: input.contractorCategory }),
   ...(input.officePhone === undefined ? {} : { officePhone: input.officePhone }),
 });
 
