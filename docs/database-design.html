@@ -2528,13 +2528,11 @@ module.exports = mongoose.model('Rule', ruleSchema);`
     { name: 'limits.membersPerProject', type: 'Number | null', req: true, note: 'Counted against [[memberships]] for one project. **`null` on every current tier**, for the same reason: a job has the trades it has, and the platform only works when every party is in it.' },
     { name: 'limits.connections', type: 'Number | null', req: true, note: 'Accepted [[connections]] the user may hold.' },
     { name: 'limits.fileMaxBytes', type: 'Number', req: true, note: 'Per-upload ceiling for [[fileassets]]: 10 MB on free, 30 MB on the paid tiers.' },
-    { name: 'limits.fileVersions', type: 'Number | null', req: true, note: 'How many versions of a work plan are retained: 1 (latest only), 5, or null for every version. Replaced a `fileVersioning` boolean — retention depth is a real ladder across the tiers, and an on/off flag could not express the middle step.' },
     { name: 'limits.moderatedThreads', type: 'Boolean', req: true, note: 'Shown to users as **Moderated project conversations**. A coordination convenience for whoever runs the job, not a gate on messaging itself — direct and project threads are available on every tier.' },
     { name: 'limits.muteControls', type: 'Boolean', req: true, note: 'Shown to users as **Mute settings** — per-contractor, per-project and per-conversation. Convenience, and only valuable once a user carries enough concurrent work to need it.' },
     { name: 'limits.agreementForm', type: 'Boolean', req: true, note: 'Shown to users as **Automatic task creation** — a refinement over plain task creation, so gating it withholds convenience rather than capability.' },
     { name: 'limits.notificationDigest', type: 'Boolean', req: true, note: 'Daily summary email in addition to per-event notifications.' },
     { name: 'limits.auditRetentionDays', type: 'Number | null', req: true, note: 'How far back [[auditentries]] are **readable**: 30, 365, or null for the complete history. Entries are never deleted — this filters the query, because an audit trail that deletes itself is not an audit trail.' },
-    { name: 'limits.simulationsPerWeek', type: 'Number | null', req: true, note: 'How many **visual simulations** the user may create in a week — a simulation being a visual representation the simulator builds from the details and selections the contractor entered. Metered through [[usagecounters]]: 3, 40, and null for unlimited. This is a **capacity** limit on a generated artifact, not a gate on any coordination feature.' },
     { name: 'limits.activeDelegations', type: 'Number | null', req: true, note: 'How many confidential delegations may be **open at once** — the `delegate` field on [[tasks]], counted where the delegated task is not yet complete. 1, 10, null. Replaced an earlier `canDelegate` boolean: gating the product signature feature entirely meant free and basic users could never see what they would be buying, so it became a concurrency limit instead of an on/off switch.' },
     { name: 'limits.privateExecutionLayer', type: 'Boolean', req: true, note: 'Private sub-tasks and notes on [[tasks]]. Premium only. Shown to users as **Private workspace** — this document keeps the §3.3 term, the screen uses the one a contractor reads without translation. Same feature.' },
     { name: 'limits.emailNotifications', type: 'Boolean', req: true, note: 'Whether [[notifications]] are also delivered by email. In-app delivery is never gated.' },
@@ -2559,6 +2557,7 @@ module.exports = mongoose.model('Rule', ruleSchema);`
     '**Prices are stored per currency, not converted.** A stored shekel amount cannot move with the exchange rate. `taxIncluded` records that the two amounts are quoted on different tax bases — the single detail most likely to be forgotten, and the one that makes the two prices non-comparable.',
     '**No display names, only codes.** Exactly as with `specialties` on [[users]]: the bilingual rule applied to a new collection rather than re-derived per screen.',
     '**Nothing in the coordination loop is priced.** There is deliberately no field for opening or answering a [[rescheduleproposals]] document, for creating [[tasks]], or for adding [[memberships]] — the platform only works when every party on a job is in it, so charging for the loop itself would break the product before it earned anything. Every limit above is **capacity, storage, history or convenience**. An earlier draft carried a `canOpenReschedule` boolean; it was removed rather than set to true on all three tiers, because a field that can never legitimately be false is an invitation to set it false later.',
+    '**Two limits were REMOVED from this collection rather than set to a permissive value (2026-08-31).** `simulationsPerWeek` metered **architectural visualization**, which was removed from the product — so the limit goes with the feature rather than lingering as a number nothing reads. `fileVersions` rationed work-plan version history, which **stopped being a plan differentiator** when work-plan history became append-only: a per-tier retention ladder would imply a deletion the product does not perform. Both were still described here after `planCatalogue.ts` had already dropped them, which is the drift this pass closes. **Neither removal changes an approved price or quota** — `fileMaxBytes` is now the only file limit that varies by tier.',
     '**The provider plan id lives beside the price it was created from.** PayPal charges what its own Billing Plan says, not what this collection says, so the two numbers can silently disagree — a price edited here and never re-provisioned would show one amount and charge another. Keeping `providerPlans.paypal` on the same document as `prices` is what makes that drift detectable: one read has both halves, and `provision:paypal-plans` is what reconciles them.'
   ],
   relations: [],
@@ -2580,9 +2579,7 @@ module.exports = mongoose.model('Rule', ruleSchema);`
     membersPerProject:     null,          // never capped on any tier
     connections:           500,
     fileMaxBytes:          31457280,      // 30 MB
-    fileVersions:          5,             // free 1 · basic 5 · premium null (all)
     auditRetentionDays:    365,           // free 30 · basic 365 · premium null
-    simulationsPerWeek:    10,            // free 3 · basic 10 · premium 60
     activeDelegations:     5,             // free 1 · basic 5 · premium null
     moderatedThreads:      true,
     muteControls:          true,
@@ -2622,9 +2619,7 @@ const limitsSchema = new Schema({
   membersPerProject:     { type: Number, default: null },
   connections:           { type: Number, default: null },
   fileMaxBytes:          { type: Number, required: true },
-  fileVersions:          { type: Number, default: null },   // null = every version
   auditRetentionDays:    { type: Number, default: null },
-  simulationsPerWeek:    { type: Number, default: null },
   activeDelegations:     { type: Number, default: null },
   moderatedThreads:      { type: Boolean, required: true },
   muteControls:          { type: Boolean, required: true },
@@ -2795,7 +2790,8 @@ module.exports = mongoose.model('Subscription', subscriptionSchema);`
   why: [
     '**A document per window, not a running total on [[users]].** A total cannot express "3 per week" without a reset job, and a reset job that fails silently hands somebody unlimited usage. A window document simply stops matching once the week rolls over.',
     '**The limit is copied in, not joined.** The counter has to answer the quota question in a single atomic update; a join would force a read first, which is exactly the race this design avoids.',
-    '**Unlimited writes nothing.** When `limits.simulationsPerWeek` is null the request skips this collection entirely, so premium usage costs no writes and leaves no rows to expire.',
+    '**Unlimited writes nothing.** When a metric carries no limit for the tier, the request skips this collection entirely, so unmetered usage costs no writes and leaves no rows to expire.',
+    '⚠️ **This collection currently meters a feature that no longer exists (flagged 2026-08-31, NOT resolved here).** Its only metric is `visual_simulation`, and architectural visualization was removed from the product — the `plans` limit that rationed it, `simulationsPerWeek`, was removed in the same pass that added this note. Nothing in `Backend/src` reads or writes this collection today. **Whether it is deleted outright or kept as the meter a future metric would reuse is a product decision and is deliberately left open** rather than settled as a side effect of a documentation reconciliation.',
     '**Fixed windows over rolling ones.** A rolling seven-day window is fairer in theory but cannot be answered by a single indexed lookup, and it makes "when do I get more?" unanswerable for the user.',
     '**Metering lives here, not in [[auditentries]].** The audit trail records what happened to the work; this records consumption of a paid allowance. Mixing them would put billing pressure on a collection whose integrity the privacy model depends on.'
   ],
