@@ -348,11 +348,11 @@ product and one billing plan per paid tier, and is idempotent.
 
 | Surface | URL |
 | --- | --- |
-| Frontend (Vercel) | _pending deployment_ |
-| Backend API (Render) | _pending deployment_ |
+| Frontend (Vercel) | https://blokta.vercel.app |
+| Backend API (Render) | https://blokta.onrender.com/api |
 
-Both are filled in once the two services are live. Until then the application runs locally exactly
-as described above.
+The API answers `GET /api/health` with its status and whether the database is connected, which is
+the quickest way to tell a sleeping Render instance from a broken one.
 
 ## Screenshots
 

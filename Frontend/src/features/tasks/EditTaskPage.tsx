@@ -48,7 +48,7 @@ export const EditTaskPage = () => {
     { id: 'tasks.css', css: tasksCss },
     { id: 'create-task.css', css: createTaskCss },
   );
-  useDocumentTitle(`${t.editTask.title} — FieldSync`);
+  useDocumentTitle(`${t.editTask.title} — Blokta`);
 
   const [task, setTask] = useState<TaskDetail | null>(null);
   const [editable, setEditable] = useState<EditableFields | null>(null);

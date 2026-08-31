@@ -15,7 +15,6 @@ export const en: Strings = {
   routeLoading: 'Loading…',
 
   brand: {
-    beta: 'Beta',
     headline: 'One account. Every project you run.',
     sub: 'General contractors, subcontractors, and suppliers — all equal users, on one platform.',
     featuresLabel: 'Platform highlights',
@@ -187,7 +186,7 @@ export const en: Strings = {
   },
 
   browse: {
-    title: 'Browse contractors',
+    title: 'Find professionals',
     lede: 'Find professionals by trade, region, availability and real driving distance.',
     resultsCount: '{count} results',
     loading: 'Loading contractors…',
@@ -321,7 +320,7 @@ export const en: Strings = {
   nav: {
     home: 'Blokta — home',
     label: 'Main',
-    browse: 'Browse',
+    browse: 'Find professionals',
     network: 'Network',
     projects: 'Projects',
     myTasks: 'My Tasks',
@@ -339,8 +338,7 @@ export const en: Strings = {
 
   login: {
     brand: {
-      beta: 'Beta',
-      headline: 'Coordination that moves at the speed of construction.',
+        headline: 'Coordination that moves at the speed of construction.',
       sub: 'Tasks, dependencies, and reschedules handled inside the platform — not over the phone.',
       featuresLabel: 'Platform highlights',
       features: [
@@ -387,8 +385,7 @@ export const en: Strings = {
 
   forgotPassword: {
     brand: {
-      beta: 'Beta',
-      headline: "Your projects are waiting — let's get you back in.",
+        headline: "Your projects are waiting — let's get you back in.",
       sub: 'Secure password reset. We email a single-use link to the address on file — it expires in 30 minutes.',
       featuresLabel: 'Reset highlights',
       features: [
@@ -418,8 +415,7 @@ export const en: Strings = {
 
   resetPassword: {
     brand: {
-      beta: 'Beta',
-      headline: "One new password and you're back in.",
+        headline: "One new password and you're back in.",
       sub: "Choose a strong password you haven't used before. Every active session is signed out after the reset.",
       featuresLabel: 'Password guidance',
       features: [
@@ -1034,7 +1030,7 @@ export const en: Strings = {
     },
 
     empty: {
-      connected: 'No active connections yet. You can find people through Browse contractors.',
+      connected: 'No active connections yet. You can find people through Find professionals.',
       incoming: 'No connection requests are waiting for an answer.',
       outgoing: 'No connection requests of yours are open.',
       blocked: 'You have not blocked anyone.',
@@ -1087,7 +1083,7 @@ export const en: Strings = {
       incoming: 'Requests received',
       outgoing: 'Requests sent',
       blocked: 'Blocks you created',
-      browse: 'Browse contractors',
+      browse: 'Find professionals',
     },
 
     team: {
@@ -1290,7 +1286,7 @@ export const en: Strings = {
     lede: 'Update the details other contractors see about you and your coordination preferences. Your rating and flexibility score are calculated for you — they cannot be edited.',
     identity: {
       title: 'Identity',
-      lede: 'These are the details other contractors find you by when browsing.',
+      lede: 'These are the details other professionals find you by in Find professionals.',
     },
     avatar: {
       upload: 'Upload photo',
@@ -2101,7 +2097,7 @@ export const en: Strings = {
     targets: { report: 'Report', user: 'Account' },
   },
   notifications: {
-    documentTitle: 'Notifications — FieldSync',
+    documentTitle: 'Notifications — Blokta',
     title: 'Notifications',
     lede: 'What is waiting, and what is worth knowing.',
     empty: 'No notifications yet.',
@@ -2139,7 +2135,7 @@ export const en: Strings = {
       'workplan.version_added': 'A work plan version was added',
     },
   },  settings: {
-    documentTitle: 'Settings — FieldSync',
+    documentTitle: 'Settings — Blokta',
     title: 'Settings',
     lede: 'Account preferences, notifications and contact details.',
     loading: 'Loading settings…',
@@ -2205,7 +2201,7 @@ export const en: Strings = {
       network: 'We could not reach the server. Check the connection and try again.',
     },
   },  scheduleExceptions: {
-    documentTitle: 'Schedule exceptions — FieldSync',
+    documentTitle: 'Schedule exceptions — Blokta',
     title: 'Schedule exceptions',
     lede: 'One-off dates that fall outside the ordinary week, in both directions.',
     noHolidayNote: 'There is no approved holiday data source, so no date is added automatically. Every row here was asked for by a person and approved by somebody with the authority.',

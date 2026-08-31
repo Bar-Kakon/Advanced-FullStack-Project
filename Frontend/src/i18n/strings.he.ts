@@ -15,7 +15,6 @@ export const he = {
   routeLoading: 'טוען…',
 
   brand: {
-    beta: 'בטא',
     headline: 'חשבון אחד. כל הפרויקטים במקום אחד.',
     sub: 'קבלנים ראשיים, קבלני משנה וספקים — כולם משתמשים שווים, על פלטפורמה אחת.',
     featuresLabel: 'עיקרי הפלטפורמה',
@@ -212,8 +211,8 @@ export const he = {
 
   /** Browse Contractors and the Public Profile embedded in it. */
   browse: {
-    title: 'עיון בקבלנים',
-    lede: 'חיפוש בעלי מקצוע לפי תחום, אזור, זמינות ומרחק נסיעה בפועל.',
+    title: 'חיפוש בעלי מקצוע',
+    lede: 'סינון לפי תחום, אזור, זמינות ומרחק נסיעה בפועל.',
     resultsCount: '{count} תוצאות',
     loading: 'טוען קבלנים…',
     loadMore: 'טעינת תוצאות נוספות',
@@ -351,7 +350,7 @@ export const he = {
   nav: {
     home: 'Blokta — דף הבית',
     label: 'ניווט ראשי',
-    browse: 'עיון בקבלנים',
+    browse: 'חיפוש בעלי מקצוע',
     network: 'הרשת שלי',
     projects: 'פרויקטים',
     myTasks: 'המשימות שלי',
@@ -369,8 +368,7 @@ export const he = {
 
   login: {
     brand: {
-      beta: 'בטא',
-      headline: 'תיאום שזז במהירות של הבנייה.',
+        headline: 'תיאום שזז במהירות של הבנייה.',
       sub: 'משימות, תלויות ותזמונים מחדש — מנוהלים בפנים, לא בטלפון.',
       featuresLabel: 'עיקרי הפלטפורמה',
       features: [
@@ -430,8 +428,7 @@ export const he = {
    */
   forgotPassword: {
     brand: {
-      beta: 'בטא',
-      headline: 'הפרויקטים ממתינים — הגישה תחזור.',
+        headline: 'הפרויקטים ממתינים — הגישה תחזור.',
       sub: 'איפוס סיסמה מאובטח. נשלח קישור חד-פעמי לאימייל שבחשבון, והוא יפוג בתוך 30 דקות.',
       featuresLabel: 'עיקרי האיפוס',
       features: [
@@ -462,8 +459,7 @@ export const he = {
 
   resetPassword: {
     brand: {
-      beta: 'בטא',
-      headline: 'סיסמה חדשה, וחזרה פנימה.',
+        headline: 'סיסמה חדשה, וחזרה פנימה.',
       sub: 'בחירת סיסמה חזקה שלא הייתה בשימוש בעבר. לאחר האיפוס כל הסשנים הפעילים יינותקו.',
       featuresLabel: 'הנחיות לסיסמה',
       features: [
@@ -1082,7 +1078,7 @@ export const he = {
     },
 
     empty: {
-      connected: 'אין עדיין קשרים פעילים. אפשר למצוא בעלי מקצוע דרך מסך העיון בקבלנים.',
+      connected: 'אין עדיין קשרים פעילים. אפשר למצוא בעלי מקצוע דרך מסך חיפוש בעלי מקצוע.',
       incoming: 'אין בקשות חיבור שממתינות למענה.',
       outgoing: 'אין בקשות חיבור פתוחות שנשלחו.',
       blocked: 'לא נוצרו חסימות.',
@@ -1135,7 +1131,7 @@ export const he = {
       incoming: 'בקשות שהתקבלו',
       outgoing: 'בקשות שנשלחו',
       blocked: 'חסימות שנוצרו',
-      browse: 'עיון בקבלנים',
+      browse: 'חיפוש בעלי מקצוע',
     },
 
     team: {
@@ -1354,7 +1350,7 @@ export const he = {
     lede: 'עדכון הפרטים שקבלנים אחרים רואים והעדפות התיאום. הדירוג וציון הגמישות מחושבים לבד — אי אפשר לערוך אותם.',
     identity: {
       title: 'פרטים מזהים',
-      lede: 'אלה הפרטים שקבלנים אחרים מוצאים לפיהם בעיון בקבלנים.',
+      lede: 'אלה הפרטים שקבלנים אחרים מוצאים לפיהם בחיפוש בעלי מקצוע.',
     },
     avatar: {
       upload: 'העלאת תמונה',
@@ -2177,7 +2173,7 @@ export const he = {
     targets: { report: 'דיווח', user: 'חשבון' },
   },
   notifications: {
-    documentTitle: 'התראות — FieldSync',
+    documentTitle: 'התראות — Blokta',
     title: 'התראות',
     lede: 'כל מה שממתין, וכל מה שכדאי לדעת.',
     empty: 'אין התראות כרגע.',
@@ -2215,7 +2211,7 @@ export const he = {
       'workplan.version_added': 'נוספה גרסה לתוכנית עבודה',
     },
   },  settings: {
-    documentTitle: 'הגדרות — FieldSync',
+    documentTitle: 'הגדרות — Blokta',
     title: 'הגדרות',
     lede: 'העדפות החשבון, ההתראות ופרטי הקשר.',
     loading: 'טוען הגדרות…',
@@ -2281,7 +2277,7 @@ export const he = {
       network: 'לא הצלחנו להגיע לשרת. כדאי לבדוק את החיבור ולנסות שוב.',
     },
   },  scheduleExceptions: {
-    documentTitle: 'חריגים בלוח הזמנים — FieldSync',
+    documentTitle: 'חריגים בלוח הזמנים — Blokta',
     title: 'חריגים בלוח הזמנים',
     lede: 'תאריכים חד-פעמיים שיוצאים מהשבוע הרגיל, בשני הכיוונים.',
     noHolidayNote: 'אין מקור נתונים מאושר לחגים, ולכן שום תאריך אינו נוסף אוטומטית. כל שורה כאן ביקש אדם ואישר בעל סמכות.',
