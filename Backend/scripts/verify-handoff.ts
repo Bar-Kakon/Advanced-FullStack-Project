@@ -397,7 +397,62 @@ const run = async (): Promise<void> => {
   check(strangerTarget.status === 409,
     'and work cannot be handed to somebody who is not on the project', strangerTarget.status);
 
-  section('9. Replacement scores only once the responsibility really moved');
+  section('10. A refused invitation settles the approved transfer too');
+  const t7 = await mk('טיח פנים', subA.userId);
+  await TaskModel.updateOne(
+    { _id: t7._id },
+    { $set: { delegation: { delegate: outsider.userId, scope: 'whole', delegatedAt: new Date() } } },
+  ).exec();
+  const refusedOffer = await post(`/api/coordination/tasks/${t7._id.toString()}/handoff`, subA.token, {
+    completedWorkAtHandover: 'טיח פנים בחדר אחד',
+  });
+  const refusedId = (refusedOffer.body as { handoff: HandoffDto }).handoff.id;
+  await post(`/api/coordination/handoffs/${refusedId}/decision`, gc.token, { accept: true });
+  check((await WorkHandoffModel.findById(refusedId).lean().exec())?.state === 'awaiting_membership',
+    'the authority approved it, and it waits on the incoming party');
+
+  const refusedInvitation = await ProjectMembershipModel.findOne({ project, user: outsider.userId })
+    .lean()
+    .exec();
+  await ProjectMembershipModel.updateOne(
+    { _id: refusedInvitation?._id },
+    { $set: { status: 'declined', respondedAt: new Date() } },
+  ).exec();
+  check((await WorkHandoffModel.findById(refusedId).lean().exec())?.state === 'awaiting_membership',
+    'the invitation is refused, and the immediate consumer never ran');
+
+  const declineSweep = await worker.runOnce();
+  check(declineSweep.declined === 1 && declineSweep.completed === 0,
+    'the durable retry settles the refusal rather than leaving it open',
+    JSON.stringify(declineSweep));
+  check((await WorkHandoffModel.findById(refusedId).lean().exec())?.state === 'declined',
+    'the handover is declined');
+
+  const unmovedByRefusal = await TaskModel.findById(t7._id).lean().exec();
+  check(unmovedByRefusal?.assignee?.toString() === subA.userId.toString(),
+    'responsibility did not move', String(unmovedByRefusal?.assignee?.toString()));
+  check(unmovedByRefusal?.delegation !== undefined,
+    'and the delegation is untouched — refusing to join is not ending the arrangement');
+  check(unmovedByRefusal?.previousAssignee === undefined,
+    'nothing recorded a handover that never happened');
+  check((await ProjectMembershipModel.findOne({ project, user: outsider.userId }).lean().exec())?.status === 'declined',
+    'the refuser holds no membership they did not accept');
+
+  const declinedHistory = await AuditEntryModel.countDocuments({
+    task: t7._id,
+    action: 'work.handoff_declined',
+  });
+  check(declinedHistory === 1, 'the refusal is in the project history once', String(declinedHistory));
+
+  const repeatDecline = await worker.runOnce();
+  check(repeatDecline.examined === 0 && repeatDecline.declined === 0,
+    'a repeated sweep finds nothing left to settle', JSON.stringify(repeatDecline));
+  check((await AuditEntryModel.countDocuments({ task: t7._id, action: 'work.handoff_declined' })) === 1,
+    'so retrying a settled refusal writes no second entry');
+  check((await TaskModel.findById(t7._id).lean().exec())?.assignee?.toString() === subA.userId.toString(),
+    'and responsibility is still where it was');
+
+  section('11. Replacement scores only once the responsibility really moved');
   const t3 = await mk('איטום', subA.userId);
   const proposal = await post(`/api/tasks/${t3._id.toString()}/date-change`, subA.token, {
     deltaWorkingDays: 3,
