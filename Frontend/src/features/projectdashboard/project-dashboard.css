@@ -1,0 +1,99 @@
+/* Blokta — Project dashboard */
+/* Loaded on top of profile.css, projects.css, permissions.css and members.css. Approved palette only. */
+
+/* A project name is free text and can arrive as one unbroken run of characters. */
+.profile__title { overflow-wrap: anywhere; }
+
+.panel__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px 16px;
+  margin-block-end: 4px;
+}
+
+.dash-facts {
+  display: grid;
+  grid-template-columns: minmax(140px, max-content) 1fr;
+  gap: 10px 24px;
+  margin: 0;
+}
+
+.dash-facts dt {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.dash-facts dd {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--text-soft);
+  overflow-wrap: anywhere;
+}
+
+.dash-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.dash-note {
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--text-soft);
+  margin-block-end: 6px;
+  max-width: 68ch;
+  overflow-wrap: anywhere;
+}
+
+/* A newer company version exists. It states the fact; it does not apply anything. */
+.dash-note--flag {
+  padding: 10px 14px;
+  border: 1px solid var(--primary-30);
+  border-radius: var(--r-md);
+  background: var(--background);
+  color: var(--text);
+}
+
+.dash-subtitle {
+  font-family: var(--font-serif);
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--primary);
+  margin-block: 18px 8px;
+}
+
+.dash-history {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dash-history__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 16px;
+  padding: 10px 14px;
+  border: 1px solid var(--secondary-45);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--text);
+}
+
+.dash-history__meta { font-size: 14px; color: var(--text-soft); }
+
+@media (max-width: 640px) {
+  .dash-facts { grid-template-columns: 1fr; gap: 2px 0; }
+  .dash-facts dd { margin-block-end: 10px; }
+  .dash-actions > .btn { flex: 1 1 auto; }
+}

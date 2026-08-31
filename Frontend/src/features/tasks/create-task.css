@@ -1,0 +1,69 @@
+/* Blokta — Open work (approved screen #17, create) */
+/* Loaded on top of profile.css, edit-profile.css, projects.css and tasks.css. Approved palette only. */
+
+.create-kind,
+.create-terms {
+  border: 1px solid var(--secondary-45);
+  border-radius: var(--r-md);
+  padding: 14px 16px;
+  margin: 0 0 18px;
+}
+
+.create-kind legend,
+.create-terms legend { padding-inline: 6px; }
+
+.create-choice {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding-block: 8px;
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.create-choice input {
+  /* Aligns the control with the first line of its label at this type size. */
+  margin-block-start: 4px;
+  flex: 0 0 auto;
+}
+
+.create-choice .field-hint { display: block; margin-block-start: 2px; }
+
+.create-note {
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--text-soft);
+  margin: 0 0 16px;
+  overflow-wrap: anywhere;
+}
+
+.create-stage {
+  border: 1px solid var(--secondary-45);
+  border-radius: var(--r-md);
+  padding: 14px 16px;
+  margin-block-end: 18px;
+  background: var(--background);
+}
+
+.create-stage__title {
+  font-family: var(--font-serif);
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--primary);
+  margin: 0 0 10px;
+}
+
+.create-stage__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px;
+}
+
+.create-stage__row .form-group { flex: 1 1 220px; margin-block-end: 0; }
+
+@media (max-width: 640px) {
+  .create-stage__row > .btn { flex: 1 1 auto; }
+}

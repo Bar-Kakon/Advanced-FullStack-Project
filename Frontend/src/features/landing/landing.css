@@ -1,0 +1,1044 @@
+/* ─────────────────────────────────────────────
+   Blokta — Landing page (approved screen #1)
+   Blokta landing styling. Only the bilingual mechanism
+   changed; every visual declaration is the approved one.
+
+   Palette: --primary #23384D · --secondary #C7B89D
+            --background #F3F0EA · --surface #FFFDF8
+            --text #1F2428 · --brand-gradient
+   Every colour here is from the approved palette or an opacity
+   variant of it; this screen introduces no exception of its own.
+
+   This is a public, signed-out screen, so it carries its own
+   .site-nav rather than the .app-nav every authenticated screen
+   copies — the same reasoning the 404 screen used.
+   ───────────────────────────────────────────── */
+
+:root {
+  /* ── Approved brand palette ── */
+  --primary:         #23384D;
+  --secondary:       #C7B89D;
+  --background:      #F3F0EA;
+  --surface:         #FFFDF8;
+  --text:            #1F2428;
+  --brand-gradient:  linear-gradient(135deg, #23384D 0%, #4A5D6E 55%, #C7B89D 100%);
+
+  /* ── Derived: opacity variants of palette colours ── */
+  --primary-08:      rgba(35, 56, 77, 0.08);
+  --primary-12:      rgba(35, 56, 77, 0.12);
+  --primary-20:      rgba(35, 56, 77, 0.20);
+  --primary-30:      rgba(35, 56, 77, 0.30);
+  --primary-45:      rgba(35, 56, 77, 0.45);
+  --secondary-15:    rgba(199, 184, 157, 0.15);
+  --secondary-30:    rgba(199, 184, 157, 0.30);
+  --secondary-45:    rgba(199, 184, 157, 0.45);
+  --secondary-55:    rgba(199, 184, 157, 0.55);
+  --secondary-70:    rgba(199, 184, 157, 0.70);
+
+  /* The only two tiers allowed for secondary text on cream; both clear the 4.5:1 AA floor. */
+  --text-mute:       rgba(31, 36, 40, 0.64);
+  --text-soft:       rgba(31, 36, 40, 0.75);
+
+  /* The contact form is the first thing on this screen that can be wrong, so it is also the first
+     to need these. Same three values the auth stylesheets use. */
+  --error:           #A63232;
+  --error-bg:        rgba(166, 50, 50, 0.06);
+  --error-border:    rgba(166, 50, 50, 0.30);
+
+  /* Translucent cream, for details drawn on the dark board. */
+  --surface-08:      rgba(255, 253, 248, 0.08);
+  --surface-15:      rgba(255, 253, 248, 0.15);
+  --surface-50:      rgba(255, 253, 248, 0.50);
+  --surface-60:      rgba(255, 253, 248, 0.60);
+  --surface-75:      rgba(255, 253, 248, 0.75);
+  --surface-90:      rgba(255, 253, 248, 0.90);
+  --surface-96:      rgba(255, 253, 248, 0.96);
+
+  --grid-light:      rgba(255, 253, 248, 0.06);
+
+  /* ── Typography — Hebrew is the default UI language ── */
+  --font-sans:  'Heebo', 'Inter', system-ui, sans-serif;
+  --font-serif: 'Frank Ruhl Libre', 'Fraunces', serif;
+  --font-mono:  'IBM Plex Mono', ui-monospace, 'SF Mono', monospace;
+
+  /* ── Shape ── */
+  --shadow-lift:     0 18px 36px -24px rgba(31, 36, 40, 0.70);
+  --shadow-card:     14px 14px 0 rgba(199, 184, 157, 0.16),
+                     0 26px 60px -42px rgba(31, 36, 40, 0.90);
+  --board-shadow:    inset 0 0 0 1px rgba(255, 253, 248, 0.08),
+                     inset 0 0 0 12px rgba(199, 184, 157, 0.08),
+                     0 34px 90px -54px rgba(31, 36, 40, 0.90);
+
+  --r-sm:        8px;
+  --r-md:        8px;
+  --nav-h:       66px;
+  --content-max: 1280px;
+
+  /* The dependency chart spans four weeks of five working days. */
+  --dep-cols:    14;
+
+  /* The flow chevrons point to the inline end, so Hebrew mirrors them and English restores them. */
+  --flow-arrow-flip: -1;
+}
+
+/* ─────────────────────────────────────────────
+   Reset and page background
+   ───────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { min-height: 100%; }
+
+/* Keeps an anchored section clear of the sticky navbar. */
+html { scroll-padding-top: calc(var(--nav-h) + 16px); }
+
+body {
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--text);
+  background:
+    radial-gradient(circle at 14% 16%, rgba(199, 184, 157, 0.18) 0 11%, transparent 26%),
+    radial-gradient(circle at 86% 12%, rgba(255, 253, 248, 0.10) 0 9%, transparent 24%),
+    var(--brand-gradient);
+  background-attachment: fixed;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+a { color: inherit; text-decoration: none; }
+ul, ol { list-style: none; }
+
+/* The fixed blueprint board sits behind all content, as on every other screen. */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 18px;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(var(--surface-08) 1px, transparent 1px),
+    linear-gradient(90deg, var(--surface-08) 1px, transparent 1px),
+    linear-gradient(var(--surface-15) 2px, transparent 2px),
+    linear-gradient(90deg, var(--surface-15) 2px, transparent 2px),
+    repeating-linear-gradient(135deg, transparent 0 42px, rgba(199, 184, 157, 0.13) 42px 43px),
+    repeating-linear-gradient(45deg, transparent 0 96px, rgba(255, 253, 248, 0.06) 96px 97px);
+  background-size: 24px 24px, 24px 24px, 120px 120px, 120px 120px, 170px 170px, 220px 220px;
+  border: 1px solid var(--surface-15);
+  box-shadow: var(--board-shadow);
+}
+
+/* This class hides text visually while leaving it available to a screen reader. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ─────────────────────────────────────────────
+   App shell
+   ───────────────────────────────────────────── */
+/* Direction is no longer declared here: the root carries it, and re-stating it would out-specify
+   the English rule at the foot of this sheet. */
+.app {
+  position: relative;
+  z-index: 1;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  font-family: var(--font-sans);
+}
+
+/* The skip link stays off screen until it takes focus, then lands under the navbar. */
+.skip-link {
+  position: absolute;
+  top: -60px;
+  inset-inline-start: 16px;
+  z-index: 60;
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--primary);
+  background: var(--surface);
+  border: 1.5px solid var(--secondary);
+  border-radius: var(--r-sm);
+  transition: top 0.16s;
+}
+.skip-link:focus-visible { top: 12px; outline: 2px solid var(--surface); outline-offset: 2px; }
+
+/* ─────────────────────────────────────────────
+   PUBLIC NAVBAR (.site-nav)
+
+   Not the .app-nav: a signed-out visitor has no notifications
+   and no account, so neither control exists here. Five items
+   instead of eight also means it clears the 620–860px band
+   where the app navbar is recorded as overflowing.
+   ───────────────────────────────────────────── */
+.site-nav {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  background:
+    linear-gradient(var(--grid-light) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-light) 1px, transparent 1px),
+    rgba(35, 56, 77, 0.92);
+  background-size: 22px 22px, 22px 22px, auto;
+  border-bottom: 1px solid var(--secondary-45);
+  box-shadow: 0 14px 30px -22px rgba(31, 36, 40, 0.95);
+  backdrop-filter: blur(10px);
+}
+
+.site-nav__inner {
+  max-width: var(--content-max);
+  margin-inline: auto;
+  min-height: var(--nav-h);
+  padding: 10px 22px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 18px;
+}
+
+.site-nav__brand { display: inline-flex; align-items: center; gap: 10px; flex-shrink: 0; }
+.site-nav__mark {
+  display: inline-flex;
+  padding: 5px;
+  border-radius: 10px;
+  background: var(--surface-08);
+  border: 1px solid var(--surface-50);
+  box-shadow: inset 0 0 0 4px var(--surface-08), 0 0 0 1px var(--secondary-30);
+}
+.site-nav__name {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.2px;
+  color: var(--surface);
+}
+
+.site-nav__links { display: flex; align-items: center; gap: 4px; }
+.site-nav__link {
+  padding: 9px 14px;
+  /* A public navigation label is information the visitor is expected to read, so §3.5 rule 3 keeps it at 14px. */
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--surface-75);
+  border-radius: var(--r-sm);
+  transition: color 0.16s, background 0.16s;
+}
+.site-nav__link:hover { color: var(--surface); background: var(--surface-08); }
+
+.site-nav__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-inline-start: auto;
+}
+
+/* Sign in is a quiet text control, so Register is unambiguously the more prominent of the two. */
+.site-nav__signin {
+  padding: 9px 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--surface-90);
+  border-radius: var(--r-sm);
+  transition: color 0.16s, background 0.16s;
+}
+.site-nav__signin:hover { color: var(--surface); background: var(--surface-08); }
+
+/* ─────────────────────────────────────────────
+   Language switcher — the same pill as every other screen
+   ───────────────────────────────────────────── */
+.lang-switch {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  /* The padding is written logically so the tighter side follows the globe when the layout mirrors. */
+  padding-block: 5px;
+  padding-inline-start: 10px;
+  padding-inline-end: 8px;
+  background: var(--surface-96);
+  border: 1px solid var(--secondary-55);
+  border-radius: 999px;
+  box-shadow: var(--shadow-lift);
+  outline: 1px solid var(--surface-50);
+  outline-offset: -4px;
+}
+.lang-switch__globe { color: var(--text-mute); flex-shrink: 0; }
+.lang-switch__btn {
+  font-family: var(--font-sans);
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--text-soft);
+  padding: 3px 9px;
+  border-radius: 999px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  transition: color 0.18s, background 0.18s;
+}
+.lang-switch__btn:hover { color: var(--primary); }
+.lang-switch__sep { width: 1px; height: 14px; background: var(--secondary-30); }
+
+/* ─────────────────────────────────────────────
+   Buttons — same family as every other screen
+   ───────────────────────────────────────────── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 50px;
+  padding: 0 22px;
+  font-family: var(--font-sans);
+  font-size: 14.5px;
+  font-weight: 600;
+  border: 1.5px solid transparent;
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  transition: background 0.16s, box-shadow 0.2s, transform 0.12s, border-color 0.16s, color 0.16s;
+  white-space: nowrap;
+}
+.btn--sm { height: 40px; padding: 0 15px; font-size: 13.5px; }
+
+.btn--primary {
+  color: var(--surface);
+  background: var(--brand-gradient);
+  border-color: var(--primary);
+  box-shadow: 6px 6px 0 var(--secondary-30), 0 14px 28px -16px rgba(35, 56, 77, 0.80);
+}
+.btn--primary:hover {
+  box-shadow: 3px 3px 0 var(--secondary-55), 0 18px 32px -18px rgba(35, 56, 77, 0.90);
+  transform: translate(2px, 2px);
+}
+.btn--primary:active { transform: translateY(1px); }
+
+.btn--ghost {
+  color: var(--primary);
+  background: var(--surface);
+  border-color: var(--secondary-45);
+  font-weight: 500;
+  box-shadow: inset 0 -2px 0 var(--secondary-15), 4px 4px 0 var(--primary-08);
+}
+.btn--ghost:hover {
+  border-color: var(--secondary);
+  background: var(--background);
+  transform: translate(2px, 2px);
+  box-shadow: inset 0 -2px 0 var(--secondary-15), 2px 2px 0 var(--primary-12);
+}
+.btn--ghost:active { transform: translateY(1px); }
+
+/* A control sitting on the navy board is filled in tan rather than navy, so it never reads as blue on blue. */
+.btn--onboard {
+  color: var(--primary);
+  background: var(--secondary);
+  border-color: var(--secondary);
+  box-shadow: 6px 6px 0 var(--surface-15), 0 14px 28px -16px rgba(31, 36, 40, 0.85);
+}
+.btn--onboard:hover {
+  background: var(--surface);
+  box-shadow: 3px 3px 0 var(--surface-50), 0 18px 32px -18px rgba(31, 36, 40, 0.90);
+  transform: translate(2px, 2px);
+}
+.btn--onboard:active { transform: translateY(1px); }
+
+/* Outline is the secondary action beside a filled one on the board. */
+.btn--outline {
+  color: var(--surface);
+  background: var(--surface-08);
+  border-color: var(--surface-50);
+  font-weight: 500;
+}
+.btn--outline:hover { background: var(--surface-15); border-color: var(--secondary); }
+
+/* The navbar button is small, so its offset shadow is scaled down to match. */
+.site-nav__actions .btn--onboard { box-shadow: 4px 4px 0 var(--surface-15); }
+.site-nav__actions .btn--onboard:hover { box-shadow: 2px 2px 0 var(--surface-50); }
+
+.btn:focus-visible,
+.site-nav__link:focus-visible,
+.site-nav__signin:focus-visible,
+.site-foot__link:focus-visible {
+  outline: 2px solid var(--surface);
+  outline-offset: 3px;
+}
+
+/* The pill's own buttons take focus now, so the ring is drawn on the button rather than the group. */
+.lang-switch__btn:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* ─────────────────────────────────────────────
+   Shared section furniture
+   ───────────────────────────────────────────── */
+/* Cream, because every section heading on this page sits directly on the navy board. */
+.section-title {
+  font-family: var(--font-serif);
+  font-size: clamp(24px, 3vw, 31px);
+  font-weight: 700;
+  line-height: 1.18;
+  color: var(--surface);
+  margin-bottom: 22px;
+}
+
+/* ─────────────────────────────────────────────
+   HERO — text beside the dependency visual
+   ───────────────────────────────────────────── */
+.hero {
+  max-width: var(--content-max);
+  margin-inline: auto;
+  padding: 54px 22px 20px;
+  display: grid;
+  grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+  align-items: center;
+  gap: 46px;
+}
+
+/* A grid item defaults to min-width auto, which lets a long English word push the column wider than its track. */
+.hero__text,
+.hero__visual { min-width: 0; }
+
+.hero__title {
+  font-family: var(--font-serif);
+  font-size: clamp(30px, 4.2vw, 47px);
+  font-weight: 700;
+  line-height: 1.14;
+  letter-spacing: -0.01em;
+  color: var(--surface);
+}
+
+/* No width cap: a two-line lede should wrap to its column, not to a reading measure. */
+.hero__lede {
+  margin-top: 18px;
+  font-size: 17px;
+  line-height: 1.62;
+  color: var(--surface-90);
+}
+
+.hero__actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 30px; }
+.hero__cta { min-width: 190px; }
+
+/* ─────────────────────────────────────────────
+   DEPENDENCY VISUAL — a placeholder slot
+
+   Built from HTML and CSS grid rather than one SVG, because grid
+   columns follow the inline direction: the whole chart mirrors
+   itself for Hebrew instead of being a flipped English picture.
+   ───────────────────────────────────────────── */
+.depviz {
+  position: relative;
+  padding: 30px 30px 24px;
+  background:
+    linear-gradient(135deg, transparent 0 22px, var(--surface-96) 22px),
+    linear-gradient(90deg, rgba(35, 56, 77, 0.035) 1px, transparent 1px),
+    linear-gradient(0deg,  rgba(35, 56, 77, 0.035) 1px, transparent 1px),
+    linear-gradient(180deg, rgba(255, 253, 248, 0.98), rgba(243, 240, 234, 0.95));
+  background-size: auto, 20px 20px, 20px 20px, auto;
+  border: 1px solid var(--surface-75);
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow-card);
+  outline: 1px solid var(--primary-08);
+  outline-offset: -7px;
+}
+
+/* Corner registration marks; the removed borders are logical, so each mark still opens inward when mirrored. */
+.reg-mark {
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  border: 1.5px solid var(--secondary-45);
+  pointer-events: none;
+}
+.reg-mark--tl { top: 14px; inset-inline-start: 14px; border-inline-end: 0; border-block-end: 0; }
+.reg-mark--br { bottom: 14px; inset-inline-end: 14px; border-inline-start: 0; border-block-start: 0; }
+
+.depviz__title {
+  font-family: var(--font-serif);
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.25;
+  color: var(--primary);
+}
+
+.depviz__legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  margin-top: 12px;
+  margin-bottom: 20px;
+}
+
+/* A legend entry is identifying metadata, so §3.5 rule 3 keeps it at 14px. */
+.depviz__key {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--text-soft);
+}
+.depviz__key::before {
+  content: '';
+  width: 26px;
+  height: 11px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+/* Dashed outline versus solid fill, so the two states are told apart by treatment as well as by their labels. */
+.depviz__key--was::before { border: 1.5px dashed var(--primary-45); background: var(--primary-08); }
+.depviz__key--now::before { background: var(--primary); border: 1.5px solid var(--primary); }
+
+.depviz__chart { display: flex; flex-direction: column; gap: 4px; }
+
+.depviz__ruler {
+  display: grid;
+  grid-template-columns: repeat(var(--dep-cols), 1fr);
+  margin-inline-start: 158px;
+  padding-bottom: 7px;
+  border-bottom: 1px solid var(--secondary-45);
+}
+
+/* Each tick opens a four-day span; the border is logical so it marks the correct side when mirrored. */
+.depviz__tick {
+  grid-column: span 4;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  color: var(--text-mute);
+  padding-inline-start: 6px;
+  border-inline-start: 1px solid var(--secondary-45);
+}
+.depviz__tick:last-child { grid-column: span 2; }
+
+.deprow {
+  display: grid;
+  grid-template-columns: 158px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  padding-block: 7px;
+}
+.deprow + .deprow { border-top: 1px solid var(--secondary-30); }
+
+.deprow__label { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+
+.deprow__name {
+  font-size: 14.5px;
+  font-weight: 600;
+  color: var(--primary);
+  line-height: 1.3;
+}
+
+/* Identifying metadata, so §3.5 rule 3 keeps it at 14px and the bars never carry the meaning alone. */
+.deprow__meta {
+  font-size: 14px;
+  line-height: 1.4;
+  color: var(--text-mute);
+}
+
+.deprow__track {
+  display: grid;
+  grid-template-columns: repeat(var(--dep-cols), 1fr);
+  grid-template-rows: 12px 16px;
+  gap: 3px;
+}
+
+.depbar { border-radius: 3px; grid-row: 1; }
+
+/* The faint fill gives the original bar enough body to read as a bar rather than a hairline. */
+.depbar--was { border: 1.5px dashed var(--primary-45); background: var(--primary-08); }
+.depbar--now { grid-row: 2; background: var(--primary); border: 1.5px solid var(--primary); }
+
+/* The task the change starts from is filled in tan, so the origin of the cascade is visible at a glance. */
+.depbar--source { background: var(--secondary); border-color: var(--secondary-70); }
+
+/* Bar geometry lives here rather than in a style attribute, so the markup carries no inline CSS. */
+.deprow--pile  .depbar--was { grid-column: 1 / span 4; }
+.deprow--pile  .depbar--now { grid-column: 1 / span 6; }
+.deprow--found .depbar--was { grid-column: 5 / span 4; }
+.deprow--found .depbar--now { grid-column: 7 / span 4; }
+.deprow--frame .depbar--was { grid-column: 9 / span 4; }
+.deprow--frame .depbar--now { grid-column: 11 / span 4; }
+.deprow--elec  .depbar--was { grid-column: 9 / span 3; }
+.deprow--elec  .depbar--now { grid-column: 11 / span 3; }
+
+/* The slot states what it is; nothing in it may be read as an existing product screen. */
+.depviz__note {
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid var(--secondary-45);
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text-mute);
+}
+
+/* ─────────────────────────────────────────────
+   CORE VALUE — three blocks, deliberately quieter
+   than the dependency visual above them
+   ───────────────────────────────────────────── */
+.values {
+  max-width: var(--content-max);
+  margin-inline: auto;
+  padding: 46px 22px 10px;
+}
+
+/* Two columns for the two remaining blocks; a third slot would sit empty. */
+.values__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+/* Flat rather than lifted: these support the differentiator and must not compete with it. */
+.vcard {
+  padding: 24px 22px;
+  background: var(--surface-96);
+  border: 1px solid var(--surface-75);
+  border-radius: var(--r-md);
+  outline: 1px solid var(--primary-08);
+  outline-offset: -6px;
+}
+
+.vcard__icon {
+  display: inline-grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  margin-bottom: 14px;
+  border-radius: var(--r-sm);
+  color: var(--primary);
+  background: var(--secondary-15);
+  border: 1px solid var(--secondary-45);
+}
+
+.vcard__title {
+  font-family: var(--font-serif);
+  font-size: 19px;
+  font-weight: 700;
+  line-height: 1.28;
+  color: var(--primary);
+  margin-bottom: 8px;
+}
+
+.vcard__body {
+  font-size: 14.5px;
+  line-height: 1.62;
+  color: var(--text-soft);
+}
+
+/* ─────────────────────────────────────────────
+   HOW IT WORKS — the coordination sequence
+   ───────────────────────────────────────────── */
+.flow {
+  max-width: var(--content-max);
+  margin-inline: auto;
+  padding: 46px 22px 10px;
+}
+
+.flow__steps {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 10px;
+}
+
+.flow__step {
+  flex: 1 1 168px;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 14px 16px;
+  background: var(--surface-08);
+  border: 1px solid var(--surface-50);
+  border-radius: var(--r-sm);
+}
+
+.flow__num {
+  display: inline-grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--primary);
+  background: var(--secondary);
+  border: 1px solid var(--secondary-70);
+}
+
+.flow__label {
+  font-size: 14.5px;
+  font-weight: 500;
+  line-height: 1.4;
+  color: var(--surface);
+}
+
+.flow__arrow {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  color: var(--secondary);
+}
+
+/* The chevron is drawn pointing right, then mirrored by the flip variable the shell sets per language. */
+.flow__arrow svg { transform: scaleX(var(--flow-arrow-flip)); }
+
+.flow__note {
+  margin-top: 16px;
+  font-size: 14.5px;
+  line-height: 1.6;
+  color: var(--surface-90);
+}
+
+/* ─────────────────────────────────────────────
+   PLANS / REGISTRATION DIRECTION — one band only
+   ───────────────────────────────────────────── */
+.direct {
+  max-width: var(--content-max);
+  margin-inline: auto;
+  padding: 46px 22px 56px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.direct__text { flex: 1 1 340px; min-width: 0; }
+
+.direct__title {
+  font-family: var(--font-serif);
+  font-size: clamp(23px, 2.6vw, 28px);
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--surface);
+}
+
+.direct__lede {
+  margin-top: 7px;
+  font-size: 15.5px;
+  line-height: 1.6;
+  color: var(--surface-90);
+}
+
+.direct__actions { display: flex; flex-wrap: wrap; gap: 12px; }
+
+/* ─────────────────────────────────────────────
+   CONTACT — the form is the entry point
+
+   The only form on this screen, so the field look the auth
+   screens own is restated here rather than imported: this
+   stylesheet is applied alone, and `register.css` is not on
+   the page. The declarations are the approved ones, copied.
+   ───────────────────────────────────────────── */
+.contact {
+  max-width: 780px;
+  margin-inline: auto;
+  padding: 10px 22px 56px;
+}
+
+.contact__lede {
+  margin-top: -12px;
+  margin-bottom: 22px;
+  font-size: 15.5px;
+  line-height: 1.6;
+  color: var(--surface-90);
+}
+
+/* Cream, like the value cards: a form on the navy board would be navy on navy. */
+.contact__card {
+  padding: 26px 24px;
+  background: var(--surface-96);
+  border: 1px solid var(--surface-75);
+  border-radius: var(--r-md);
+  outline: 1px solid var(--primary-08);
+  outline-offset: -6px;
+}
+
+.contact__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+.contact__col--full { grid-column: 1 / -1; }
+
+.contact__message {
+  height: auto;
+  min-height: 118px;
+  padding-block: 13px;
+  line-height: 1.55;
+  resize: vertical;
+}
+
+.contact__submit { margin-top: 20px; }
+
+.contact__card--done { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; }
+
+.contact__done-title {
+  font-family: var(--font-serif);
+  font-size: 21px;
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.contact__done-body { font-size: 15.5px; line-height: 1.6; color: var(--text-soft); }
+
+/* ── Field furniture, copied from the approved auth stylesheet ── */
+.form-group { display: flex; flex-direction: column; gap: 8px; }
+
+.form-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-soft);
+  cursor: pointer;
+}
+.form-label > .form-label__text { white-space: nowrap; }
+.form-label::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border: 1px solid var(--secondary);
+  background: var(--primary-08);
+  transform: rotate(45deg);
+  flex-shrink: 0;
+}
+
+.form-input,
+.form-select {
+  width: 100%;
+  height: 54px;
+  padding: 0 16px;
+  font-family: var(--font-sans);
+  font-size: 17px;
+  color: var(--text);
+  background:
+    linear-gradient(90deg, rgba(35, 56, 77, 0.035) 1px, transparent 1px),
+    var(--surface);
+  background-size: 14px 100%, auto;
+  border: 1.5px solid var(--secondary-30);
+  border-inline-start-width: 5px;
+  border-radius: var(--r-sm);
+  outline: none;
+  box-shadow:
+    inset 0 -2px 0 var(--secondary-15),
+    4px 4px 0 rgba(199, 184, 157, 0.08);
+  transition: border-color 0.16s, box-shadow 0.16s, background 0.16s;
+  -webkit-appearance: none;
+  appearance: none;
+}
+.form-input::placeholder { color: var(--text-mute); }
+.form-input:hover,
+.form-select:hover { border-color: var(--secondary-55); border-inline-start-color: var(--secondary); }
+.form-input:focus,
+.form-select:focus {
+  border-color: var(--primary);
+  border-inline-start-color: var(--primary);
+  box-shadow: 0 0 0 4px var(--primary-08), inset 0 -2px 0 var(--secondary-30);
+}
+
+.select-wrap { position: relative; }
+.form-select { padding-inline-end: 40px; cursor: pointer; }
+.form-select:required:invalid { color: var(--text-mute); }
+
+.select-chevron {
+  position: absolute;
+  inset-inline-end: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-flex;
+  color: var(--text-mute);
+  pointer-events: none;
+}
+
+.field-hint { font-size: 14.5px; color: var(--text-soft); margin-top: 5px; line-height: 1.4; }
+
+.field-error {
+  display: none;
+  font-size: 14.5px;
+  color: var(--error);
+  margin-top: 4px;
+  padding: 8px 10px;
+  line-height: 1.4;
+  background: var(--error-bg);
+  border: 1px solid var(--error-border);
+  border-inline-start: 4px solid var(--error);
+  border-radius: var(--r-sm);
+}
+.field-error--visible { display: block; }
+
+.alert {
+  display: none;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 18px;
+  padding: 12px 16px;
+  border-radius: var(--r-sm);
+  font-size: 15.5px;
+  line-height: 1.5;
+  border: 1px solid transparent;
+  box-shadow: inset 5px 0 0 var(--error);
+}
+.alert--visible { display: flex; }
+.alert--error { color: var(--error); background: var(--error-bg); border-color: var(--error-border); }
+.alert__icon { flex-shrink: 0; margin-top: 1px; }
+
+/* ─────────────────────────────────────────────
+   FOOTER — restrained; the language pill is
+   deliberately not repeated here
+   ───────────────────────────────────────────── */
+.site-foot {
+  margin-top: auto;
+  border-top: 1px solid var(--secondary-45);
+  background: rgba(35, 56, 77, 0.55);
+}
+
+.site-foot__inner {
+  max-width: var(--content-max);
+  margin-inline: auto;
+  padding: 26px 22px 30px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px 26px;
+}
+
+.site-foot__brand { display: inline-flex; align-items: center; gap: 9px; }
+.site-foot__mark { display: inline-flex; }
+.site-foot__name {
+  font-family: var(--font-serif);
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--surface);
+}
+
+.site-foot__links { display: flex; flex-wrap: wrap; gap: 4px; }
+.site-foot__link {
+  padding: 8px 12px;
+  /* Kept at 14px for the same reason as the navbar links. */
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--surface-75);
+  border-radius: var(--r-sm);
+  transition: color 0.16s, background 0.16s;
+}
+.site-foot__link:hover { color: var(--surface); background: var(--surface-08); }
+
+.site-foot__note {
+  margin-inline-start: auto;
+  font-size: 14px;
+  color: var(--surface-75);
+}
+
+/* ─────────────────────────────────────────────
+   Responsive
+   ───────────────────────────────────────────── */
+
+/* The hero column split stops earning its keep once the chart labels start crowding, so the two stack. */
+@media (max-width: 1040px) {
+  .hero {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 34px;
+    padding-top: 44px;
+  }
+}
+
+@media (max-width: 900px) {
+  /* Stacked, the chevrons point down, which reads the same way in both directions. */
+  .flow__steps { flex-direction: column; align-items: stretch; }
+  .flow__arrow svg { transform: rotate(90deg); }
+  .flow__step { flex: 1 1 auto; }
+}
+
+@media (max-width: 760px) {
+  .site-nav__inner { gap: 12px; padding-inline: 16px; }
+  /* The public links take their own row well above the band where the app navbar is recorded as overflowing. */
+  .site-nav__links {
+    order: 3;
+    flex-basis: 100%;
+    border-top: 1px solid var(--surface-15);
+    padding-top: 6px;
+  }
+  html { scroll-padding-top: 130px; }
+
+  .values__grid { grid-template-columns: minmax(0, 1fr); }
+  /* Two 54px fields no longer fit side by side once the card is this narrow. */
+  .contact__grid { grid-template-columns: minmax(0, 1fr); }
+  .contact__submit { width: 100%; }
+
+  .hero, .values, .flow, .direct, .contact { padding-inline: 16px; }
+  .site-foot__inner { padding-inline: 16px; }
+  .site-foot__note { margin-inline-start: 0; flex-basis: 100%; }
+}
+
+/* Below this the chart's label column no longer fits beside the bars, so each row becomes two lines. */
+@media (max-width: 620px) {
+  body::before { inset: 10px; }
+
+  .depviz { padding: 24px 18px 20px; }
+  .depviz__ruler { margin-inline-start: 0; }
+
+  .deprow { grid-template-columns: minmax(0, 1fr); gap: 6px; }
+  .deprow__track { grid-template-rows: 11px 14px; }
+
+  .reg-mark { width: 16px; height: 16px; }
+  .reg-mark--tl { top: 10px; inset-inline-start: 10px; }
+  .reg-mark--br { bottom: 10px; inset-inline-end: 10px; }
+
+  .hero__actions .btn { flex: 1 1 auto; }
+  .direct__actions .btn { flex: 1 1 auto; }
+  .direct__actions { flex-basis: 100%; }
+}
+
+@media (max-width: 420px) {
+  .site-nav__name { display: none; }
+  .lang-switch { padding-block: 4px; padding-inline-start: 8px; padding-inline-end: 6px; }
+  .depviz__title { font-size: 18px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn--primary:hover,
+  .btn--primary:active,
+  .btn--ghost:hover,
+  .btn--ghost:active,
+  .btn--onboard:hover,
+  .btn--onboard:active { transform: none; }
+  .skip-link { transition: none; }
+}
+
+/* ─────────────────────────────────────────────
+   Bilingual
+
+   The earlier screen's twin `.he-text` / `.en-text` spans and the two hidden
+   radios that drove them are gone: one language's strings are rendered,
+   from the language context. The declarations below are unchanged.
+   ───────────────────────────────────────────── */
+
+/* ── Toggle button active states ──
+   The active pill used to be resolved from which radio was :checked; React marks it directly. */
+.lang-switch__btn--active   { color: var(--surface); background: var(--primary); }
+.lang-switch__btn--inactive { color: var(--text-soft); background: none; }
+
+/* ── English selected: swap direction + fonts, and unmirror the flow chevrons ──
+   The earlier screen set these on `.app` because a static page had no way to write to <html>, and its
+   own comment called that debt the React migration resolves. `data-lang` is written by the
+   language context, so direction now lives on the root where the whole document inherits it. */
+html[data-lang="en"] {
+  direction: ltr;
+  --font-sans:  'Inter', system-ui, -apple-system, sans-serif;
+  --font-serif: 'Fraunces', 'Georgia', serif;
+  --flow-arrow-flip: 1;
+}

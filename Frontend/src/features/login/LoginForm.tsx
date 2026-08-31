@@ -1,0 +1,81 @@
+import { Link } from 'react-router-dom';
+
+import { ButtonSpinner } from '../../components/ButtonSpinner';
+import { useLanguage } from '../../i18n/useLanguage';
+import { FormAlert } from '../../components/FormAlert';
+import { PasswordField } from '../../components/PasswordField';
+import { TextField } from '../../components/TextField';
+import type { useLoginForm } from './useLoginForm';
+
+/** The bound the server puts on the address; the password box is bounded server-side too. */
+const MAX = { email: 254, password: 200 } as const;
+
+export const LoginForm = ({ form }: { form: ReturnType<typeof useLoginForm> }) => {
+  const { t } = useLanguage();
+  const { values, setValue, touched, markTouched, errors, isComplete, submitting, failure } = form;
+
+  /* The same message component Register uses, so neither screen invents a second error language. */
+  const emailError =
+    errors.emailMissing ? t.login.errors.emailRequired
+    : errors.email ? t.login.errors.emailInvalid
+    : undefined;
+
+  /**
+   * One message for every way a sign-in can fail against a real account. `INVALID_CREDENTIALS`
+   * covers both "no such address" and "wrong password", and nothing here re-splits it — that
+   * unified answer is what stops the screen being used to discover who has an account.
+   */
+  const alertMessage =
+    failure === 'INVALID_CREDENTIALS' ? t.login.errors.credentials
+    : failure === 'NETWORK' ? t.login.errors.network
+    : failure ? t.login.errors.generic
+    : null;
+
+  return (
+    <>
+      {alertMessage ? <FormAlert message={alertMessage} /> : null}
+
+      {/* onSubmit rather than a click handler: it also fires on Enter in a text field, which is
+          how people actually submit a form. preventDefault stops the browser's own navigation. */}
+      <form
+        className="login-form"
+        noValidate
+        onSubmit={(e) => {
+          e.preventDefault();
+          void form.submit();
+        }}
+      >
+        <TextField
+          id="email" label={t.login.email.label} type="email" dir="ltr" withWarning
+          placeholder={t.login.email.placeholder} autoComplete="email" maxLength={MAX.email} required
+          value={values.email} onChange={(v) => setValue('email', v)}
+          onBlur={() => markTouched('email')} touched={!!touched.email}
+          {...(emailError ? { error: emailError } : {})}
+        />
+
+        <PasswordField
+          id="password" name="password" label={t.login.password.label}
+          placeholder={t.login.password.placeholder} toggleLabel={t.login.togglePassword}
+          autoComplete="current-password" maxLength={MAX.password} withWarning
+          value={values.password} onChange={(v) => setValue('password', v)}
+          onBlur={() => markTouched('password')} touched={!!touched.password}
+          {...(errors.passwordMissing ? { error: t.login.errors.passwordRequired } : {})}
+        >
+          <Link to="/forgot-password" className="form-link form-link--small forgot-link">
+            {t.login.forgot}
+          </Link>
+        </PasswordField>
+
+        <button
+          type="submit"
+          className="btn btn--primary btn--full"
+          disabled={!isComplete || submitting}
+          aria-busy={submitting}
+        >
+          {t.login.submit}
+          {submitting ? <ButtonSpinner /> : null}
+        </button>
+      </form>
+    </>
+  );
+};

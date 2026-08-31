@@ -1,0 +1,28 @@
+import { AppError } from '../../shared/errors.js';
+
+/**
+ * The standing backend rule. Hiding the control is UX; this is the enforcement, and it is checked
+ * before eligibility so a direct API call cannot reach any other path.
+ */
+export const cannotRateSelf = (): AppError =>
+  new AppError('You cannot rate yourself', 403, 'CANNOT_RATE_SELF');
+
+/** The platform holds no evidence that these two completed real work together. */
+export const notEligibleToRate = (): AppError =>
+  new AppError('You are not eligible to rate this person', 403, 'RATING_NOT_ELIGIBLE');
+
+/** The same completed work is already rateable through the other context. */
+export const ratingContextSuperseded = (): AppError =>
+  new AppError(
+    'That work is already covered by another rating context',
+    409,
+    'RATING_CONTEXT_SUPERSEDED',
+  );
+
+/** One peer rating per shared completed work relationship. */
+export const alreadyRated = (): AppError =>
+  new AppError('You have already rated this person for that work', 409, 'ALREADY_RATED');
+
+/** The person named does not exist. */
+export const rateeNotFound = (): AppError =>
+  new AppError('No such user', 404, 'USER_NOT_FOUND');

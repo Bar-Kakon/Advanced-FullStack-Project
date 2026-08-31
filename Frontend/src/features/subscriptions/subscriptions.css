@@ -1,0 +1,516 @@
+/* Blokta — Plans & subscription.
+   Blokta subscriptions styling, which stays
+   in the repository as manual-QA evidence of what was approved.
+
+   Three blocks from that file are deliberately absent. The bilingual toggle and its twin
+   .he-text / .en-text spans are gone: one language is rendered, from LanguageContext, so there is
+   no duplicated DOM to keep in step. The navbar and palette rules are gone because profile.css
+   already carries the shell every authenticated screen shares. And the weekly usage strip is gone
+   with the feature it reported on — it counted visual simulations, which metered architectural
+   visualization, and the product removed it. */
+
+/* ═══ Page shell ═══ */
+.plans {
+  max-width: var(--content-max);
+  margin-inline: auto;
+  padding: 38px 22px 64px;
+}
+
+.plans__head { max-width: 62ch; margin-bottom: 26px; }
+.plans__title {
+  font-family: var(--font-serif);
+  font-size: clamp(30px, 3.6vw, 42px);
+  font-weight: 500;
+  line-height: 1.08;
+  color: var(--surface);
+  text-shadow: 0 1px 0 rgba(31, 36, 40, 0.25);
+}
+.plans__sub {
+  margin-top: 12px;
+  font-size: 17px;
+  line-height: 1.65;
+  color: var(--surface-75);
+}
+
+/* One-line intro under each comparison heading */
+.compare__lede {
+  margin-top: -8px;
+  margin-bottom: 16px;
+  max-width: 68ch;
+  font-size: 15.5px;
+  line-height: 1.6;
+  color: var(--surface-75);
+}
+
+/* ═══ Plan cards ═══ */
+.plan-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 22px;
+  align-items: start;
+}
+
+.plan-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 30px 26px 26px;
+  background:
+    linear-gradient(135deg, transparent 0 20px, var(--surface-96) 20px),
+    linear-gradient(90deg, rgba(35, 56, 77, 0.03) 1px, transparent 1px),
+    linear-gradient(0deg, rgba(35, 56, 77, 0.03) 1px, transparent 1px),
+    linear-gradient(180deg, rgba(255, 253, 248, 0.99), rgba(243, 240, 234, 0.96));
+  background-size: auto, 20px 20px, 20px 20px, auto;
+  border: 1px solid var(--surface-75);
+  border-block-start: 4px solid var(--secondary-45);
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow-card);
+  outline: 1px solid var(--primary-08);
+  outline-offset: -7px;
+  transition: transform 0.16s, box-shadow 0.2s;
+}
+.plan-card:hover { transform: translateY(-3px); }
+
+/* Blueprint corner tick, tucked clear of the text */
+.plan-card::after {
+  content: '';
+  position: absolute;
+  bottom: 10px;
+  inset-inline-end: 10px;
+  width: 16px;
+  height: 16px;
+  border: solid var(--secondary);
+  border-width: 0 2px 2px 0;
+  pointer-events: none;
+}
+
+/* Recommended plan — tan emphasis, never navy-on-navy */
+.plan-card--featured {
+  border-block-start: 4px solid var(--secondary);
+  outline-color: var(--secondary-45);
+  box-shadow:
+    16px 18px 0 rgba(199, 184, 157, 0.26),
+    0 34px 70px -40px rgba(31, 36, 40, 0.95);
+}
+.plan-card--current { border-block-start-color: var(--primary-20); }
+
+/* Corner flag: "your plan" / "most popular" */
+.plan-card__flag {
+  position: absolute;
+  top: -1px;
+  inset-inline-start: 24px;
+  padding: 5px 12px 6px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-55);
+  background: var(--background);
+  border: 1px solid var(--secondary-45);
+  border-top: none;
+  border-radius: 0 0 var(--r-sm) var(--r-sm);
+}
+.plan-card__flag--pop {
+  color: var(--primary);
+  background: var(--secondary);
+  border-color: var(--secondary);
+  font-weight: 700;
+}
+
+.plan-card__name {
+  font-family: var(--font-serif);
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1.1;
+  color: var(--primary);
+  margin-top: 6px;
+}
+.plan-card__tagline {
+  font-size: 16px;
+  line-height: 1.55;
+  color: var(--text-55);
+  min-height: 3.1em;
+}
+
+.plan-card__price {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 16px 0;
+  border-top: 1px solid var(--secondary-30);
+  border-bottom: 1px solid var(--secondary-30);
+}
+.plan-card__amount {
+  display: inline-block;
+  font-family: var(--font-serif);
+  font-size: 42px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--primary);
+  letter-spacing: -0.5px;
+}
+.plan-card__cycle {
+  font-family: var(--font-mono);
+  font-size: 13.5px;
+  letter-spacing: 0.06em;
+  color: var(--text-55);
+}
+
+/* ═══ Feature lists ═══ */
+.feat-list { display: flex; flex-direction: column; gap: 12px; flex: 1; }
+.feat-list__lead {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-55);
+  padding-bottom: 2px;
+}
+
+.feat {
+  position: relative;
+  padding-inline-start: 34px;
+  font-size: 16px;
+  line-height: 1.5;
+  color: var(--text-75);
+}
+/* Badge behind the tick */
+.feat::before {
+  content: '';
+  position: absolute;
+  inset-inline-start: 0;
+  top: 2px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--secondary-30);
+  border: 1px solid var(--secondary);
+}
+/* The tick itself — a rotated corner, so it never mirrors in RTL */
+.feat::after {
+  content: '';
+  position: absolute;
+  inset-inline-start: 8px;
+  top: 7px;
+  width: 6px;
+  height: 10px;
+  border: solid var(--primary);
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+/* Flagship rows — solid navy badge on the light card */
+.feat--star::before { background: var(--primary); border-color: var(--primary); }
+.feat--star::after  { border-color: var(--surface); }
+.feat--star { color: var(--text); font-weight: 500; }
+
+/* Not included — badge holds a dash instead of a tick */
+.feat--off { color: var(--text-55); }
+.feat--off::before { background: transparent; border-color: var(--secondary-45); }
+.feat--off::after {
+  inset-inline-start: 6px;
+  top: 12px;
+  width: 10px;
+  height: 0;
+  border-width: 0 0 2px 0;
+  border-color: var(--text-40);
+  transform: none;
+}
+
+/* ═══ Buttons ═══ */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  position: relative;
+  height: 54px;
+  padding: 0 20px;
+  font-family: var(--font-sans);
+  font-size: 17px;
+  font-weight: 600;
+  border: 1.5px solid transparent;
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  transition: background 0.16s, box-shadow 0.2s, transform 0.12s, border-color 0.16s, color 0.16s;
+  white-space: nowrap;
+  overflow: hidden;
+}
+.btn--full { width: 100%; }
+
+.btn--primary {
+  color: var(--surface);
+  background: var(--brand-gradient);
+  border-color: var(--primary);
+  box-shadow: 6px 6px 0 var(--secondary-30), 0 14px 28px -16px rgba(35, 56, 77, 0.80);
+}
+.btn--primary:hover {
+  box-shadow: 3px 3px 0 var(--secondary-55), 0 18px 32px -18px rgba(35, 56, 77, 0.90);
+  transform: translate(2px, 2px);
+}
+.btn--primary:active { transform: translateY(1px); }
+
+.btn--muted {
+  color: var(--text-55);
+  background: var(--secondary-15);
+  border-color: var(--secondary-30);
+  font-weight: 500;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* Billing footnote under the cards */
+.plans__note {
+  margin-top: 18px;
+  font-size: 14.5px;
+  line-height: 1.6;
+  color: var(--surface-75);
+}
+
+/* ═══ Shared section heading ═══ */
+.section-title {
+  font-family: var(--font-serif);
+  font-size: clamp(22px, 2.4vw, 28px);
+  font-weight: 500;
+  color: var(--surface);
+  margin-bottom: 18px;
+  text-shadow: 0 1px 0 rgba(31, 36, 40, 0.25);
+}
+
+/* ═══ Comparison table ═══ */
+.compare { margin-top: 54px; }
+.compare__scroll {
+  overflow-x: auto;
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow-card);
+}
+.compare__table {
+  width: 100%;
+  min-width: 700px;
+  border-collapse: collapse;
+  background: var(--surface);
+  font-size: 16px;
+}
+.compare__table th,
+.compare__table td {
+  padding: 15px 18px;
+  text-align: start;
+  vertical-align: middle;
+  border-bottom: 1px solid var(--secondary-30);
+}
+.compare__table thead th {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--surface);
+  background: var(--primary);
+  border-bottom: none;
+}
+/* Recommended column marked in tan so it reads on the navy header */
+.compare__table thead th.is-featured {
+  color: var(--primary);
+  background: var(--secondary);
+  font-weight: 700;
+}
+.compare__feature-col { width: 38%; }
+
+/* The common-capabilities table has no per-tier columns, so it needs less width */
+.compare--common { margin-top: 40px; }
+.compare--common .compare__table { min-width: 460px; }
+.compare--common .compare__feature-col { width: 62%; }
+.compare__table tbody th {
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--primary);
+}
+.compare__table tbody td { color: var(--text-75); }
+.compare__table tbody td.is-featured { background: var(--secondary-15); font-weight: 500; color: var(--text); }
+.compare__table tbody tr:nth-child(even) th,
+.compare__table tbody tr:nth-child(even) td { background-color: rgba(243, 240, 234, 0.55); }
+.compare__table tbody tr:nth-child(even) td.is-featured { background-color: rgba(199, 184, 157, 0.22); }
+.compare__table tbody tr:last-child th,
+.compare__table tbody tr:last-child td { border-bottom: none; }
+
+/* Yes / no marks inside the table */
+.mark { position: relative; display: inline-block; width: 22px; height: 22px; vertical-align: middle; }
+.mark--yes::before {
+  content: '';
+  position: absolute;
+  inset-inline-start: 7px;
+  top: 3px;
+  width: 7px;
+  height: 12px;
+  border: solid var(--primary);
+  border-width: 0 2.5px 2.5px 0;
+  transform: rotate(45deg);
+}
+.mark--no::before {
+  content: '';
+  position: absolute;
+  inset-inline-start: 4px;
+  top: 10px;
+  width: 13px;
+  height: 0;
+  border-bottom: 2px solid var(--text-40);
+}
+
+/* ═══ FAQ — native <details>, no JavaScript ═══ */
+.faq { margin-top: 54px; }
+.faq__item {
+  background: var(--surface-96);
+  border: 1px solid var(--surface-75);
+  border-inline-start: 4px solid var(--secondary-45);
+  border-radius: var(--r-md);
+  margin-bottom: 12px;
+  box-shadow: var(--shadow-lift);
+  overflow: hidden;
+}
+.faq__item[open] { border-inline-start-color: var(--secondary); }
+
+.faq__q {
+  position: relative;
+  list-style: none;
+  cursor: pointer;
+  padding-block: 18px;
+  padding-inline: 22px 52px;
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--primary);
+  transition: background 0.15s;
+}
+.faq__q::-webkit-details-marker { display: none; }
+.faq__q:hover { background: var(--secondary-15); }
+/* Plus sign that becomes a minus when the item is open */
+.faq__q::before,
+.faq__q::after {
+  content: '';
+  position: absolute;
+  inset-inline-end: 22px;
+  top: 50%;
+  width: 13px;
+  height: 2px;
+  background: var(--primary);
+  transition: transform 0.18s, opacity 0.18s;
+}
+.faq__q::after { transform: rotate(90deg); }
+.faq__item[open] .faq__q::after { transform: rotate(0deg); opacity: 0; }
+
+.faq__a {
+  padding: 0 22px 20px;
+  font-size: 16px;
+  line-height: 1.7;
+  color: var(--text-75);
+  max-width: 78ch;
+}
+
+
+/* ═══ Period strip — where the removed usage strip sat ═══
+   It reports only what the cards cannot: when this period ends, and whether a change is already
+   scheduled for that date. A Free account has no period, so nothing is drawn at all. */
+.period {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 14px 22px;
+  flex-wrap: wrap;
+  padding: 14px 20px;
+  margin-bottom: 26px;
+  background: var(--surface-08);
+  border: 1px solid var(--surface-15);
+  border-inline-start: 5px solid var(--secondary);
+  border-radius: var(--r-md);
+}
+.period__main { font-size: 16px; color: var(--surface-90); }
+
+/* A control that reads as a link. Used for the two low-weight actions on this screen — retrying a
+   failed load, and withdrawing a scheduled change — which are not primary enough for a button. */
+.link-button {
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--secondary);
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--secondary-45);
+  padding: 0;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+  white-space: nowrap;
+}
+.link-button:hover { color: var(--surface); border-color: var(--surface); }
+
+/* Loading and load-failure lines. */
+.plans__state {
+  padding: 22px 0;
+  font-size: 16px;
+  color: var(--surface-75);
+}
+
+/* Said once, above the cards, when the deployment has no payment provider. Stating it in words is
+   the alternative to rendering upgrade buttons that could only fail. */
+.plans__unavailable {
+  padding: 12px 18px;
+  margin-bottom: 22px;
+  font-size: 15.5px;
+  line-height: 1.6;
+  color: var(--surface-90);
+  background: var(--surface-08);
+  border: 1px solid var(--surface-15);
+  border-radius: var(--r-md);
+}
+
+/* The same fact on the card that would otherwise carry an upgrade control. */
+.plan-card__unavailable {
+  margin-top: auto;
+  padding: 14px 0 0;
+  font-size: 14.5px;
+  line-height: 1.55;
+  color: var(--text-55);
+  border-top: 1px solid var(--secondary-30);
+}
+
+/* Stepping down is deliberately quieter than upgrading: it is not what the screen is selling, and
+   it must not compete with the primary control for attention. */
+.btn--ghost {
+  color: var(--primary);
+  background: transparent;
+  border-color: var(--secondary-55);
+  font-weight: 500;
+}
+.btn--ghost:hover { background: var(--secondary-15); border-color: var(--secondary); }
+.btn--ghost:active { transform: translateY(1px); }
+.btn--ghost:disabled { opacity: 0.6; cursor: progress; }
+
+/* Every price and limit on this screen is provisional, and the catalogue says so itself. */
+.plans__note--soft { color: var(--surface-60); font-size: 13.5px; }
+
+/* ═══ Responsive ═══
+   The navbar's own stages live in profile.css. These are this screen's: the card grid collapses to
+   one column, and the two tables keep scrolling inside their own container rather than widening
+   the page — which is what keeps a three-column comparison usable on a phone. */
+@media (max-width: 780px) {
+  .plans { padding-block-start: 26px; }
+}
+
+@media (max-width: 620px) {
+  .plans { padding-inline: 14px; }
+  .plan-grid { grid-template-columns: 1fr; }
+  .plan-card__tagline { min-height: 0; }
+  .period { padding: 14px 16px; }
+}
+
+@media (max-width: 460px) {
+  .plan-card { padding: 26px 18px 22px; }
+  .plan-card__amount { font-size: 36px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .plan-card:hover,
+  .btn--primary:hover,
+  .btn--ghost:hover { transform: none; }
+}

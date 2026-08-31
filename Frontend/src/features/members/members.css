@@ -1,0 +1,168 @@
+/* Blokta — Project members */
+/* Loaded on top of profile.css, projects.css and permissions.css. Approved palette only. */
+
+.member-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.member-row {
+  padding: 16px 18px;
+  border: 1px solid var(--secondary-45);
+  border-radius: var(--r-md);
+  background: var(--surface);
+}
+
+.member-row__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-block-end: 8px;
+}
+
+.member-row__name {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--primary);
+  overflow-wrap: anywhere;
+}
+
+.member-row__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--text-soft);
+  margin-block-end: 8px;
+}
+
+.member-row__meta > span { overflow-wrap: anywhere; }
+
+.member-row__hint,
+.member-row__perms {
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--text-soft);
+  margin-block-end: 8px;
+  overflow-wrap: anywhere;
+}
+
+.member-row__role {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-block-end: 10px;
+}
+
+.member-row__role-label {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.form-select--inline {
+  inline-size: auto;
+  min-inline-size: 190px;
+  max-inline-size: 100%;
+}
+
+.member-row__actions { display: flex; flex-wrap: wrap; gap: 8px; }
+
+/* ═══ Inviting ═══ */
+
+.member-picker { margin-block-end: 6px; }
+
+.member-picker__list {
+  list-style: none;
+  margin: 0 0 16px;
+  padding: 0;
+  border: 1px solid var(--secondary-45);
+  border-radius: var(--r-md);
+  overflow: hidden;
+}
+
+.member-picker__option {
+  inline-size: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 14px;
+  padding: 11px 14px;
+  border: 0;
+  border-block-end: 1px solid var(--secondary-30);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 15px;
+  text-align: start;
+  cursor: pointer;
+}
+
+.member-picker__list > li:last-child .member-picker__option { border-block-end: 0; }
+
+.member-picker__option:hover:not(:disabled),
+.member-picker__option:focus-visible { background: var(--secondary-15); }
+
+.member-picker__company { font-size: 14px; color: var(--text-soft); }
+
+.member-picked {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  margin-block-end: 18px;
+  border: 1px solid var(--primary-30);
+  border-radius: var(--r-md);
+  background: var(--background);
+}
+
+.member-picked__name { font-weight: 700; color: var(--primary); overflow-wrap: anywhere; }
+
+.member-authority {
+  margin-block: 6px 18px;
+  padding: 16px 18px;
+  border: 1px solid var(--secondary-45);
+  border-radius: var(--r-md);
+  background: var(--background);
+}
+
+.member-authority__title {
+  font-family: var(--font-serif);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--primary);
+  margin-block-end: 6px;
+}
+
+.member-authority__modes {
+  list-style: none;
+  margin: 12px 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 6px 16px;
+}
+
+.member-authority .form-group { margin-block-end: 0; }
+
+.member-invite__actions { display: flex; flex-wrap: wrap; gap: 8px; }
+
+/* ═══ An invitation card on My projects ═══ */
+
+.project-card--invitation { border-color: var(--primary-30); }
+
+@media (max-width: 640px) {
+  .member-row__actions > .btn,
+  .member-invite__actions > .btn { flex: 1 1 auto; }
+
+  .form-select--inline { inline-size: 100%; }
+}

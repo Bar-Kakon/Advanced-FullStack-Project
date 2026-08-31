@@ -1,0 +1,142 @@
+/* Blokta — Employee management, onboarding and the waiting screen */
+/* Loaded on top of profile.css (app shell, panels, buttons) and, where a form is drawn, */
+/* edit-profile.css (fields). It adds only what neither of those already draws. */
+/* Approved palette only. No colour here carries meaning on its own. */
+
+/* ═══ Alert ═══ */
+/* profile.css has no banner, so these declarations are the auth screens', unchanged. */
+.alert {
+  display: none;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 16px;
+  margin-block-end: 18px;
+  border-radius: var(--r-sm);
+  font-size: 15.5px;
+  line-height: 1.5;
+  border: 1px solid transparent;
+  box-shadow: inset 5px 0 0 var(--error), 0 10px 22px -18px rgba(166, 50, 50, 0.70);
+}
+.alert--visible { display: flex; }
+.alert--error   { color: var(--error); background: var(--error-bg); border-color: var(--error-border); }
+.alert__icon    { flex-shrink: 0; margin-top: 1px; }
+
+.notice--error {
+  color: var(--error);
+  background: var(--error-bg);
+  border-color: var(--error-border);
+  border-inline-start-color: var(--error);
+}
+
+/* ═══ In-button loading indicator ═══ */
+/* Absolute, so the label neither moves nor is replaced while a request is running. */
+.btn__spinner {
+  position: absolute;
+  inset-inline-end: 14px;
+  display: inline-flex;
+  align-items: center;
+  pointer-events: none;
+}
+.btn[aria-busy='true'] { padding-inline-end: 44px; }
+
+.btn:disabled { opacity: 0.55; cursor: not-allowed; }
+.btn:disabled:hover { transform: none; }
+
+/* ═══ Invitation form ═══ */
+.invite-form__fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 0 20px;
+  margin-block-end: 20px;
+}
+
+/* ═══ Employee list ═══ */
+.employee-list__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-block-end: 18px;
+}
+.employee-list__bulk { flex-shrink: 0; }
+
+.employee-list { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+
+/* The action column holds its width, so a row with a button and a row without still line up. */
+.employee-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 12px 16px;
+  padding: 14px 16px;
+  background: var(--surface);
+  border: 1px solid var(--secondary-30);
+  border-inline-start: 4px solid transparent;
+  border-radius: var(--r-sm);
+}
+
+/* Waiting for approval is a step in a sequence, not a warning, so it takes a palette colour
+   rather than the availability traffic-light. */
+.employee-row--pending { border-inline-start-color: var(--secondary); }
+
+.employee-row__text { min-width: 0; }
+.employee-row__name {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+.employee-row__position { font-size: 15px; color: var(--text-soft); overflow-wrap: anywhere; }
+
+/* The status label is translated, so it wraps rather than being cut. */
+.employee-row__status { white-space: normal; text-align: center; }
+
+.employee-row__action { flex-shrink: 0; }
+
+/* ═══ Onboarding ═══ */
+.onboarding-actions__row { display: flex; flex-wrap: wrap; gap: 12px; }
+
+/* ═══ Waiting for approval ═══ */
+.waiting { max-width: var(--prose-max); }
+.waiting__body { font-size: 17px; line-height: 1.7; color: var(--text-soft); margin-block: 14px 10px; }
+.waiting__secondary { font-size: 16px; color: var(--text-soft); margin-block-end: 22px; }
+.waiting__actions { display: flex; flex-wrap: wrap; gap: 12px; }
+
+/* ═══ Dashboard management tools ═══ */
+/* A list, not a grid: one entry looks finished, and a second is one more row. */
+.tool-list { list-style: none; display: flex; flex-direction: column; gap: 10px; }
+.tool-list__item {
+  padding: 14px 16px;
+  background: var(--surface);
+  border: 1px solid var(--secondary-30);
+  border-inline-start: 4px solid var(--secondary-45);
+  border-radius: var(--r-sm);
+}
+.tool-list__name {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--primary);
+  text-decoration: none;
+}
+.tool-list__name:hover { text-decoration: underline; }
+.tool-list__lede { font-size: 15px; color: var(--text-soft); margin-block-start: 2px; }
+
+/* ═══ Responsive ═══ */
+
+/* Tablet: the row action drops to its own line and stretches to stay a comfortable target. */
+@media (max-width: 860px) {
+  .employee-row { grid-template-columns: minmax(0, 1fr) auto; }
+  .employee-row__action { grid-column: 1 / -1; width: 100%; }
+}
+
+/* Phone: one column throughout, and every action is full width. */
+@media (max-width: 560px) {
+  .employee-row { grid-template-columns: minmax(0, 1fr); }
+  .employee-row__status { justify-self: start; text-align: start; }
+  .employee-list__head { flex-direction: column; align-items: stretch; }
+  .employee-list__bulk { width: 100%; }
+  .invite-form .btn { width: 100%; }
+  .onboarding-actions__row .btn,
+  .waiting__actions .btn { width: 100%; }
+}

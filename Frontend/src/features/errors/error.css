@@ -1,0 +1,432 @@
+/* ─────────────────────────────────────────────
+   Blokta — error screens (404 now, 403 / 500 later)
+   Blokta error styling. Only the bilingual mechanism
+   changed; every visual declaration is the approved one.
+
+   Shared stylesheet, so a second error screen reuses this file
+   instead of forking another copy of the palette. Same "luxury
+   blueprint board" language as the rest of the project. Every
+   color here is the approved palette or an opacity variant of it.
+   ───────────────────────────────────────────── */
+
+:root {
+  /* The approved project palette — no color outside this set may be used. */
+  --primary:         #23384D;
+  --secondary:       #C7B89D;
+  --background:      #F3F0EA;
+  --surface:         #FFFDF8;
+  --text:            #1F2428;
+  --brand-gradient:  linear-gradient(135deg, #23384D 0%, #4A5D6E 55%, #C7B89D 100%);
+
+  /* Transparent variants of the brand colors, so borders and fills can sit over any background. */
+  --primary-08:      rgba(35, 56, 77, 0.08);
+  --primary-12:      rgba(35, 56, 77, 0.12);
+  --primary-20:      rgba(35, 56, 77, 0.20);
+  --primary-30:      rgba(35, 56, 77, 0.30);
+  --secondary-15:    rgba(199, 184, 157, 0.15);
+  --secondary-30:    rgba(199, 184, 157, 0.30);
+  --secondary-45:    rgba(199, 184, 157, 0.45);
+  --secondary-55:    rgba(199, 184, 157, 0.55);
+  --secondary-70:    rgba(199, 184, 157, 0.70);
+
+  /* The only two tiers allowed for secondary text; both clear the 4.5:1 AA contrast floor. */
+  --text-mute:       rgba(31, 36, 40, 0.64);
+  --text-soft:       rgba(31, 36, 40, 0.75);
+
+  /* Translucent cream, used for the card face and for details drawn on the dark board. */
+  --surface-08:      rgba(255, 253, 248, 0.08);
+  --surface-15:      rgba(255, 253, 248, 0.15);
+  --surface-50:      rgba(255, 253, 248, 0.50);
+  --surface-75:      rgba(255, 253, 248, 0.75);
+  --surface-96:      rgba(255, 253, 248, 0.96);
+
+  /* Hebrew fonts are the default; the English pair is swapped in at the bottom of this file. */
+  --font-sans:  'Heebo', 'Inter', system-ui, sans-serif;
+  --font-serif: 'Frank Ruhl Libre', 'Fraunces', serif;
+  --font-mono:  'IBM Plex Mono', ui-monospace, 'SF Mono', monospace;
+
+  --shadow-lift:  0 18px 36px -24px rgba(31, 36, 40, 0.70);
+  --shadow-card:  14px 14px 0 rgba(199, 184, 157, 0.16),
+                  0 26px 60px -42px rgba(31, 36, 40, 0.90);
+  --board-shadow: inset 0 0 0 1px rgba(255, 253, 248, 0.08),
+                  inset 0 0 0 12px rgba(199, 184, 157, 0.08),
+                  0 34px 90px -54px rgba(31, 36, 40, 0.90);
+
+  --r-sm: 8px;
+  --r-md: 8px;
+}
+
+/* ─────────────────────────────────────────────
+   Reset and page background
+   ───────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { min-height: 100%; }
+
+body {
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--text);
+  background:
+    radial-gradient(circle at 14% 16%, rgba(199, 184, 157, 0.18) 0 11%, transparent 26%),
+    radial-gradient(circle at 86% 12%, rgba(255, 253, 248, 0.10) 0 9%, transparent 24%),
+    var(--brand-gradient);
+  background-attachment: fixed;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+/* The two blueprint frames behind every screen are fixed and non-interactive, so they never scroll or catch a click. */
+body::before,
+body::after {
+  content: '';
+  position: fixed;
+  inset: 18px;
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* Outer frame: the drafting grid, built from stacked repeating gradients. */
+body::before {
+  background:
+    linear-gradient(var(--surface-08) 1px, transparent 1px),
+    linear-gradient(90deg, var(--surface-08) 1px, transparent 1px),
+    linear-gradient(var(--surface-15) 2px, transparent 2px),
+    linear-gradient(90deg, var(--surface-15) 2px, transparent 2px),
+    repeating-linear-gradient(135deg, transparent 0 42px, rgba(199, 184, 157, 0.13) 42px 43px),
+    repeating-linear-gradient(45deg, transparent 0 96px, rgba(255, 253, 248, 0.06) 96px 97px);
+  background-size: 24px 24px, 24px 24px, 120px 120px, 120px 120px, 170px 170px, 220px 220px;
+  border: 1px solid var(--surface-15);
+  box-shadow: var(--board-shadow);
+}
+
+/* Inner frame: a thin tan rule set just inside the outer one. */
+body::after {
+  inset: 34px;
+  border: 1px solid var(--secondary-30);
+  opacity: 0.7;
+}
+
+a { text-decoration: none; color: inherit; }
+
+/* ─────────────────────────────────────────────
+   App shell
+   ───────────────────────────────────────────── */
+
+/* Everything visible sits inside .app, a sibling after the two language radios, which is what lets one selector family re-language the whole screen. */
+/* Direction is not declared here: the root carries it, and re-stating it would out-specify the
+   English rule at the foot of this sheet. */
+.app {
+  position: relative;
+  z-index: 1;
+  min-height: 100vh;
+}
+
+/* ─────────────────────────────────────────────
+   Language switcher
+   ───────────────────────────────────────────── */
+
+/* The same pill as the auth screens, pinned with inset-inline-end so it mirrors, and offset far enough to clear both blueprint frames. */
+.lang-switch {
+  position: fixed;
+  top: 46px;
+  inset-inline-end: 46px;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 8px 5px 10px;
+  background: var(--surface-96);
+  border: 1px solid var(--secondary-55);
+  border-radius: 999px;
+  box-shadow: var(--shadow-lift);
+  outline: 1px solid var(--surface-50);
+  outline-offset: -4px;
+}
+.lang-switch__globe { color: var(--text-mute); flex-shrink: 0; }
+
+/* Kept at 12.5px to match the identical pill on every other screen. */
+.lang-switch__btn {
+  font-family: var(--font-sans);
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--text-soft);
+  padding: 3px 9px;
+  border-radius: 999px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  transition: color 0.18s, background 0.18s;
+}
+.lang-switch__btn:hover { color: var(--primary); }
+.lang-switch__sep { width: 1px; height: 14px; background: var(--secondary-30); }
+
+/* ─────────────────────────────────────────────
+   Page layout — one centred card on the board
+   ───────────────────────────────────────────── */
+
+/* The generous top padding keeps the card clear of the fixed language pill. */
+.err {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 96px 30px 60px;
+}
+
+/* The cream card: a clipped top corner, a faint 20px drafting grid, and the shared card shadow. */
+.err__card {
+  position: relative;
+  width: 100%;
+  max-width: 560px;
+  padding: 52px 46px 46px;
+  text-align: center;
+  background:
+    linear-gradient(135deg, transparent 0 22px, var(--surface-96) 22px),
+    linear-gradient(90deg, rgba(35, 56, 77, 0.035) 1px, transparent 1px),
+    linear-gradient(0deg,  rgba(35, 56, 77, 0.035) 1px, transparent 1px),
+    linear-gradient(180deg, rgba(255, 253, 248, 0.98), rgba(243, 240, 234, 0.95));
+  background-size: auto, 20px 20px, 20px 20px, auto;
+  border: 1px solid var(--surface-75);
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow-card);
+  outline: 1px solid var(--primary-08);
+  outline-offset: -7px;
+}
+
+/* ─────────────────────────────────────────────
+   Blueprint decoration on the card
+   ───────────────────────────────────────────── */
+
+/* Corner registration marks, drawn by removing two of the four borders. */
+/* The removed borders are logical rather than physical, so each mark still opens toward the middle of the card once the layout mirrors. */
+.reg-mark {
+  position: absolute;
+  width: 24px;
+  height: 24px;
+  border: 1.5px solid var(--secondary-45);
+  pointer-events: none;
+}
+.reg-mark--tl { top: 16px; inset-inline-start: 16px; border-inline-end: 0; border-block-end: 0; }
+.reg-mark--br { bottom: 16px; inset-inline-end: 16px; border-inline-start: 0; border-block-start: 0; }
+
+/* Small surveyor crosshairs, each built from two crossed bars on one empty span. */
+.crosshair { position: absolute; width: 12px; height: 12px; pointer-events: none; opacity: 0.5; }
+.crosshair::before,
+.crosshair::after { content: ''; position: absolute; background: var(--secondary-55); }
+.crosshair::before { inset: 5px 0; width: 100%; height: 1.5px; }
+.crosshair::after  { inset: 0 5px; width: 1.5px; height: 100%; }
+.crosshair--a { top: 34px; inset-inline-end: 34px; }
+.crosshair--b { bottom: 34px; inset-inline-start: 34px; }
+
+/* ─────────────────────────────────────────────
+   Card content
+   ───────────────────────────────────────────── */
+
+/* The logo is a plain identity mark and deliberately not a link, because this screen is specified to offer exactly one recovery action. */
+.err__brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 26px;
+}
+.err__brand-mark { display: inline-flex; }
+.err__brand-name {
+  font-family: var(--font-serif);
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  color: var(--primary);
+}
+
+/* The 404 itself, sized fluidly so it stays the dominant element all the way down to a phone. */
+/* Sans rather than the serif used by the headline, because the two display serifs draw their digits very differently: Frank Ruhl Libre sets a solid classical 4, while Fraunces sets a high-contrast one whose strokes do not meet, which reads as damaged at this size. */
+/* Heebo and Inter draw near-identical digits, so the numeral now looks the same in both languages. */
+.err__code {
+  font-family: var(--font-sans);
+  font-size: clamp(72px, 13vw, 112px);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  color: var(--primary);
+}
+
+/* A drafting dimension line beneath the numeral, with a solid tick at each end of a dashed rule. */
+/* Only the top and the two inline borders are set, so the open bottom edge leaves the ticks pointing downward. */
+.err__code::after {
+  content: '';
+  display: block;
+  width: 132px;
+  height: 11px;
+  margin: 20px auto 0;
+  border-block-start: 1.5px dashed var(--secondary);
+  border-inline: 1.5px solid var(--secondary);
+}
+
+.err__title {
+  margin-top: 24px;
+  font-family: var(--font-serif);
+  font-size: clamp(24px, 3.2vw, 31px);
+  font-weight: 500;
+  line-height: 1.22;
+  color: var(--primary);
+}
+
+/* No max-width here on purpose: a short lede should wrap to the card rather than to a reading measure, which the project reserves for long prose. */
+.err__lede {
+  margin-top: 12px;
+  font-size: 15.5px;
+  line-height: 1.65;
+  color: var(--text-soft);
+}
+
+/* ─────────────────────────────────────────────
+   Possible reasons
+   ───────────────────────────────────────────── */
+
+/* A band closed by a hairline above and below rather than a boxed panel, so the list reads as supporting detail and does not compete with the 404. */
+/* text-align: start overrides the card's centring, because a centred list is harder to scan. */
+.err__reasons {
+  max-width: 400px;
+  margin: 30px auto 32px;
+  padding-block: 20px;
+  border-block: 1px solid var(--secondary-45);
+  text-align: start;
+}
+
+/* Mono, uppercase and 14px is the project's standard label treatment, and 14px is its minimum readable label size. */
+.err__reasons-title {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-soft);
+  margin-bottom: 12px;
+}
+
+.err__reasons-list { list-style: none; display: flex; flex-direction: column; gap: 9px; }
+
+/* Aligned to flex-start rather than baseline, because the bullet is an empty box with no baseline of its own. */
+.err__reasons-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 14.5px;
+  line-height: 1.55;
+  color: var(--text-mute);
+}
+
+/* The bullet is the same rotated square the form labels use elsewhere, nudged down to sit level with the first line of text. */
+.err__reasons-list li::before {
+  content: '';
+  flex-shrink: 0;
+  width: 7px;
+  height: 7px;
+  margin-top: 7px;
+  border: 1px solid var(--secondary);
+  background: var(--primary-08);
+  transform: rotate(45deg);
+}
+
+/* ─────────────────────────────────────────────
+   Button
+   ───────────────────────────────────────────── */
+
+/* Same base and same primary variant as the other screens, so this CTA is not a one-off. */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  position: relative;
+  height: 50px;
+  padding: 0 24px;
+  font-family: var(--font-sans);
+  font-size: 14.5px;
+  font-weight: 600;
+  border: 1.5px solid transparent;
+  border-radius: var(--r-sm);
+  cursor: pointer;
+  transition: background 0.16s, box-shadow 0.2s, transform 0.12s, border-color 0.16s, color 0.16s;
+  white-space: nowrap;
+}
+
+.btn--primary {
+  color: var(--surface);
+  background: var(--brand-gradient);
+  border-color: var(--primary);
+  box-shadow: 6px 6px 0 var(--secondary-30), 0 14px 28px -16px rgba(35, 56, 77, 0.80);
+}
+
+/* The button presses into its own offset shadow on hover, which is allowed because a button is not a text field. */
+.btn--primary:hover {
+  box-shadow: 3px 3px 0 var(--secondary-55), 0 18px 32px -18px rgba(35, 56, 77, 0.90);
+  transform: translate(2px, 2px);
+}
+.btn--primary:active { transform: translateY(1px); }
+
+.err__cta { min-width: 216px; }
+
+.btn:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 3px;
+}
+
+/* The pill's own buttons take focus now, so the ring is drawn on the button rather than the group. */
+.lang-switch__btn:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* ─────────────────────────────────────────────
+   Responsive
+   ───────────────────────────────────────────── */
+
+/* On a phone the frames, the card padding and the corner marks all tighten together, and the crosshairs are dropped because they crowd the corners at this size. */
+@media (max-width: 640px) {
+  body::before { inset: 10px; }
+  body::after  { inset: 22px; }
+
+  .lang-switch { top: 24px; inset-inline-end: 24px; }
+
+  .err { padding: 86px 20px 44px; }
+  .err__card { padding: 40px 24px 36px; }
+
+  .reg-mark { width: 18px; height: 18px; }
+  .reg-mark--tl { top: 12px; inset-inline-start: 12px; }
+  .reg-mark--br { bottom: 12px; inset-inline-end: 12px; }
+  .crosshair { display: none; }
+
+  .err__reasons { margin: 26px auto 28px; }
+  .err__cta { width: 100%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn--primary:hover,
+  .btn--primary:active { transform: none; }
+}
+
+/* ─────────────────────────────────────────────
+   Bilingual
+
+   The earlier screen's twin `.he-text` / `.en-text` spans and the two hidden
+   radios that drove them are gone: one language's strings are rendered,
+   from the language context. The declarations below are unchanged.
+   ───────────────────────────────────────────── */
+
+/* ── Toggle button active states ──
+   The active pill used to be resolved from which radio was :checked; React marks it directly. */
+.lang-switch__btn--active   { color: var(--surface); background: var(--primary); }
+.lang-switch__btn--inactive { color: var(--text-soft); background: none; }
+
+/* ── English selected: swap direction + fonts ──
+   The earlier screen set these on `.app` because a static page had no way to write to <html>, and its
+   own comment called that debt the React migration resolves. `data-lang` is written by the
+   language context, so direction now lives on the root where the whole document inherits it. */
+html[data-lang="en"] {
+  direction: ltr;
+  --font-sans:  'Inter', system-ui, -apple-system, sans-serif;
+  --font-serif: 'Fraunces', 'Georgia', serif;
+}

@@ -1,13 +1,54 @@
 {
-  "name": "contractor-coordination-platform",
+  "name": "blokta-frontend",
   "version": "0.0.0",
   "private": true,
-  "description": "Static screen prototypes (HTML/CSS/TS) before the React migration.",
+  "type": "module",
+  "description": "Blokta React (Vite) client.",
   "scripts": {
-    "build": "tsc",
-    "watch": "tsc --watch"
+    "dev": "vite",
+    "build": "tsc -p tsconfig.json && vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc -p tsconfig.json",
+    "verify:layout": "node scripts/verify-browse-layout.mjs",
+    "verify:profile-data": "node scripts/verify-profile-real-data.mjs",
+    "verify:invitation-ui": "node scripts/verify-invitation-ui.mjs",
+    "verify:account-menu": "node scripts/verify-account-menu.mjs",
+    "verify:dashboard-ui": "node scripts/verify-dashboard-ui.mjs",
+    "verify:network-ui": "node scripts/verify-network-ui.mjs",
+    "verify:projects-ui": "node scripts/verify-projects-ui.mjs",
+    "verify:integrated": "node scripts/verify-integrated-flow.mjs",
+    "verify:owner-qa": "node scripts/verify-owner-qa.mjs",
+    "verify:min-rating-ui": "node scripts/verify-min-rating-ui.mjs",
+    "verify:members-ui": "node scripts/verify-members-ui.mjs",
+    "verify:project-dashboard-ui": "node scripts/verify-dashboard-project-ui.mjs",
+    "verify:my-tasks-ui": "node scripts/verify-my-tasks-ui.mjs",
+    "verify:task-detail-ui": "node scripts/verify-task-detail-ui.mjs",
+    "verify:create-task-ui": "node scripts/verify-create-task-ui.mjs",
+    "verify:register-ui": "node scripts/verify-register-ui.mjs",
+    "verify:landing-ui": "node scripts/verify-landing-ui.mjs",
+    "verify:404-ui": "node scripts/verify-404-ui.mjs",
+    "verify:proposal-ui": "node scripts/verify-proposal-ui.mjs",
+    "verify:stage-graph-ui": "node scripts/verify-stage-graph-ui.mjs",
+    "verify:moderation-ui": "node scripts/verify-moderation-ui.mjs"
   },
   "devDependencies": {
-    "typescript": "^5.4.0"
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.5",
+    "@vitejs/plugin-react": "^6.1.1",
+    "playwright": "^1.62.1",
+    "typescript": "^5.4.0",
+    "vite": "^8.2.2"
+  },
+  "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
+    "@mui/icons-material": "^9.4.0",
+    "@mui/material": "^9.4.0",
+    "@reduxjs/toolkit": "^2.12.0",
+    "axios": "^1.20.0",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "react-redux": "^9.3.0",
+    "react-router-dom": "^7.18.3"
   }
 }

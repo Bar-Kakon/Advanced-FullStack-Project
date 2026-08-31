@@ -1,0 +1,166 @@
+# VS Code REST Client (`humao.rest-client`). Run `auth.http` first — every request here needs an
+# Access Token, and the `@token` variable below is where you paste it.
+# The three upload requests need real files: point the `< ./path` lines at any small image.
+# The rules these requests demonstrate are proven end to end by:
+#   npm run verify:profile
+#   npm run verify:completed-work
+#   npm run verify:media
+
+@host = http://localhost:3000/api
+@token = PASTE_AN_ACCESS_TOKEN
+
+### My Profile — 200. One payload for both profile screens.
+# @name me
+GET {{host}}/users/me
+Authorization: Bearer {{token}}
+
+### No token — 401 UNAUTHENTICATED
+GET {{host}}/users/me
+
+### Edit Profile — 200. Only the listed fields exist; anything else in the body is dropped.
+PATCH {{host}}/users/me
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "firstName": "נינה",
+  "lastName": "לוי",
+  "bio": "עשרים שנות ניסיון בקידוח יסודות.",
+  "specialties": ["drilling", "concrete"],
+  "businessPhone": "052-1234567",
+  "city": "תל אביב",
+  "region": "tel_aviv",
+  "travelRadiusKm": 60,
+  "delayToleranceDays": 3,
+  "noticeRequiredDays": 2
+}
+
+### Clearing an optional value — 200. `null` clears; leaving the key out changes nothing.
+PATCH {{host}}/users/me
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "businessPhone": null }
+
+### Smuggled fields — 200, and every one of them is ignored.
+PATCH {{host}}/users/me
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "firstName": "נינה",
+  "email": "attacker@example.com",
+  "status": "banned",
+  "profileComplete": true,
+  "companyName": "Hijacked Ltd",
+  "availability": "closed",
+  "passwordHash": "x"
+}
+
+### Empty patch — 400 REQUEST_VALIDATION_FAILED
+PATCH {{host}}/users/me
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{}
+
+### Out of range — 400 REQUEST_VALIDATION_FAILED
+PATCH {{host}}/users/me
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "travelRadiusKm": 5000 }
+
+### `other` without its free text — 400 REQUEST_VALIDATION_FAILED
+PATCH {{host}}/users/me
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "specialties": ["other"] }
+
+### Company fields — 200. Company name, office phone and availability belong to the company,
+### so they are edited here and only by a member holding `company.manage`.
+PATCH {{host}}/companies/me
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "name": "לוי עבודות חשמל בע\"מ", "officePhone": "03-1234567", "availability": "limited" }
+
+### Without that permission — 403 COMPANY_PERMISSION_DENIED
+### With no active membership at all — 403 NO_ACTIVE_COMPANY
+
+### Completed Work — 201. No `onFieldSync` key exists in the contract: the badge is derived
+### by the server, so a client cannot claim it.
+# @name workEntry
+POST {{host}}/users/me/work-entries
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "title": "מגדל הראשונים",
+  "scope": "קידוח יסודות ודיפון",
+  "meta": "2025 · תל אביב"
+}
+
+### Completed Work with a photo — 201. Multipart, one file under `image`.
+POST {{host}}/users/me/work-entries
+Authorization: Bearer {{token}}
+Content-Type: multipart/form-data; boundary=FieldSyncBoundary
+
+--FieldSyncBoundary
+Content-Disposition: form-data; name="title"
+
+מגדל הראשונים
+--FieldSyncBoundary
+Content-Disposition: form-data; name="meta"
+
+2025 · תל אביב
+--FieldSyncBoundary
+Content-Disposition: form-data; name="image"; filename="site.png"
+Content-Type: image/png
+
+< ./site.png
+--FieldSyncBoundary--
+
+### A link to work the server cannot verify — 422 WORK_LINK_NOT_VERIFIABLE.
+### Projects and tasks arrive in Stage 3; until then no link can be proved, so none is accepted.
+POST {{host}}/users/me/work-entries
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{ "title": "Linked", "meta": "2025", "projectId": "000000000000000000000000" }
+
+### Remove a Completed Work item — 204. Its photo goes with it.
+DELETE {{host}}/users/me/work-entries/{{workEntry.response.body.entry.id}}
+Authorization: Bearer {{token}}
+
+### Somebody else's entry — 404 WORK_ENTRY_NOT_FOUND. A wrong owner and a wrong id answer alike.
+DELETE {{host}}/users/me/work-entries/000000000000000000000000
+Authorization: Bearer {{token}}
+
+### Avatar — 200. JPEG, PNG or WebP, up to 5 MB, streamed straight into GridFS.
+PUT {{host}}/users/me/avatar
+Authorization: Bearer {{token}}
+Content-Type: multipart/form-data; boundary=FieldSyncBoundary
+
+--FieldSyncBoundary
+Content-Disposition: form-data; name="avatar"; filename="avatar.png"
+Content-Type: image/png
+
+< ./avatar.png
+--FieldSyncBoundary--
+
+### Anything else — 400 UNSUPPORTED_FILE_TYPE. The declared MIME type is checked, not the name.
+### Over 5 MB — 413 FILE_TOO_LARGE. A wrong field name — 400 UNEXPECTED_FILE_FIELD.
+
+### Remove the avatar — 200, and the stored file is deleted.
+DELETE {{host}}/users/me/avatar
+Authorization: Bearer {{token}}
+
+### Serve an image — 200. The path comes from `avatarUrl` / `imageUrl`; it is never a storage path.
+GET {{host}}/users/me/assets/PASTE_AN_ASSET_ID
+Authorization: Bearer {{token}}
+
+### Somebody else's asset — 404 FILE_NOT_AVAILABLE. Knowing an id is not authorization.
+GET {{host}}/users/me/assets/000000000000000000000000
+Authorization: Bearer {{token}}
