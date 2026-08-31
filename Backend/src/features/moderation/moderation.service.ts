@@ -8,6 +8,7 @@ import {
   moderationResourceNotFound,
   reportAlreadyResolved,
 } from './moderation.errors.js';
+import type { PlatformAuditService } from './platformAudit.service.js';
 import {
   toQueueItem,
   toReportDetail,
@@ -46,6 +47,7 @@ export interface ModerationService {
 export interface ModerationDependencies {
   readonly reports: ReportRepository;
   readonly users: UserRepository;
+  readonly audit: PlatformAuditService;
 }
 
 const SUBJECT_HISTORY_LIMIT = 50;
@@ -53,6 +55,7 @@ const SUBJECT_HISTORY_LIMIT = 50;
 export const createModerationService = ({
   reports,
   users,
+  audit,
 }: ModerationDependencies): ModerationService => {
   /** One batched name query per response, so a queue page is two reads rather than 2N. */
   const namesFor = async (rows: readonly ReportRecord[]): Promise<NameLookup> => {
@@ -111,6 +114,15 @@ export const createModerationService = ({
       const report = await loadReport(reportId);
       const claimed = await reports.claim(report._id, new Types.ObjectId(moderatorId));
       if (claimed === null) throw reportAlreadyResolved();
+
+      await audit.record({
+        actorId: moderatorId,
+        action: 'report.claimed',
+        targetType: 'report',
+        targetId: report._id.toString(),
+        metadata: { reason: report.reason },
+      });
+
       return detailOf(claimed);
     },
 
@@ -133,6 +145,15 @@ export const createModerationService = ({
       // Already carries a `resolvedAt`, so a second resolution is refused rather than applied
       // twice — the same verdict submitted twice cannot produce two different histories.
       if (resolved === null) throw reportAlreadyResolved();
+
+      // The reporter's own words are never copied here: the note stays on the report.
+      await audit.record({
+        actorId: moderatorId,
+        action: outcome === 'dismissed' ? 'report.dismissed' : 'report.actioned',
+        targetType: 'report',
+        targetId: report._id.toString(),
+        metadata: { reason: report.reason, subjectType: report.subject.type },
+      });
 
       return detailOf(resolved);
     },
@@ -166,6 +187,14 @@ export const createModerationService = ({
         action: action === 'restrict' ? 'account.restricted' : 'account.unrestricted',
         actor: new Types.ObjectId(moderatorId),
         note: reason,
+      });
+
+      await audit.record({
+        actorId: moderatorId,
+        action: action === 'restrict' ? 'account.restricted' : 'account.unrestricted',
+        targetType: 'user',
+        targetId: account.id.toString(),
+        metadata: { reportId: report._id.toString() },
       });
 
       return detailOf(updated ?? report);

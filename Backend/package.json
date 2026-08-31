@@ -55,6 +55,7 @@
     "verify:contact": "tsx scripts/verify-contact.ts",
     "verify:reports": "tsx scripts/verify-reports.ts",
     "verify:moderation": "tsx scripts/verify-moderation.ts",
+    "verify:platform-audit": "tsx scripts/verify-platform-audit.ts",
     "migrate:report-indexes": "tsx scripts/migrate-report-indexes.ts",
     "seed:moderation": "tsx scripts/seed-moderation.ts",
     "admin:grant": "tsx scripts/grant-platform-admin.ts grant",

@@ -32,6 +32,9 @@ export const createUsersRouter = (
   router.use(requireAccessToken);
 
   router.get('/me', controller.handleGetMe);
+
+  // Recoverable by design: the account state changes and nothing is erased.
+  router.delete('/me', controller.handleDeleteMe);
   router.patch('/me', validateRequest({ body: profileUpdateBodySchema }), controller.handleUpdateMe);
 
   router.post(
