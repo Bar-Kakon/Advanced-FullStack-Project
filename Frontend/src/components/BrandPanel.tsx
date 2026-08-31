@@ -11,6 +11,8 @@
  * 2026-06-28 and from login in this migration, both by owner decision, and the standing rule is
  * that the kicker is not reused.
  */
+
+import { Bidi } from './Bidi';
 export interface BrandPanelContent {
   readonly headline: string;
   readonly sub: string;
@@ -55,7 +57,7 @@ export const BrandPanel = ({ content }: { content: BrandPanelContent }) => (
         ))}
       </ul>
 
-      <p className="brand-footer-note">{content.footerNote}</p>
+      <p className="brand-footer-note"><Bidi text={content.footerNote} /></p>
     </div>
   </aside>
 );
