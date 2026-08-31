@@ -24,13 +24,16 @@ import {
   createProposalMarkerAdapter,
   createReschedulePortAdapter,
 } from '../coordination/taskCoordination.adapter.js';
+import { buildNotificationDispatchService } from '../notifications/notifications.module.js';
 import { taskRepository } from './task.repository.js';
 import { createTaskDetailService } from './taskDetail.service.js';
+import { createTaskEditService, type EditTaskInput } from './taskEdit.service.js';
 import type { DelegationScope } from './task.model.js';
 import type { PrivateItemKind } from './privateWork.model.js';
 import {
   createTaskBodySchema,
   delegateBodySchema,
+  editTaskBodySchema,
   myTasksQuerySchema,
   privateItemBodySchema,
   privateItemParamsSchema,
@@ -99,6 +102,17 @@ export const createTasksModule = (requireAccessToken: RequestHandler): Router =>
       memberships: companyMembershipRepository,
       companies: companyRepository,
     }),
+    notifications: buildNotificationDispatchService(),
+  });
+
+  const edit = createTaskEditService({
+    projects: projectRepository,
+    access: projectAccessRepository,
+    companyContext: createCompanyContextService({
+      memberships: companyMembershipRepository,
+      companies: companyRepository,
+    }),
+    notifications: buildNotificationDispatchService(),
   });
 
   const router = Router();
@@ -172,6 +186,43 @@ export const createTasksModule = (requireAccessToken: RequestHandler): Router =>
     const { taskId } = getValidated<{ taskId: string }>(res, 'params');
     res.json({ task: await detail.get(me(res), taskId) });
   });
+
+  // Answered before the form is drawn, so no control is offered that the PATCH would refuse.
+  router.get('/:taskId/editable', params, async (req, res) => {
+    const { taskId } = getValidated<{ taskId: string }>(res, 'params');
+    res.json({ editable: await edit.editableFields(me(res), taskId) });
+  });
+
+  router.patch(
+    '/:taskId',
+    validateRequest({ params: taskParamsSchema, body: editTaskBodySchema }),
+    async (req, res) => {
+      const { taskId } = getValidated<{ taskId: string }>(res, 'params');
+      const body = getValidated<{
+        title?: string;
+        description?: string | null;
+        ownCrewOnly?: boolean;
+        delegatorOnSiteRequired?: boolean;
+        stageId?: string;
+        startDate?: string;
+        dueDate?: string;
+      }>(res, 'body');
+
+      const input: EditTaskInput = {
+        ...(body.title === undefined ? {} : { title: body.title }),
+        ...(body.description === undefined ? {} : { description: body.description }),
+        ...(body.ownCrewOnly === undefined ? {} : { ownCrewOnly: body.ownCrewOnly }),
+        ...(body.delegatorOnSiteRequired === undefined
+          ? {}
+          : { delegatorOnSiteRequired: body.delegatorOnSiteRequired }),
+        ...(body.stageId === undefined ? {} : { stageId: body.stageId }),
+        ...(body.startDate === undefined ? {} : { startDate: requireDate(body.startDate) }),
+        ...(body.dueDate === undefined ? {} : { dueDate: requireDate(body.dueDate) }),
+      };
+
+      res.json({ task: await edit.edit(me(res), taskId, input) });
+    },
+  );
 
   router.post(
     '/:taskId/delegation',

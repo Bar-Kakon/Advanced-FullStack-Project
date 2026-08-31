@@ -8,6 +8,7 @@ import { companyRepository } from '../companies/company.repository.js';
 import { companyMembershipRepository } from '../companies/companyMembership.repository.js';
 import { createCompanyContextService } from '../companies/companyContext.service.js';
 import { projectAccessRepository } from '../projectaccess/projectAccess.repository.js';
+import { buildNotificationDispatchService } from '../notifications/notifications.module.js';
 import { projectGrantRepository } from '../projectaccess/projectGrant.repository.js';
 import { participantRepository } from '../projectmembers/participant.repository.js';
 import { projectRepository } from '../projects/project.repository.js';
@@ -83,6 +84,7 @@ export const buildCoordinationService = (): CoordinationService =>
       companies: companyRepository,
     }),
     transactions: { run: runInTransaction },
+    notifications: buildNotificationDispatchService(),
   });
 
 export const createCoordinationModule = (

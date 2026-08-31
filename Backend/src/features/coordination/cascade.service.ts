@@ -7,10 +7,14 @@ import {
   isWorkingDay,
   nextWorkingDayOnOrAfter,
   workingDaysBetween,
+  type ScheduleCalendar,
 } from '../calendar/workingDay.js';
 import { resolveEffectiveCalendar, type WorkingCalendarConfig } from '../calendar/workingCalendar.types.js';
 import type { ProjectRecord } from '../projects/project.model.js';
 import { formatCalendarDate, overrunCeiling } from '../projects/projectDates.js';
+import { calendarFor as buildCalendar } from '../scheduleexceptions/exceptionCalendar.js';
+import { scheduleExceptionRepository } from '../scheduleexceptions/scheduleException.repository.js';
+import type { ScheduleExceptionRecord } from '../scheduleexceptions/scheduleException.model.js';
 import { ProjectStageModel, type ProjectStageRecord } from '../tasks/projectStage.model.js';
 import { TaskModel, type TaskRecord } from '../tasks/task.model.js';
 import { computeCascade, type CascadeResult, type CascadeStage, type CascadeTask } from './cascade.js';
@@ -20,8 +24,14 @@ import type { RequestedChanges } from './proposal.model.js';
 export interface ProjectGraph {
   readonly project: ProjectRecord;
   readonly config: WorkingCalendarConfig;
+  /** Every approved exception on this project, already loaded so no arithmetic re-reads them. */
+  readonly exceptions: readonly ScheduleExceptionRecord[];
   readonly stages: readonly ProjectStageRecord[];
   readonly tasks: readonly TaskRecord[];
+  /** The calendar one task is scheduled by, weekly pattern and approved exceptions together. */
+  calendarFor(taskId: string): ScheduleCalendar;
+  /** The project-wide calendar, for arithmetic that belongs to no single task. */
+  readonly projectCalendar: ScheduleCalendar;
 }
 
 export interface ComputedImpact {
@@ -51,34 +61,57 @@ export const loadProjectGraph = async (
   project: ProjectRecord,
   calendars: CompanyCalendarRepository,
 ): Promise<ProjectGraph> => {
-  const [pinned, stages, tasks] = await Promise.all([
+  const [pinned, stages, tasks, exceptions] = await Promise.all([
     calendars.findById(project.calendarVersion),
     ProjectStageModel.find({ project: project._id }).lean<ProjectStageRecord[]>().exec(),
     TaskModel.find({ project: project._id }).lean<TaskRecord[]>().exec(),
+    scheduleExceptionRepository.listApproved(project._id),
   ]);
+
+  const config = resolveEffectiveCalendar(configOrDefault(pinned), project.calendarOverrides);
+  const assigneeOf = new Map(
+    tasks.map((task) => [task._id.toString(), task.assignee?.toString()]),
+  );
+  // Built once per graph rather than per arithmetic call: a cascade over a whole project asks for
+  // the same handful of calendars repeatedly.
+  const cache = new Map<string, ScheduleCalendar>();
 
   return {
     project,
-    config: resolveEffectiveCalendar(configOrDefault(pinned), project.calendarOverrides),
+    config,
+    exceptions,
     stages,
     tasks,
+    projectCalendar: buildCalendar(config, exceptions, {}),
+    calendarFor(taskId) {
+      const held = cache.get(taskId);
+      if (held !== undefined) return held;
+
+      const professionalId = assigneeOf.get(taskId);
+      const built = buildCalendar(config, exceptions, {
+        taskId,
+        ...(professionalId === undefined ? {} : { professionalId }),
+      });
+      cache.set(taskId, built);
+      return built;
+    },
   };
 };
 
 export const proposedWindowFor = (
   task: TaskRecord,
   changes: RequestedChanges,
-  config: WorkingCalendarConfig,
+  calendar: ScheduleCalendar,
 ): { readonly startDate: Date; readonly dueDate: Date } => {
-  const span = Math.max(1, workingDaysBetween(config, task.startDate, task.dueDate));
-  const start = nextWorkingDayOnOrAfter(config, changes.alternativeStart ?? task.startDate);
+  const span = Math.max(1, workingDaysBetween(calendar, task.startDate, task.dueDate));
+  const start = nextWorkingDayOnOrAfter(calendar, changes.alternativeStart ?? task.startDate);
 
   if (changes.alternativeDue !== undefined) {
-    return { startDate: start, dueDate: nextWorkingDayOnOrAfter(config, changes.alternativeDue) };
+    return { startDate: start, dueDate: nextWorkingDayOnOrAfter(calendar, changes.alternativeDue) };
   }
 
   const extended = Math.max(1, span + (changes.deltaWorkingDays ?? 0));
-  return { startDate: start, dueDate: dueFromWorkingDays(config, start, extended) };
+  return { startDate: start, dueDate: dueFromWorkingDays(calendar, start, extended) };
 };
 
 export const computeImpact = (
@@ -87,11 +120,11 @@ export const computeImpact = (
   changes: RequestedChanges,
 ): ComputedImpact => {
   const task = graph.tasks.find((row) => row._id.equals(requested._id)) ?? requested;
-  const window = proposedWindowFor(task, changes, graph.config);
+  const window = proposedWindowFor(task, changes, graph.calendarFor(task._id.toString()));
   const result = computeCascade({
     stages: graph.stages.map(toCascadeStage),
     tasks: graph.tasks.map(toCascadeTask),
-    config: graph.config,
+    calendarFor: (taskId) => graph.calendarFor(taskId),
     initiating: { taskId: task._id.toString(), ...window },
   });
 
@@ -173,16 +206,16 @@ const MS_PER_DAY = 86_400_000;
 const distinctSpans = (
   task: TaskRecord,
   changes: RequestedChanges,
-  config: WorkingCalendarConfig,
+  calendar: ScheduleCalendar,
 ): readonly number[] => {
-  const committed = Math.max(1, workingDaysBetween(config, task.startDate, task.dueDate));
+  const committed = Math.max(1, workingDaysBetween(calendar, task.startDate, task.dueDate));
   const spans = new Set<number>([committed]);
 
   if (changes.deltaWorkingDays !== undefined) {
     spans.add(Math.max(1, committed + changes.deltaWorkingDays));
   }
   if (changes.alternativeStart !== undefined && changes.alternativeDue !== undefined) {
-    spans.add(Math.max(1, workingDaysBetween(config, changes.alternativeStart, changes.alternativeDue)));
+    spans.add(Math.max(1, workingDaysBetween(calendar, changes.alternativeStart, changes.alternativeDue)));
   }
   return [...spans].sort((a, b) => a - b);
 };
@@ -194,8 +227,10 @@ export const candidateSchedules = (
   constraints: AlternativesConstraints,
 ): AlternativesResult => {
   const task = graph.tasks.find((row) => row._id.equals(requested._id)) ?? requested;
-  const { config } = graph;
-  const spans = distinctSpans(task, changes, config);
+  // Alternatives are arrangements for THIS work, so they are swept against this task's calendar —
+  // the same one the cascade will use if one of them is chosen.
+  const calendar = graph.calendarFor(task._id.toString());
+  const spans = distinctSpans(task, changes, calendar);
   const shortest = spans[0] ?? 1;
 
   const ceilingDate = overrunCeiling(graph.project.originalTargetEndDate, graph.project.overrunAllowanceDays);
@@ -210,7 +245,7 @@ export const candidateSchedules = (
     constraints.earliestStart.getTime() > task.startDate.getTime()
       ? constraints.earliestStart
       : task.startDate;
-  const lower = nextWorkingDayOnOrAfter(config, floor);
+  const lower = nextWorkingDayOnOrAfter(calendar, floor);
 
   const anchors: Date[] = [];
   let unavailableDays = 0;
@@ -218,8 +253,8 @@ export const candidateSchedules = (
   let truncated = false;
 
   while (anchors.length < SWEEP_LIMIT) {
-    if (dueFromWorkingDays(config, cursor, shortest).getTime() > upperLimit.getTime()) break;
-    if (isWorkingDay(config, cursor)) anchors.push(cursor);
+    if (dueFromWorkingDays(calendar, cursor, shortest).getTime() > upperLimit.getTime()) break;
+    if (isWorkingDay(calendar, cursor)) anchors.push(cursor);
     else unavailableDays += 1;
     cursor = new Date(cursor.getTime() + MS_PER_DAY);
   }
@@ -227,8 +262,8 @@ export const candidateSchedules = (
     let boundary: Date | null = null;
     let probe = cursor;
     for (let i = 0; i < 3650; i += 1) {
-      if (dueFromWorkingDays(config, probe, shortest).getTime() > upperLimit.getTime()) break;
-      if (isWorkingDay(config, probe)) boundary = probe;
+      if (dueFromWorkingDays(calendar, probe, shortest).getTime() > upperLimit.getTime()) break;
+      if (isWorkingDay(calendar, probe)) boundary = probe;
       probe = new Date(probe.getTime() + MS_PER_DAY);
     }
     if (boundary !== null) {
@@ -255,7 +290,7 @@ export const candidateSchedules = (
 
   for (const anchor of anchors) {
     for (const span of spans) {
-      const due = dueFromWorkingDays(config, anchor, span);
+      const due = dueFromWorkingDays(calendar, anchor, span);
       if (
         constraints.latestFinishForWork !== undefined &&
         due.getTime() > constraints.latestFinishForWork.getTime()

@@ -1,0 +1,35 @@
+.msg-layout { display: grid; grid-template-columns: minmax(240px, 320px) 1fr; gap: 20px; align-items: start; }
+@media (max-width: 860px) { .msg-layout { grid-template-columns: 1fr; } }
+
+.msg-list { display: flex; flex-direction: column; gap: 6px; }
+.msg-tabs { display: flex; gap: 8px; margin-bottom: 12px; }
+.msg-tab { padding: 6px 14px; border-radius: 999px; border: 1px solid var(--line, #d8dde4); background: transparent; cursor: pointer; font: inherit; }
+.msg-tab--active { background: var(--ink, #22303f); color: #fff; border-color: transparent; }
+
+.msg-row { display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line, #d8dde4); background: #fff; cursor: pointer; text-align: start; font: inherit; }
+.msg-row--active { border-color: var(--ink, #22303f); }
+.msg-row__title { font-weight: 600; }
+.msg-row__meta { font-size: 0.82rem; color: #66727f; }
+
+.msg-thread { display: flex; flex-direction: column; min-height: 60vh; border: 1px solid var(--line, #d8dde4); border-radius: 12px; background: #fff; }
+.msg-thread__scroll { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+
+/* Deliberately subtle: it separates days without competing with the messages. */
+.msg-day { align-self: center; font-size: 0.78rem; color: #7a8592; background: #f2f4f7; border-radius: 999px; padding: 3px 12px; margin: 6px 0; }
+
+.msg-bubble { max-width: 78%; padding: 8px 12px; border-radius: 12px; background: #f2f4f7; align-self: flex-start; }
+.msg-bubble--mine { align-self: flex-end; background: #dfe9f5; }
+.msg-bubble__body { white-space: pre-wrap; overflow-wrap: anywhere; }
+.msg-bubble__removed { font-style: italic; color: #7a8592; }
+.msg-bubble__time { display: block; font-size: 0.72rem; color: #7a8592; margin-top: 3px; }
+.msg-bubble__sender { display: block; font-size: 0.76rem; color: #66727f; margin-bottom: 2px; }
+
+.msg-agreement { border: 1px solid #c3d0de; border-radius: 10px; padding: 10px 12px; background: #fff; }
+.msg-agreement__title { font-weight: 600; margin-bottom: 4px; }
+.msg-agreement__dates { font-size: 0.82rem; color: #66727f; }
+.msg-agreement__actions { display: flex; gap: 8px; margin-top: 8px; }
+.msg-agreement__state { font-size: 0.82rem; margin-top: 6px; color: #4a5568; }
+
+.msg-composer { display: flex; gap: 8px; padding: 12px; border-top: 1px solid var(--line, #d8dde4); }
+.msg-composer__input { flex: 1; resize: none; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--line, #d8dde4); font: inherit; }
+.msg-empty { padding: 28px; color: #66727f; text-align: center; }

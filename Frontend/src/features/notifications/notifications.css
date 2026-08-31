@@ -1,0 +1,157 @@
+/* FieldSync — Notification centre */
+/* Loaded on top of profile.css. Approved palette only. */
+
+.notif-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-block-end: 18px;
+}
+
+.notif-toolbar__spacer { flex: 1 1 auto; }
+
+.notif-filter {
+  display: inline-flex;
+  border: 1px solid var(--secondary-45);
+  border-radius: var(--r-md);
+  overflow: hidden;
+}
+
+.notif-filter__option {
+  appearance: none;
+  border: 0;
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  padding: 8px 16px;
+  cursor: pointer;
+  min-height: 40px;
+}
+
+.notif-filter__option + .notif-filter__option { border-inline-start: 1px solid var(--secondary-45); }
+
+.notif-filter__option[aria-pressed='true'] {
+  background: var(--primary);
+  color: var(--surface);
+  font-weight: 600;
+}
+
+.notif-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.notif-row {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  padding: 16px 18px;
+  border: 1px solid var(--secondary-45);
+  border-radius: var(--r-md);
+  background: var(--surface);
+}
+
+/* Unread is the absence of a seen stamp, marked on the leading edge so RTL and LTR both read it. */
+.notif-row--unread { border-inline-start: 3px solid var(--primary); }
+
+.notif-row__body { flex: 1 1 auto; min-width: 0; }
+
+.notif-row__title {
+  margin: 0 0 4px;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--ink);
+  line-height: 1.4;
+}
+
+.notif-row__context {
+  margin: 0;
+  color: var(--ink-60);
+  font-size: 0.9rem;
+  overflow-wrap: anywhere;
+}
+
+.notif-row__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-block-start: 8px;
+}
+
+.notif-chip {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  border: 1px solid var(--secondary-45);
+  color: var(--ink-60);
+  background: var(--surface-2);
+}
+
+.notif-chip--blocking {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.notif-row__time {
+  color: var(--ink-60);
+  font-size: 0.82rem;
+}
+
+.notif-row__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 0 0 auto;
+}
+
+.notif-muted-note {
+  margin: 6px 0 0;
+  color: var(--ink-60);
+  font-size: 0.82rem;
+}
+
+.notif-empty {
+  padding: 32px 18px;
+  text-align: center;
+  color: var(--ink-60);
+  border: 1px dashed var(--secondary-45);
+  border-radius: var(--r-md);
+}
+
+.notif-more {
+  display: flex;
+  justify-content: center;
+  margin-block-start: 18px;
+}
+
+/* The navbar marker. A count rather than a dot, so the number is readable at a glance. */
+.nav-icon-btn { position: relative; }
+
+.nav-badge {
+  position: absolute;
+  inset-block-start: 2px;
+  inset-inline-end: 2px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--primary);
+  color: var(--surface);
+  font-size: 0.7rem;
+  font-weight: 700;
+  line-height: 18px;
+  text-align: center;
+}
+
+@media (max-width: 640px) {
+  .notif-row { flex-direction: column; }
+  .notif-row__actions { flex-direction: row; width: 100%; }
+}

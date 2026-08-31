@@ -12,6 +12,10 @@ export interface PhoneVisibilityInput {
   readonly subjectContactVisibility?: ContactVisibility;
 }
 
+/** Absent means the account predates the setting, and the safe default withholds both numbers. */
+const publishesNumbers = (setting?: ContactVisibility): boolean =>
+  setting?.businessPhone === true || setting?.officePhone === true;
+
 export interface PhoneVisibilityService {
   decide(input: PhoneVisibilityInput): Promise<PhoneVisibilityReason>;
 }
@@ -77,7 +81,7 @@ export const createPhoneVisibilityService = ({
 
     // Outside the approved automatic cases the professional's own setting is the only answer, and
     // an unset one stays private. Being connected is not consulted and grants nothing.
-    return subjectContactVisibility === 'public'
+    return publishesNumbers(subjectContactVisibility)
       ? 'visible_contact_setting'
       : 'hidden_no_approved_case';
   },

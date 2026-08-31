@@ -8,6 +8,7 @@ import type { StoredUpload } from '../files/fileAsset.service.js';
 import type { FileVisibility, WorkPlanScope } from '../files/fileAsset.model.js';
 import { uploadSingleDocument } from '../files/upload.middleware.js';
 import { projectAccessRepository } from '../projectaccess/projectAccess.repository.js';
+import { buildNotificationDispatchService } from '../notifications/notifications.module.js';
 import { participantRepository } from '../projectmembers/participant.repository.js';
 import { taskRepository } from '../tasks/task.repository.js';
 import { workPlanFileRequired } from './workPlan.errors.js';
@@ -43,6 +44,7 @@ export const createWorkPlansModule = (requireAccessToken: RequestHandler): Route
     tasks: taskRepository,
     access: projectAccessRepository,
     participants: participantRepository,
+    notifications: buildNotificationDispatchService(),
   });
   const files = createFileAssetService(fileAssetRepository);
 
