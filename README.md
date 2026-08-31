@@ -356,6 +356,26 @@ the quickest way to tell a sleeping Render instance from a broken one.
 
 ## Screenshots
 
-_To be added before submission._ Intended set: Landing, Register (both steps), Personal dashboard,
-My projects, Project dashboard, Stage graph, Task detail, Messages (thread with a work agreement),
-Notifications, Settings, Subscriptions and the Admin audit log — each in Hebrew and English.
+Captured from the live Vercel deployment against the live Render API, through the real UI. They
+live in [`docs/screenshots/`](docs/screenshots/).
+
+Authenticated screenshots reflect the real first-run state of a newly registered production
+account. Empty states shown below are intentional application states, not loading failures.
+
+| Screen | Hebrew | English |
+| --- | --- | --- |
+| Landing | [HE](docs/screenshots/01-landing-he.png) | [EN](docs/screenshots/02-landing-en.png) |
+| Register — step 1 | [HE](docs/screenshots/03-register-step1-he.png) | [EN](docs/screenshots/04-register-step1-en.png) |
+| Register — step 2 | — | [EN](docs/screenshots/06-register-step2.png) |
+| Login | [HE](docs/screenshots/05-login-he.png) | — |
+| Personal dashboard | [HE](docs/screenshots/07-dashboard-he.png) | [EN](docs/screenshots/17-dashboard-en.png) |
+| My projects | [HE](docs/screenshots/08-my-projects-he.png) | [EN](docs/screenshots/19-my-projects-en.png) |
+| חיפוש בעלי מקצוע / Find professionals | [HE](docs/screenshots/09-find-professionals-he.png) | [EN](docs/screenshots/18-find-professionals-en.png) |
+| My network | [HE](docs/screenshots/10-my-network-he.png) | — |
+| My tasks | [HE](docs/screenshots/11-my-tasks-he.png) | — |
+| Messages | [HE](docs/screenshots/12-messages-he.png) | — |
+| Notifications | [HE](docs/screenshots/13-notifications-he.png) | — |
+| Settings | [HE](docs/screenshots/14-settings-he.png) | — |
+| Subscriptions | [HE](docs/screenshots/15-subscriptions-he.png) | — |
+| My profile | [HE](docs/screenshots/16-my-profile-he.png) | — |
+| 404 | [HE](docs/screenshots/20-not-found.png) | — |
