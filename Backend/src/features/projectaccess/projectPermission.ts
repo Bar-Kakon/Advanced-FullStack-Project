@@ -23,6 +23,15 @@ export const PROJECT_PERMISSIONS = [
   'project.member.manage',
   'project.permission.grant',
   'task.create',
+  /**
+   * Editing a task that already exists. Its own code, never `task.create`: opening new work and
+   * changing committed work are different capabilities, and one grant must not imply the other.
+   *
+   * It does not widen any boundary it meets. Project task dates still go through the
+   * Proposal/Cascade path, an assignee change is still the handoff flow, and start/complete stay on
+   * their own endpoints.
+   */
+  'task.edit',
   'task.assign',
   'schedule.exception.approve',
   /**

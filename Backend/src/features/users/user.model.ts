@@ -139,6 +139,13 @@ export interface NotificationPreferences {
 }
 
 /**
+ * The professional's own control over their business number, consulted only where no approved
+ * automatic case applies. `private` is the default, so silence never discloses.
+ */
+export const CONTACT_VISIBILITY_OPTIONS = ['private', 'public'] as const;
+export type ContactVisibility = (typeof CONTACT_VISIBILITY_OPTIONS)[number];
+
+/**
  * One recorded consent. The version is what makes it provable: a timestamp alone cannot say *what*
  * was agreed to once the Terms change.
  */
@@ -157,6 +164,7 @@ export interface UserProfileFields {
   readonly drillingTypes?: readonly DrillingType[];
   readonly notificationPreferences?: NotificationPreferences;
   readonly businessPhone?: string;
+  readonly contactVisibility?: ContactVisibility;
   readonly location?: {
     readonly city?: string;
     readonly region?: Region;
@@ -196,7 +204,7 @@ export const AUTH_PROVIDERS = ['google'] as const;
 export type AuthProvider = (typeof AUTH_PROVIDERS)[number];
 
 /**
- * One link between a FieldSync account and an external provider. `subject` is the provider's own
+ * One link between a Blokta account and an external provider. `subject` is the provider's own
  * stable identifier for the person, never their email — an email can be reassigned, a subject
  * cannot.
  */
@@ -349,6 +357,10 @@ const userSchema = new Schema(
     notificationPreferences: {
       operationalEmail: { type: Boolean, required: true },
     },
+
+    // Absent is read as `private` everywhere, so an account that predates this field discloses
+    // nothing until its holder chooses otherwise.
+    contactVisibility: { type: String, enum: CONTACT_VISIBILITY_OPTIONS },
 
     // The individual's own business number. Never a fallback for the company office number, which
     // lives on a different document entirely, and never the personal/login `phone`.

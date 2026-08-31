@@ -8,6 +8,7 @@ import { companyMembershipRepository } from '../companies/companyMembership.repo
 import { fileAssetRepository } from '../files/fileAsset.repository.js';
 import { createFileAssetService } from '../files/fileAsset.service.js';
 import type { RoutesAdapter } from '../location/routes.adapter.js';
+import { projectAccessRepository } from '../projectaccess/projectAccess.repository.js';
 import { ratingRepository } from '../ratings/rating.repository.js';
 import { userRepository } from '../users/user.repository.js';
 import { workEntryRepository } from '../workentries/workEntry.repository.js';
@@ -58,7 +59,10 @@ export const createBrowseModule = ({
       flexibility: createFlexibilityService(createCoordinationOutcomeAdapter(proposalRepository, handoffRepository)),
       relationships,
       blocks,
-      phones: createPhoneVisibilityService(),
+      phones: createPhoneVisibilityService({
+        access: projectAccessRepository,
+        memberships: companyMembershipRepository,
+      }),
       files: createFileAssetService(fileAssetRepository),
     }),
   );
