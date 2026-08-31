@@ -1,4 +1,5 @@
 import { Fragment, useEffect } from 'react';
+import { Bidi } from '../../components/Bidi';
 import { Link } from 'react-router-dom';
 
 import { LanguageSwitch } from '../../components/LanguageSwitch';
@@ -81,7 +82,7 @@ export const LandingPage = () => {
         <section className="hero" aria-labelledby="hero-title">
           <div className="hero__text">
             <h1 className="hero__title" id="hero-title" dir="auto">{landing.hero.title}</h1>
-            <p className="hero__lede" dir="auto">{landing.hero.lede}</p>
+            <p className="hero__lede" dir="auto"><Bidi text={landing.hero.lede} /></p>
 
             <div className="hero__actions">
               <Link to="/register" className="btn btn--onboard hero__cta">{landing.createAccount}</Link>
@@ -165,7 +166,7 @@ export const LandingPage = () => {
           </nav>
 
           {/* Stated plainly so the page is never mistaken for a live commercial service. */}
-          <p className="site-foot__note" dir="auto">{landing.footerNote}</p>
+          <p className="site-foot__note" dir="auto"><Bidi text={landing.footerNote} /></p>
         </div>
       </footer>
     </div>
