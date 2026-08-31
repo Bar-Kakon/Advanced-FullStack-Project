@@ -34,11 +34,13 @@ const projectParamsSchema = Joi.object({ projectId: Joi.string().hex().length(24
 const exceptionParamsSchema = Joi.object({ exceptionId: Joi.string().hex().length(24).required() });
 
 /**
- * `professionalId` is deliberately absent from every schema below. A professional requests for
- * themself and never for another, so the subject is taken from the Access Token rather than
- * offered as a field somebody could fill in with somebody else's id.
+ * `professionalId` is explicitly FORBIDDEN rather than merely unlisted. A professional requests for
+ * themself and never for another, so the subject comes from the Access Token — and a body naming
+ * somebody else is answered rather than silently stripped, which would let a caller believe the
+ * request had been raised against the person they named.
  */
 const requestBodySchema = Joi.object({
+  professionalId: Joi.forbidden(),
   kind: Joi.string()
     .valid(...EXCEPTION_KINDS)
     .required(),
