@@ -143,6 +143,8 @@ export const useRegisterForm = (onSuccess: () => void, google: GoogleRegistratio
       || values.specialtyOther.trim().length > 0;
     // An employee is claiming a seat, and the position is one of the three values it is matched on.
     const positionOk = values.standing !== 'employee' || values.companyPosition !== '';
+    // The server requires it on the owner path, so the button must not offer a doomed submission.
+    const categoryOk = values.standing === 'employee' || values.contractorCategory !== '';
     // The Google path has no password to check, and asking for one would be inventing a credential
     // the account is deliberately opened without.
     const passwordOk =
@@ -151,7 +153,7 @@ export const useRegisterForm = (onSuccess: () => void, google: GoogleRegistratio
         && !errors.password
         && values.password.length >= MIN_PASSWORD_LENGTH);
 
-    return filled && otherOk && positionOk && passwordOk && !errors.email;
+    return filled && otherOk && positionOk && categoryOk && passwordOk && !errors.email;
   }, [values, viaGoogle, errors.email, errors.password]);
 
   // Step 2 asks for the Terms and one of the two delivery answers. Declining email is a complete

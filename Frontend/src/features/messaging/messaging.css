@@ -33,3 +33,7 @@
 .msg-composer { display: flex; gap: 8px; padding: 12px; border-top: 1px solid var(--line, #d8dde4); }
 .msg-composer__input { flex: 1; resize: none; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--line, #d8dde4); font: inherit; }
 .msg-empty { padding: 28px; color: #66727f; text-align: center; }
+
+.msg-bubble__report { background: none; border: 0; padding: 0; font: inherit; font-size: 0.72rem; color: #7a8592; text-decoration: underline; cursor: pointer; }
+.msg-report { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.msg-report__reason { font: inherit; font-size: 0.72rem; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line, #d8dde4); background: #fff; cursor: pointer; }

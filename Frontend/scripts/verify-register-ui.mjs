@@ -58,6 +58,11 @@ const fillDetails = async (page, who) => {
   }
   if (await opts.count()) await opts.first().click();
   await page.selectOption('#region', 'haifa').catch(() => {});
+  // Account-level business classification. Required on the owner path, and it has no default.
+  await page
+    .locator('input[name="contractorCategory"][value="subcontractor"]')
+    .check()
+    .catch(() => {});
 };
 
 const run = async () => {

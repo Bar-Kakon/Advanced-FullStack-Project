@@ -25,6 +25,7 @@ import { PasswordField } from '../../components/PasswordField';
 import { SelectField } from '../../components/SelectField';
 import { TextField } from '../../components/TextField';
 import { AvailabilityChoice } from './components/AvailabilityChoice';
+import { ContractorCategoryChoice } from './components/ContractorCategoryChoice';
 import { EmailNotificationChoice } from './components/EmailNotificationChoice';
 import { TermsCheckbox } from './components/TermsCheckbox';
 import { TermsModal } from './components/TermsModal';
@@ -266,6 +267,17 @@ export const RegisterForm = ({ form }: { form: ReturnType<typeof useRegisterForm
 
             {/* Availability is the organization's, set by whoever runs it — so an employee is not
                 asked, and the server refuses the field on that path anyway. */}
+            {/* Account level, so only the person creating the business answers it. An employee
+                inherits their company's, and the server refuses the field on that path. */}
+            {isEmployee ? null : (
+              <ContractorCategoryChoice
+                legend={t.form.contractorCategory.label} hint={t.form.contractorCategory.hint}
+                labels={t.contractorCategories}
+                value={values.contractorCategory}
+                onChange={(v) => setValue('contractorCategory', v)}
+              />
+            )}
+
             {isEmployee ? null : (
               <AvailabilityChoice
                 legend={t.form.availability.label} hint={t.form.availability.hint}

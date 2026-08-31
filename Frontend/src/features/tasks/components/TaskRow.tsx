@@ -2,17 +2,9 @@ import { Link } from 'react-router-dom';
 
 import { ButtonSpinner } from '../../../components/ButtonSpinner';
 import { useLanguage } from '../../../i18n/useLanguage';
+import { formatCalendarDate } from '../../../i18n/dateFormat';
 import type { MyTask } from '../../../api/tasks.types';
 
-const displayDate = (iso: string, lang: 'he' | 'en'): string => {
-  const [year, month, day] = iso.split('-').map(Number);
-  if (!year || !month || !day) return iso;
-  // Built from the parts rather than parsed, so no timezone can shift the day.
-  return new Date(Date.UTC(year, month - 1, day)).toLocaleDateString(
-    lang === 'he' ? 'he-IL' : 'en-GB',
-    { year: 'numeric', month: 'short', day: 'numeric', timeZone: 'UTC' },
-  );
-};
 
 export interface TaskRowProps {
   readonly task: MyTask;
@@ -55,8 +47,8 @@ export const TaskRow = ({ task, busy, busyId, onStart, onComplete }: TaskRowProp
         <span dir="auto">{task.project ? task.project.name : t.tasks.row.noProject}</span>
         <span>
           {task.completedAt !== null
-            ? t.tasks.row.completedOn.replace('{date}', displayDate(task.completedAt.slice(0, 10), lang))
-            : t.tasks.row.due.replace('{date}', displayDate(task.dueDate, lang))}
+            ? t.tasks.row.completedOn.replace('{date}', formatCalendarDate(task.completedAt.slice(0, 10), lang))
+            : t.tasks.row.due.replace('{date}', formatCalendarDate(task.dueDate, lang))}
         </span>
         {task.overdue ? <span className="task-row__late">{lateness}</span> : null}
       </p>

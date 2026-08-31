@@ -4,6 +4,7 @@ import {
   OTHER_SPECIALTY,
   type Availability,
   type CompanyPosition,
+  type ContractorCategory,
   type CompanyStanding,
   type DrillingType,
   type Region,
@@ -30,6 +31,7 @@ export interface RegisterFormValues {
   officePhone: string;
   businessPhone: string;
   availability: Availability;
+  contractorCategory: ContractorCategory | '';
   password: string;
   confirmPassword: string;
   /**
@@ -61,6 +63,8 @@ export const emptyRegisterForm: RegisterFormValues = {
   businessPhone: '',
   // Pre-selected to match the server's own default for this field.
   availability: 'open',
+  // No default: the two answers are different businesses and neither may be assumed.
+  contractorCategory: '',
   password: '',
   confirmPassword: '',
   googleIdToken: null,
@@ -145,6 +149,10 @@ export const buildRegisterPayload = (values: RegisterFormValues): RegisterPayloa
     ...(!isEmployee && officePhone ? { officePhone } : {}),
     ...(businessPhone ? { businessPhone } : {}),
     ...(isEmployee ? {} : { availability: values.availability }),
+    // Owner only. An employee inherits their company's, and the server refuses the field there.
+    ...(isEmployee || values.contractorCategory === ''
+      ? {}
+      : { contractorCategory: values.contractorCategory }),
     acceptedTerms: true,
     operationalEmail: values.operationalEmail,
   };

@@ -4,6 +4,7 @@ import { AppNav } from '../../components/AppNav';
 import { FormAlert } from '../../components/FormAlert';
 import { useAuth } from '../../auth/useAuth';
 import { useLanguage } from '../../i18n/useLanguage';
+import { formatCalendarDate } from '../../i18n/dateFormat';
 import { useDocumentTitle } from '../../routes/useDocumentTitle';
 import { useScreenStylesheet } from '../../styles/useScreenStylesheet';
 import { initialsOf } from '../profile/profileModel';
@@ -19,14 +20,6 @@ import permissionsCss from '../permissions/permissions.css?inline';
 import dashboardCss from '../projectdashboard/project-dashboard.css?inline';
 import tasksCss from './tasks.css?inline';
 
-const displayDate = (iso: string, lang: 'he' | 'en'): string => {
-  const [year, month, day] = iso.split('-').map(Number);
-  if (!year || !month || !day) return iso;
-  return new Date(Date.UTC(year, month - 1, day)).toLocaleDateString(
-    lang === 'he' ? 'he-IL' : 'en-GB',
-    { year: 'numeric', month: 'short', day: 'numeric', timeZone: 'UTC' },
-  );
-};
 
 /**
  * One piece of work, seen from where this viewer stands.
@@ -123,8 +116,8 @@ export const TaskDetailPage = () => {
                 <dt>{copy.dates.replace('{start}', '').replace('{due}', '').trim() || 'Dates'}</dt>
                 <dd>
                   {copy.dates
-                    .replace('{start}', displayDate(task.startDate, lang))
-                    .replace('{due}', displayDate(task.dueDate, lang))}
+                    .replace('{start}', formatCalendarDate(task.startDate, lang))
+                    .replace('{due}', formatCalendarDate(task.dueDate, lang))}
                 </dd>
 
                 <dt>{t.tasks.row.from.replace('{name}', '').trim()}</dt>

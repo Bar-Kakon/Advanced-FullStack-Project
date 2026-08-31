@@ -4,9 +4,11 @@ import { AppNav } from '../../components/AppNav';
 import { ButtonSpinner } from '../../components/ButtonSpinner';
 import { useAuth } from '../../auth/useAuth';
 import { useLanguage } from '../../i18n/useLanguage';
+import { localeOf } from '../../i18n/dateFormat';
 import { useDocumentTitle } from '../../routes/useDocumentTitle';
 import { useScreenStylesheet } from '../../styles/useScreenStylesheet';
 import { initialsOf } from '../profile/profileModel';
+import { reportMessage } from '../../api/messaging.api';
 import { toConversationRows } from './messageGrouping';
 import { useConversation } from './useConversation';
 import { useInbox } from './useInbox';
@@ -26,11 +28,14 @@ export const MessagesPage = () => {
   const [openId, setOpenId] = useState<string | undefined>(undefined);
   const thread = useConversation(openId);
   const [draft, setDraft] = useState('');
+  // Which message the reporter is confirming, and which have already been filed on this screen.
+  const [reporting, setReporting] = useState<string | null>(null);
+  const [reported, setReported] = useState<readonly string[]>([]);
 
   useScreenStylesheet({ id: 'profile.css', css: profileCss }, { id: 'messaging.css', css: messagingCss });
   useDocumentTitle(t.messaging.documentTitle);
 
-  const locale = lang === 'he' ? 'he-IL' : 'en-GB';
+  const locale = localeOf(lang);
   const dayLabel = (at: Date): string =>
     at.toLocaleDateString(locale, { day: '2-digit', month: '2-digit', year: 'numeric' });
   const timeLabel = (iso: string): string =>
@@ -45,6 +50,18 @@ export const MessagesPage = () => {
     await thread.send(body);
     setDraft('');
   }, [draft, thread]);
+
+  const report = useCallback(
+    async (messageId: string, reason: string): Promise<void> => {
+      if (openId === undefined) return;
+
+      // The reporter is taken from the session server-side; nothing here names them.
+      await reportMessage(openId, messageId, reason);
+      setReported((previous) => [...previous, messageId]);
+      setReporting(null);
+    },
+    [openId],
+  );
 
   const firstName = user?.firstName ?? '';
   const lastName = user?.lastName ?? '';
@@ -199,6 +216,42 @@ export const MessagesPage = () => {
                         <time className="msg-bubble__time" dateTime={row.message.sentAt}>
                           {timeLabel(row.message.sentAt)}
                         </time>
+
+                        {row.message.mine || row.message.removed ? null : reported.includes(
+                            row.message.id,
+                          ) ? (
+                          <span className="msg-bubble__time">{t.messaging.reported}</span>
+                        ) : reporting === row.message.id ? (
+                          <span className="msg-report">
+                            {(['spam', 'harassment', 'impersonation', 'other'] as const).map(
+                              (reason) => (
+                                <button
+                                  key={reason}
+                                  type="button"
+                                  className="msg-report__reason"
+                                  onClick={() => void report(row.message.id, reason)}
+                                >
+                                  {t.messaging.reportReasons[reason]}
+                                </button>
+                              ),
+                            )}
+                            <button
+                              type="button"
+                              className="msg-report__reason"
+                              onClick={() => setReporting(null)}
+                            >
+                              {t.messaging.cancel}
+                            </button>
+                          </span>
+                        ) : (
+                          <button
+                            type="button"
+                            className="msg-bubble__report"
+                            onClick={() => setReporting(row.message.id)}
+                          >
+                            {t.messaging.report}
+                          </button>
+                        )}
                       </div>
                     ),
                   )}
