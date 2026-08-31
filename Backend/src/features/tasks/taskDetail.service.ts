@@ -1,5 +1,6 @@
 import { Types } from 'mongoose';
 
+import type { ContractorEligibilityService } from '../companies/contractorEligibility.js';
 import type { ParticipantRepository } from '../projectmembers/participant.repository.js';
 import type { ProjectAccessRepository } from '../projectaccess/projectAccess.repository.js';
 import { effectiveProjectPermissions } from '../projectaccess/projectPermission.js';
@@ -84,6 +85,7 @@ export interface TaskDetailDependencies {
   readonly access: ProjectAccessRepository;
   readonly participants: ParticipantRepository;
   readonly reschedule: RescheduleRequestPort;
+  readonly eligibility: ContractorEligibilityService;
 }
 
 export const createTaskDetailService = ({
@@ -92,6 +94,7 @@ export const createTaskDetailService = ({
   access,
   participants,
   reschedule,
+  eligibility,
 }: TaskDetailDependencies): TaskDetailService => {
   /**
    * Loads a task and works out where this viewer stands. Anybody with no standing — including a
@@ -211,11 +214,13 @@ export const createTaskDetailService = ({
       viewer: {
         canReport,
         // Only the responsible party may hand work on, once, and never when own-crew-only applies.
+        // An account outside the subcontractor classification is never offered it at all.
         canDelegate:
           viewpoint === 'assignee' &&
           task.delegation === undefined &&
           !task.ownCrewOnly &&
-          task.orphanedAt === undefined,
+          task.orphanedAt === undefined &&
+          (await eligibility.mayUseConfidentialDelegation(userId)),
         canEndDelegation: viewpoint === 'assignee' && task.delegation !== undefined,
         canRequestDateChange:
           reschedule.available &&
@@ -244,6 +249,8 @@ export const createTaskDetailService = ({
       // A delegate holding the work cannot pass it on: single level, and no exception.
       if (viewpoint === 'delegate') throw cannotRedelegate();
       if (viewpoint !== 'assignee') throw taskNotFound();
+      // Ineligible accounts get the not-found answer, so the feature stays undetectable to them.
+      if (!(await eligibility.mayUseConfidentialDelegation(userId))) throw taskNotFound();
       if (task.delegation !== undefined) throw alreadyDelegated();
       if (task.ownCrewOnly) throw ownCrewOnly();
       if (input.userId === userId) throw cannotDelegateToSelf();

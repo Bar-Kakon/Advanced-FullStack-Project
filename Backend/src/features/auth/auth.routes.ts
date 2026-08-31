@@ -58,7 +58,7 @@ export const createAuthRouter = (
     controller.handleGoogleSignIn,
   );
 
-  // Authenticated: linking requires proving the FieldSync account first, which is what makes the
+  // Authenticated: linking requires proving the Blokta account first, which is what makes the
   // link safe on an email registration never verified.
   router.post(
     '/google/link',

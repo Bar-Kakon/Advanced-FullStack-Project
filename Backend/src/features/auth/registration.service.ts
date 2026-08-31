@@ -9,7 +9,7 @@ import type {
   CompanyMembershipRepository,
   NewCompanyMembership,
 } from '../companies/companyMembership.repository.js';
-import type { Availability } from '../companies/company.model.js';
+import type { Availability, ContractorCategory } from '../companies/company.model.js';
 import type { CompanyPosition } from '../companies/companyMembership.model.js';
 import type { CompanyRepository, NewCompany } from '../companies/company.repository.js';
 import type { ProviderIdentity, UserRecord } from '../users/user.model.js';
@@ -28,7 +28,10 @@ import type { GoogleIdentityService } from './googleIdentity.service.js';
 import type { RegisterBody } from './auth.validation.js';
 
 /** What the schema guarantees once `standing` is `owner`: the owner-only fields are present. */
-type OwnerRegisterBody = RegisterBody & { readonly availability: Availability };
+type OwnerRegisterBody = RegisterBody & {
+  readonly availability: Availability;
+  readonly contractorCategory: ContractorCategory;
+};
 
 /** And once it is `employee`: the two values their invitation is matched on. */
 type EmployeeRegisterBody = RegisterBody & { readonly companyPosition: CompanyPosition };
@@ -97,6 +100,7 @@ const isDuplicateEmailError = (error: unknown): boolean => {
 const toNewCompany = (input: OwnerRegisterBody): NewCompany => ({
   name: input.companyName,
   availability: input.availability,
+  contractorCategory: input.contractorCategory,
   ...(input.officePhone === undefined ? {} : { officePhone: input.officePhone }),
 });
 

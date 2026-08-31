@@ -6,6 +6,7 @@ import { companyCalendarRepository } from '../calendar/companyCalendar.repositor
 import { companyRepository } from '../companies/company.repository.js';
 import { companyMembershipRepository } from '../companies/companyMembership.repository.js';
 import { createCompanyContextService } from '../companies/companyContext.service.js';
+import { createContractorEligibilityService } from '../companies/contractorEligibility.js';
 import { participantRepository } from '../projectmembers/participant.repository.js';
 import { projectAccessRepository } from '../projectaccess/projectAccess.repository.js';
 import { projectRepository } from '../projects/project.repository.js';
@@ -67,6 +68,11 @@ interface CreateTaskBody {
 export const createTasksModule = (requireAccessToken: RequestHandler): Router => {
   const coordination = buildCoordinationService();
 
+  const contractorEligibility = createContractorEligibilityService({
+    companies: companyRepository,
+    memberships: companyMembershipRepository,
+  });
+
   const myTasks = createMyTasksService({
     tasks: taskRepository,
     projects: projectRepository,
@@ -80,6 +86,7 @@ export const createTasksModule = (requireAccessToken: RequestHandler): Router =>
     access: projectAccessRepository,
     participants: participantRepository,
     reschedule: createReschedulePortAdapter(coordination),
+    eligibility: contractorEligibility,
   });
 
   const creation = createTaskCreationService({
