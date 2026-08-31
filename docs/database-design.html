@@ -360,7 +360,7 @@ footer.foot { margin-top: 56px; padding-top: 22px; border-top: 1px solid var(--p
       <span class="meta-chip">Collections <b id="stat-collections">—</b></span>
       <span class="meta-chip">Relations <b id="stat-relations">—</b></span>
       <span class="meta-chip">Source of truth <b>Contractor Coordination Platform — Pro.md</b></span>
-      <span class="meta-chip">Updated <b id="stat-updated">2026-08-30</b></span>
+      <span class="meta-chip">Updated <b id="stat-updated">2026-08-31</b></span>
     </div>
   </div>
 </header>
@@ -654,8 +654,8 @@ const COLLECTIONS = [
     { name: '_id', type: 'ObjectId', note: 'Auto-generated. Used as the JWT subject.' },
     { name: 'email', type: 'String', req: true, uniq: true, idx: true, note: 'Lowercased and trimmed before save. The unique index is what actually prevents duplicate accounts — an application-level check alone has a race condition between two concurrent signups.' },
     { name: 'passwordHash', type: 'String', req: true, select: true, note: 'bcrypt, cost 12. `select: false` means it is excluded from every query unless explicitly asked for, so an accidental `res.json(user)` cannot leak it.' },
-    { name: 'status', type: "'active' | 'deactivated' | 'banned' | 'deleted'", req: true, idx: true, note: 'Soft-delete state (decision D8). A hard delete is impossible for anyone referenced in another party audit history, so removal is a status change plus a scrub of personal fields.' },
-    { name: 'isAdmin', type: 'Boolean', note: 'The only global role in the system. Gates the admin module.' },
+    { name: 'status', type: "'active' | 'restricted' | 'deactivated' | 'banned' | 'deleted'", req: true, idx: true, note: '**`restricted` added 2026-08-31** — the ban sheet\'s approved *restricted-only* enforcement, in the same enum rather than a second status system. A restricted account **keeps its session, its dashboard and its committed work**: restriction removes discovery, new connections and new projects, and leaves existing commitments to run to completion, because the platform has no standing to void a commercial commitment. `PARTICIPATING_STATUSES = [active, restricted]` is the single predicate every session check reads. The terminal ban is deliberately not implemented — see D31.' },
+    { name: 'isAdmin', type: 'Boolean', idx: false, note: '**Built 2026-08-31** (`feature/admin-moderation-reports`, not merged). The only global role in the system, and it now gates a real admin module. `default: false`, `required`. **It is never settable through a request body** — the write allowlists do not name it and `stripUnknown` removes it before any service sees it — so the only writer is a database script (`npm run admin:grant`). There is deliberately no endpoint that can grant it. It is read **from the account on every moderation request** rather than carried in the Access Token, so revoking it takes effect on the next call instead of when a token expires. Nothing derives it from a project grant, a company position or `projectRole`: platform authority and project authority are different questions.' },
     { name: 'profileComplete', type: 'Boolean', note: 'Set true when the 3-step onboarding wizard finishes. Drives the profile-incomplete nag.' },
     { name: 'security', type: '{ emailVerifiedAt, passwordChangedAt, tokenVersion }', select: true, note: 'Embedded 1:1. **Revised 2026-08-30:** `tokenVersion` is now the authoritative answer to *is this Access Token still valid*. It is an integer, default `0`, advanced by `$inc` inside the password-reset transaction; every Access Token carries the version it was minted at, and the auth middleware accepts a request only on **exact equality**. That replaces the old timestamp comparison, which asked whether `iat` predated `passwordChangedAt` and could not decide a tie — a token minted in the same whole second as a reset was not `<` it and survived, because JWT `iat` has no sub-second resolution. `passwordChangedAt` is **retained as security history and is no longer consulted for token validity**, so it is no longer truncated to a whole second. **Revised 2026-08-29:** `resetTokenHash` and `resetTokenExpiresAt` were **moved out** to the [[passwordresettokens]] collection, because a hash-plus-expiry pair cannot tell a spent link from an absent one or record that a newer request replaced an older one. `emailVerifiedAt` is designed and not built. The reset token is still stored **hashed**, with the raw value only ever in the email.' },
 
@@ -2382,26 +2382,35 @@ module.exports = mongoose.model('Mute', muteSchema);`
   tag: 'moderation queue',
   pos: { x: 1070, y: 190 },
   purpose: 'A user has flagged something for admin review. Feeds the admin reports queue, where it is dismissed or actioned.',
+  callout: '<strong>Built 2026-08-31</strong> on <code>feature/admin-moderation-reports</code> (not merged). This design is what shipped, with three departures recorded on the fields below: no <code>targetSnapshot</code> is written for a user subject, <code>status</code> gained <code>under_review</code>, and an append-only <code>history[]</code> was added. <strong>The report holds no copied personal data at all</strong> — only references — which is what makes it compatible with D8 anonymisation with no backfill.',
   fields: [
     { name: '_id', type: 'ObjectId', note: '' },
     { name: 'reporter', type: 'ObjectId', ref: 'users', req: true, idx: true, note: '' },
-    { name: 'target', type: "{ type: 'user'|'message'|'task'|'project', id: ObjectId }", req: true, idx: true, note: 'Polymorphic, same leaf-only pattern as [[mutes]]. The `user` type is filed from the public profile Report control (2026-08-20) — the control ships on a Stage-2 screen even though this collection is Stage 7, under the standing rule that a `Planned` feature may appear on a screen while a `Stretch` one may not.' },
-    { name: 'targetSnapshot', type: 'Object', denorm: true, note: 'A copy of the reported content. Essential: the reported message may be edited or deleted before an admin looks at it.' },
-    { name: 'reason', type: 'enum', req: true, note: 'Spam, harassment, impersonation, other.' },
-    { name: 'note', type: 'String', note: 'Optional free text from the reporter.' },
-    { name: 'status', type: "'open' | 'dismissed' | 'actioned'", req: true, idx: true, note: '' },
-    { name: 'reviewedBy', type: 'ObjectId | null', ref: 'users', note: 'The admin who resolved it.' },
-    { name: 'reviewedAt', type: 'Date', note: '' },
-    { name: 'resolutionNote', type: 'String', note: '' },
+    { name: 'subject', type: "{ type: 'user', id: ObjectId }", req: true, idx: true, note: '**Built as `subject`, not `target`** — the field names what is being reported, and `target` reads like a destination. Polymorphic and leaf-only, the same pattern as [[mutes]]: filtered, never traversed. **Only `user` is in the enum today.** The other three designed types were not declared, because declaring a subject type nothing can file is a promise the code does not keep; adding one later is one enum member and one resolver, not a second collection. The `user` type is filed from the public profile Report control (2026-08-20), which is the approved entry point.' },
+    { name: 'targetSnapshot', type: 'Object', denorm: true, note: '**Deliberately not written for a `user` subject, and that is a D8 decision rather than an omission.** The justification for a snapshot is that *the reported message may be edited or deleted before an admin looks at it* — true of a message, not of an account: a reported account is still there and moderation reads it live. Copying a name or an email in would have created exactly the immutable forever-copy D8 forbids. So the report stores references only, and anonymising the account neutralises every report about it with no backfill. **Reserved for a future message subject**, where the original argument does apply — and the message-copy system is explicitly not built.' },
+    { name: 'reason', type: "'spam' | 'harassment' | 'impersonation' | 'other'", req: true, note: 'The four codes as designed here, shipped unchanged. **They are storage codes and are never rendered** — the client holds its own HE/EN wording per code, and a browser check fails if a bare code reaches the screen. **The user-facing labels are engineering-provisional and await owner ratification (D30)**: the Decision Map records the selectable reasons as never written down anywhere, so the wording claims as little as possible and changing it is a strings-file edit that touches no schema, index or API.' },
+    { name: 'note', type: 'String', note: 'Optional free text from the reporter, capped at 1000 characters. **The one field on this document carrying free personal text**, which is why it has a dedicated D8 path: `redactNotesByReporter` clears it in bulk for one reporter and stamps `noteRedactedAt`, leaving the reason, the status and the whole moderation history intact. Visible to moderation only — it appears in no ordinary DTO.' },
+    { name: 'noteRedactedAt', type: 'Date', note: '**New.** Records that D8 neutralised the reporter free text, so a missing note reads as *redacted* rather than *never given*. The detail screen words the two differently.' },
+    { name: 'source', type: "'public_profile'", note: '**New.** Where the report was filed from. Context for moderation, never a permission — it grants nothing and is not read by any authorisation path.' },
+    { name: 'status', type: "'open' | 'under_review' | 'dismissed' | 'actioned'", req: true, idx: true, note: '**`under_review` added.** A claimed report leaves the unclaimed pile, so two moderators do not both start on the same one. `dismissed` and `actioned` are terminal. **Nothing is ever deleted to represent resolution** — a report found invalid is `dismissed`, and the row, its reason, its note and its history all stay.' },
+    { name: 'open', type: 'Boolean', note: '**New, and it exists only to be indexable.** MongoDB refuses `$exists: false` in a `partialFilterExpression`, so the *one open report per reporter, subject and reason* rule needs something positive to match on. Set at creation, `$unset` on resolution. `status` and `resolvedAt` remain the readable record of what happened; this field is never rendered.' },
+    { name: 'history', type: '[{ action, actor, note?, at }]', req: true, note: '**New, and append-only.** Written by submission, claim, resolution and account action alike, in the same atomic update as the state change — so no resolution can lose its trail. It is what makes the approved *one shared log* real for the correlation that decision was chosen for: the removal and the report that preceded it are the same document. **The built [[auditentries]] could not carry it** — that collection requires a `project`, and a platform ban has none. A unified platform log is recorded as a genuine gap rather than faked. Internal: it appears in no ordinary DTO.' },
+    { name: 'reviewedBy', type: 'ObjectId | null', ref: 'users', note: 'The admin who claimed or resolved it. **Read from the authenticated session, never from the request body** — a `reviewedBy` in a resolve payload is stripped and ignored, so no moderator can record an action against a colleague. Tested.' },
+    { name: 'resolvedAt', type: 'Date', note: '**Built as `resolvedAt`.** Set once, in the same filtered update that sets the terminal status and unsets `open`.' },
+    { name: 'resolutionNote', type: 'String', note: 'The moderator\'s internal note. **Never leaves moderation** — it is absent from every ordinary user projection, and a test asserts it appears on no surface either party can reach.' },
     { name: 'createdAt', type: 'Date', idx: true, note: '' }
   ],
   indexes: [
     { def: '{ status: 1, createdAt: -1 }', serves: 'The admin moderation queue', why: 'Almost every read of this collection is "show me the open ones, oldest or newest first" — the index answers exactly that.' },
-    { def: "{ 'target.type': 1, 'target.id': 1 }", serves: 'All reports against one user or item', why: 'Repeat offenders are the useful signal; this makes them one query.' }
+    { def: "{ 'subject.type': 1, 'subject.id': 1, createdAt: -1 }", serves: 'All reports against one subject', why: 'Repeat offenders are the useful signal; this makes them one query. The count is shown to moderation labelled as a signal to review, never as proof — no automated action is driven by report volume.' },
+    { def: "{ reporter: 1, 'subject.type': 1, 'subject.id': 1, reason: 1 } unique, partial on { open: true }", serves: 'The duplicate rule', why: '**One open report per reporter, subject and reason, enforced by the database** rather than by a read-then-write two concurrent requests could interleave through. Resolving unsets `open` and frees the slot, so the rule controls duplicate noise without silencing a reporter forever. A second, complementary control is a per-account submission limiter of 10/hour, kept separate from the auth limiters so production auth windows are untouched.' }
   ],
   why: [
-    '**`targetSnapshot` freezes the evidence.** The whole value of a moderation queue disappears if the reported content can be edited or deleted before review. Same snapshot technique as [[auditentries]], same reason: the record has to outlive the thing it describes.',
-    '**Kept out of [[notifications]] on purpose** even though both are "something happened" rows. Reports have a resolution workflow and an owner; notifications are disposable. Different lifecycles mean different collections.'
+    '**`targetSnapshot` freezes the evidence — for content, which an account is not.** The whole value of a moderation queue disappears if the reported *content* can be edited or deleted before review. A reported **account** is not that case: it is still there, and moderation reads it live. So for the `user` subject the snapshot is deliberately not written, and the report holds references only. Same snapshot technique as [[auditentries]] where it applies; the field is reserved for a future message subject.',
+    '**Nothing personal is copied in, and that is what makes D8 work.** No name, no email, no profile text. Anonymising an account therefore neutralises every report about it **with no backfill and nothing left to find** — the moderation view resolves identities at read time, and renders a neutral identity when the account is gone. The reporter\'s own free-text `note` is the single exception, and it has a bulk redaction keyed by reporter that clears it while the reason, the status and the whole history survive. Business and moderation history is preserved; the PII is not.',
+    '**Resolution is atomic, single-use and non-destructive.** One filtered `findOneAndUpdate` requires the report to still be open, so a verdict can apply exactly once and a second moderator is told the report moved rather than silently overwriting the first. The verdict is appended to `history` **in the same update**, so no resolution can lose its trail. Nothing is deleted to represent an outcome.',
+    '**Kept out of [[notifications]] on purpose** even though both are "something happened" rows. Reports have a resolution workflow and an owner; notifications are disposable. Different lifecycles mean different collections.',
+    '**Internal fields never reach an ordinary projection.** `history`, `resolutionNote`, `reviewedBy` and the reporter identity are moderation-only. The reporter is never told who else reported the same person, what the outcome was, or that any other report exists; the reported user is never told who filed it or what it said; and no public surface exposes a report count.'
   ],
   relations: [
     { to: 'users', via: 'reporter', store: 'ref', card: 'N:1', why: '' },
@@ -2410,31 +2419,48 @@ module.exports = mongoose.model('Mute', muteSchema);`
   sample: `{
   _id: ObjectId("66a0ee00c2b9e30012af1a01"),
   reporter: ObjectId("6650a1f4c2b9e30012af0b21"),
-  target: { type: "message", id: ObjectId("6681aa11c2b9e30012af1701") },
-  targetSnapshot: { body: "…", sender: "6650a9c0…", sentAt: "2026-09-02T11:00:00Z" },
+  subject: { type: "user", id: ObjectId("6681aa11c2b9e30012af1701") },
+  // no targetSnapshot: the subject is a live account, and copying a name in would outlive D8
   reason: "spam",
-  note: "Third supplier pitch this week in a project thread.",
+  note: "Third supplier pitch this week.",
+  source: "public_profile",
   status: "open",
-  reviewedBy: null, reviewedAt: null,
+  open: true,                                  // present only while unresolved — the index key
+  history: [
+    { action: "report.submitted", actor: ObjectId("6650a1f4c2b9e30012af0b21"),
+      at: ISODate("2026-09-02T11:14:00Z") }
+  ],
+  reviewedBy: null, resolvedAt: null, resolutionNote: null,
   createdAt: ISODate("2026-09-02T11:14:00Z")
 }`,
   schema: `const reportSchema = new Schema({
   reporter: { type: Schema.Types.ObjectId, ref: 'User', required: true },
-  target: {
-    type: { type: String, enum: ['user','message','task','project'], required: true },
+  // References only. No name, no email — anonymising the account neutralises every report.
+  subject: {
+    type: { type: String, enum: ['user'], required: true },
     id:   { type: Schema.Types.ObjectId, required: true }
   },
-  targetSnapshot: { type: Schema.Types.Mixed },     // evidence must outlive the content
   reason: { type: String, enum: ['spam','harassment','impersonation','other'], required: true },
-  note:   { type: String, maxlength: 1000 },
-  status: { type: String, enum: ['open','dismissed','actioned'], default: 'open' },
-  reviewedBy: { type: Schema.Types.ObjectId, ref: 'User', default: null },
-  reviewedAt: Date,
+  note:   { type: String, maxlength: 1000 },       // the one carrier of personal free text
+  noteRedactedAt: Date,                            // stamped when D8 clears the note
+  source: { type: String, enum: ['public_profile'] },
+  status: { type: String, enum: ['open','under_review','dismissed','actioned'], default: 'open' },
+  open:   { type: Boolean },                       // exists only so the partial index can match
+  history: { type: [historyEntrySchema], required: true, default: [] },   // append-only
+  reviewedBy: { type: Schema.Types.ObjectId, ref: 'User' },
+  resolvedAt: Date,
   resolutionNote: String
-}, { timestamps: true });
+}, { timestamps: { createdAt: true, updatedAt: false } });
 
 reportSchema.index({ status: 1, createdAt: -1 });
-reportSchema.index({ 'target.type': 1, 'target.id': 1 });
+reportSchema.index({ 'subject.type': 1, 'subject.id': 1, createdAt: -1 });
+
+// One open report per reporter, subject and reason. A partial filter cannot test for a field
+// being ABSENT, which is why the open flag exists; resolving unsets it and frees the slot.
+reportSchema.index(
+  { reporter: 1, 'subject.type': 1, 'subject.id': 1, reason: 1 },
+  { unique: true, partialFilterExpression: { open: true } }
+);
 
 module.exports = mongoose.model('Report', reportSchema);`
 },

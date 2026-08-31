@@ -8,7 +8,7 @@
  */
 import { AUTH_RATE_LIMITS } from '../src/middleware/rateLimit.js';
 
-const API = 'http://localhost:3000/api';
+const API = process.env['API_URL'] ?? 'http://localhost:3000/api';
 
 let failures = 0;
 const check = (label: string, passed: boolean, detail = ''): void => {

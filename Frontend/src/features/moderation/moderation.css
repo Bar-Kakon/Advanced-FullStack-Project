@@ -1,0 +1,228 @@
+/* FieldSync — Moderation */
+/* Loaded on top of profile.css. Approved palette only, plus the approved --error exception. */
+
+.mod-filter {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-block-end: 20px;
+}
+
+.mod-filter__select { max-width: 240px; }
+
+.mod-empty {
+  padding: 22px;
+  border: 1px dashed var(--secondary-55);
+  border-radius: var(--r-md);
+  color: var(--text-mute);
+  font-size: 15px;
+}
+
+/* ═══ Queue ═══ */
+
+.mod-queue {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.mod-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 16px 18px;
+  border: 1px solid var(--secondary-45);
+  border-radius: var(--r-md);
+  background: var(--surface);
+}
+
+.mod-row__main { min-width: 0; flex: 1 1 320px; }
+
+.mod-row__reason {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--primary);
+  margin-block-end: 4px;
+  overflow-wrap: anywhere;
+}
+
+.mod-row__people {
+  font-size: 14px;
+  color: var(--text-soft);
+  overflow-wrap: anywhere;
+}
+
+.mod-row__term { color: var(--text-mute); }
+
+.mod-row__side {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+.mod-row__date { font-size: 13px; color: var(--text-mute); }
+
+/* ═══ Status, in words ═══ */
+
+/* The label is the state. The border weight is a second, redundant signal — never the only one. */
+.mod-pill {
+  display: inline-block;
+  padding: 3px 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  background: var(--secondary-15);
+  border: 1px solid var(--secondary-55);
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.mod-pill--open { border-width: 2px; }
+.mod-pill--under_review { border-style: dashed; }
+.mod-pill--dismissed { background: transparent; }
+.mod-pill--actioned { background: var(--primary-08); border-color: var(--primary-30); }
+
+/* ═══ Detail ═══ */
+
+.mod-back {
+  display: inline-block;
+  font-size: 14px;
+  color: var(--primary);
+  margin-block-end: 8px;
+}
+
+.mod-detail { display: flex; flex-direction: column; gap: 16px; }
+
+.mod-card {
+  padding: 20px 22px;
+  border: 1px solid var(--secondary-45);
+  border-radius: var(--r-md);
+  background: var(--surface);
+}
+
+.mod-card__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-block-end: 14px;
+}
+
+.mod-card__title {
+  font-family: var(--font-serif);
+  font-size: 19px;
+  font-weight: 700;
+  color: var(--primary);
+  overflow-wrap: anywhere;
+}
+
+.mod-card__sub {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--primary);
+  margin-block: 14px 6px;
+}
+
+.mod-card__lede {
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--text-soft);
+  max-width: var(--prose-max);
+  margin-block-end: 14px;
+}
+
+.mod-facts { display: flex; flex-direction: column; gap: 8px; }
+
+.mod-facts__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 15px;
+}
+
+.mod-facts__row dt { color: var(--text-mute); min-width: 140px; }
+.mod-facts__row dd { color: var(--text); overflow-wrap: anywhere; }
+
+.mod-quote {
+  padding: 12px 16px;
+  border-inline-start: 3px solid var(--secondary);
+  background: var(--background);
+  border-radius: var(--r-sm);
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--text);
+  overflow-wrap: anywhere;
+  max-width: var(--prose-max);
+}
+
+.mod-muted {
+  font-size: 14px;
+  color: var(--text-mute);
+  margin-block-start: 8px;
+  max-width: var(--prose-max);
+}
+
+.mod-preview {
+  padding: 14px 16px;
+  border: 1px dashed var(--primary-30);
+  border-radius: var(--r-md);
+  background: var(--background);
+  margin-block-end: 16px;
+}
+
+.mod-resolved {
+  font-size: 15px;
+  color: var(--text);
+  margin-block-end: 12px;
+}
+
+/* ═══ History ═══ */
+
+.mod-history {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.mod-history__item {
+  padding-inline-start: 14px;
+  border-inline-start: 2px solid var(--secondary-45);
+}
+
+.mod-history__action { font-size: 15px; font-weight: 600; color: var(--primary); }
+.mod-history__meta { font-size: 13px; color: var(--text-mute); overflow-wrap: anywhere; }
+
+.mod-history__note {
+  font-size: 14px;
+  color: var(--text-soft);
+  margin-block-start: 4px;
+  overflow-wrap: anywhere;
+}
+
+/* ═══ Forms ═══ */
+
+.mod-field { margin-block-end: 14px; }
+
+.mod-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+
+.mod-error {
+  font-size: 14px;
+  color: var(--error);
+  margin-block-start: 6px;
+}
+
+@media (max-width: 620px) {
+  .mod-row { align-items: flex-start; }
+  .mod-facts__row dt { min-width: 0; flex-basis: 100%; }
+}

@@ -24,7 +24,7 @@ import { CompanyMembershipModel } from '../src/features/companies/companyMembers
 import { CompanyModel } from '../src/features/companies/company.model.js';
 import { UserModel } from '../src/features/users/user.model.js';
 
-const API = 'http://localhost:3000/api';
+const API = process.env['API_URL'] ?? 'http://localhost:3000/api';
 const MARKER = 'pwreset-verify';
 const EMAIL = `${MARKER}@example.com`;
 const COMPANY = `${MARKER} Ltd`;

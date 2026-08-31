@@ -23,6 +23,8 @@ import { createRatingsModule } from '../features/ratings/ratings.module.js';
 import { createTasksModule } from '../features/tasks/tasks.module.js';
 import { createStagesModule } from '../features/tasks/stages.module.js';
 import { createUsersModule } from '../features/users/users.module.js';
+import { createReportsModule } from '../features/reports/reports.module.js';
+import { createModerationModule } from '../features/moderation/moderation.module.js';
 import { createHealthRouter } from './health.routes.js';
 import { createHealthAuthRouter } from './healthAuth.routes.js';
 
@@ -50,6 +52,9 @@ export const createApiRouter = (config: AppConfig): Router => {
     createDashboardModule({ requireAccessToken: auth.requireAccessToken, blocks: blocks.service }),
   );
   router.use('/network', createNetworkModule(auth.requireAccessToken));
+  // Filing a report and reviewing one are two different authorities, so they are two routers.
+  router.use('/reports', createReportsModule(auth.requireAccessToken).router);
+  router.use('/moderation', createModerationModule(auth.requireAccessToken));
   router.use('/work-plans', createWorkPlansModule(auth.requireAccessToken));
   router.use('/projects/:projectId/stages', createStagesModule(auth.requireAccessToken));
   router.use('/projects/:projectId/dashboard', createProjectDashboardModule(auth.requireAccessToken));

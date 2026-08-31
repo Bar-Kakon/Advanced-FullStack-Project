@@ -15,7 +15,7 @@ import { CompanyMembershipModel } from '../src/features/companies/companyMembers
 import { CompanyModel } from '../src/features/companies/company.model.js';
 import { UserModel } from '../src/features/users/user.model.js';
 
-const API = 'http://localhost:3000/api';
+const API = process.env['API_URL'] ?? 'http://localhost:3000/api';
 const MARKER = 'emp-verify';
 const COMPANY = `${MARKER} Ltd`;
 const PASSWORD = 'CorrectHorse42!';

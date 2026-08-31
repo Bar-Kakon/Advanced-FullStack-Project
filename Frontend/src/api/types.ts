@@ -183,6 +183,12 @@ export interface CompanyContext {
  */
 export interface SessionUser extends AuthenticatedUser {
   readonly company: CompanyContext | null;
+  /**
+   * The viewer's own platform role. It decides whether a moderation entry point is drawn and
+   * nothing else — the server reads the account on every moderation request, so a client that
+   * flipped this would gain no access at all.
+   */
+  readonly isAdmin: boolean;
 }
 
 /**

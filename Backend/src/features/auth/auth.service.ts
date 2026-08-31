@@ -1,5 +1,5 @@
 import type { CompanyContextService } from '../companies/companyContext.service.js';
-import { INITIAL_TOKEN_VERSION, type UserRecord } from '../users/user.model.js';
+import { INITIAL_TOKEN_VERSION, PARTICIPATING_STATUSES, type UserRecord } from '../users/user.model.js';
 import type { UserRepository } from '../users/user.repository.js';
 import { invalidCredentials, invalidRefreshToken, unauthenticated } from './auth.errors.js';
 import { toSessionUser, type SessionUser } from './authenticatedUser.mapper.js';
@@ -36,8 +36,14 @@ export interface AuthServiceDependencies {
  * It takes the status alone so Login, Refresh and every protected route can ask the same question
  * — the protected-route path holds a projection, not a whole user.
  */
+/**
+ * A restricted account keeps its session. The approved rule restricts participation and leaves
+ * existing commitments to close normally, so refusing the session here would turn a restriction
+ * into the lockout that rule exists to prevent. What restriction actually stops is enforced at
+ * discovery, new connections and new projects.
+ */
 export const isSessionPermitted = (user: Pick<UserRecord, 'status'>): boolean =>
-  user.status === 'active';
+  PARTICIPATING_STATUSES.includes(user.status);
 
 /** An account that has never had the version advanced sits at the initial one, stored or not. */
 export const currentTokenVersion = (user: Pick<UserRecord, 'security'>): number =>

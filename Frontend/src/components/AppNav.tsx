@@ -50,6 +50,10 @@ export const AppNav = ({ name, initials }: { name: string; initials: string }) =
           {showEmployees ? (
             <Link to="/employees" className="app-nav__link">{t.nav.employees}</Link>
           ) : null}
+          {/* Drawn only for platform moderators. Hiding it is a courtesy; the API refuses anyway. */}
+          {user?.isAdmin === true ? (
+            <Link to="/admin/reports" className="app-nav__link">{t.moderation.navLabel}</Link>
+          ) : null}
         </nav>
 
         <div className="app-nav__actions">

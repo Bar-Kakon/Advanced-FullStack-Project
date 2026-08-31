@@ -4,6 +4,9 @@ import { AuthProvider } from './auth/AuthContext';
 import { LanguageProvider } from './i18n/LanguageContext';
 import { PrivateRoute } from './routes/PrivateRoute';
 import { MembershipRoute } from './routes/MembershipRoute';
+import { AdminRoute } from './routes/AdminRoute';
+import { ModerationQueuePage } from './features/moderation/ModerationQueuePage';
+import { ReportDetailPage } from './features/moderation/ReportDetailPage';
 import { LandingPage } from './features/landing/LandingPage';
 import { NotFoundPage } from './features/errors/NotFoundPage';
 import { LoginPage } from './features/login/LoginPage';
@@ -73,6 +76,13 @@ export const App = () => (
               <Route path="/projects/:projectId/members" element={<ProjectMembersPage />} />
               <Route path="/projects/:projectId" element={<ProjectDashboardPage />} />
               <Route path="/permissions" element={<PermissionsPage />} />
+
+              {/* Platform moderation. It sits under its own guard because it is platform
+                  authority, which no project grant and no company position can produce. */}
+              <Route element={<AdminRoute />}>
+                <Route path="/admin/reports" element={<ModerationQueuePage />} />
+                <Route path="/admin/reports/:reportId" element={<ReportDetailPage />} />
+              </Route>
               <Route path="/tasks" element={<MyTasksPage />} />
               {/* Ahead of `:taskId`, or the literal path would be read as a task id. */}
               <Route path="/tasks/new" element={<CreateTaskPage />} />

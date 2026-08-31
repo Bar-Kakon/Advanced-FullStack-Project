@@ -47,7 +47,13 @@
     "verify:register-taxonomy": "tsx scripts/verify-register-taxonomy.ts",
     "verify:token-version": "tsx scripts/verify-token-version.ts",
     "verify:work-plans": "tsx scripts/verify-work-plans.ts",
-    "migrate:work-plan-indexes": "tsx scripts/migrate-work-plan-indexes.ts"
+    "verify:reports": "tsx scripts/verify-reports.ts",
+    "migrate:report-indexes": "tsx scripts/migrate-report-indexes.ts",
+    "verify:moderation": "tsx scripts/verify-moderation.ts",
+    "admin:grant": "tsx scripts/grant-platform-admin.ts grant",
+    "admin:revoke": "tsx scripts/grant-platform-admin.ts revoke",
+    "migrate:work-plan-indexes": "tsx scripts/migrate-work-plan-indexes.ts",
+    "seed:moderation": "tsx scripts/seed-moderation.ts"
   },
   "dependencies": {
     "@types/nodemailer": "^8.0.1",

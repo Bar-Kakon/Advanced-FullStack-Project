@@ -1,5 +1,6 @@
 import type { RequestHandler, Response } from 'express';
 
+import type { UserStatus } from '../users/user.model.js';
 import type { CredentialState } from '../users/user.repository.js';
 import { unauthenticated } from './auth.errors.js';
 import { isSessionPermitted } from './auth.service.js';
@@ -10,6 +11,11 @@ const BEARER_PREFIX = 'Bearer ';
 
 export interface AuthenticatedRequestContext {
   readonly userId: string;
+  /**
+   * Already paid for: the middleware reads the account state anyway, so carrying the status costs
+   * nothing and lets a restriction guard run with no query of its own.
+   */
+  readonly status: UserStatus;
 }
 
 /** The one thing this middleware asks the database for. Narrow by design. */
@@ -76,19 +82,27 @@ export const createRequireAccessToken = (
           return;
         }
 
-        res.locals.auth = { userId: claims.sub } satisfies AuthenticatedRequestContext;
+        res.locals.auth = {
+          userId: claims.sub,
+          status: state.status,
+        } satisfies AuthenticatedRequestContext;
         next();
       })
       .catch(next);
   };
 
-/** Mirrors `getValidated` from the foundation: read what the middleware proved, or fail loudly. */
-export const getAuthenticatedUserId = (res: Response): string => {
+const authContext = (res: Response): AuthenticatedRequestContext => {
   const auth = res.locals.auth as AuthenticatedRequestContext | undefined;
 
   if (auth === undefined) {
     throw new Error('Route read an authenticated user that requireAccessToken never produced.');
   }
 
-  return auth.userId;
+  return auth;
 };
+
+/** Mirrors `getValidated` from the foundation: read what the middleware proved, or fail loudly. */
+export const getAuthenticatedUserId = (res: Response): string => authContext(res).userId;
+
+/** The account state the same lookup already proved, for guards that would otherwise re-read it. */
+export const getAuthenticatedStatus = (res: Response): UserStatus => authContext(res).status;
