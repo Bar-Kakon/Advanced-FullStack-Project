@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { AppNav } from '../../components/AppNav';
 import { ButtonSpinner } from '../../components/ButtonSpinner';
@@ -8,7 +8,13 @@ import { localeOf } from '../../i18n/dateFormat';
 import { useDocumentTitle } from '../../routes/useDocumentTitle';
 import { useScreenStylesheet } from '../../styles/useScreenStylesheet';
 import { initialsOf } from '../profile/profileModel';
-import { reportMessage } from '../../api/messaging.api';
+import {
+  fetchContractorMute,
+  fetchConversationMute,
+  reportMessage,
+  setContractorMute,
+  setConversationMute,
+} from '../../api/messaging.api';
 import { toConversationRows } from './messageGrouping';
 import { useConversation } from './useConversation';
 import { useInbox } from './useInbox';
@@ -31,6 +37,8 @@ export const MessagesPage = () => {
   // Which message the reporter is confirming, and which have already been filed on this screen.
   const [reporting, setReporting] = useState<string | null>(null);
   const [reported, setReported] = useState<readonly string[]>([]);
+  const [conversationMuted, setConversationMuted] = useState(false);
+  const [contractorMuted, setContractorMuted] = useState(false);
 
   useScreenStylesheet({ id: 'profile.css', css: profileCss }, { id: 'messaging.css', css: messagingCss });
   useDocumentTitle(t.messaging.documentTitle);
@@ -42,6 +50,42 @@ export const MessagesPage = () => {
     new Date(iso).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
 
   const rows = useMemo(() => toConversationRows(thread.messages), [thread.messages]);
+  const open = inbox.conversations.find((c) => c.id === openId);
+
+  // Both mutes are read when a thread is opened, so the toggles show the stored state rather than
+  // an assumed one. A failure leaves them off rather than claiming a mute that is not there.
+  useEffect(() => {
+    if (openId === undefined) return;
+
+    let current = true;
+    void fetchConversationMute(openId)
+      .then((muted) => {
+        if (current) setConversationMuted(muted);
+      })
+      .catch(() => {
+        if (current) setConversationMuted(false);
+      });
+
+    const counterparty = inbox.conversations.find((c) => c.id === openId)?.counterpartyId ?? null;
+    if (counterparty === null) {
+      setContractorMuted(false);
+      return () => {
+        current = false;
+      };
+    }
+
+    void fetchContractorMute(counterparty)
+      .then((muted) => {
+        if (current) setContractorMuted(muted);
+      })
+      .catch(() => {
+        if (current) setContractorMuted(false);
+      });
+
+    return () => {
+      current = false;
+    };
+  }, [openId, inbox.conversations]);
 
   const submit = useCallback(async (): Promise<void> => {
     const body = draft.trim();
@@ -149,6 +193,42 @@ export const MessagesPage = () => {
               <p className="msg-empty">{t.messaging.pickConversation}</p>
             ) : (
               <>
+                <div className="msg-thread__bar">
+                  <button
+                    type="button"
+                    className="msg-thread__action"
+                    aria-pressed={conversationMuted}
+                    onClick={() =>
+                      void setConversationMute(openId, !conversationMuted).then(setConversationMuted)
+                    }
+                  >
+                    {conversationMuted ? t.messaging.unmuteConversation : t.messaging.muteConversation}
+                  </button>
+
+                  {open?.counterpartyId == null ? null : (
+                    <button
+                      type="button"
+                      className="msg-thread__action"
+                      aria-pressed={contractorMuted}
+                      onClick={() =>
+                        void setContractorMute(open.counterpartyId as string, !contractorMuted).then(
+                          setContractorMuted,
+                        )
+                      }
+                    >
+                      {contractorMuted ? t.messaging.unmuteContractor : t.messaging.muteContractor}
+                    </button>
+                  )}
+
+                  <button
+                    type="button"
+                    className="msg-thread__action"
+                    onClick={() => void inbox.hide(openId).then(() => setOpenId(undefined))}
+                  >
+                    {t.messaging.deleteChat}
+                  </button>
+                </div>
+
                 <div className="msg-thread__scroll">
                   {thread.hasOlder ? (
                     <button type="button" className="btn btn--secondary" onClick={thread.loadOlder}>

@@ -2311,6 +2311,11 @@ export const en: Strings = {
     reported: 'Report sent',
     cancel: 'Cancel',
     reportReasons: { spam: 'Spam', harassment: 'Harassment', impersonation: 'Impersonation', other: 'Other' },
+    muteConversation: 'Mute conversation',
+    unmuteConversation: 'Unmute conversation',
+    muteContractor: 'Mute this contact',
+    unmuteContractor: 'Unmute this contact',
+    deleteChat: 'Delete chat',
     acceptAgreement: 'Accept agreement',
     declineAgreement: 'Decline agreement',
     agreementStates: {

@@ -83,3 +83,37 @@ export const reportMessage = async (
     ...(note === undefined ? {} : { note }),
   });
 };
+
+/**
+ * Mute is a DELIVERY preference on the canonical mute model, never access: a muted conversation
+ * still reads, still receives, and still shows a blocking in-app notice.
+ */
+export const fetchConversationMute = async (conversationId: string): Promise<boolean> => {
+  const { data } = await api.get<{ mute: { muted: boolean } }>(
+    `/mutes/conversations/${conversationId}`,
+  );
+  return data.mute.muted;
+};
+
+export const setConversationMute = async (
+  conversationId: string,
+  muted: boolean,
+): Promise<boolean> => {
+  const { data } = await api.put<{ mute: { muted: boolean } }>(
+    `/mutes/conversations/${conversationId}`,
+    { muted },
+  );
+  return data.mute.muted;
+};
+
+export const fetchContractorMute = async (userId: string): Promise<boolean> => {
+  const { data } = await api.get<{ mute: { muted: boolean } }>(`/mutes/contractors/${userId}`);
+  return data.mute.muted;
+};
+
+export const setContractorMute = async (userId: string, muted: boolean): Promise<boolean> => {
+  const { data } = await api.put<{ mute: { muted: boolean } }>(`/mutes/contractors/${userId}`, {
+    muted,
+  });
+  return data.mute.muted;
+};
