@@ -22,6 +22,14 @@ export interface TermsConfig {
   readonly version: string;
 }
 
+/**
+ * Where a Landing-page contact message is announced. Absent is a supported state: the message is
+ * stored either way, so the form stays honest on a deployment that sends no mail at all.
+ */
+export interface ContactConfig {
+  readonly inbox: string | undefined;
+}
+
 /** SMTP is all-or-nothing: partial credentials fail at send time, which is too late to notice. */
 export type MailConfig =
   | {
@@ -82,6 +90,7 @@ export interface AppConfig {
   readonly tokens: TokenConfig;
   readonly terms: TermsConfig;
   readonly mail: MailConfig;
+  readonly contact: ContactConfig;
   /** Base URL of the React client. The reset link is built against it. */
   readonly frontendUrl: string;
   /**
@@ -110,6 +119,7 @@ interface RawEnv {
   readonly SMTP_USER?: string;
   readonly SMTP_PASS?: string;
   readonly MAIL_FROM?: string;
+  readonly CONTACT_INBOX?: string;
   readonly GOOGLE_MAPS_API_KEY?: string;
   readonly GOOGLE_MAPS_TIMEOUT_MS: number;
   readonly GOOGLE_OAUTH_CLIENT_ID?: string;
@@ -120,6 +130,13 @@ interface RawEnv {
   readonly PAYPAL_TIMEOUT_MS: number;
   readonly API_PUBLIC_URL?: string;
 }
+
+/**
+ * The Terms of Use version this build serves. It is the same string the Register modal renders, and
+ * the two are changed together — a mismatch would record a consent against a document the reader
+ * never saw, into an array that is append-only.
+ */
+export const PUBLISHED_TERMS_VERSION = '2026-08-31';
 
 const MIN_SECRET_LENGTH = 32;
 const DEFAULT_ACCESS_TTL_SECONDS = 900;
@@ -140,9 +157,10 @@ const rawEnvSchema: Joi.ObjectSchema<RawEnv> = Joi.object({
     .messages({ 'any.invalid': 'REFRESH_TOKEN_SECRET must not be the same value as ACCESS_TOKEN_SECRET.' }),
   REFRESH_TOKEN_TTL_SECONDS: Joi.number().integer().positive().default(DEFAULT_REFRESH_TTL_SECONDS),
 
-  // No Terms document exists yet, so the default says so rather than naming a version that was
-  // never published. The deployment replaces it the moment real Terms ship.
-  TERMS_VERSION: Joi.string().trim().min(1).default('draft'),
+  // The published Terms version, and the same string the Register modal renders. An unconfigured
+  // deployment must not show one version and persist another into the append-only acceptance
+  // history, so the fallback is the real version rather than a placeholder.
+  TERMS_VERSION: Joi.string().trim().min(1).default(PUBLISHED_TERMS_VERSION),
 
   // Required: a reset email with the wrong link is worse than a server that refuses to start.
   FRONTEND_URL: Joi.string().uri({ scheme: ['http', 'https'] }).required(),
@@ -152,6 +170,9 @@ const rawEnvSchema: Joi.ObjectSchema<RawEnv> = Joi.object({
   SMTP_USER: Joi.string().optional(),
   SMTP_PASS: Joi.string().optional(),
   MAIL_FROM: Joi.string().trim().min(1).optional(),
+
+  // Falls back to MAIL_FROM below, so a deployment that sends mail at all has somewhere to send it.
+  CONTACT_INBOX: Joi.string().trim().email({ tlds: { allow: false } }).optional(),
 
   GOOGLE_MAPS_API_KEY: Joi.string().trim().min(1).optional(),
   GOOGLE_MAPS_TIMEOUT_MS: Joi.number().integer().min(1000).max(30000).default(8000),
@@ -305,6 +326,7 @@ export const loadConfig = (source: NodeJS.ProcessEnv = process.env): AppConfig =
     tokens: buildTokenConfig(value),
     terms: { version: value.TERMS_VERSION },
     mail: buildMailConfig(value),
+    contact: { inbox: value.CONTACT_INBOX ?? value.MAIL_FROM },
     frontendUrl: normaliseBaseUrl(value.FRONTEND_URL),
     googleMaps: { apiKey: value.GOOGLE_MAPS_API_KEY, timeoutMs: value.GOOGLE_MAPS_TIMEOUT_MS },
     apiPublicUrl: buildApiPublicUrl(value, billing),

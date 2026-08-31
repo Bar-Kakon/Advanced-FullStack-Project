@@ -2555,6 +2555,64 @@ reportSchema.index(
 module.exports = mongoose.model('Report', reportSchema);`
 },
 
+/* ─────────── contactMessages ─────────── */
+{
+  id: 'contactmessages', model: 'ContactMessage', domain: 'gov', stage: 7,
+  tag: 'public contact form',
+  pos: { x: 1070, y: 420 },
+  purpose: 'One message sent from the Landing page contact form by a signed-out visitor. It is the stored record of the submission, and the email that announces it is only a notification about this row.',
+  callout: '<strong>Built 2026-08-31</strong> alongside the Landing contact form (not merged). <strong>It was designed by no earlier version of this page</strong> — it exists because the owner decision is that Contact is a form, and that its success state must be real. A mail-only boundary would have shown a sender "sent" on a deployment with no SMTP configured, which is the one thing the decision forbids: <strong>storing the message first is what makes the acknowledgement honest.</strong> The delivery email is best-effort on top.',
+  fields: [
+    { name: '_id', type: 'ObjectId', note: 'Also the reference quoted in the notification email, so an inbox message can be traced back to its row without copying anything else out of it.' },
+    { name: 'name', type: 'String', req: true, note: 'The sender\'s name as typed, 2–100 characters. **There is no `sender` reference and there cannot be one** — the form is submitted signed out, so no account exists to point at. This and the address are the whole of the identity the platform learns.' },
+    { name: 'email', type: 'String', req: true, note: 'Where the reply goes, capped at 254 characters and lowercased on the way in. It is carried as `Reply-To` on the notification email rather than as `From`, so answering reaches the sender while the envelope stays the platform\'s. **Never verified** — a contact form cannot demand proof of an address before it will accept a question.' },
+    { name: 'topic', type: "'general' | 'support' | 'partnership' | 'other'", req: true, note: 'Storage codes, never rendered: the client holds its own HE/EN wording per code, the same rule [[reports]] `reason` follows. **The four values are engineering-provisional** — no owner decision names the topics a contact form should offer, and changing them is one enum plus a strings-file edit.' },
+    { name: 'message', type: 'String', req: true, note: 'The enquiry itself, 10–2000 characters. **The one field carrying free personal text**, and the reason the whole collection is worth a D8 note: nothing here is keyed to an account, so an anonymisation run has no reference to follow. A future retention rule for this collection is a genuine gap, recorded rather than invented.' },
+    { name: 'language', type: "'he' | 'en'", req: true, note: 'Which language the form was in, defaulted to `he` when the body omits it. It exists so a reply is written in the language the sender actually used — the same two values as `users.language`, but unrelated to it, because there is no account to read a preference from.' },
+    { name: 'status', type: "'new' | 'handled'", req: true, idx: true, note: 'The minimum a message store needs to be usable. **There is no workflow here and deliberately so** — no claim step, no `history[]`, no resolution note: this is a public inbox, not the moderation queue [[reports]] is, and nothing in the product reads or writes this field yet.' },
+    { name: 'notifiedAt', type: 'Date', note: '**Set only when the notification email really left the server**, which means only in `smtp` mode. Absent reads as *stored but nobody has been told* — the honest state on a deployment running the log mailer. The sender is never shown this: their submission succeeded either way, because the submission is this document.' },
+    { name: 'createdAt', type: 'Date', idx: true, note: 'Returned to the sender in the receipt, with the id and nothing else.' }
+  ],
+  indexes: [
+    { def: '{ status: 1, createdAt: -1 }', serves: 'The unhandled inbox, newest first', why: 'The only read this collection is shaped for. **Nothing reads it over HTTP today** — there is no list endpoint and no read endpoint, and a browser check asserts both answer 404 — so the index serves whoever opens the database, and the screen that would use it is not built.' }
+  ],
+  why: [
+    '**The stored row is the submission; the email is a notification about it.** Ordering matters and is tested: the document is written first, and a send failure is logged rather than raised. If mail were the boundary, a deployment with no SMTP would either have to lie to the sender or refuse a message it could perfectly well keep. **A fake success state is the specific thing the owner decision rules out**, and this ordering is what rules it out structurally rather than by promise.',
+    '**No account reference, because there is no account.** The Landing page is public and the endpoint is mounted without `requireAccessToken` — requiring a session would make the form unreachable by the only people it exists for. That is also why the rate limiter keys on the caller\'s IP rather than a user id, unlike [[reports]], which can charge a flood to the account that sent it.',
+    '**Submission-only, with no read path at all.** This router has one route. Nothing lists, reads, edits or resolves a message over HTTP, so no crafted request can reach another visitor\'s enquiry — there is no endpoint to craft one against.',
+    '**`status` and `notifiedAt` are storage-only.** Both are absent from the write schema and `stripUnknown` removes them, so a body claiming `status: "handled"` is accepted and ignored rather than obeyed. Tested directly.',
+    '**Kept out of [[reports]] even though both are "somebody sent something in".** A report is filed by an authenticated user about another account and has a resolution workflow and an owner; this is an anonymous question with neither. Different lifecycles, different collections — the same reasoning that keeps reports out of [[notifications]].'
+  ],
+  relations: [],
+  sample: `{
+  _id: ObjectId("66a0ee00c2b9e30012af1b77"),
+  // no sender reference: the form is submitted signed out, so there is no account to point at
+  name: "דנה לוי",
+  email: "dana@example.com",
+  topic: "support",
+  message: "שאלה על קישור בין משימות בפרויקט קיים.",
+  language: "he",
+  status: "new",
+  // notifiedAt absent: stored, but this deployment sends no mail — and the sender is not told so
+  createdAt: ISODate("2026-08-31T09:20:00Z")
+}`,
+  schema: `const contactMessageSchema = new Schema({
+  name:    { type: String, trim: true, required: true, maxlength: 100 },
+  email:   { type: String, trim: true, lowercase: true, required: true, maxlength: 254 },
+  topic:   { type: String, enum: ['general','support','partnership','other'], required: true },
+  message: { type: String, trim: true, required: true, maxlength: 2000 },
+  language: { type: String, enum: ['he','en'], required: true },
+
+  // Storage-only. Neither is in the write schema, so a crafted body cannot set them.
+  status:     { type: String, enum: ['new','handled'], default: 'new', required: true },
+  notifiedAt: { type: Date }   // set only when mail really left the server
+}, { timestamps: { createdAt: true, updatedAt: false } });
+
+contactMessageSchema.index({ status: 1, createdAt: -1 });
+
+module.exports = mongoose.model('ContactMessage', contactMessageSchema);`
+},
+
 /* ─────────── rules ─────────── */
 {
   id: 'rules', model: 'Rule', domain: 'gov', stage: 7,

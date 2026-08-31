@@ -6,6 +6,7 @@ import { createBillingModule } from '../features/billing/billing.module.js';
 import { createBlocksModule } from '../features/blocks/blocks.module.js';
 import { createBrowseModule } from '../features/browse/browse.module.js';
 import { createCompaniesModule } from '../features/companies/companies.module.js';
+import { createContactModule } from '../features/contact/contact.module.js';
 import { createConnectionsModule } from '../features/connections/connections.module.js';
 import { createDashboardModule } from '../features/dashboard/dashboard.module.js';
 import { createLocationModule } from '../features/location/location.module.js';
@@ -53,6 +54,8 @@ export const createApiRouter = (config: AppConfig): Router => {
   router.use('/health', createHealthRouter());
   router.use('/health-auth', createHealthAuthRouter(auth.requireAccessToken));
   router.use('/auth', auth.router);
+  // Public, like the Landing page it is submitted from: there is no session to require.
+  router.use('/contact', createContactModule(config).router);
   router.use('/users', users.router);
   router.use('/companies', createCompaniesModule(auth.requireAccessToken, users.companyProfileRoutes));
   router.use('/blocks', blocks.router);

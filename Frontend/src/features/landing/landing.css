@@ -39,6 +39,12 @@
   --text-mute:       rgba(31, 36, 40, 0.64);
   --text-soft:       rgba(31, 36, 40, 0.75);
 
+  /* The contact form is the first thing on this screen that can be wrong, so it is also the first
+     to need these. Same three values the auth stylesheets use. */
+  --error:           #A63232;
+  --error-bg:        rgba(166, 50, 50, 0.06);
+  --error-border:    rgba(166, 50, 50, 0.30);
+
   /* Translucent cream, for details drawn on the dark board. */
   --surface-08:      rgba(255, 253, 248, 0.08);
   --surface-15:      rgba(255, 253, 248, 0.15);
@@ -725,6 +731,172 @@ body::before {
 .direct__actions { display: flex; flex-wrap: wrap; gap: 12px; }
 
 /* ─────────────────────────────────────────────
+   CONTACT — the form is the entry point
+
+   The only form on this screen, so the field look the auth
+   screens own is restated here rather than imported: this
+   stylesheet is applied alone, and `register.css` is not on
+   the page. The declarations are the approved ones, copied.
+   ───────────────────────────────────────────── */
+.contact {
+  max-width: 780px;
+  margin-inline: auto;
+  padding: 10px 22px 56px;
+}
+
+.contact__lede {
+  margin-top: -12px;
+  margin-bottom: 22px;
+  font-size: 15.5px;
+  line-height: 1.6;
+  color: var(--surface-90);
+}
+
+/* Cream, like the value cards: a form on the navy board would be navy on navy. */
+.contact__card {
+  padding: 26px 24px;
+  background: var(--surface-96);
+  border: 1px solid var(--surface-75);
+  border-radius: var(--r-md);
+  outline: 1px solid var(--primary-08);
+  outline-offset: -6px;
+}
+
+.contact__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+.contact__col--full { grid-column: 1 / -1; }
+
+.contact__message {
+  height: auto;
+  min-height: 118px;
+  padding-block: 13px;
+  line-height: 1.55;
+  resize: vertical;
+}
+
+.contact__submit { margin-top: 20px; }
+
+.contact__card--done { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; }
+
+.contact__done-title {
+  font-family: var(--font-serif);
+  font-size: 21px;
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.contact__done-body { font-size: 15.5px; line-height: 1.6; color: var(--text-soft); }
+
+/* ── Field furniture, copied from the approved auth stylesheet ── */
+.form-group { display: flex; flex-direction: column; gap: 8px; }
+
+.form-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-family: var(--font-mono);
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-soft);
+  cursor: pointer;
+}
+.form-label > .form-label__text { white-space: nowrap; }
+.form-label::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border: 1px solid var(--secondary);
+  background: var(--primary-08);
+  transform: rotate(45deg);
+  flex-shrink: 0;
+}
+
+.form-input,
+.form-select {
+  width: 100%;
+  height: 54px;
+  padding: 0 16px;
+  font-family: var(--font-sans);
+  font-size: 17px;
+  color: var(--text);
+  background:
+    linear-gradient(90deg, rgba(35, 56, 77, 0.035) 1px, transparent 1px),
+    var(--surface);
+  background-size: 14px 100%, auto;
+  border: 1.5px solid var(--secondary-30);
+  border-inline-start-width: 5px;
+  border-radius: var(--r-sm);
+  outline: none;
+  box-shadow:
+    inset 0 -2px 0 var(--secondary-15),
+    4px 4px 0 rgba(199, 184, 157, 0.08);
+  transition: border-color 0.16s, box-shadow 0.16s, background 0.16s;
+  -webkit-appearance: none;
+  appearance: none;
+}
+.form-input::placeholder { color: var(--text-mute); }
+.form-input:hover,
+.form-select:hover { border-color: var(--secondary-55); border-inline-start-color: var(--secondary); }
+.form-input:focus,
+.form-select:focus {
+  border-color: var(--primary);
+  border-inline-start-color: var(--primary);
+  box-shadow: 0 0 0 4px var(--primary-08), inset 0 -2px 0 var(--secondary-30);
+}
+
+.select-wrap { position: relative; }
+.form-select { padding-inline-end: 40px; cursor: pointer; }
+.form-select:required:invalid { color: var(--text-mute); }
+
+.select-chevron {
+  position: absolute;
+  inset-inline-end: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-flex;
+  color: var(--text-mute);
+  pointer-events: none;
+}
+
+.field-hint { font-size: 14.5px; color: var(--text-soft); margin-top: 5px; line-height: 1.4; }
+
+.field-error {
+  display: none;
+  font-size: 14.5px;
+  color: var(--error);
+  margin-top: 4px;
+  padding: 8px 10px;
+  line-height: 1.4;
+  background: var(--error-bg);
+  border: 1px solid var(--error-border);
+  border-inline-start: 4px solid var(--error);
+  border-radius: var(--r-sm);
+}
+.field-error--visible { display: block; }
+
+.alert {
+  display: none;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 18px;
+  padding: 12px 16px;
+  border-radius: var(--r-sm);
+  font-size: 15.5px;
+  line-height: 1.5;
+  border: 1px solid transparent;
+  box-shadow: inset 5px 0 0 var(--error);
+}
+.alert--visible { display: flex; }
+.alert--error { color: var(--error); background: var(--error-bg); border-color: var(--error-border); }
+.alert__icon { flex-shrink: 0; margin-top: 1px; }
+
+/* ─────────────────────────────────────────────
    FOOTER — restrained; the language pill is
    deliberately not repeated here
    ───────────────────────────────────────────── */
@@ -803,8 +975,11 @@ body::before {
   html { scroll-padding-top: 130px; }
 
   .values__grid { grid-template-columns: minmax(0, 1fr); }
+  /* Two 54px fields no longer fit side by side once the card is this narrow. */
+  .contact__grid { grid-template-columns: minmax(0, 1fr); }
+  .contact__submit { width: 100%; }
 
-  .hero, .values, .flow, .direct { padding-inline: 16px; }
+  .hero, .values, .flow, .direct, .contact { padding-inline: 16px; }
   .site-foot__inner { padding-inline: 16px; }
   .site-foot__note { margin-inline-start: 0; flex-basis: 100%; }
 }

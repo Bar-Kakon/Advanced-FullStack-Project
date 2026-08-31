@@ -6,6 +6,7 @@ import { useLanguage } from '../../i18n/useLanguage';
 import { useDocumentTitle } from '../../routes/useDocumentTitle';
 import { useScreenStylesheet } from '../../styles/useScreenStylesheet';
 import { BrandMark } from './components/BrandMark';
+import { ContactForm } from './components/ContactForm';
 import { DependencyExample } from './components/DependencyExample';
 import landingCss from './landing.css?inline';
 
@@ -139,6 +140,15 @@ export const LandingPage = () => {
             <Link to="/register" className="btn btn--onboard">{landing.direct.cta}</Link>
           </div>
         </section>
+
+        {/* The Contact entry point is the form itself, on this page. The prototype reserved a
+            separate `contact.html`; that filename is still not a route, and a section here is
+            what makes Contact real without inventing one. */}
+        <section className="contact" id="contact" aria-labelledby="contact-title">
+          <h2 className="section-title" id="contact-title" dir="auto">{landing.contact.title}</h2>
+          <p className="contact__lede" dir="auto">{landing.contact.lede}</p>
+          <ContactForm />
+        </section>
       </main>
 
       <footer className="site-foot">
@@ -147,6 +157,12 @@ export const LandingPage = () => {
             <span className="site-foot__mark" aria-hidden="true"><BrandMark size={22} on="dark" /></span>
             <span className="site-foot__name">FieldSync</span>
           </div>
+
+          {/* The one footer link. Plans and Help stay absent — they have no destination — and
+              Contact points at this page's own section rather than a route that does not exist. */}
+          <nav className="site-foot__links" aria-label={landing.contact.title}>
+            <a href="#contact" className="site-foot__link">{landing.footerContact}</a>
+          </nav>
 
           {/* Stated plainly so the page is never mistaken for a live commercial service. */}
           <p className="site-foot__note" dir="auto">{landing.footerNote}</p>

@@ -11,13 +11,14 @@ import type { Strings } from '../../../i18n/strings.types';
  * serving, because a client could claim any value.
  */
 export const TermsCheckbox = ({
-  terms, checked, onChange, onBlur, touched,
+  terms, checked, onChange, onBlur, touched, onOpenTerms,
 }: {
   terms: Strings['form']['terms'];
   checked: boolean;
   onChange: (next: boolean) => void;
   onBlur?: () => void;
   touched: boolean;
+  onOpenTerms: () => void;
 }) => (
   <label className="checkbox-field col--full">
     <input
@@ -35,12 +36,22 @@ export const TermsCheckbox = ({
         <path d="M5 12l5 5L20 6" />
       </svg>
     </span>
-    {/* Named rather than linked: no Terms or Privacy document exists to open (D25). */}
+    {/* A button, not a link: the document opens in a dialog over Register, so nothing navigates
+        away and a half-filled form is never abandoned. It sits outside the checkbox's own hit
+        area, so opening the terms cannot toggle consent by accident. */}
     <span className="checkbox-label">
       {terms.before}
-      <span className="checkbox-label__doc">{terms.tos}</span>
-      {terms.between}
-      <span className="checkbox-label__doc">{terms.privacy}</span>
+      <button
+        type="button"
+        className="checkbox-label__doc"
+        aria-label={terms.open}
+        onClick={(e) => {
+          e.preventDefault();
+          onOpenTerms();
+        }}
+      >
+        {terms.tos}
+      </button>
     </span>
   </label>
 );

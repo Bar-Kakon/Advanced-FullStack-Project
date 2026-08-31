@@ -8,6 +8,8 @@ export interface MailMessage {
   readonly subject: string;
   readonly text: string;
   readonly html: string;
+  /** Where a reply goes when that is not the sending address — the contact inbox uses it. */
+  readonly replyTo?: string;
 }
 
 export interface Mailer {
@@ -27,8 +29,15 @@ const createSmtpMailer = (config: Extract<MailConfig, { mode: 'smtp' }>): Mailer
 
   return {
     mode: 'smtp',
-    async send({ to, subject, text, html }) {
-      await transporter.sendMail({ from: config.from, to, subject, text, html });
+    async send({ to, subject, text, html, replyTo }) {
+      await transporter.sendMail({
+        from: config.from,
+        to,
+        subject,
+        text,
+        html,
+        ...(replyTo === undefined ? {} : { replyTo }),
+      });
     },
   };
 };
