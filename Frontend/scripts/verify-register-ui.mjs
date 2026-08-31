@@ -170,7 +170,50 @@ const run = async () => {
   check('Step 2 addresses one person, in no plural form', forbidden.length === 0, forbidden.join(','));
   check('no horizontal overflow on Step 2', (await overflow(page)) <= 0, String(await overflow(page)));
 
-  section('6. Back keeps what Step 1 already holds');
+  section('6. The Terms of Use open in a dialog, and close without costing anything');
+  check('the consent control names one document, not a second one that does not exist',
+    (await page.locator('.checkbox-label').innerText()).includes('תנאי השימוש'));
+  check('no Privacy Policy is named — no such document is published',
+    !(await page.locator('.checkbox-label').innerText()).includes('מדיניות הפרטיות'));
+  const opener = page.locator('button.checkbox-label__doc');
+  check('the document opens from a button, not a link that would navigate away',
+    (await opener.count()) === 1);
+  check('the dialog is absent until it is asked for', (await page.locator('.terms-modal').count()) === 0);
+
+  const accepted = await page.locator('input[name="acceptedTerms"]').isChecked();
+  await opener.click();
+  await page.waitForTimeout(300);
+  check('clicking it opens a modal dialog', (await page.locator('.terms-modal[role="dialog"][aria-modal="true"]').count()) === 1);
+  check('the dialog is labelled by its own title', (await page.locator('#terms-title').count()) === 1);
+  check('opening the document did not toggle consent',
+    (await page.locator('input[name="acceptedTerms"]').isChecked()) === accepted);
+  check('the URL never left Register', new URL(page.url()).pathname === '/register', page.url());
+
+  const termsText = await page.locator('.terms-modal__body').innerText();
+  check('the terms carry real approved content, not a placeholder',
+    termsText.length > 400 && !/lorem|TBD|placeholder/i.test(termsText), String(termsText.length));
+  check('and they say the entered information does not replace professional responsibility',
+    termsText.includes('אינו מחליף אחריות מקצועית'));
+  check('the body is the scrolling region, so a long document stays readable',
+    await page.locator('.terms-modal__body').evaluate((n) => getComputedStyle(n).overflowY === 'auto'));
+  check('the version being agreed to is named', (await page.locator('.terms-modal__version').innerText()).includes('2026-08-31'));
+
+  await page.keyboard.press('Escape');
+  await page.waitForTimeout(300);
+  check('Escape closes it', (await page.locator('.terms-modal').count()) === 0);
+  check('Step 2 is still the current step — nothing navigated',
+    (await page.locator('.email-choice').count()) === 1
+    && (await page.locator('.reg-steps__item--current .reg-steps__label').textContent()) === 'התראות בדוא״ל');
+
+  await opener.click();
+  await page.waitForTimeout(250);
+  // Near the corner, not the centre: the backdrop spans the viewport and the panel sits over its
+  // middle, so the exposed part is the margin around the panel — which is where a reader clicks.
+  await page.locator('.terms-modal__backdrop').click({ position: { x: 6, y: 6 } });
+  await page.waitForTimeout(250);
+  check('the backdrop closes it too', (await page.locator('.terms-modal').count()) === 0);
+
+  section('7. Back keeps what Step 1 already holds');
   await page.click('#register-back');
   await page.waitForTimeout(400);
   check('Back returns to Step 1', (await page.locator('#registrationCategory').count()) === 1);
@@ -180,7 +223,7 @@ const run = async () => {
     (await page.locator('#specialty').inputValue()) === 'stone_supplier');
   check('and the email typed on Step 1', (await page.locator('#email').inputValue()) === SUPPLIER.email);
 
-  section('7. Declining email still creates the account');
+  section('8. Declining email still creates the account');
   await page.click('#register-next');
   await page.waitForTimeout(400);
   await page.check('#operationalEmail-decline');
@@ -207,7 +250,7 @@ const run = async () => {
   check('and the refusal of email was recorded rather than defaulted',
     profile.operationalEmail === false, String(profile.operationalEmail));
 
-  section('8. A contractor registers, and Browse tells the two apart');
+  section('9. A contractor registers, and Browse tells the two apart');
   const second = await context.newPage();
   await second.goto(`${APP}/register`, { waitUntil: 'networkidle' });
   await second.selectOption('#registrationCategory', 'contractor');
@@ -254,7 +297,7 @@ const run = async () => {
   check('and the specialty list narrows to that route',
     grouped.length === 1 && grouped[0] === 'ספקים', grouped.join(','));
 
-  section('9. Narrow viewport');
+  section('10. Narrow viewport');
   const small = await browser.newContext({ viewport: { width: 390, height: 844 } });
   const mobile = await small.newPage();
   await mobile.goto(`${APP}/register`, { waitUntil: 'networkidle' });

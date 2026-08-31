@@ -13,8 +13,14 @@ const APP = process.env.APP_URL ?? 'http://localhost:5173';
 /** Plural-as-neutral forms and slash forms. None may appear in the Hebrew copy. */
 const FORBIDDEN_HE = ['בחרו', 'הזינו', 'מוכנים', 'שביקשתם', 'שהגעתם', 'ברצונכם', 'בחר/י', 'הזן/י', 'לכם', 'שלכם'];
 
-/** Filenames the static prototype reserved. A React screen must never link to one. */
-const STATIC_HREFS = ['.html', 'subscriptions', 'help', 'contact'];
+/**
+ * Filenames the static prototype reserved. A React screen must never link to one.
+ *
+ * `contact` left this list when Contact stopped being a reserved filename and became a section on
+ * this page: the rule is still "no link to a prototype document", and `contact.html` is caught by
+ * `.html` anyway — what is now allowed is the in-page `#contact` anchor.
+ */
+const STATIC_HREFS = ['.html', 'subscriptions', 'help'];
 
 let failures = 0;
 const check = (label, passed, detail = '') => {
@@ -68,6 +74,12 @@ const run = async () => {
     internal.every((h) => h === '/register' || h === '/login'), internal.join(' '));
   check('Register is reachable from the navbar and the hero',
     (await page.locator('a[href="/register"]').count()) >= 2);
+  check('no reserved contact filename is linked anywhere',
+    !hrefs.some((h) => h.toLowerCase().includes('contact.html')), hrefs.join(' '));
+  check('the footer Contact link points at this page\'s own section',
+    (await page.locator('.site-foot__link[href="#contact"]').count()) === 1);
+  check('and Contact is named once in the footer, not twice',
+    (await page.locator('.site-foot__links a').count()) === 1);
 
   for (const [label, href, expected] of [['Register', '/register', '/register'], ['Sign in', '/login', '/login']]) {
     await page.goto(`${APP}/`, { waitUntil: 'networkidle' });
@@ -143,6 +155,53 @@ const run = async () => {
   check('the hero call to action is still reachable at 390px',
     await page.locator('.hero__cta').isVisible());
   check('the chart is still on the page at 390px', (await page.locator('.deprow').count()) === 4);
+
+  section('9. Contact is a form on this page, and a real submission');
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto(`${APP}/`, { waitUntil: 'networkidle' });
+  check('the contact section is on the Landing page', (await page.locator('#contact').count()) === 1);
+  check('it carries a form, not a mail or messaging link', (await page.locator('form.contact__card').count()) === 1);
+  check('no mail, WhatsApp or telephone handoff anywhere on the page',
+    (await page.$$eval('a[href]', (nodes) => nodes.map((n) => n.getAttribute('href'))))
+      .every((h) => !/^(mailto:|tel:|https?:\/\/(wa\.me|api\.whatsapp))/i.test(h)));
+
+  const fields = ['#contact-name', '#contact-email', '#contact-topic', '#contact-message'];
+  for (const selector of fields) {
+    check(`${selector} is present`, (await page.locator(selector).count()) === 1);
+  }
+  check('and it asks for nothing else — four fields, no CRM intake',
+    (await page.locator('.contact__card input, .contact__card select, .contact__card textarea').count()) === 4);
+
+  const submit = page.locator('.contact__submit');
+  check('submission is refused while the form is empty', await submit.isDisabled());
+
+  await page.fill('#contact-name', 'בודק אוטומטי');
+  await page.fill('#contact-email', 'not-an-address');
+  await page.selectOption('#contact-topic', 'support');
+  await page.fill('#contact-message', 'קצר');
+  await page.locator('#contact-email').blur();
+  await page.locator('#contact-message').blur();
+  await page.waitForTimeout(150);
+  check('a malformed address is shown as an error', (await page.locator('#contact-email ~ .field-error--visible, .form-group:has(#contact-email) .field-error--visible').count()) === 1);
+  check('a too-short message is shown as an error', (await page.locator('.form-group:has(#contact-message) .field-error--visible').count()) === 1);
+  check('and submission is still refused', await submit.isDisabled());
+  // A browser popup would be the native validation the instructor rules forbid.
+  check('no native validation bubble is used', (await page.locator('form.contact__card[novalidate]').count()) === 1);
+
+  await page.fill('#contact-email', `verify.landing.${Date.now()}@example.com`);
+  await page.fill('#contact-message', 'פנייה מבדיקת ממשק אוטומטית — אפשר להתעלם ממנה.');
+  await page.waitForTimeout(150);
+  check('a complete form enables submission', await submit.isEnabled());
+
+  await submit.click();
+  await page.waitForTimeout(1200);
+  const done = page.locator('.contact__card--done');
+  check('a real submission reaches the API and reports success', (await done.count()) === 1,
+    await page.locator('.contact__card').innerText());
+  check('the success state is announced to a screen reader',
+    (await page.locator('.contact__card--done[role="status"]').count()) === 1);
+  check('and it offers to send another rather than stranding the sender',
+    (await done.locator('button').count()) === 1);
 
   await browser.close();
   console.log(failures === 0 ? '\nAll checks passed.' : `\n${failures} check(s) failed.`);

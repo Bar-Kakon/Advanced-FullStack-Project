@@ -52,6 +52,7 @@
     "verify:audit": "tsx scripts/verify-audit.ts",
     "verify:mute": "tsx scripts/verify-mute.ts",
     "verify:handoff": "tsx scripts/verify-handoff.ts",
+    "verify:contact": "tsx scripts/verify-contact.ts",
     "verify:reports": "tsx scripts/verify-reports.ts",
     "verify:moderation": "tsx scripts/verify-moderation.ts",
     "migrate:report-indexes": "tsx scripts/migrate-report-indexes.ts",

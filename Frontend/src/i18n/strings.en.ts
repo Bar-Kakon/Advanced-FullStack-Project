@@ -66,7 +66,7 @@ export const en: Strings = {
     companyPosition: { label: 'Position in the company', placeholder: 'Select a position…' },
     password: { label: 'Password', placeholder: '••••••••', hint: 'At least 8 characters', error: 'Password must be at least 8 characters' },
     confirmPassword: { label: 'Confirm password', placeholder: '••••••••', error: "Passwords don't match" },
-    terms: { before: 'I have read and agree to the ', tos: 'Terms of Service', between: ' and ', privacy: 'Privacy Policy' },
+    terms: { before: 'I have read and agree to the ', tos: 'Terms of Use', open: 'Open the Terms of Use' },
 
     steps: {
       label: 'Registration steps',
@@ -1468,6 +1468,38 @@ export const en: Strings = {
       cta: 'Create account',
     },
 
+    contact: {
+      title: 'Contact us',
+      lede: 'A question, a request or anything else — this form reaches the platform team.',
+      name: { label: 'Full name', placeholder: 'First and last name' },
+      email: { label: 'Email', placeholder: 'name@example.com', error: 'That email address is not valid' },
+      topic: {
+        label: 'Topic',
+        placeholder: 'Select a topic…',
+        general: 'General question',
+        support: 'Technical support',
+        partnership: 'Business or partnership',
+        other: 'Other',
+      },
+      message: {
+        label: 'Message',
+        placeholder: 'Tell us what you need',
+        hint: 'At least 10 characters, up to 2,000.',
+        error: 'The message is too short',
+      },
+      submit: 'Send message',
+      submittedTitle: 'Message sent',
+      submitted: 'Your message has been received and stored. A reply will go to the email address you entered.',
+      again: 'Send another message',
+      errors: {
+        validation: 'Some of the details are not valid. Check the fields and try again.',
+        rateLimited: 'Too many messages have been sent from this device. Please try again in an hour.',
+        network: 'No connection to the server. Check your internet connection and try again.',
+        unknown: 'The message could not be sent. Please try again.',
+      },
+    },
+
+    footerContact: 'Contact',
     footerNote: 'FieldSync — an academic prototype in development.',
   },
 
@@ -1737,6 +1769,48 @@ export const en: Strings = {
       'work.handoff_declined': 'The handover was declined',
     },
   },
+
+  terms: {
+    title: 'Terms of Use',
+    version: 'Version {version} · Last updated: 31 August 2026',
+    close: 'Close',
+    done: 'I have read the terms',
+    sections: [
+      {
+        heading: 'The service',
+        body: 'FieldSync is a platform for professional coordination and information management in construction. It brings tasks, dates, dependencies and contacts together in one place.',
+      },
+      {
+        heading: 'Accuracy of information',
+        body: 'You are responsible for the accuracy of the information you enter — account details, project details, tasks and dates alike.',
+      },
+      {
+        heading: 'Lawful and professional use',
+        body: 'The platform is intended for professional activity, and your use of it must be lawful and fair.',
+      },
+      {
+        heading: 'Prohibited use',
+        body: 'Do not misuse the platform. This includes impersonating another person or organisation, sending spam, harassment, and uploading offensive, unlawful or infringing content.',
+      },
+      {
+        heading: 'Professional responsibility',
+        body: 'Project, task and schedule information entered into the platform does not replace professional, contractual, engineering, legal, safety or regulatory responsibility. You remain responsible for your own professional decisions and commitments.',
+      },
+      {
+        heading: 'Access restrictions',
+        body: 'Access to the platform may be restricted in cases of misuse, according to the platform rules.',
+      },
+      {
+        heading: 'Privacy and account data',
+        body: 'The platform stores your account data and the information you enter in order to operate the service. A separate, full privacy policy has not been published yet.',
+      },
+      {
+        heading: 'Changes to the service',
+        body: 'The platform is in development, and the service may change as it evolves.',
+      },
+    ],
+  },
+
   reports: {
     trigger: 'Report',
     dialogTitle: 'Report a user',

@@ -1,3 +1,5 @@
+import { useState } from 'react';
+
 import {
   COMPANY_POSITIONS,
   COMPANY_STANDINGS,
@@ -25,6 +27,7 @@ import { TextField } from '../../components/TextField';
 import { AvailabilityChoice } from './components/AvailabilityChoice';
 import { EmailNotificationChoice } from './components/EmailNotificationChoice';
 import { TermsCheckbox } from './components/TermsCheckbox';
+import { TermsModal } from './components/TermsModal';
 import { LocationField } from '../../location/LocationField';
 
 /** Bounds copied from the endpoint's schema, so the box refuses what the server would reject. */
@@ -34,6 +37,9 @@ const MAX = {
 
 export const RegisterForm = ({ form }: { form: ReturnType<typeof useRegisterForm> }) => {
   const { t } = useLanguage();
+  // Held here rather than in `useRegisterForm`: reading the terms is not an answer the form
+  // collects, so opening the document never touches a value the payload is built from.
+  const [termsOpen, setTermsOpen] = useState(false);
   const {
     values, setValue, setStanding, setCategory, setSpecialty, touched, markTouched, errors,
     step, goNext, goBack, detailsComplete, isComplete, submitting, failure, viaGoogle,
@@ -316,6 +322,7 @@ export const RegisterForm = ({ form }: { form: ReturnType<typeof useRegisterForm
               terms={t.form.terms} checked={values.acceptedTerms}
               onChange={(v) => setValue('acceptedTerms', v)}
               onBlur={() => markTouched('acceptedTerms')} touched={!!touched.acceptedTerms}
+              onOpenTerms={() => setTermsOpen(true)}
             />
 
             <div className="reg-nav col--full">
@@ -335,6 +342,9 @@ export const RegisterForm = ({ form }: { form: ReturnType<typeof useRegisterForm
           </>
         )}
       </form>
+
+      {/* Outside the <form>: a dialog nested in it would submit Register on any stray Enter. */}
+      <TermsModal open={termsOpen} onClose={() => setTermsOpen(false)} />
     </>
   );
 };
