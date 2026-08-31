@@ -6,6 +6,7 @@ import { resolveEffectiveCalendar } from '../calendar/workingCalendar.types.js';
 import { calendarFor } from '../scheduleexceptions/exceptionCalendar.js';
 import { scheduleExceptionRepository } from '../scheduleexceptions/scheduleException.repository.js';
 import type { CompanyContextService } from '../companies/companyContext.service.js';
+import type { NotificationDispatchService } from '../notifications/notificationDispatch.service.js';
 import { projectNotFound } from '../projects/project.errors.js';
 import { overrunCeiling } from '../projects/projectDates.js';
 import type { ProjectRecord } from '../projects/project.model.js';
@@ -72,6 +73,7 @@ export interface TaskCreationDependencies {
   readonly participants: ParticipantRepository;
   readonly calendars: CompanyCalendarRepository;
   readonly companyContext: CompanyContextService;
+  readonly notifications: NotificationDispatchService;
 }
 
 const iso = (value: Date): string => value.toISOString().slice(0, 10);
@@ -83,6 +85,7 @@ export const createTaskCreationService = ({
   participants,
   calendars,
   companyContext,
+  notifications,
 }: TaskCreationDependencies): TaskCreationService => {
   const reachProject = async (
     userId: string,
@@ -243,6 +246,19 @@ export const createTaskCreationService = ({
         ownCrewOnly: input.ownCrewOnly,
         delegatorOnSiteRequired: input.delegatorOnSiteRequired,
       });
+
+      // Work becoming somebody's responsibility is the notice. Naming yourself is not news, so it
+      // is skipped rather than sent and ignored.
+      if (input.assigneeId !== userId) {
+        await notifications.emit({
+          userId: assignee,
+          type: 'task.assigned',
+          projectId: project._id,
+          taskId: created._id,
+          payload: { projectName: project.name, taskTitle: created.title },
+          dedupeKey: `task.assigned:${created._id.toString()}`,
+        });
+      }
 
       return {
         task: toDto(created),

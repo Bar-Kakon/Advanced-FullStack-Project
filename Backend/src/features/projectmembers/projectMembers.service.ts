@@ -2,6 +2,7 @@ import { Types } from 'mongoose';
 
 import type { BlocksService } from '../blocks/blocks.service.js';
 import type { CompanyContextService } from '../companies/companyContext.service.js';
+import type { NotificationDispatchService } from '../notifications/notificationDispatch.service.js';
 import { resolveGrantSource, type GrantSource } from '../projectaccess/grantResolution.js';
 import { cannotRemoveOwnAuthority } from '../projectaccess/permissions.errors.js';
 import type { PermissionTemplateRepository } from '../projectaccess/permissionTemplate.repository.js';
@@ -51,6 +52,7 @@ export interface ProjectMembersDependencies {
   readonly templates: PermissionTemplateRepository;
   readonly participants: ParticipantRepository;
   readonly blocks: BlocksService;
+  readonly notifications: NotificationDispatchService;
 }
 
 const holds = (resolved: ResolvedProjectAccess, permission: ProjectPermission): boolean =>
@@ -64,6 +66,7 @@ export const createProjectMembersService = ({
   templates,
   participants,
   blocks,
+  notifications,
 }: ProjectMembersDependencies): ProjectMembersService => {
   /**
    * Loads a project this caller may reach and what they may do on it. A project they may not reach
@@ -198,6 +201,16 @@ export const createProjectMembersService = ({
         permissions,
         fullAuthority,
         invitedBy: new Types.ObjectId(userId),
+      });
+
+      // The invitation reaches the person invited and nobody else: until it is answered it is a
+      // matter between the project and one professional.
+      await notifications.emit({
+        userId: invitee,
+        type: 'project.invitation',
+        projectId: project._id,
+        payload: { projectName: project.name },
+        dedupeKey: `project.invitation:${created._id.toString()}`,
       });
 
       const people = await directory([created]);

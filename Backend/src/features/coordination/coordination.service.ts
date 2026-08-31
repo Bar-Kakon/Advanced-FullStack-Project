@@ -5,6 +5,7 @@ import type { CompanyCalendarRepository } from '../calendar/companyCalendar.repo
 import { workingDaysBetween } from '../calendar/workingDay.js';
 import { NoWorkingDaysError } from '../calendar/workingDay.js';
 import type { CompanyContextService } from '../companies/companyContext.service.js';
+import type { NotificationDispatchService } from '../notifications/notificationDispatch.service.js';
 import type { ProjectAccessRepository } from '../projectaccess/projectAccess.repository.js';
 import type { ProjectGrantRepository } from '../projectaccess/projectGrant.repository.js';
 import { effectiveProjectPermissions } from '../projectaccess/projectPermission.js';
@@ -204,6 +205,7 @@ export interface CoordinationDependencies {
   readonly participants: ParticipantRepository;
   readonly companyContext: CompanyContextService;
   readonly transactions: { run<T>(work: (session: DbSession) => Promise<T>): Promise<T> };
+  readonly notifications: NotificationDispatchService;
 }
 
 export const createCoordinationService = ({
@@ -217,6 +219,7 @@ export const createCoordinationService = ({
   participants,
   companyContext,
   transactions,
+  notifications,
 }: CoordinationDependencies): CoordinationService => {
   const reach = async (
     userId: string,
@@ -807,6 +810,20 @@ export const createCoordinationService = ({
         },
       ]);
 
+      // One notice per respondent, carrying no other party's dates: the item id in the key makes
+      // it one row per person per proposal rather than a broadcast everybody reads differently.
+      await notifications.emitMany(
+        live.map((item) => ({
+          userId: item.respondent,
+          type: 'proposal.awaiting_response' as const,
+          projectId: project._id,
+          taskId: item.task,
+          proposalId: launched._id,
+          payload: { projectName: project.name },
+          dedupeKey: `proposal.awaiting_response:${item._id.toString()}`,
+        })),
+      );
+
       return present(launched, project, viewer);
     },
 
@@ -924,6 +941,38 @@ export const createCoordinationService = ({
         });
       }
       await audit.append(entries);
+
+      /**
+       * Once nobody is still being waited on, the decision is the authorised manager's to make and
+       * the proposal is back with them. Raised only on the transition — the last answer, not every
+       * answer — so a proposal with five respondents produces one notice per manager, not five.
+       *
+       * The notice carries no respondent's dates, reason or counter: the payload has no field for
+       * any of them, and the manager reads the proposal itself for that.
+       */
+      const stillWaiting = updated.items.some(
+        (row) => !row.excluded && row.response === 'pending',
+      );
+      if (!stillWaiting) {
+        const managers = await access.listMembers(project._id);
+        await notifications.emitMany(
+          managers
+            .filter(
+              (row) =>
+                row.status === 'active' &&
+                effectiveProjectPermissions(row).includes('schedule.change.manage'),
+            )
+            .map((row) => ({
+              userId: row.user,
+              type: 'proposal.returned_to_management' as const,
+              projectId: project._id,
+              taskId: updated.initiatingTask,
+              proposalId: updated._id,
+              payload: { projectName: project.name, count: updated.items.length },
+              dedupeKey: `proposal.returned_to_management:${updated._id.toString()}:${row.user.toString()}`,
+            })),
+        );
+      }
 
       return present(updated, project, viewer);
     },
@@ -1054,6 +1103,29 @@ export const createCoordinationService = ({
       }
       await audit.append(entries);
       await recascadeFromCounters(project, outcome.settled, decisions, actor);
+
+      /**
+       * The resolution is what actually moves dates, so this is the notice that a schedule change
+       * has landed on somebody's work. Only the respondents whose task was actually written are
+       * told — a proposal that ended up not moving a task is not a change to that professional.
+       */
+      const moved = new Set(outcome.applied);
+      await notifications.emitMany(
+        outcome.settled.items
+          .filter(
+            (item) =>
+              moved.has(item.task.toString()) && item.respondent.toString() !== userId,
+          )
+          .map((item) => ({
+            userId: item.respondent,
+            type: 'schedule.change_resolved' as const,
+            projectId: project._id,
+            taskId: item.task,
+            proposalId: outcome.settled._id,
+            payload: { projectName: project.name },
+            dedupeKey: `schedule.change_resolved:${item._id.toString()}`,
+          })),
+      );
 
       return present(outcome.settled, project, viewer);
     },
@@ -1204,6 +1276,21 @@ export const createCoordinationService = ({
           details: { stage: stage.name, taskTitle: task.title, ...(note === undefined ? {} : { note }) },
           partyDetails: { stage: stage.name, taskTitle: task.title },
         })),
+      );
+
+      // The whole point of a release is that the next professional may now start, so the person
+      // responsible for the released work is the one who has to hear about it.
+      await notifications.emitMany(
+        released
+          .filter((task) => task.assignee !== undefined && task.assignee.toString() !== userId)
+          .map((task) => ({
+            userId: task.assignee as Types.ObjectId,
+            type: 'schedule.partial_release' as const,
+            projectId: project._id,
+            taskId: task._id,
+            payload: { projectName: project.name, taskTitle: task.title },
+            dedupeKey: `schedule.partial_release:${stage._id.toString()}:${task._id.toString()}`,
+          })),
       );
 
       return { stageId: stage._id.toString(), releasedTaskIds: released.map((task) => task._id.toString()) };
@@ -1361,6 +1448,18 @@ export const createCoordinationService = ({
           partyDetails: { taskTitle: task.title, completedWorkAtHandover: created.completedWorkAtHandover },
         },
       ]);
+
+      // The incoming party is being asked to take responsibility, which is a decision waiting on
+      // them. The outgoing party already knows: they initiated it.
+      await notifications.emit({
+        userId: to,
+        type: 'responsibility.transfer_invited',
+        projectId: project._id,
+        taskId: task._id,
+        payload: { projectName: project.name, taskTitle: task.title },
+        dedupeKey: `responsibility.transfer_invited:${created._id.toString()}`,
+      });
+
       return toHandoffDto(created, task.title, userId, viewer.managesSchedule, await namesOf([from, to]));
     },
 
@@ -1423,6 +1522,20 @@ export const createCoordinationService = ({
           partyDetails: { taskTitle: task?.title ?? null },
         },
       ]);
+
+      // Informational rather than blocking: the party who handed the work over learns it landed,
+      // and nothing is waiting on them, so it aggregates into the digest.
+      if (accept && !heldForMembership && settled.from.toString() !== userId) {
+        await notifications.emit({
+          userId: settled.from,
+          type: 'responsibility.transfer_accepted',
+          projectId: project._id,
+          taskId: settled.task,
+          payload: { projectName: project.name, taskTitle: task?.title ?? '' },
+          dedupeKey: `responsibility.transfer_accepted:${settled._id.toString()}`,
+        });
+      }
+
       return toHandoffDto(
         settled,
         task?.title ?? '',
@@ -1642,6 +1755,30 @@ export const createCoordinationService = ({
           partyDetails: { stage: stage?.name ?? null },
         },
       ]);
+
+      /**
+       * The closed rule: early upstream completion reaches the management side on every tier, free
+       * — and releases nothing. The decision to let downstream work start is theirs, and only an
+       * authorised release tells the next professional anything.
+       */
+      const managers = await access.listMembers(task.project);
+      await notifications.emitMany(
+        managers
+          .filter(
+            (row) =>
+              row.status === 'active' &&
+              row.user.toString() !== actor.toString() &&
+              effectiveProjectPermissions(row).includes('schedule.change.manage'),
+          )
+          .map((row) => ({
+            userId: row.user,
+            type: 'task.early_completion' as const,
+            projectId: task.project as Types.ObjectId,
+            taskId: task._id,
+            payload: { taskTitle: task.title, toDate: formatCalendarDate(task.dueDate) },
+            dedupeKey: `task.early_completion:${task._id.toString()}:${row.user.toString()}`,
+          })),
+      );
     },
   };
 };

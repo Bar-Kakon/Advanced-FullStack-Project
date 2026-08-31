@@ -110,3 +110,23 @@ export const createTaskBodySchema = Joi.object({
 export const projectOptionsParamsSchema = Joi.object({
   projectId: Joi.string().trim().required(),
 });
+
+/**
+ * What Edit Task accepts. `assigneeId`, `startedAt` and `completedAt` are deliberately absent —
+ * responsibility moves through the handoff flow and progress through the start and complete
+ * endpoints, so neither is reachable by editing.
+ *
+ * The dates ARE accepted here and refused by the service on project work, so the answer names the
+ * real rule — a committed date changes through the proposal — rather than a validation message
+ * that would read as though the field did not exist.
+ */
+export const editTaskBodySchema = Joi.object({
+  title: Joi.string().trim().min(1).max(200),
+  // `null` clears it; an empty string would be a description that is present and blank.
+  description: Joi.string().trim().max(2000).allow(null),
+  ownCrewOnly: Joi.boolean(),
+  delegatorOnSiteRequired: Joi.boolean(),
+  stageId: Joi.string().trim(),
+  startDate: Joi.string().trim().pattern(CALENDAR_DATE),
+  dueDate: Joi.string().trim().pattern(CALENDAR_DATE),
+}).min(1);
