@@ -5,13 +5,14 @@ import type { Strings } from './strings.types';
  * file's shape, so a key that is renamed on one side and not the other stops the build instead of
  * rendering an empty label in one language only.
  *
- * Copy is verbatim from `screens/register.html`. Where a Hebrew and English pair say different
+ * Copy is verbatim from the approved Register screen. Where a Hebrew and English pair say different
  * things, that difference is deliberate and predates this migration.
  */
 export const en: Strings = {
   langName: 'EN',
   otherLangName: 'עב',
   langSwitchLabel: 'Language / שפה',
+  routeLoading: 'Loading…',
 
   brand: {
     beta: 'Beta',
@@ -1501,7 +1502,7 @@ export const en: Strings = {
     },
 
     footerContact: 'Contact',
-    footerNote: 'Blokta — an academic prototype in development.',
+    footerNote: 'Blokta — an academic earlier screen in development.',
   },
 
   coordination: {
@@ -2070,5 +2071,30 @@ export const en: Strings = {
       'The content requested cannot be reached right now',
     ],
     ctaHome: 'Back to Home',
+  },
+  audit: {
+    documentTitle: 'Audit log — Blokta',
+    title: 'Platform audit log',
+    lede: 'Administrative actions, newest first. Project history has its own trail.',
+    filterAction: 'Action',
+    filterTarget: 'Target',
+    allActions: 'All actions',
+    allTargets: 'All targets',
+    loading: 'Loading the audit log…',
+    failure: 'The audit log could not be loaded.',
+    empty: 'No administrative actions have been recorded yet.',
+    loadMore: 'Load more',
+    unknownActor: 'Account no longer available',
+    actions: {
+      'report.claimed': 'Report moved to under review',
+      'report.dismissed': 'Report dismissed',
+      'report.actioned': 'Report actioned',
+      'report.note_redacted': 'Report note redacted',
+      'account.restricted': 'Account restricted',
+      'account.unrestricted': 'Restriction removed',
+      'account.deleted': 'Account deleted',
+      'account.restored': 'Account restored',
+    },
+    targets: { report: 'Report', user: 'Account' },
   },
 };

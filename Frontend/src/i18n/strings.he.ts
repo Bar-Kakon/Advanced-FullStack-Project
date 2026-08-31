@@ -4,7 +4,7 @@
  * compile error. That direction is why this file imports nothing — importing the type it
  * defines would be circular.
  *
- * Every string here is lifted verbatim from `screens/register.html`. Nothing was reworded in the
+ * Every string here is lifted verbatim from the approved Register screen. Nothing was reworded in the
  * migration — the copy on this screen has been reviewed and some Hebrew/English pairs deliberately
  * differ, which is recorded in the source-of-truth document.
  */
@@ -12,6 +12,7 @@ export const he = {
   langName: 'עב',
   otherLangName: 'EN',
   langSwitchLabel: 'Language / שפה',
+  routeLoading: 'טוען…',
 
   brand: {
     beta: 'בטא',
@@ -417,7 +418,7 @@ export const he = {
   },
 
   /**
-   * Copy lifted verbatim from `screens/forgot-password.html`. The non-committal wording is the
+   * Copy lifted verbatim from the approved Forgot password screen. The non-committal wording is the
    * point of the screen: the same answer is shown whether or not an account exists, so the form
    * cannot be used to discover who is registered.
    */
@@ -1995,7 +1996,7 @@ export const he = {
   },
 
   /**
-   * From the approved static prototype, with the reconciliations the decision log records: the
+   * From the approved earlier static screen, with the reconciliations the decision log records: the
    * visual-simulation rows are gone with the feature they metered, the project labels follow the
    * current My projects wording, and dependencies are named between stages.
    */
@@ -2078,10 +2079,10 @@ export const he = {
       rows: [
         { label: 'משימות לפרויקט', value: 'ללא הגבלה' },
         { label: 'חברי צוות לפרויקט', value: 'ללא הגבלה' },
-        // The current My projects wording. The prototype's `פרויקטים בהשתתפותכם` predates it.
+        // The current My projects wording. The earlier screen's `פרויקטים בהשתתפותכם` predates it.
         { label: 'פרויקטים שאינם בניהולי', value: 'ללא הגבלה' },
         { label: 'בקשות לשינוי תאריך', value: 'כלול' },
-        // Dependencies run between stages. The prototype's `תלויות בין משימות` names a task-level
+        // Dependencies run between stages. The earlier screen's `תלויות בין משימות` names a task-level
         // graph this product does not have.
         { label: 'תלויות בין שלבים', value: 'כלול, עם בדיקת התנגשויות' },
         // No longer a plan difference: work plans are append-only, so every version is kept on
@@ -2143,5 +2144,30 @@ export const he = {
       'לא ניתן להגיע לתוכן המבוקש כרגע',
     ],
     ctaHome: 'חזרה לדף הבית',
+  },
+  audit: {
+    documentTitle: 'יומן ביקורת — Blokta',
+    title: 'יומן ביקורת פלטפורמה',
+    lede: 'פעולות ניהול, מהחדשה לישנה. להיסטוריית הפרויקט יש יומן נפרד.',
+    filterAction: 'פעולה',
+    filterTarget: 'יעד',
+    allActions: 'כל הפעולות',
+    allTargets: 'כל היעדים',
+    loading: 'טעינת יומן הביקורת…',
+    failure: 'לא ניתן לטעון את יומן הביקורת.',
+    empty: 'טרם נרשמו פעולות ניהול.',
+    loadMore: 'טעינת עוד',
+    unknownActor: 'החשבון אינו זמין עוד',
+    actions: {
+      'report.claimed': 'דיווח הועבר לבדיקה',
+      'report.dismissed': 'דיווח נדחה',
+      'report.actioned': 'טופל דיווח',
+      'report.note_redacted': 'הערת הדיווח הוסתרה',
+      'account.restricted': 'חשבון הוגבל',
+      'account.unrestricted': 'ההגבלה הוסרה',
+      'account.deleted': 'חשבון נמחק',
+      'account.restored': 'חשבון שוחזר',
+    },
+    targets: { report: 'דיווח', user: 'חשבון' },
   },
 } as const;

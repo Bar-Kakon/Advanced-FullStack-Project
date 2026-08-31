@@ -425,7 +425,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 .form-input.touched:not(:focus):invalid ~ .input-warn { display: flex; }
 
 /* "Sign in" stays disabled until the email is valid and the password is filled.
-   The prototype computed that in CSS with :has(), because it had no JavaScript. Here the form's
+   The earlier screen computed that in CSS with :has(), because it had no JavaScript. Here the form's
    validity is already in React state, so the button carries a real `disabled` attribute and this
    rule only paints it: a real disabled button is announced as such and leaves the tab order,
    where `pointer-events: none` merely looks disabled. The declarations are unchanged. */
@@ -590,7 +590,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 
 /* ─────────────────────────────────────────────
    Language — Hebrew + RTL is the default, English + LTR on toggle
-   The prototype stored the language in a hidden radio and rendered every string twice so CSS
+   The earlier screen stored the language in a hidden radio and rendered every string twice so CSS
    could hide one copy. React holds the language in a context and renders one of each, so the
    duplication is gone; what remains is the part that was never about duplication — the
    direction and the typeface, still set on the root element.

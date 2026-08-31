@@ -7,7 +7,7 @@
  * task. These are signed-out surfaces, and the delegation model requires that a confidential
  * capability is never named where someone it is hidden from can read it.
  *
- * There is no "// LABEL" mono eyebrow above the headline. It was removed from register on
+ * There is no "// LABEL" mono eyebrow above the headline. It was removed on
  * 2026-06-28 and from login in this migration, both by owner decision, and the standing rule is
  * that the kicker is not reused.
  */

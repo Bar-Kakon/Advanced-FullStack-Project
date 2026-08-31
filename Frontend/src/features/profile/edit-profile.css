@@ -101,7 +101,7 @@ label.field-label { cursor: pointer; }
 .field-hint { font-size: 14px; line-height: 1.5; color: var(--text-soft); }
 
 /* ═══ Nationwide: travel distance stops being a meaningful preference ═══ */
-/* The prototype had one select per language and had to gate these rules on the language radio to
+/* The earlier screen had one select per language and had to gate these rules on the language radio to
    know which of the two was the one on screen. React renders a single select whose value it
    already holds, so the state is one modifier class and the language drops out of the selector
    entirely. The declarations are unchanged. */
@@ -252,7 +252,7 @@ label.field-label { cursor: pointer; }
   justify-content: center;
   padding: 22px;
 }
-/* The prototype parked the dialog's open state in a checkbox, because CSS has nowhere else to
+/* The earlier screen parked the dialog's open state in a checkbox, because CSS has nowhere else to
    keep it. React keeps it in state, so the modifier is what opens the picker. */
 .equip-modal--open { display: flex; }
 

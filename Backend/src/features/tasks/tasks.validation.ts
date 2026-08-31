@@ -6,7 +6,7 @@ import { TASK_STATES } from './taskState.js';
 export const MY_TASKS_DEFAULT_LIMIT = 20;
 export const MY_TASKS_MAX_LIMIT = 50;
 
-/** The four controls the approved prototype carries, and nothing invented beside them. */
+/** The four controls the approved earlier screen carries, and nothing invented beside them. */
 export const myTasksQuerySchema = Joi.object({
   projectId: Joi.string().trim().optional(),
   noProject: Joi.boolean().optional(),

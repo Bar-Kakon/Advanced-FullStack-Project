@@ -12,7 +12,7 @@ import { Choice } from './Choice';
  * specialty attributes. The control ships anyway, per the standing rule that a gap in the model
  * is not a reason to drop a control, and the gap is reported rather than hidden.
  *
- * The prototype parked the open state in a checkbox because CSS has nowhere else to keep it, and
+ * The earlier screen parked the open state in a checkbox because CSS has nowhere else to keep it, and
  * closed the dialog with a `<label>`. Here it is state and two buttons, so the dialog closes on
  * Escape as well.
  */

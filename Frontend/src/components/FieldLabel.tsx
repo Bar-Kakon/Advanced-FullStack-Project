@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 
 /**
  * One label, in one language. The `.form-label__text` span is what carries the no-wrap rule the
- * prototype hung on its duplicated language spans — without it a long label wraps, and a wrapped
+ * earlier screen hung on its duplicated language spans — without it a long label wraps, and a wrapped
  * label makes its column one line taller than the field beside it, which knocks the two inputs
  * out of alignment.
  */

@@ -8,7 +8,7 @@ import { LanguageSwitch } from './LanguageSwitch';
  * blueprint brand panel, and the cream card the form lives in.
  *
  * Four screens share it — Login, Register, Forgot password and Reset password — which is exactly
- * the duplication the static prototypes could not avoid: they were four documents, so the shell
+ * the duplication the earlier static screens could not avoid: they were four documents, so the shell
  * was copied four times and could drift four ways. Here the shell exists once and each screen
  * supplies only what is different: its brand copy, and what goes in the card.
  */

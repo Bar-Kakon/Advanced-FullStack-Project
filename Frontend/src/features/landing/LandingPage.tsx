@@ -141,7 +141,7 @@ export const LandingPage = () => {
           </div>
         </section>
 
-        {/* The Contact entry point is the form itself, on this page. The prototype reserved a
+        {/* The Contact entry point is the form itself, on this page. The earlier screen reserved a
             separate `contact.html`; that filename is still not a route, and a section here is
             what makes Contact real without inventing one. */}
         <section className="contact" id="contact" aria-labelledby="contact-title">

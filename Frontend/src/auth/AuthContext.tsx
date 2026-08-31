@@ -4,6 +4,8 @@ import { logout } from '../api/auth.api';
 import type { LoginResponse, SessionUser } from '../api/types';
 import { ACCESS_TOKEN_KEY, clearAccessToken, getAccessToken, setAccessToken } from './tokenStorage';
 import { USER_KEY, clearStoredUser, readStoredUser, storeUser } from './session';
+import { useAppDispatch } from '../store/hooks';
+import { sessionCleared, sessionEstablished } from '../store/sessionSlice';
 
 /**
  * The one place the app decides whether somebody is signed in, and who.
@@ -35,8 +37,14 @@ export interface AuthValue {
 
 export const AuthContext = createContext<AuthValue | null>(null);
 
+/**
+ * The session is mirrored into the Redux store as it changes, so the shell — the navbar, the route
+ * guards and the notification badge — reads one value rather than each screen re-reading storage.
+ * Storage stays the source of truth for the token itself.
+ */
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [revision, setRevision] = useState(0);
+  const dispatch = useAppDispatch();
   const reread = useCallback(() => setRevision((current) => current + 1), []);
 
   // Another tab signing in or out writes the same storage. Without this, one tab would keep
@@ -84,6 +92,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       reread();
     }
   }, [reread]);
+
+  const storedUser = readStoredUser();
+
+  useEffect(() => {
+    dispatch(storedUser === null ? sessionCleared() : sessionEstablished(storedUser));
+  }, [dispatch, storedUser?.id, revision]);
 
   const value = useMemo<AuthValue>(
     () => ({

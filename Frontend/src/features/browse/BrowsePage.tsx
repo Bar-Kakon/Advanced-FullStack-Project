@@ -117,7 +117,7 @@ export const BrowsePage = () => {
             <p className="browse__sub">{t.browse.lede}</p>
           </div>
           <div className="browse__head-actions">
-            {/* The order the prototype approved, minus the two the product cannot compute. */}
+            {/* The order the earlier screen approved, minus the two the product cannot compute. */}
             <div className="browse__sort">
               <label className="field-label" htmlFor="browse-sort">{t.browse.sort.label}</label>
               <div className="select-wrap">

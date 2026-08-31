@@ -1,6 +1,6 @@
 /* ─────────────────────────────────────────────
    Blokta — Landing page (approved screen #1)
-   Migrated from screens/landing.css. Only the bilingual mechanism
+   Blokta landing styling. Only the bilingual mechanism
    changed; every visual declaration is the approved one.
 
    Palette: --primary #23384D · --secondary #C7B89D
@@ -1022,7 +1022,7 @@ body::before {
 /* ─────────────────────────────────────────────
    Bilingual
 
-   The prototype's twin `.he-text` / `.en-text` spans and the two hidden
+   The earlier screen's twin `.he-text` / `.en-text` spans and the two hidden
    radios that drove them are gone: one language's strings are rendered,
    from the language context. The declarations below are unchanged.
    ───────────────────────────────────────────── */
@@ -1033,7 +1033,7 @@ body::before {
 .lang-switch__btn--inactive { color: var(--text-soft); background: none; }
 
 /* ── English selected: swap direction + fonts, and unmirror the flow chevrons ──
-   The prototype set these on `.app` because a static page had no way to write to <html>, and its
+   The earlier screen set these on `.app` because a static page had no way to write to <html>, and its
    own comment called that debt the React migration resolves. `data-lang` is written by the
    language context, so direction now lives on the root where the whole document inherits it. */
 html[data-lang="en"] {

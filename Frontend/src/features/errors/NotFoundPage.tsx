@@ -9,7 +9,7 @@ import { useDocumentTitle } from '../../routes/useDocumentTitle';
 import { useScreenStylesheet } from '../../styles/useScreenStylesheet';
 import errorCss from './error.css?inline';
 
-/** The prototype carried `<meta name="robots" content="noindex">`; a single-page app has to add it. */
+/** The earlier screen carried `<meta name="robots" content="noindex">`; a single-page app has to add it. */
 const useNoIndex = (): void => {
   useEffect(() => {
     const meta = document.createElement('meta');
