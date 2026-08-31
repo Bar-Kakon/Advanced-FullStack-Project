@@ -94,20 +94,40 @@ completely and checkout answers `BILLING_PROVIDER_NOT_CONFIGURED`.
 **Contact and Terms.** A Landing contact form stored server-side and announced by email, and the
 Terms of Use modal shown at registration.
 
+**Messaging.** Inbox and threads, private conversations and project rooms. A connection never gates
+a first message: first contact opens a **message request**, which the recipient accepts or declines.
+Deleting a chat is a **per-user hide** — no history is removed, the other participant's copy is
+untouched, and the next message from either side restores the same conversation with all of it.
+Project rooms read live active project membership, so an invited-but-not-accepted member has no
+access. A **work agreement** is a structured message inside the thread; accepting it creates the
+canonical Task exactly once. Message reports go into the existing moderation queue. Every message
+shows its persisted send time, with the date rendered once per calendar day.
+
+**Notifications and Settings.** Fifteen notification types with a fixed blocking/non-blocking class;
+blocking notices appear in-app on every plan and open a 90-minute grace window before the email is
+sent, cancelled if the notice is read inside it. Non-blocking events aggregate into a daily digest.
+Settings holds language, notification preferences, operational email opt-in and contact visibility.
+Project mute suppresses the email channel and digest inclusion and never a blocking in-app notice.
+
+**Edit Task and Schedule Exceptions.** Editing an existing task is gated on its own `task.edit`
+permission, never on `task.create`; committed project dates still change through the
+Proposal/Cascade path. Schedule exceptions record working days that will not be worked and rest
+days that will, with an approval workflow and an append-only history.
+
 **Redux.** `Frontend/src/store/` holds the state that is genuinely shared across screens: the UI
 language (`uiSlice`, read by every screen and written by the navbar toggle) and session-derived
 client state (`sessionSlice` — the signed-in user and the navbar notification count). Server data
 stays with its own API modules and is not duplicated into the store.
 
-**Lazy loading.** 26 routes are code-split with `React.lazy` behind a single `Suspense` inside the
+**Lazy loading.** Every route past the entry screens is code-split with `React.lazy` behind a single `Suspense` inside the
 router. Landing, Login and the 404 screen stay in the initial bundle because they are the first
-paint. The production build emits 33 chunks and no longer trips the 500 kB chunk warning.
+paint. The production build emits 68 chunks and no longer trips the 500 kB chunk warning.
 
-### Not implemented
+### Known gaps
 
-Messaging — inbox, direct conversations, message requests, project rooms and the agreement
-exchange — is **not built**. There is no messaging collection, endpoint or screen. Notifications
-and Settings screens are also not on this branch.
+Real-time delivery is out of scope: the notification count and conversation history are as fresh as
+the screen the person just opened. Message attachments are modelled but no upload endpoint is wired
+to them yet.
 
 ---
 
@@ -178,6 +198,10 @@ All routes are prefixed `/api`.
 | Coordination | date-change proposals, counters, alternatives, handoff, audit |
 | Reports | `POST /reports/users/:userId` |
 | Moderation | `GET /moderation/reports`, claim, resolve, account-action, `GET /moderation/audit`, `POST /moderation/accounts/:userId/restore` |
+| Messaging | `GET /conversations`, `POST /conversations/direct/:userId`, `GET /conversations/project/:projectId`, `GET\|POST /conversations/:id/messages`, accept, decline, `DELETE /conversations/:id`, agreements, message report |
+| Notifications | `GET /notifications`, unread count, mark seen |
+| Schedule exceptions | request, modify, approve, reject |
+| Settings | `GET\|PATCH /settings` |
 | Billing | `GET /billing/plans`, `/billing/me`, checkout, scheduled change, `POST /billing/provider-events` |
 | Contact | `POST /contact` |
 
@@ -191,6 +215,12 @@ at a time; several register accounts and share a rate limiter.
 ```bash
 cd Backend
 npm run typecheck                 # src and scripts
+npm run verify:messaging          # conversations, requests, hide/restore, agreement to task
+npm run verify:phone-visibility   # roles open a number, permissions never do
+npm run verify:edit-task          # task.edit, and the date boundary
+npm run verify:notifications      # classes, grace window and digest
+npm run verify:settings           # preferences and entitlements
+npm run verify:schedule-exceptions
 npm run verify:platform-audit     # platform audit log, account deletion and restoration
 npm run verify:moderation         # moderation queue and authority
 npm run verify:reports            # user reports
