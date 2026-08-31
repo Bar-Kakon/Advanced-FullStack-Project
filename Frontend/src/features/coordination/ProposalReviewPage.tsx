@@ -56,7 +56,7 @@ export const ProposalReviewPage = () => {
     { id: 'tasks.css', css: tasksCss },
     { id: 'coordination.css', css: coordinationCss },
   );
-  useDocumentTitle('בקשת שינוי לוח זמנים / Schedule change request — FieldSync');
+  useDocumentTitle('בקשת שינוי לוח זמנים / Schedule change request — Blokta');
 
   const copy = t.coordination;
   const firstName = user?.firstName ?? '';

@@ -30,7 +30,7 @@ export const EmployeeOnboardingPage = () => {
     { id: 'edit-profile.css', css: editProfileCss },
     { id: 'employees.css', css: employeesCss },
   );
-  useDocumentTitle('הוספת העובדים שלכם / Add your employees — FieldSync');
+  useDocumentTitle('הוספת העובדים שלכם / Add your employees — Blokta');
 
   const complete = useCallback(
     async (which: 'skip' | 'finish'): Promise<void> => {
@@ -67,7 +67,7 @@ export const EmployeeOnboardingPage = () => {
     <div className="app">
       <header className="app-nav">
         <div className="app-nav__inner">
-          <span className="app-nav__name">FieldSync</span>
+          <span className="app-nav__name">Blokta</span>
           <LanguageSwitch />
         </div>
       </header>

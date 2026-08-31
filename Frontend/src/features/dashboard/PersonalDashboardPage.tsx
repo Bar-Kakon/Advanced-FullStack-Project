@@ -25,7 +25,7 @@ export const PersonalDashboardPage = () => {
     { id: 'employees.css', css: employeesCss },
     { id: 'dashboard.css', css: dashboardCss },
   );
-  useDocumentTitle('לוח הבקרה האישי / Personal dashboard — FieldSync');
+  useDocumentTitle('לוח הבקרה האישי / Personal dashboard — Blokta');
 
   const firstName = dashboard?.identity.firstName ?? user?.firstName ?? '';
   const lastName = dashboard?.identity.lastName ?? user?.lastName ?? '';

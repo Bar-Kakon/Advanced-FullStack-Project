@@ -30,7 +30,7 @@ export const AuthShell = ({ brand, children }: { brand: BrandPanelContent; child
               <line x1="14" y1="23" x2="26" y2="29" stroke="#23384D" strokeWidth="1.5" strokeDasharray="3 2" />
               <line x1="32" y1="14" x2="32" y2="26" stroke="#23384D" strokeWidth="1.5" strokeDasharray="3 2" />
             </svg>
-            <span className="mobile-logo__name">FieldSync</span>
+            <span className="mobile-logo__name">Blokta</span>
           </div>
 
           {children}

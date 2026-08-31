@@ -1,5 +1,5 @@
 /**
- * Step 2: whether FieldSync may send operational messages by email.
+ * Step 2: whether Blokta may send operational messages by email.
  *
  * Both options are radio buttons of the same `name` with no `defaultChecked`, so the browser opens
  * the step with neither selected and the person has to answer one. Declining is a complete answer —

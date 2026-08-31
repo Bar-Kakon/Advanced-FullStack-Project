@@ -39,7 +39,7 @@ export const BrandPanel = ({ content }: { content: BrandPanelContent }) => (
             <line x1="32" y1="14" x2="32" y2="26" stroke="rgba(255,253,248,0.40)" strokeWidth="1.5" strokeDasharray="3 2" />
           </svg>
         </span>
-        <span className="brand-logo__name">FieldSync</span>
+        <span className="brand-logo__name">Blokta</span>
         <span className="brand-logo__badge">{content.beta}</span>
       </div>
 

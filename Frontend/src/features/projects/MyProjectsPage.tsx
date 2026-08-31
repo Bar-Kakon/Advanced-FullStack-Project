@@ -24,7 +24,7 @@ export const MyProjectsPage = () => {
     { id: 'profile.css', css: profileCss },
     { id: 'projects.css', css: projectsCss },
   );
-  useDocumentTitle('הפרויקטים שלי / My projects — FieldSync');
+  useDocumentTitle('הפרויקטים שלי / My projects — Blokta');
 
   const firstName = user?.firstName ?? '';
   const lastName = user?.lastName ?? '';

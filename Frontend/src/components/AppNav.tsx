@@ -39,7 +39,7 @@ export const AppNav = ({ name, initials }: { name: string; initials: string }) =
               <line x1="32" y1="14" x2="32" y2="26" stroke="rgba(255,253,248,0.40)" strokeWidth="1.5" strokeDasharray="3 2" />
             </svg>
           </span>
-          <span className="app-nav__name">FieldSync</span>
+          <span className="app-nav__name">Blokta</span>
         </Link>
 
         <nav className="app-nav__links" aria-label={t.nav.label}>

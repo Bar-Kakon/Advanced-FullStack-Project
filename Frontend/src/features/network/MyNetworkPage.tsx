@@ -31,7 +31,7 @@ export const MyNetworkPage = () => {
     { id: 'browse.css', css: browseCss },
     { id: 'network.css', css: networkCss },
   );
-  useDocumentTitle('הרשת שלי / My network — FieldSync');
+  useDocumentTitle('הרשת שלי / My network — Blokta');
 
   const { rows, loading, loadingMore, failure, pendingUserId, hasMore, reload, loadMore, act } =
     useMyNetwork(tab);

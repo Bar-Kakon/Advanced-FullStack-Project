@@ -55,7 +55,7 @@ export const MyProfilePage = () => {
     { id: 'profile.css', css: profileCss },
     { id: 'my-profile.css', css: myProfileCss },
   );
-  useDocumentTitle('הפרופיל שלי / My profile — FieldSync');
+  useDocumentTitle('הפרופיל שלי / My profile — Blokta');
 
   const fullName = profile ? `${profile.firstName} ${profile.lastName}`.trim() : '';
   const initials = profile ? initialsOf(profile.firstName, profile.lastName) : '';

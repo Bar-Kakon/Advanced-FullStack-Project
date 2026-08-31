@@ -1,4 +1,4 @@
-/* FieldSync — Profile feature, shared stylesheet */
+/* Blokta — Profile feature, shared stylesheet */
 /* Shared by my-profile.html (view) and edit-profile.html (edit) ONLY. */
 /* Deliberately NOT a global layer: it holds profile page structure, not app-wide UI. */
 /* Approved palette only, plus the approved --error exception for validation states. */

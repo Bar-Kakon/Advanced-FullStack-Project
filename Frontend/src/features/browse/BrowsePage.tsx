@@ -46,7 +46,7 @@ export const BrowsePage = () => {
     { id: 'browse.css', css: browseCss },
     { id: 'place.css', css: placeCss },
   );
-  useDocumentTitle('עיון בקבלנים / Browse contractors — FieldSync');
+  useDocumentTitle('עיון בקבלנים / Browse contractors — Blokta');
 
   useEffect(() => {
     if (selectedId === null) {

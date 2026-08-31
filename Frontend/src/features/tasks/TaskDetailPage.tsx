@@ -50,7 +50,7 @@ export const TaskDetailPage = () => {
     { id: 'project-dashboard.css', css: dashboardCss },
     { id: 'tasks.css', css: tasksCss },
   );
-  useDocumentTitle('פרטי העבודה / Work detail — FieldSync');
+  useDocumentTitle('פרטי העבודה / Work detail — Blokta');
 
   const firstName = user?.firstName ?? '';
   const lastName = user?.lastName ?? '';

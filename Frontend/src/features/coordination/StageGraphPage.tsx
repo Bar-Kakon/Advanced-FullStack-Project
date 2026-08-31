@@ -39,7 +39,7 @@ export const StageGraphPage = () => {
     { id: 'projects.css', css: projectsCss },
     { id: 'coordination.css', css: coordinationCss },
   );
-  useDocumentTitle('שלבי הפרויקט / Project stages — FieldSync');
+  useDocumentTitle('שלבי הפרויקט / Project stages — Blokta');
 
   const copy = t.coordination.stages;
 

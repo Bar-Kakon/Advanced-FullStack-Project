@@ -152,12 +152,12 @@ const run = async () => {
     (await page.locator('.reg-steps__item--current .reg-steps__label').textContent()) === 'התראות בדוא״ל');
   const stepTwoText = await page.locator('.email-choice').textContent();
   check('the approved wording is shown in full',
-    stepTwoText.includes('FieldSync יכולה לשלוח הודעות תפעוליות בדוא״ל')
-    && stepTwoText.includes('ההתראות עצמן יופיעו גם בתוך FieldSync')
+    stepTwoText.includes('Blokta יכולה לשלוח הודעות תפעוליות בדוא״ל')
+    && stepTwoText.includes('ההתראות עצמן יופיעו גם בתוך Blokta')
     && stepTwoText.includes('אפשר לבחור שלא לקבל הודעות בדוא״ל ולהמשיך להשתמש במערכת כרגיל'));
   check('both options are offered',
     stepTwoText.includes('קבלת הודעות תפעוליות בדוא״ל')
-    && stepTwoText.includes('הסתמכות על ההתראות בתוך FieldSync בלבד'));
+    && stepTwoText.includes('הסתמכות על ההתראות בתוך Blokta בלבד'));
   check('accepting is not preselected', !(await page.locator('#operationalEmail-accept').isChecked()));
   check('declining is not preselected either', !(await page.locator('#operationalEmail-decline').isChecked()));
   check('and the choice is stated as changeable later', stepTwoText.includes('הגדרות ההתראות'));

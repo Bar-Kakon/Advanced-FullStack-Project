@@ -65,7 +65,7 @@ export const LandingPage = () => {
           {/* Identity mark only, deliberately not a link: this is the page it would point at. */}
           <div className="site-nav__brand">
             <span className="site-nav__mark" aria-hidden="true"><BrandMark size={26} on="dark" /></span>
-            <span className="site-nav__name">FieldSync</span>
+            <span className="site-nav__name">Blokta</span>
           </div>
 
           <div className="site-nav__actions">
@@ -155,7 +155,7 @@ export const LandingPage = () => {
         <div className="site-foot__inner">
           <div className="site-foot__brand">
             <span className="site-foot__mark" aria-hidden="true"><BrandMark size={22} on="dark" /></span>
-            <span className="site-foot__name">FieldSync</span>
+            <span className="site-foot__name">Blokta</span>
           </div>
 
           {/* The one footer link. Plans and Help stay absent — they have no destination — and

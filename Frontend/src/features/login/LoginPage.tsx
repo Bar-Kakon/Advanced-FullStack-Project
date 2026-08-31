@@ -25,7 +25,7 @@ export const LoginPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   useScreenStylesheet({ id: 'login.css', css: loginCss });
-  useDocumentTitle('כניסה / Sign In — FieldSync');
+  useDocumentTitle('כניסה / Sign In — Blokta');
 
   // Set by PrivateRoute when it turned a signed-out visitor away from an address they asked for.
   const from = (location.state as { from?: string } | null)?.from;

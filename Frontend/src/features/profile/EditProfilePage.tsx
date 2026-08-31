@@ -78,7 +78,7 @@ export const EditProfilePage = () => {
     { id: 'edit-profile.css', css: editProfileCss },
     { id: 'place.css', css: placeCss },
   );
-  useDocumentTitle('עריכת הפרופיל / Edit profile — FieldSync');
+  useDocumentTitle('עריכת הפרופיל / Edit profile — Blokta');
 
   const [equipmentOpen, setEquipmentOpen] = useState(false);
   /** `null` = closed, `'new'` = the add form, an entry = that entry being edited. */

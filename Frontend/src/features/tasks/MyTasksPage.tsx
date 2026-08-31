@@ -40,7 +40,7 @@ export const MyTasksPage = () => {
     { id: 'projects.css', css: projectsCss },
     { id: 'tasks.css', css: tasksCss },
   );
-  useDocumentTitle('המשימות שלי / My tasks — FieldSync');
+  useDocumentTitle('המשימות שלי / My tasks — Blokta');
 
   const firstName = user?.firstName ?? '';
   const lastName = user?.lastName ?? '';
