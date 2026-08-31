@@ -3,6 +3,7 @@ import { Types } from 'mongoose';
 import { GRIDFS_DRIVER, openGridFsDownloadStream } from '../files/gridFs.service.js';
 import type { StoredUpload } from '../files/fileAsset.service.js';
 import type { FileAssetRecord, FileVisibility, WorkPlanScope } from '../files/fileAsset.model.js';
+import type { NotificationDispatchService } from '../notifications/notificationDispatch.service.js';
 import { effectiveProjectPermissions } from '../projectaccess/projectPermission.js';
 import type { ProjectAccessRepository } from '../projectaccess/projectAccess.repository.js';
 import type { ParticipantRepository } from '../projectmembers/participant.repository.js';
@@ -43,6 +44,7 @@ export interface WorkPlanDependencies {
   readonly tasks: TaskRepository;
   readonly access: ProjectAccessRepository;
   readonly participants: ParticipantRepository;
+  readonly notifications: NotificationDispatchService;
 }
 
 /** What one scope resolves to: the project it belongs to, and the task if it is a task scope. */
@@ -56,6 +58,7 @@ export const createWorkPlanService = ({
   tasks,
   access,
   participants,
+  notifications,
 }: WorkPlanDependencies): WorkPlanService => {
   const resolveScope = async (scope: WorkPlanScopeRef): Promise<ResolvedScope> => {
     if (scope.type === 'project') {
@@ -192,6 +195,31 @@ export const createWorkPlanService = ({
       });
       // The newest upload becomes current, and every earlier one stays readable as history.
       await plans.setCurrent(group, next);
+
+      /**
+       * Informational: a new version is worth knowing about, but nothing stops without it, so it
+       * aggregates into the digest rather than interrupting.
+       *
+       * A PRIVATE plan notifies nobody. Telling the other side a version exists is precisely the
+       * disclosure its visibility withholds, so the notice is skipped rather than sanitised.
+       */
+      if (visibility === 'shared' && newest.scope.type === 'task' && newest.scope.id) {
+        const task = await tasks.findById(newest.scope.id.toString());
+        const audience = [task?.assignee, task?.createdBy].filter(
+          (id): id is Types.ObjectId => id !== undefined && id.toString() !== userId,
+        );
+
+        await notifications.emitMany(
+          audience.map((to) => ({
+            userId: to,
+            type: 'workplan.version_added' as const,
+            ...(task?.project === undefined ? {} : { projectId: task.project }),
+            taskId: newest.scope.id as Types.ObjectId,
+            payload: { taskTitle: task?.title ?? '', count: next },
+            dedupeKey: `workplan.version_added:${created._id.toString()}:${to.toString()}`,
+          })),
+        );
+      }
 
       const [dto] = await render([{ ...created, isCurrent: true }], resolved);
       if (dto === undefined) throw workPlanNotFound();

@@ -8,7 +8,6 @@ import {
   UserModel,
   type AuthProvider,
   type ProviderIdentity,
-  type ContactVisibility,
   type DrillingType,
   type HeavyEquipment,
   type NotificationPreferences,
@@ -32,7 +31,7 @@ const IDENTITY_FIELDS = 'email status isAdmin firstName lastName language profil
  * absent from this list anyway; `termsAcceptances` and `security` are deliberately not here,
  * because no profile screen shows them and a projection is the cheapest place to keep it that way.
  */
-const PROFILE_FIELDS = `${IDENTITY_FIELDS} bio registrationCategory specialties specialtyOther heavyEquipment drillingTypes notificationPreferences businessPhone contactVisibility location approvedTravelLocations schedulingPrefs avatar`;
+const PROFILE_FIELDS = `${IDENTITY_FIELDS} bio registrationCategory specialties specialtyOther heavyEquipment drillingTypes notificationPreferences contactVisibility businessPhone location approvedTravelLocations schedulingPrefs avatar`;
 
 /**
  * The write shape, deliberately separate from `UserRecord`. A caller can only supply what it lists,
@@ -56,7 +55,6 @@ export interface NewUser {
   readonly drillingTypes?: readonly DrillingType[];
   readonly notificationPreferences: NotificationPreferences;
   readonly businessPhone?: string;
-  readonly contactVisibility?: ContactVisibility;
   readonly location: { readonly city: string; readonly region: Region; readonly place?: StoredPlace };
   readonly termsAcceptances: readonly TermsAcceptance[];
 }
@@ -73,7 +71,6 @@ export interface ProfileUpdate {
   /** Likewise: drilling is held, no subtype is named yet. */
   readonly drillingTypes?: readonly DrillingType[];
   readonly businessPhone?: string | null;
-  readonly contactVisibility?: ContactVisibility;
   readonly city?: string;
   readonly region?: Region;
   /** Written only when the person picked a real Google place; never derived from `city`. */
@@ -300,7 +297,6 @@ export const userRepository: UserRepository = {
     if (update.heavyEquipment !== undefined) $set['heavyEquipment'] = [...update.heavyEquipment];
     if (update.drillingTypes !== undefined) $set['drillingTypes'] = [...update.drillingTypes];
     put('businessPhone', update.businessPhone);
-    put('contactVisibility', update.contactVisibility);
     put('location.city', update.city);
     put('location.region', update.region);
     put('location.place', update.place);
@@ -370,13 +366,19 @@ export const userRepository: UserRepository = {
    * ride along, because it is not in that projection. The read joins the caller's session, or it
    * would not see a document the open transaction has not committed yet.
    */
-  async create({ specialties, drillingTypes, termsAcceptances, identities, ...user }, session) {
+  async create(
+    { specialties, drillingTypes, termsAcceptances, identities, notificationPreferences, ...user },
+    session,
+  ) {
     const [created] = await UserModel.create(
       [
         {
           ...user,
           specialties: [...specialties],
           termsAcceptances: [...termsAcceptances],
+          // Registration chooses the opt-in and nothing else; the Premium timing fields are absent
+          // until Settings writes them, so they are not defaulted into existence here.
+          notificationPreferences: { operationalEmail: notificationPreferences.operationalEmail },
           ...(drillingTypes === undefined ? {} : { drillingTypes: [...drillingTypes] }),
           ...(identities === undefined ? {} : { identities: [...identities] }),
         },

@@ -1,10 +1,14 @@
+import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
+
+import { fetchUnreadCount } from '../api/notifications.api';
 
 import { useAuth } from '../auth/useAuth';
 import { useLanguage } from '../i18n/useLanguage';
 import { AccountMenu } from './AccountMenu';
 import { LanguageSwitch } from './LanguageSwitch';
-import { useAppSelector } from '../store/hooks';
+import { useAppDispatch, useAppSelector } from '../store/hooks';
+import { unreadNotificationsSet } from '../store/sessionSlice';
 
 /**
  * The application navbar every authenticated screen carries.
@@ -19,8 +23,26 @@ import { useAppSelector } from '../store/hooks';
  */
 export const AppNav = ({ name, initials }: { name: string; initials: string }) => {
   const { t } = useLanguage();
-  // Read from the store, so every screen's navbar shows the same count.
+  // The count lives in the store, so every screen's navbar renders the same number rather than
+  // each one keeping its own. Fetched once per mount: real-time delivery is out of scope, and
+  // polling would cost a request a second for a value that changes rarely.
   const unread = useAppSelector((state) => state.session.unreadNotifications);
+  const dispatch = useAppDispatch();
+
+  useEffect(() => {
+    let current = true;
+    void fetchUnreadCount()
+      .then((count) => {
+        if (current) dispatch(unreadNotificationsSet(count));
+      })
+      .catch(() => {
+        // A failed count must never stop the navbar rendering.
+      });
+
+    return () => {
+      current = false;
+    };
+  }, [dispatch]);
   const { user } = useAuth();
 
   // Hiding is a courtesy; the API refuses either way.
@@ -60,14 +82,14 @@ export const AppNav = ({ name, initials }: { name: string; initials: string }) =
         </nav>
 
         <div className="app-nav__actions">
-          <button type="button" className="nav-icon-btn" aria-label={t.nav.notifications} disabled>
+          <Link to="/notifications" className="nav-icon-btn" aria-label={t.nav.notifications}>
             {unread > 0 ? <span className="nav-icon-btn__badge">{unread}</span> : null}
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                  strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
               <path d="M13.73 21a2 2 0 0 1-3.46 0" />
             </svg>
-          </button>
+          </Link>
 
           <AccountMenu name={name} initials={initials} />
 

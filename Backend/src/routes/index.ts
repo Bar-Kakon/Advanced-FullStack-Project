@@ -31,6 +31,9 @@ import {
 } from '../features/coordination/coordination.module.js';
 import { responsibilityTransferListener } from '../features/coordination/membershipOutcome.adapter.js';
 import { createMutesModule } from '../features/mutes/mutes.module.js';
+import { createNotificationsModule } from '../features/notifications/notifications.module.js';
+import { createScheduleExceptionsModule } from '../features/scheduleexceptions/scheduleExceptions.module.js';
+import { createSettingsModule } from '../features/settings/settings.module.js';
 import { createReportsModule } from '../features/reports/reports.module.js';
 import { createModerationModule } from '../features/moderation/moderation.module.js';
 import { createHealthRouter } from './health.routes.js';
@@ -72,6 +75,9 @@ export const createApiRouter = (config: AppConfig): Router => {
   router.use('/work-plans', createWorkPlansModule(auth.requireAccessToken));
   router.use('/coordination', createCoordinationModule(auth.requireAccessToken, coordination));
   router.use('/mutes', createMutesModule(auth.requireAccessToken));
+  router.use('/notifications', createNotificationsModule(auth.requireAccessToken));
+  router.use('/schedule-exceptions', createScheduleExceptionsModule(auth.requireAccessToken));
+  router.use('/settings', createSettingsModule(auth.requireAccessToken));
   router.use('/projects/:projectId/stages', createStagesModule(auth.requireAccessToken));
   router.use('/projects/:projectId/dashboard', createProjectDashboardModule(auth.requireAccessToken));
   router.use(

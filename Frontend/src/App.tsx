@@ -65,6 +65,14 @@ const ModerationQueuePage = lazy(() =>
   import('./features/moderation/ModerationQueuePage').then((m) => ({ default: m.ModerationQueuePage })));
 const ReportDetailPage = lazy(() =>
   import('./features/moderation/ReportDetailPage').then((m) => ({ default: m.ReportDetailPage })));
+const NotificationsPage = lazy(() =>
+  import('./features/notifications/NotificationsPage').then((m) => ({ default: m.NotificationsPage })));
+const SettingsPage = lazy(() =>
+  import('./features/settings/SettingsPage').then((m) => ({ default: m.SettingsPage })));
+const ScheduleExceptionsPage = lazy(() =>
+  import('./features/scheduleexceptions/ScheduleExceptionsPage').then((m) => ({ default: m.ScheduleExceptionsPage })));
+const EditTaskPage = lazy(() =>
+  import('./features/tasks/EditTaskPage').then((m) => ({ default: m.EditTaskPage })));
 const AuditLogPage = lazy(() =>
   import('./features/moderation/AuditLogPage').then((m) => ({ default: m.AuditLogPage })));
 
@@ -108,6 +116,11 @@ export const App = () => (
                   MembershipRoute: what somebody's plan is does not depend on a company approving
                   them, and being kept out of it would be the wrong reason to hide their billing. */}
               <Route path="/subscriptions" element={<SubscriptionsPage />} />
+              {/* Account-level, so they sit beside the profile rather than inside MembershipRoute:
+                  preferences do not depend on a company approving somebody, and a notification
+                  about an invitation has to be readable before one is accepted. */}
+              <Route path="/settings" element={<SettingsPage />} />
+              <Route path="/notifications" element={<NotificationsPage />} />
               <Route path="/waiting-for-approval" element={<WaitingForApprovalPage />} />
 
               <Route element={<MembershipRoute />}>
@@ -134,8 +147,13 @@ export const App = () => (
                 {/* Ahead of `:taskId`, or the literal path would be read as a task id. */}
                 <Route path="/tasks/new" element={<CreateTaskPage />} />
                 <Route path="/tasks/:taskId" element={<TaskDetailPage />} />
+                <Route path="/tasks/:taskId/edit" element={<EditTaskPage />} />
                 <Route path="/proposals/:proposalId" element={<ProposalReviewPage />} />
                 <Route path="/projects/:projectId/stages" element={<StageGraphPage />} />
+                <Route
+                  path="/projects/:projectId/schedule-exceptions"
+                  element={<ScheduleExceptionsPage />}
+                />
               </Route>
             </Route>
 
