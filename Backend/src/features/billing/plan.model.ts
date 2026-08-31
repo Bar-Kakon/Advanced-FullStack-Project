@@ -66,6 +66,23 @@ export type BooleanLimitKey = {
   [K in PlanLimitKey]: PlanLimits[K] extends boolean ? K : never;
 }[PlanLimitKey];
 
+/** What one payment provider calls this tier, and the currency it was registered in. */
+export interface ProviderPlanBinding {
+  readonly productId: string;
+  readonly planId: string;
+  readonly currency: Currency;
+}
+
+/**
+ * The provider's own identifiers for a tier, keyed by provider name.
+ *
+ * `null` means the tier has not been registered with that provider, which is the state of every
+ * document until the provisioning script runs and the permanent state of Free.
+ */
+export interface ProviderPlans {
+  readonly paypal: ProviderPlanBinding | null;
+}
+
 export interface PlanRecord {
   readonly _id: Types.ObjectId;
   readonly code: PlanCode;
@@ -74,6 +91,8 @@ export interface PlanRecord {
   readonly prices: readonly PlanPrice[];
   readonly interval: 'month';
   readonly limits: PlanLimits;
+  /** Absent on documents seeded before this field existed, which a lean read does not default. */
+  readonly providerPlans?: ProviderPlans;
   /** True while the tier definition is a working assumption rather than decided product. */
   readonly provisional: boolean;
 }
@@ -107,6 +126,20 @@ const limitsSchema = new Schema(
   { _id: false },
 );
 
+const providerPlanSchema = new Schema(
+  {
+    productId: { type: String, required: true, trim: true },
+    planId: { type: String, required: true, trim: true },
+    currency: { type: String, enum: CURRENCIES, required: true },
+  },
+  { _id: false },
+);
+
+const providerPlansSchema = new Schema(
+  { paypal: { type: providerPlanSchema, default: null } },
+  { _id: false },
+);
+
 const planSchema = new Schema(
   {
     code: { type: String, enum: PLAN_CODES, required: true, unique: true },
@@ -117,6 +150,7 @@ const planSchema = new Schema(
     prices: { type: [priceSchema], required: true },
     interval: { type: String, enum: ['month'], default: 'month', required: true },
     limits: { type: limitsSchema, required: true },
+    providerPlans: { type: providerPlansSchema, default: () => ({ paypal: null }) },
     provisional: { type: Boolean, default: true, required: true },
   },
   { timestamps: true },
