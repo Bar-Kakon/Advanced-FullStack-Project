@@ -37,3 +37,7 @@
 .msg-bubble__report { background: none; border: 0; padding: 0; font: inherit; font-size: 0.72rem; color: #7a8592; text-decoration: underline; cursor: pointer; }
 .msg-report { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
 .msg-report__reason { font: inherit; font-size: 0.72rem; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line, #d8dde4); background: #fff; cursor: pointer; }
+
+.msg-thread__bar { display: flex; flex-wrap: wrap; gap: 8px; padding: 10px 12px; border-bottom: 1px solid var(--line, #d8dde4); }
+.msg-thread__action { font: inherit; font-size: 0.8rem; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line, #d8dde4); background: #fff; cursor: pointer; }
+.msg-thread__action[aria-pressed='true'] { background: var(--ink, #22303f); color: #fff; border-color: transparent; }

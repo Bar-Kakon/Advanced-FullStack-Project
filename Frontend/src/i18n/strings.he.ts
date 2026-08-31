@@ -2384,6 +2384,11 @@ export const he = {
     reported: 'הדיווח נשלח',
     cancel: 'ביטול',
     reportReasons: { spam: 'ספאם', harassment: 'הטרדה', impersonation: 'התחזות', other: 'אחר' },
+    muteConversation: 'השתקת שיחה',
+    unmuteConversation: 'ביטול השתקת שיחה',
+    muteContractor: 'השתקת איש הקשר',
+    unmuteContractor: 'ביטול השתקת איש הקשר',
+    deleteChat: 'מחיקת שיחה',
     acceptAgreement: 'אישור הסיכום',
     declineAgreement: 'דחיית הסיכום',
     agreementStates: {
