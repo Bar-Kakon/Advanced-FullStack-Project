@@ -3,16 +3,17 @@ import { Types } from 'mongoose';
 import type { DbSession } from '../../db/mongoose.js';
 import {
   alreadyOnPlan,
+  billingProviderNotConfigured,
   checkoutFailed,
   noActiveSubscription,
   planNotFound,
   planNotPurchasable,
 } from './billing.errors.js';
 import type { CheckoutRepository } from './checkout.repository.js';
-import type { Currency, PlanCode, PlanRecord } from './plan.model.js';
+import type { Currency, PlanCode, PlanRecord, ProviderPlanBinding } from './plan.model.js';
 import type { PlanRepository } from './plan.repository.js';
 import { DEFAULT_PLAN_CODE } from './planCatalogue.js';
-import type { BillingProvider } from './provider/billingProvider.port.js';
+import type { BillingProvider, ProviderEvent } from './provider/billingProvider.port.js';
 import type { SubscriptionRecord } from './subscription.model.js';
 import type { SubscriptionRepository } from './subscription.repository.js';
 
@@ -54,7 +55,10 @@ export interface SubscriptionService {
   /** Withdraws a scheduled change, so the current tier simply continues. */
   keepCurrentPlan(userId: string): Promise<void>;
   /** A verified provider callback. Answers whether anything changed, for the route's status. */
-  applyProviderEvent(rawBody: Buffer, headers: Readonly<Record<string, string | undefined>>): Promise<boolean>;
+  applyProviderEvent(
+    rawBody: Buffer,
+    headers: Readonly<Record<string, string | undefined>>,
+  ): Promise<boolean>;
   /** Applies every period that has run out. Idempotent, so it may be run as often as wanted. */
   reconcileLapsed(now: Date, limit: number): Promise<number>;
 }
@@ -73,6 +77,8 @@ export interface SubscriptionDependencies {
 
 const HISTORY_LIMIT = 24;
 const SWEEP_LIMIT = 500;
+
+const CANCEL_REASON = 'Cancelled by the account holder';
 
 /**
  * One billing month. Adding a month to the 31st of a short month would roll into the next one, so
@@ -118,6 +124,20 @@ export const createSubscriptionService = ({
     return plan;
   };
 
+  /** What the configured provider calls this tier, or `null` when it has never been registered. */
+  const bindingOf = (plan: PlanRecord): ProviderPlanBinding | null =>
+    provider.name === 'paypal' ? (plan.providerPlans?.paypal ?? null) : null;
+
+  const requireBinding = (plan: PlanRecord): ProviderPlanBinding => {
+    const binding = bindingOf(plan);
+    if (binding === null) throw billingProviderNotConfigured();
+    return binding;
+  };
+
+  /** The provider handle for a period, or `null` when that period was never sold through one. */
+  const referenceOf = (subscription: SubscriptionRecord): string | null =>
+    subscription.provider.name === provider.name ? subscription.provider.subscriptionId : null;
+
   /**
    * The one write that changes what somebody is entitled to.
    *
@@ -158,9 +178,8 @@ export const createSubscriptionService = ({
    * A period that has run out. A scheduled change is applied; an unscheduled lapse becomes
    * `past_due` and drops to Free, because a tier nobody has paid for must not keep being served.
    *
-   * Automatic renewal CHARGING is not implemented — it needs stored-credential recurring billing
-   * and an owner decision on the grace period — so `past_due` records that this ended by
-   * non-renewal rather than by the person's choice, which a later implementation can reconcile.
+   * A tier the provider is still billing renews on its own event instead of reaching here, so an
+   * unscheduled lapse means the provider stopped paying for it.
    */
   const applyLapse = async (subscription: SubscriptionRecord): Promise<void> => {
     const target = subscription.scheduledPlanCode ?? DEFAULT_PLAN_CODE;
@@ -184,7 +203,12 @@ export const createSubscriptionService = ({
               taxIncluded,
               currentPeriodStart: start,
               currentPeriodEnd: addMonth(start),
-              provider: { name: provider.name, customerId: null, subscriptionId: null },
+              // The provider keeps billing the same subscription; only the tier it pays for moved.
+              provider: {
+                name: subscription.provider.name,
+                customerId: subscription.provider.customerId,
+                subscriptionId: subscription.provider.subscriptionId,
+              },
             },
             session,
           );
@@ -193,6 +217,100 @@ export const createSubscriptionService = ({
 
       await users.setPlanCode(subscription.user, target, session);
     });
+  };
+
+  /** A settled recurring charge: the period the provider just paid for is extended by a month. */
+  const applyRenewal = async (event: ProviderEvent): Promise<boolean> => {
+    const active = await subscriptions.findActiveByProviderReference(
+      provider.name,
+      event.providerReference,
+    );
+    if (active === null) return false;
+
+    // The sale id is the idempotency key, so a redelivered payment extends the period exactly once.
+    const recorded = await checkouts.createSettled({
+      user: active.user,
+      plan: active.plan,
+      planCode: active.planCode,
+      // The period that was renewed, at the price it was sold for. The catalogue is not re-read:
+      // a renewal charges what the subscription says, exactly as the original sale did.
+      currency: active.currency,
+      amountMinor: active.amountMinor,
+      taxIncluded: active.taxIncluded,
+      provider: provider.name,
+      providerReference: `sale:${event.transactionId ?? event.providerReference}`,
+      transactionId: event.transactionId,
+    });
+    if (recorded === null) return false;
+
+    return subscriptions.extendPeriod(active._id, addMonth(active.currentPeriodEnd));
+  };
+
+  /** A revise the payer approved: the same provider subscription now pays for another tier. */
+  const applyRevision = async (event: ProviderEvent): Promise<boolean> => {
+    if (event.providerPlanId === null) return false;
+
+    const active = await subscriptions.findActiveByProviderReference(
+      provider.name,
+      event.providerReference,
+    );
+    if (active === null) return false;
+
+    const plan = await plans.findByPayPalPlanId(event.providerPlanId);
+    if (plan === null || plan.code === active.planCode) return false;
+
+    await activate(active.user, plan, {
+      customerId: active.provider.customerId,
+      subscriptionId: event.providerReference,
+    });
+
+    return true;
+  };
+
+  /**
+   * The provider stopped billing. Access is not withdrawn here: the period already paid for runs
+   * to `currentPeriodEnd`, and the sweep ends it — which is the approved cancellation rule.
+   */
+  const applyCancellation = async (event: ProviderEvent): Promise<boolean> => {
+    const active = await subscriptions.findActiveByProviderReference(
+      provider.name,
+      event.providerReference,
+    );
+    if (active === null || active.cancelAtPeriodEnd) return false;
+
+    return subscriptions.scheduleChange(active._id, {
+      scheduledPlanCode: DEFAULT_PLAN_CODE,
+      cancelAtPeriodEnd: true,
+      canceledAt: new Date(),
+    });
+  };
+
+  /** A first activation, which is the only path that turns a pending checkout into a period. */
+  const applyActivation = async (event: ProviderEvent): Promise<boolean> => {
+    const pending = await checkouts.findByReference(provider.name, event.providerReference);
+    if (pending === null || pending.status !== 'pending') return false;
+
+    if (!(await provider.confirmActive(event.providerReference))) {
+      await checkouts.markFailed(provider.name, event.providerReference);
+      return false;
+    }
+
+    const claimed = await checkouts.claimPending(
+      provider.name,
+      event.providerReference,
+      event.transactionId,
+    );
+    if (claimed === null) return false;
+
+    const plan = await plans.findByCode(claimed.planCode);
+    if (plan === null) throw planNotFound();
+
+    await activate(claimed.user, plan, {
+      customerId: null,
+      subscriptionId: event.providerReference,
+    });
+
+    return true;
   };
 
   return {
@@ -230,6 +348,27 @@ export const createSubscriptionService = ({
       const current = (await users.findPlanCode(userId)) ?? DEFAULT_PLAN_CODE;
       if (current === planCode) throw alreadyOnPlan();
 
+      const active = await subscriptions.findActiveByUser(userId);
+      const existing = active === null ? null : referenceOf(active);
+
+      // Moving between paid tiers revises the subscription the provider already bills, rather than
+      // opening a second one it would bill alongside the first.
+      if (existing !== null) {
+        const binding = requireBinding(plan);
+
+        let revised;
+        try {
+          revised = await provider.reviseSubscription(existing, binding.planId);
+        } catch {
+          throw checkoutFailed();
+        }
+
+        // Nothing is granted here either: the entitlement moves on the approval event.
+        return {
+          redirectUrl: revised.approvalUrl ?? `${frontendUrl}/subscriptions?checkout=pending`,
+        };
+      }
+
       const { amountMinor, taxIncluded } = priceOf(plan);
 
       let session;
@@ -238,6 +377,7 @@ export const createSubscriptionService = ({
           planCode: plan.code,
           currency: CURRENCY,
           amountMinor,
+          providerPlanId: bindingOf(plan)?.planId ?? null,
           customerName: fullName,
           customerEmail: email,
           successUrl: `${frontendUrl}/subscriptions?checkout=success`,
@@ -267,13 +407,29 @@ export const createSubscriptionService = ({
      * A downgrade and a cancellation are the same operation with different targets, and both land
      * at the end of the period already paid for (owner decision). Nothing is charged, nothing is
      * refunded, and access does not change today.
+     *
+     * The provider is told first. Cancelling locally and failing to cancel there would keep
+     * charging somebody who has already been told they are cancelled, which is the one failure
+     * direction that must not happen.
      */
     async scheduleChange(userId, planCode) {
       const active = await subscriptions.findActiveByUser(userId);
       if (active === null) throw noActiveSubscription();
       if (active.planCode === planCode) throw alreadyOnPlan();
 
-      if (planCode !== DEFAULT_PLAN_CODE) await requirePlan(planCode);
+      const target = planCode === DEFAULT_PLAN_CODE ? null : await requirePlan(planCode);
+      const reference = referenceOf(active);
+
+      if (reference !== null) {
+        if (target === null) {
+          await provider.cancelSubscription(reference, CANCEL_REASON);
+        } else {
+          const revised = await provider.reviseSubscription(reference, requireBinding(target).planId);
+          // A revise the provider will not apply until the payer approves it cannot be scheduled
+          // silently: the next charge would still be at the old tier's price.
+          if (revised.approvalUrl !== null) throw checkoutFailed();
+        }
+      }
 
       const scheduled = await subscriptions.scheduleChange(active._id, {
         scheduledPlanCode: planCode,
@@ -300,43 +456,27 @@ export const createSubscriptionService = ({
     /**
      * The only path that grants a paid tier.
      *
-     * Four things have to hold before anything is activated: the callback carries the provider's
-     * signature over the bytes received, the attempt is one this server opened, the provider
-     * itself confirms the payment when asked directly, and the pending row is still unspent. The
-     * last is an atomic transition, so a callback delivered twice activates exactly once.
-     *
-     * The plan and the amount come from the stored attempt, never from the payload. A caller who
+     * The callback must carry the provider's own proof that it sent these bytes, and the tier
+     * always comes from the stored attempt or the catalogue — never from the payload. A caller who
      * could forge a body still could not name the tier it buys.
      */
     async applyProviderEvent(rawBody, headers) {
-      const event = provider.verifyEvent(rawBody, headers);
+      const event = await provider.verifyEvent(rawBody, headers);
       if (event === null) return false;
 
-      const pending = await checkouts.findByReference(provider.name, event.providerReference);
-      if (pending === null || pending.status !== 'pending') return false;
-
-      const paid = event.paid && (await provider.confirmPaid(event.providerReference));
-      if (!paid) {
-        await checkouts.markFailed(provider.name, event.providerReference);
-        return false;
+      switch (event.kind) {
+        case 'activated':
+          return applyActivation(event);
+        case 'updated':
+          return applyRevision(event);
+        case 'renewed':
+          return applyRenewal(event);
+        case 'canceled':
+          return applyCancellation(event);
+        case 'failed':
+          await checkouts.markFailed(provider.name, event.providerReference);
+          return false;
       }
-
-      const claimed = await checkouts.claimPending(
-        provider.name,
-        event.providerReference,
-        event.transactionId,
-      );
-      if (claimed === null) return false;
-
-      const plan = await plans.findByCode(claimed.planCode);
-      if (plan === null) throw planNotFound();
-
-      await activate(claimed.user, plan, {
-        customerId: null,
-        subscriptionId: event.providerReference,
-      });
-
-      return true;
     },
 
     async reconcileLapsed(now, limit) {

@@ -9,8 +9,8 @@ import { CURRENCIES, PLAN_CODES, type Currency, type PlanCode } from './plan.mod
 export const SUBSCRIPTION_STATUSES = ['active', 'past_due', 'canceled', 'expired'] as const;
 export type SubscriptionStatus = (typeof SUBSCRIPTION_STATUSES)[number];
 
-/** PayPlus is the approved provider. `none` is what a Free period carries: it buys nothing. */
-export const BILLING_PROVIDERS = ['none', 'payplus'] as const;
+/** PayPal is the approved provider. `none` is what a Free period carries: it buys nothing. */
+export const BILLING_PROVIDERS = ['none', 'paypal'] as const;
 export type BillingProviderName = (typeof BILLING_PROVIDERS)[number];
 
 export interface SubscriptionRecord {

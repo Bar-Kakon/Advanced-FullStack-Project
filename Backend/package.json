@@ -49,7 +49,9 @@
     "verify:work-plans": "tsx scripts/verify-work-plans.ts",
     "migrate:work-plan-indexes": "tsx scripts/migrate-work-plan-indexes.ts",
     "seed:plans": "tsx scripts/seed-plans.ts",
-    "billing:sweep": "tsx scripts/billing-sweep.ts"
+    "provision:paypal-plans": "tsx scripts/provision-paypal-plans.ts",
+    "billing:sweep": "tsx scripts/billing-sweep.ts",
+    "verify:subscriptions": "tsx scripts/verify-subscriptions.ts"
   },
   "dependencies": {
     "@types/nodemailer": "^8.0.1",

@@ -34,6 +34,11 @@ export interface ScheduledChange {
 
 export interface SubscriptionRepository {
   findActiveByUser(userId: string): Promise<SubscriptionRecord | null>;
+  /** The live period one provider subscription is paying for. What every callback is matched on. */
+  findActiveByProviderReference(
+    provider: BillingProviderName,
+    providerSubscriptionId: string,
+  ): Promise<SubscriptionRecord | null>;
   /** The billing history the subscriptions screen lists, newest first. */
   findHistoryByUser(userId: string, limit: number): Promise<readonly SubscriptionRecord[]>;
   create(subscription: NewSubscription, session?: DbSession): Promise<SubscriptionRecord>;
@@ -46,6 +51,8 @@ export interface SubscriptionRepository {
     session?: DbSession,
   ): Promise<void>;
   scheduleChange(id: Types.ObjectId, change: ScheduledChange): Promise<boolean>;
+  /** Moves the period end out by one cycle, which is what a settled recurring charge buys. */
+  extendPeriod(id: Types.ObjectId, currentPeriodEnd: Date): Promise<boolean>;
   findLapsed(now: Date, limit: number): Promise<readonly SubscriptionRecord[]>;
 }
 
@@ -54,6 +61,18 @@ export const subscriptionRepository: SubscriptionRepository = {
     if (!Types.ObjectId.isValid(userId)) return null;
 
     return SubscriptionModel.findOne({ user: new Types.ObjectId(userId), status: 'active' })
+      .lean<SubscriptionRecord>()
+      .exec();
+  },
+
+  async findActiveByProviderReference(provider, providerSubscriptionId) {
+    if (providerSubscriptionId.length === 0) return null;
+
+    return SubscriptionModel.findOne({
+      status: 'active',
+      'provider.name': provider,
+      'provider.subscriptionId': providerSubscriptionId,
+    })
       .lean<SubscriptionRecord>()
       .exec();
   },
@@ -108,6 +127,19 @@ export const subscriptionRepository: SubscriptionRepository = {
     const result = await SubscriptionModel.updateOne(
       { _id: id, status: 'active' },
       { $set: { ...change } },
+    ).exec();
+
+    return result.matchedCount === 1;
+  },
+
+  /**
+   * Guarded on `status: 'active'` for the same reason the sweep is: a period closed between the
+   * read and this write is not quietly given a future it will never serve.
+   */
+  async extendPeriod(id, currentPeriodEnd) {
+    const result = await SubscriptionModel.updateOne(
+      { _id: id, status: 'active' },
+      { $set: { currentPeriodEnd } },
     ).exec();
 
     return result.matchedCount === 1;

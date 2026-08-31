@@ -10,7 +10,7 @@ import { createEntitlementService, type EntitlementService } from './entitlement
 import { planRepository } from './plan.repository.js';
 import type { BillingProvider } from './provider/billingProvider.port.js';
 import { createUnconfiguredProvider } from './provider/none.adapter.js';
-import { createPayPlusProvider } from './provider/payPlus.adapter.js';
+import { createPayPalProvider } from './provider/payPal.adapter.js';
 import { subscriptionRepository } from './subscription.repository.js';
 import { createSubscriptionService, type SubscriptionService } from './subscription.service.js';
 
@@ -39,11 +39,11 @@ const createRawJsonParser = (): RequestHandler =>
   });
 
 const providerFor = (config: AppConfig): BillingProvider =>
-  config.billing.provider === 'payplus'
-    ? createPayPlusProvider({
-        apiKey: config.billing.apiKey,
-        secretKey: config.billing.secretKey,
-        paymentPageUid: config.billing.paymentPageUid,
+  config.billing.provider === 'paypal'
+    ? createPayPalProvider({
+        clientId: config.billing.clientId,
+        clientSecret: config.billing.clientSecret,
+        webhookId: config.billing.webhookId,
         baseUrl: config.billing.baseUrl,
         timeoutMs: config.billing.timeoutMs,
       })
