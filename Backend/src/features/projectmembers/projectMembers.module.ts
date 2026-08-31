@@ -10,6 +10,7 @@ import { projectAccessRepository } from '../projectaccess/projectAccess.reposito
 import { projectGrantRepository } from '../projectaccess/projectGrant.repository.js';
 import { projectRepository } from '../projects/project.repository.js';
 import type { MembershipOutcomeListener } from './membershipOutcome.port.js';
+import { buildNotificationDispatchService } from '../notifications/notifications.module.js';
 import { participantRepository } from './participant.repository.js';
 import { createProjectInvitationsService } from './projectInvitations.service.js';
 import {
@@ -47,6 +48,7 @@ export const createProjectMembersModule = (
       templates: permissionTemplateRepository,
       participants: participantRepository,
       blocks,
+      notifications: buildNotificationDispatchService(),
     }),
   );
 

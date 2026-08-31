@@ -1,0 +1,146 @@
+/* FieldSync — Settings */
+/* Loaded on top of profile.css. Approved palette only. */
+
+.settings-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.settings-section {
+  border: 1px solid var(--secondary-45);
+  border-radius: var(--r-md);
+  background: var(--surface);
+  padding: 20px 22px;
+}
+
+.settings-section__title {
+  margin: 0 0 6px;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.settings-section__note {
+  margin: 0 0 16px;
+  color: var(--ink-60);
+  font-size: 0.9rem;
+  line-height: 1.55;
+}
+
+.settings-section__note + .settings-section__note { margin-block-start: -10px; }
+
+.settings-choice {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 0;
+  cursor: pointer;
+}
+
+.settings-choice input {
+  width: 20px;
+  height: 20px;
+  margin: 2px 0 0;
+  accent-color: var(--primary);
+  flex: 0 0 auto;
+}
+
+.settings-choice__label {
+  font-size: 0.98rem;
+  color: var(--ink);
+  line-height: 1.5;
+}
+
+.settings-choice__hint {
+  display: block;
+  margin-block-start: 3px;
+  color: var(--ink-60);
+  font-size: 0.85rem;
+}
+
+.settings-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 14px;
+  margin-block-start: 12px;
+}
+
+.settings-row .form-group { margin-block-end: 0; }
+
+.settings-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-block-start: 16px;
+}
+
+.settings-saved {
+  color: var(--ink-60);
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+.settings-locked {
+  margin: 12px 0 0;
+  padding: 12px 14px;
+  border: 1px dashed var(--secondary-45);
+  border-radius: var(--r-md);
+  color: var(--ink-60);
+  font-size: 0.88rem;
+  line-height: 1.55;
+}
+
+.settings-mutes {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.settings-mute {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--secondary-45);
+  border-radius: var(--r-md);
+}
+
+.settings-mute__name {
+  font-weight: 600;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+.settings-empty {
+  color: var(--ink-60);
+  font-size: 0.9rem;
+  margin: 0;
+}
+
+.settings-plan {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+
+.settings-plan__badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--primary);
+  color: var(--primary);
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+@media (max-width: 640px) {
+  .settings-section { padding: 16px; }
+  .settings-mute { flex-direction: column; align-items: stretch; }
+}

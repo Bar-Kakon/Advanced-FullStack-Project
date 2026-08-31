@@ -49,6 +49,11 @@ export interface PlanLimits {
   readonly muteControls: boolean;
   readonly agreementForm: boolean;
   readonly notificationDigest: boolean;
+  /**
+   * Configuring WHEN a notification class is delivered. It never gates whether a blocking notice
+   * appears in-app, which is free on every tier — Premium buys control, not access.
+   */
+  readonly notificationTimingControls: boolean;
   readonly privateExecutionLayer: boolean;
   readonly emailNotifications: boolean;
   readonly supportTier: SupportTier;
@@ -119,6 +124,7 @@ const limitsSchema = new Schema(
     muteControls: { type: Boolean, required: true },
     agreementForm: { type: Boolean, required: true },
     notificationDigest: { type: Boolean, required: true },
+    notificationTimingControls: { type: Boolean, required: true, default: false },
     privateExecutionLayer: { type: Boolean, required: true },
     emailNotifications: { type: Boolean, required: true },
     supportTier: { type: String, enum: SUPPORT_TIERS, required: true },

@@ -24,6 +24,10 @@ export interface BillingModule {
 
 const WEBHOOK_BODY_LIMIT = '100kb';
 
+/** The entitlement boundary, for a feature that needs it without the rest of the billing module. */
+export const buildEntitlementService = (): EntitlementService =>
+  createEntitlementService({ plans: planRepository, users: userRepository });
+
 /**
  * Keeps the bytes exactly as received alongside the parsed body.
  *

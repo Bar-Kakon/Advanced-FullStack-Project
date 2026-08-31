@@ -2,8 +2,8 @@ import {
   addWorkingDays,
   dueFromWorkingDays,
   workingDaysBetween,
+  type ScheduleCalendar,
 } from '../calendar/workingDay.js';
-import type { WorkingCalendarConfig } from '../calendar/workingCalendar.types.js';
 
 export interface CascadeStage {
   readonly id: string;
@@ -42,7 +42,12 @@ export interface CascadeResult {
 export interface CascadeInput {
   readonly stages: readonly CascadeStage[];
   readonly tasks: readonly CascadeTask[];
-  readonly config: WorkingCalendarConfig;
+  /**
+   * The calendar to compute one task's dates against. It is per task rather than per project
+   * because an approved exception may cover a single task or a single professional, so two tasks
+   * on the same job can legitimately disagree about whether a given day is worked.
+   */
+  readonly calendarFor: (taskId: string) => ScheduleCalendar;
   readonly initiating: { readonly taskId: string; readonly startDate: Date; readonly dueDate: Date };
 }
 
@@ -88,7 +93,7 @@ const topologicalOrder = (stages: readonly CascadeStage[]): readonly CascadeStag
 export const computeCascade = ({
   stages,
   tasks,
-  config,
+  calendarFor,
   initiating,
 }: CascadeInput): CascadeResult => {
   const source = tasks.find((task) => task.id === initiating.taskId);
@@ -151,6 +156,9 @@ export const computeCascade = ({
       let required: Date | null = null;
       let via: string | null = null;
       let reason: HoldReason = 'sequence';
+      // The moved task's own calendar, so an exception approved for it or for the professional
+      // responsible for it decides its dates rather than the project's weekly pattern alone.
+      const calendar = calendarFor(task.id);
 
       for (const up of upstream) {
         if (up.releasedTasks.includes(task.id)) continue;
@@ -158,7 +166,7 @@ export const computeCascade = ({
         const pressure = pressureOf(up);
         if (pressure === null) continue;
 
-        const earliest = addWorkingDays(config, pressure, 1);
+        const earliest = addWorkingDays(calendar, pressure, 1);
         if (required === null || earliest.getTime() > required.getTime()) {
           required = earliest;
           via = up.id;
@@ -174,9 +182,9 @@ export const computeCascade = ({
         continue;
       }
 
-      const span = workingDaysBetween(config, task.startDate, task.dueDate);
+      const span = workingDaysBetween(calendar, task.startDate, task.dueDate);
       const proposedStart = required;
-      const proposedDue = dueFromWorkingDays(config, proposedStart, span);
+      const proposedDue = dueFromWorkingDays(calendar, proposedStart, span);
 
       moved.set(task.id, { start: proposedStart, due: proposedDue });
       items.push({
