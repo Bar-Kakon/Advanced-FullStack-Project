@@ -1,13 +1,12 @@
 /**
- * The Flexibility Score: the closed formula, the event classification, and the privacy of the
- * explanatory context.
- *
- * The arithmetic runs against the real `computeFlexibility` and the real service, driven through a
- * stub outcome port. The domain that will supply real outcomes — proposals and reschedule requests
- * — is not built, so a stub is the only way to exercise resolved behaviour at all. The wiring that
- * reaches HTTP is checked separately against the real app.
+ * The Flexibility Score: the closed formula, the event classification, the privacy of the
+ * explanatory context, and the real coordination adapter that now feeds it.
  */
 import { Types } from 'mongoose';
+
+import { outcomeOf } from '../src/features/coordination/coordinationOutcome.adapter.js';
+import type { HandoffRecord } from '../src/features/coordination/handoff.model.js';
+import type { ProposalItemRecord, ProposalRecord } from '../src/features/coordination/proposal.model.js';
 
 import {
   computeFlexibility,
@@ -161,6 +160,103 @@ const run = async (): Promise<void> => {
     String(await unbuilt.forUser('anyone')));
   check(unbuiltCoordinationOutcomePort.available === false,
     'the port says plainly that it cannot answer yet');
+
+  section('12. The real adapter maps resolved proposal outcomes, and only resolved ones');
+  const proposalOf = (over: Partial<ProposalRecord> = {}): ProposalRecord =>
+    ({ changes: {}, requestedBy: new Types.ObjectId(), ...over }) as ProposalRecord;
+  const itemOf = (over: Partial<ProposalItemRecord> = {}): ProposalItemRecord =>
+    ({ response: 'pending', resolution: 'none', excluded: false, ...over }) as ProposalItemRecord;
+
+  check(
+    outcomeOf(proposalOf(), itemOf({ response: 'accepted', resolution: 'proposed' })) === 'accepted',
+    'an acceptance the resolver applied is a direct acceptance',
+  );
+  check(
+    outcomeOf(
+      proposalOf({ changes: { alternativeStart: new Date() } }),
+      itemOf({ response: 'accepted', resolution: 'proposed' }),
+    ) === 'alternative_agreed',
+    'accepting a request that offered an alternate date is an agreed alternative',
+  );
+  check(
+    outcomeOf(proposalOf(), itemOf({ response: 'countered', resolution: 'counter' })) === 'counter_agreed',
+    'a counter the resolver accepted is a workable resolution',
+  );
+  check(
+    outcomeOf(
+      proposalOf(),
+      itemOf({ response: 'declined', resolution: 'none', declineReason: 'materials_not_arrived' }),
+    ) === 'declined_justified',
+    'a decline carrying an approved reason is the neutral case',
+  );
+  check(
+    outcomeOf(proposalOf(), itemOf({ response: 'declined', resolution: 'none' })) === null,
+    'a decline with no reason and no replacement produces no event at all',
+  );
+  check(
+    outcomeOf(proposalOf(), itemOf({ response: 'other_proposed', resolution: 'other' })) === 'other_solution_agreed',
+    'an other workable solution both sides agreed to is its own positive outcome',
+  );
+  check(
+    outcomeOf(proposalOf(), itemOf({ response: 'other_proposed', resolution: 'none' })) === null,
+    'while one the resolver did not agree to produces nothing',
+  );
+  check(
+    outcomeOf(proposalOf(), itemOf({ response: 'declined', resolution: 'replaced' })) === null,
+    'a replacement with no completed handover is not yet an outcome',
+  );
+  const handoverFor = (item: ProposalItemRecord, at: Date) => [
+    {
+      state: 'accepted',
+      task: item.task,
+      from: item.respondent,
+      decidedAt: at,
+    } as unknown as HandoffRecord,
+  ];
+  const replacedItem = itemOf({
+    response: 'declined',
+    resolution: 'replaced',
+    task: new Types.ObjectId(),
+    respondent: new Types.ObjectId(),
+  });
+  const resolvedProposal = proposalOf({
+    resolution: { by: new Types.ObjectId(), at: new Date(2027, 0, 1) },
+  });
+  check(
+    outcomeOf(resolvedProposal, replacedItem, handoverFor(replacedItem, new Date(2027, 0, 2))) ===
+      'unresolved_replaced',
+    'and it becomes the negative case only once responsibility really moved',
+  );
+  check(outcomeOf(proposalOf(), itemOf()) === null, 'a pending item is not an outcome');
+  check(
+    outcomeOf(proposalOf(), itemOf({ response: 'accepted', resolution: 'none' })) === null,
+    'nor is an acceptance the resolver never applied — elapsed time alone scores nothing',
+  );
+  check(
+    outcomeOf(proposalOf(), itemOf({ response: 'accepted', resolution: 'proposed', excluded: true })) === null,
+    'and excluded work is outside the score entirely',
+  );
+
+  const workable = [
+    outcomeOf(proposalOf(), itemOf({ response: 'accepted', resolution: 'proposed' })),
+    outcomeOf(proposalOf(), itemOf({ response: 'countered', resolution: 'counter' })),
+    outcomeOf(proposalOf(), itemOf({ response: 'other_proposed', resolution: 'other' })),
+    outcomeOf(
+      proposalOf({ changes: { alternativeDue: new Date() } }),
+      itemOf({ response: 'accepted', resolution: 'proposed' }),
+    ),
+  ].filter((outcome): outcome is CoordinationOutcome => outcome !== null);
+  check(
+    scheduleOf(workable.map((outcome) => event(outcome)))?.score === 100,
+    'all four of them carry exactly the same weight',
+    String(scheduleOf(workable.map((outcome) => event(outcome)))?.score),
+  );
+
+  section('13. Only the schedule dimension has evidence');
+  const fromAdapter = workable.map((outcome) => event(outcome));
+  check(computeFlexibility(fromAdapter).scope === null,
+    'the scope dimension stays null, because a date proposal is not scope-change evidence');
+  check(computeFlexibility(fromAdapter).schedule !== null, 'while the schedule dimension is real');
 
   const { baseUrl } = harness;
   const stamp = Date.now();

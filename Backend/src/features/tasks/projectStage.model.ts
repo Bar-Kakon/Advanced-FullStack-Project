@@ -21,6 +21,7 @@ export interface ProjectStageRecord {
   readonly partialReleaseAt?: Date;
   readonly partialReleaseBy?: Types.ObjectId;
   readonly partialReleaseNote?: string;
+  readonly partialReleaseTasks?: readonly Types.ObjectId[];
   readonly createdAt: Date;
   readonly updatedAt: Date;
 }
@@ -36,6 +37,7 @@ const projectStageSchema = new Schema(
     partialReleaseAt: { type: Date },
     partialReleaseBy: { type: Schema.Types.ObjectId, ref: 'User' },
     partialReleaseNote: { type: String, trim: true, maxlength: 400 },
+    partialReleaseTasks: [{ type: Schema.Types.ObjectId, ref: 'Task' }],
   },
   { timestamps: true },
 );

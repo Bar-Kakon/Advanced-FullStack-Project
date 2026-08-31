@@ -1,3 +1,4 @@
+import type { AuditEntryDto, PendingActionsDto, ProposalListRowDto } from '../coordination/coordination.dto.js';
 import type { ProjectDto } from '../projects/project.dto.js';
 import type { ProjectTaskSummary } from '../projects/projectLifecycle.service.js';
 
@@ -29,6 +30,16 @@ export interface DashboardViewerDto {
   readonly canManageMembers: boolean;
   readonly canGrantPermissions: boolean;
   readonly canCreateTasks: boolean;
+  readonly canManageStages: boolean;
+  readonly canManageSchedule: boolean;
+  readonly canPartialRelease: boolean;
+}
+
+export interface ProjectCoordinationDto {
+  readonly openProposals: number;
+  readonly pendingActions: PendingActionsDto;
+  readonly proposals: readonly ProposalListRowDto[];
+  readonly audit: readonly AuditEntryDto[];
 }
 
 export interface ProjectDashboardDto {
@@ -39,4 +50,5 @@ export interface ProjectDashboardDto {
   readonly members: { readonly active: number; readonly pending: number };
   /** `null` until the Tasks domain exists. Never a fabricated count. */
   readonly tasks: ProjectTaskSummary | null;
+  readonly coordination: ProjectCoordinationDto;
 }

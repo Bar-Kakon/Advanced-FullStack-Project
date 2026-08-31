@@ -11,6 +11,7 @@ import { projectAccessRepository } from '../projectaccess/projectAccess.reposito
 import { projectGrantRepository } from '../projectaccess/projectGrant.repository.js';
 import { createProjectsService } from './projects.service.js';
 import { taskExecutionAdapter } from '../tasks/taskExecution.adapter.js';
+import { buildCoordinationService } from '../coordination/coordination.module.js';
 import {
   adoptCalendarBodySchema,
   calendarOverridesSchema,
@@ -21,6 +22,8 @@ import {
 } from './projects.validation.js';
 
 export const createProjectsModule = (requireAccessToken: RequestHandler): Router => {
+  const coordination = buildCoordinationService();
+
   const controller = createProjectsController(
     createProjectsService({
       projects: projectRepository,
@@ -32,6 +35,7 @@ export const createProjectsModule = (requireAccessToken: RequestHandler): Router
       calendars: companyCalendarRepository,
       access: projectAccessRepository,
       grants: projectGrantRepository,
+      pendingActions: { forUser: (userId) => coordination.pendingActionsFor(userId) },
     }),
   );
 

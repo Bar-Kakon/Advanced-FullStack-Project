@@ -2,6 +2,7 @@ import { Types } from 'mongoose';
 
 import type { ParticipantRepository } from '../projectmembers/participant.repository.js';
 import type { ProjectAccessRepository } from '../projectaccess/projectAccess.repository.js';
+import { effectiveProjectPermissions } from '../projectaccess/projectPermission.js';
 import type { ProjectRepository } from '../projects/project.repository.js';
 import { formatCalendarDate } from '../projects/projectDates.js';
 import { PrivateWorkItemModel, type PrivateItemKind, type PrivateWorkItemRecord } from './privateWork.model.js';
@@ -16,7 +17,6 @@ import {
   notDelegated,
   ownCrewOnly,
   partNeedsDescription,
-  rescheduleUnavailable,
 } from './taskDetail.errors.js';
 import type { TaskRepository } from './task.repository.js';
 import { deriveTaskState, isOverdue, overdueDays } from './taskState.js';
@@ -76,7 +76,6 @@ export interface TaskDetailService {
   addPrivate(userId: string, taskId: string, kind: PrivateItemKind, body: string): Promise<PrivateWorkItemRecord>;
   togglePrivate(userId: string, taskId: string, itemId: string, done: boolean): Promise<PrivateWorkItemRecord>;
   removePrivate(userId: string, taskId: string, itemId: string): Promise<void>;
-  requestDateChange(userId: string, taskId: string): Promise<never>;
 }
 
 export interface TaskDetailDependencies {
@@ -103,14 +102,18 @@ export const createTaskDetailService = ({
     if (task === null) throw taskNotFound();
 
     let reachesProject = false;
+    let manages = false;
     if (task.project !== undefined) {
       const membership = await access.findActiveMembership(task.project, new Types.ObjectId(userId));
       reachesProject = membership !== null;
+      manages =
+        membership !== null &&
+        effectiveProjectPermissions(membership).includes('schedule.change.manage');
     }
 
     const viewpoint = viewpointOf(task, { userId, reachesProject });
     if (viewpoint === 'none') throw taskNotFound();
-    return { task, viewpoint };
+    return { task, viewpoint, manages };
   };
 
   /** The private layer belongs to one person on one task, and is read for nobody else. */
@@ -126,7 +129,12 @@ export const createTaskDetailService = ({
     return person === undefined ? null : `${person.firstName} ${person.lastName}`.trim();
   };
 
-  const toDto = async (task: TaskRecord, viewpoint: TaskViewpoint, userId: string): Promise<TaskDetailDto> => {
+  const toDto = async (
+    task: TaskRecord,
+    viewpoint: TaskViewpoint,
+    userId: string,
+    manages: boolean,
+  ): Promise<TaskDetailDto> => {
     const now = new Date();
     const isDelegate = viewpoint === 'delegate';
     const delegateView = isDelegate ? projectForDelegate(task) : null;
@@ -209,7 +217,11 @@ export const createTaskDetailService = ({
           !task.ownCrewOnly &&
           task.orphanedAt === undefined,
         canEndDelegation: viewpoint === 'assignee' && task.delegation !== undefined,
-        canRequestDateChange: reschedule.available && canReport,
+        canRequestDateChange:
+          reschedule.available &&
+          task.orphanedAt === undefined &&
+          task.completedAt === undefined &&
+          (viewpoint === 'assignee' || manages),
       },
       rescheduleImpact: await reschedule.impactOf(task._id.toString()),
       rescheduleAvailable: reschedule.available,
@@ -217,14 +229,14 @@ export const createTaskDetailService = ({
   };
 
   const reload = async (taskId: string, userId: string): Promise<TaskDetailDto> => {
-    const { task, viewpoint } = await load(userId, taskId);
-    return toDto(task, viewpoint, userId);
+    const { task, viewpoint, manages } = await load(userId, taskId);
+    return toDto(task, viewpoint, userId, manages);
   };
 
   return {
     async get(userId, taskId) {
-      const { task, viewpoint } = await load(userId, taskId);
-      return toDto(task, viewpoint, userId);
+      const { task, viewpoint, manages } = await load(userId, taskId);
+      return toDto(task, viewpoint, userId, manages);
     },
 
     async delegate(userId, taskId, input) {
@@ -316,12 +328,6 @@ export const createTaskDetailService = ({
         owner: new Types.ObjectId(userId),
       }).exec();
       if (result.deletedCount === 0) throw taskNotFound();
-    },
-
-    /** The entry point exists; the domain behind it does not, and it says so rather than pretending. */
-    async requestDateChange(userId, taskId) {
-      await load(userId, taskId);
-      throw rescheduleUnavailable();
     },
   };
 };

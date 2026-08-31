@@ -38,6 +38,10 @@ import {
 } from './project.errors.js';
 import type { CreateProjectBody, UpdateProjectBody } from './projects.validation.js';
 
+export interface PendingActionsPort {
+  forUser(userId: string): Promise<ReadonlyMap<string, { readonly total: number }>>;
+}
+
 export interface ProjectsService {
   create(userId: string, body: CreateProjectBody): Promise<ProjectDto>;
   adoptCurrentCalendar(userId: string, projectId: string, keepOverrides: boolean): Promise<ProjectDto>;
@@ -56,6 +60,7 @@ export interface ProjectsDependencies {
   readonly calendars: CompanyCalendarRepository;
   readonly access: ProjectAccessRepository;
   readonly grants: ProjectGrantRepository;
+  readonly pendingActions: PendingActionsPort;
 }
 
 const encodeCursor = ({ createdAt, id }: ProjectCursor): string =>
@@ -81,6 +86,7 @@ export const createProjectsService = ({
   calendars,
   access,
   grants,
+  pendingActions,
 }: ProjectsDependencies): ProjectsService => {
   /** The caller's company is read from their session, never from the request body. */
   const contextFor = async (userId: string) => {
@@ -185,13 +191,20 @@ export const createProjectsService = ({
       const page = rows.slice(0, limit);
       const last = page.at(-1);
       const started = await execution.startedProjectIds(page.map((row) => row._id.toString()));
+      const pending = await pendingActions.forUser(userId);
 
       return {
         projects: page.map((row) => {
           const grant = grantByProject.get(row._id.toString());
           const viewerManages =
             grant?.fullAuthority === true || grant?.permissions.includes('project.edit') === true;
-          return toProjectDto(row, viewerManages, started.has(row._id.toString()));
+          return toProjectDto(
+            row,
+            viewerManages,
+            started.has(row._id.toString()),
+            undefined,
+            pending.get(row._id.toString())?.total ?? 0,
+          );
         }),
         nextCursor:
           rows.length > limit && last !== undefined

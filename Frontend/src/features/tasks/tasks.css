@@ -172,3 +172,9 @@
 @media (max-width: 640px) {
   .plan-upload > .btn { flex: 1 1 auto; }
 }
+
+.task-chip--proposal {
+  border-color: var(--primary-30);
+  background: var(--surface);
+  font-weight: 700;
+}

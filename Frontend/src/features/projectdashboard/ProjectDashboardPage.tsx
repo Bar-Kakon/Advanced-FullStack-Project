@@ -11,6 +11,8 @@ import { adoptCurrentCalendar } from '../../api/projects.api';
 import { initialsOf } from '../profile/profileModel';
 import { ProjectCalendarPanel } from '../projects/components/ProjectCalendarPanel';
 import { CalendarVersionPanel } from './components/CalendarVersionPanel';
+import { CoordinationPanel } from './components/CoordinationPanel';
+import { MutePanel } from './components/MutePanel';
 import { ProjectPermissionsPanel } from './components/ProjectPermissionsPanel';
 import { useProjectDashboard } from './useProjectDashboard';
 import profileCss from '../profile/profile.css?inline';
@@ -18,6 +20,7 @@ import projectsCss from '../projects/projects.css?inline';
 import permissionsCss from '../permissions/permissions.css?inline';
 import membersCss from '../members/members.css?inline';
 import projectDashboardCss from './project-dashboard.css?inline';
+import coordinationCss from '../coordination/coordination.css?inline';
 
 const displayDate = (iso: string, lang: 'he' | 'en'): string => {
   const [year, month, day] = iso.split('-').map(Number);
@@ -48,6 +51,7 @@ export const ProjectDashboardPage = () => {
     { id: 'permissions.css', css: permissionsCss },
     { id: 'members.css', css: membersCss },
     { id: 'project-dashboard.css', css: projectDashboardCss },
+    { id: 'coordination.css', css: coordinationCss },
   );
   useDocumentTitle('לוח הפרויקט / Project dashboard — FieldSync');
 
@@ -203,6 +207,24 @@ export const ProjectDashboardPage = () => {
               canManage={viewer.canManageCalendar}
               onAdopt={(keepOverrides) => void adopt(keepOverrides)}
             />
+
+            <CoordinationPanel
+              openProposals={data.coordination.openProposals}
+              pendingActions={data.coordination.pendingActions}
+              proposals={data.coordination.proposals}
+              audit={data.coordination.audit}
+              seesEverything={viewer.canManageSchedule}
+            />
+
+            <section className="panel" aria-labelledby="stage-entry-title">
+              <h2 id="stage-entry-title" className="panel__title">{t.coordination.stages.title}</h2>
+              <p className="panel__lede">{t.coordination.stages.lede}</p>
+              <Link to={`/projects/${projectId}/stages`} className="btn btn--ghost btn--sm">
+                {t.coordination.stages.open}
+              </Link>
+            </section>
+
+            <MutePanel projectId={projectId} />
 
             <CalendarVersionPanel calendar={data.calendar} />
 

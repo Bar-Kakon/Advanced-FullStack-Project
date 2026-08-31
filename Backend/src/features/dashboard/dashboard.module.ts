@@ -10,6 +10,7 @@ import { workEntryRepository } from '../workentries/workEntry.repository.js';
 import { createDashboardController } from './dashboard.controller.js';
 import { createDashboardService } from './dashboard.service.js';
 import { profileReminderDismissalRepository } from './profileReminderDismissal.repository.js';
+import { buildCoordinationService } from '../coordination/coordination.module.js';
 
 export interface DashboardModuleDependencies {
   readonly requireAccessToken: RequestHandler;
@@ -20,6 +21,8 @@ export const createDashboardModule = ({
   requireAccessToken,
   blocks,
 }: DashboardModuleDependencies): Router => {
+  const coordination = buildCoordinationService();
+
   const controller = createDashboardController(
     createDashboardService({
       users: userRepository,
@@ -30,6 +33,7 @@ export const createDashboardModule = ({
       ratings: ratingRepository,
       workEntries: workEntryRepository,
       dismissals: profileReminderDismissalRepository,
+      pendingActions: { totalsFor: (userId) => coordination.pendingActionTotals(userId) },
     }),
   );
 

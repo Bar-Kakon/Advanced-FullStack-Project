@@ -23,6 +23,12 @@ import { createRatingsModule } from '../features/ratings/ratings.module.js';
 import { createTasksModule } from '../features/tasks/tasks.module.js';
 import { createStagesModule } from '../features/tasks/stages.module.js';
 import { createUsersModule } from '../features/users/users.module.js';
+import {
+  buildCoordinationService,
+  createCoordinationModule,
+} from '../features/coordination/coordination.module.js';
+import { responsibilityTransferListener } from '../features/coordination/membershipOutcome.adapter.js';
+import { createMutesModule } from '../features/mutes/mutes.module.js';
 import { createHealthRouter } from './health.routes.js';
 import { createHealthAuthRouter } from './healthAuth.routes.js';
 
@@ -37,6 +43,7 @@ export const createApiRouter = (config: AppConfig): Router => {
   const blocks = createBlocksModule(auth.requireAccessToken);
   const connections = createConnectionsModule(auth.requireAccessToken, blocks.service);
   const routes = createGoogleRoutesAdapter(config.googleMaps);
+  const coordination = buildCoordinationService();
 
   router.use('/health', createHealthRouter());
   router.use('/health-auth', createHealthAuthRouter(auth.requireAccessToken));
@@ -51,13 +58,21 @@ export const createApiRouter = (config: AppConfig): Router => {
   );
   router.use('/network', createNetworkModule(auth.requireAccessToken));
   router.use('/work-plans', createWorkPlansModule(auth.requireAccessToken));
+  router.use('/coordination', createCoordinationModule(auth.requireAccessToken, coordination));
+  router.use('/mutes', createMutesModule(auth.requireAccessToken));
   router.use('/projects/:projectId/stages', createStagesModule(auth.requireAccessToken));
   router.use('/projects/:projectId/dashboard', createProjectDashboardModule(auth.requireAccessToken));
   router.use(
     '/projects/:projectId/members',
     createProjectMembersModule(auth.requireAccessToken, blocks.service),
   );
-  router.use('/project-invitations', createProjectInvitationsModule(auth.requireAccessToken));
+  router.use(
+    '/project-invitations',
+    createProjectInvitationsModule(
+      auth.requireAccessToken,
+      responsibilityTransferListener(coordination),
+    ),
+  );
   router.use('/projects', createProjectsModule(auth.requireAccessToken));
   router.use('/calendar', createCalendarModule(auth.requireAccessToken));
   router.use('/permissions', createPermissionsModule(auth.requireAccessToken));

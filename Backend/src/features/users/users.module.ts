@@ -7,7 +7,9 @@ import { fileAssetRepository } from '../files/fileAsset.repository.js';
 import { createFileAssetService } from '../files/fileAsset.service.js';
 import { workEntryRepository } from '../workentries/workEntry.repository.js';
 import { createProfileController } from './profile.controller.js';
-import { unbuiltCoordinationOutcomePort } from '../flexibility/coordinationOutcome.port.js';
+import { createCoordinationOutcomeAdapter } from '../coordination/coordinationOutcome.adapter.js';
+import { handoffRepository } from '../coordination/handoff.repository.js';
+import { proposalRepository } from '../coordination/proposal.repository.js';
 import { createFlexibilityService } from '../flexibility/flexibility.service.js';
 import { createProfileService } from './profile.service.js';
 import { userRepository } from './user.repository.js';
@@ -32,7 +34,7 @@ export const createUsersModule = (requireAccessToken: RequestHandler): UsersModu
     workEntries: workEntryRepository,
     files: createFileAssetService(fileAssetRepository),
     verification: workVerificationService,
-    flexibility: createFlexibilityService(unbuiltCoordinationOutcomePort),
+    flexibility: createFlexibilityService(createCoordinationOutcomeAdapter(proposalRepository, handoffRepository)),
   });
 
   const controller = createProfileController({ profiles });

@@ -11,6 +11,7 @@ import { projectAccessRepository } from '../projectaccess/projectAccess.reposito
 import { projectRepository } from '../projects/project.repository.js';
 import { taskExecutionAdapter } from '../tasks/taskExecution.adapter.js';
 import { projectScopeParamsSchema } from '../projectmembers/projectMembers.validation.js';
+import { buildCoordinationService } from '../coordination/coordination.module.js';
 import { createProjectDashboardService } from './projectDashboard.service.js';
 
 /**
@@ -29,6 +30,7 @@ export const createProjectDashboardModule = (requireAccessToken: RequestHandler)
     calendars: companyCalendarRepository,
     participants: participantRepository,
     execution: taskExecutionAdapter,
+    coordination: buildCoordinationService(),
   });
 
   const router = Router({ mergeParams: true });

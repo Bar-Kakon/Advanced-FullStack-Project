@@ -17,6 +17,7 @@ import {
   type ResolvedProjectAccess,
 } from '../projects/projectAuthorization.js';
 import type { ProjectExecutionPort } from '../projects/projectLifecycle.service.js';
+import type { CoordinationService } from '../coordination/coordination.service.js';
 import type { CalendarAdoptionDto, ProjectDashboardDto } from './projectDashboard.dto.js';
 
 export interface ProjectDashboardService {
@@ -30,6 +31,7 @@ export interface ProjectDashboardDependencies {
   readonly calendars: CompanyCalendarRepository;
   readonly participants: ParticipantRepository;
   readonly execution: ProjectExecutionPort;
+  readonly coordination: CoordinationService;
 }
 
 const holds = (resolved: ResolvedProjectAccess, permission: ProjectPermission): boolean =>
@@ -47,6 +49,7 @@ export const createProjectDashboardService = ({
   calendars,
   participants,
   execution,
+  coordination,
 }: ProjectDashboardDependencies): ProjectDashboardService => ({
   async get(userId, projectId) {
     const authority = requireActiveCompany(await companyContext.forUser(userId), userId);
@@ -108,6 +111,9 @@ export const createProjectDashboardService = ({
         canManageMembers: holds(resolved, 'project.member.manage'),
         canGrantPermissions: holds(resolved, 'project.permission.grant'),
         canCreateTasks: holds(resolved, 'task.create'),
+        canManageStages: holds(resolved, 'project.stage.manage'),
+        canManageSchedule: holds(resolved, 'schedule.change.manage'),
+        canPartialRelease: holds(resolved, 'schedule.partial_release.manage'),
       },
       calendar: {
         versionNumber: pinned?.version ?? null,
@@ -122,6 +128,16 @@ export const createProjectDashboardService = ({
         pending: rows.filter((row) => row.status === 'invited').length,
       },
       tasks: await execution.summarize(project._id.toString()),
+      coordination: await (async () => {
+        const rows = await coordination.listForProject(userId, projectId);
+        const pending = await coordination.pendingActionsFor(userId);
+        return {
+          openProposals: rows.filter((row) => row.status === 'open' || row.status === 'requested').length,
+          pendingActions: pending.get(projectId) ?? { proposals: 0, handoffs: 0, total: 0 },
+          proposals: rows,
+          audit: await coordination.auditForProject(userId, projectId),
+        };
+      })(),
     };
   },
 });
