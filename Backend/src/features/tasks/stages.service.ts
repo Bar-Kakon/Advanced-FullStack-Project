@@ -21,9 +21,16 @@ export interface NewStage {
   readonly order?: number;
 }
 
+export interface StageEdit {
+  readonly name?: string;
+  readonly isGate?: boolean;
+  readonly order?: number;
+}
+
 export interface StagesService {
   list(project: Types.ObjectId): Promise<ProjectStageRecord[]>;
   create(project: Types.ObjectId, stage: NewStage): Promise<ProjectStageRecord>;
+  update(project: Types.ObjectId, stageId: string, edit: StageEdit): Promise<ProjectStageRecord>;
   setDependencies(
     project: Types.ObjectId,
     stageId: string,
@@ -84,6 +91,27 @@ export const createStagesService = (): StagesService => ({
     });
     await created.save();
     return created.toObject() as ProjectStageRecord;
+  },
+
+  async update(project, stageId, edit) {
+    if (!Types.ObjectId.isValid(stageId)) throw stageNotFound();
+
+    const updated = await ProjectStageModel.findOneAndUpdate(
+      { _id: new Types.ObjectId(stageId), project },
+      {
+        $set: {
+          ...(edit.name === undefined ? {} : { name: edit.name }),
+          ...(edit.isGate === undefined ? {} : { isGate: edit.isGate }),
+          ...(edit.order === undefined ? {} : { order: edit.order }),
+        },
+      },
+      { new: true },
+    )
+      .lean<ProjectStageRecord>()
+      .exec();
+
+    if (updated === null) throw stageNotFound();
+    return updated;
   },
 
   async setDependencies(project, stageId, dependsOn) {

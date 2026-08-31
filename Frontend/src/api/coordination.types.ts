@@ -1,6 +1,6 @@
 export type ProposalStatus = 'requested' | 'open' | 'expired' | 'resolved' | 'cancelled';
-export type ItemResponse = 'pending' | 'accepted' | 'declined' | 'countered';
-export type ItemResolution = 'none' | 'proposed' | 'counter' | 'replaced';
+export type ItemResponse = 'pending' | 'accepted' | 'declined' | 'countered' | 'other_proposed';
+export type ItemResolution = 'none' | 'proposed' | 'counter' | 'other' | 'replaced';
 export type HoldReason = 'initiating' | 'gate' | 'sequence';
 
 export const JUSTIFIED_DECLINE_REASONS = [
@@ -77,6 +77,7 @@ export interface ProposalItem {
   readonly declineReason: JustifiedDeclineReason | null;
   readonly counterStart: string | null;
   readonly counterDue: string | null;
+  readonly otherSolution: string | null;
   readonly respondedAt: string | null;
   readonly resolution: ItemResolution;
   readonly excluded: boolean;
@@ -87,6 +88,7 @@ export interface ResponseSummary {
   readonly accepted: number;
   readonly declined: number;
   readonly countered: number;
+  readonly otherProposed: number;
   readonly pending: number;
   readonly excluded: number;
 }
@@ -117,6 +119,7 @@ export interface Proposal {
   readonly resolvedAt: string | null;
   readonly resolutionNote: string | null;
   readonly parentProposalId: string | null;
+  readonly selectedAlternative: string | null;
   readonly items: readonly ProposalItem[];
   readonly summary: ResponseSummary | null;
   readonly viewer: ProposalViewer;
@@ -157,4 +160,83 @@ export interface DateChangeInput {
 export interface ItemDecision {
   readonly itemId: string;
   readonly resolution: ItemResolution;
+}
+
+export interface ScheduleCandidate {
+  readonly token: string;
+  readonly startDate: string;
+  readonly dueDate: string;
+  readonly affectedTaskCount: number;
+  readonly affectedProfessionalCount: number;
+  readonly onlyInitiatingWorkMoves: boolean;
+  readonly latestFinishInArrangement: string;
+  readonly equivalentAnchorCount: number;
+  readonly selected: boolean;
+}
+
+export interface ExplanationEntry {
+  readonly code: string;
+  readonly anchorsUnavailable: number | null;
+  readonly candidatesEliminated: number | null;
+  readonly outcomesCollapsed: number | null;
+  readonly arrangementsForced: number | null;
+  readonly taskTitles: readonly string[];
+  readonly date: string | null;
+}
+
+export interface AlternativesView {
+  readonly requested: boolean;
+  readonly constraints: {
+    readonly earliestStart: string | null;
+    readonly latestFinishForWork: string | null;
+    readonly latestFinishForChain: string | null;
+    readonly mustNotMoveTitles: readonly string[];
+    readonly note: string | null;
+  } | null;
+  readonly candidates: readonly ScheduleCandidate[];
+  readonly explanation: readonly ExplanationEntry[];
+  readonly sweepTruncated: boolean;
+  readonly anchorsEvaluated: number;
+}
+
+export interface AlternativesInput {
+  readonly earliestStart?: string;
+  readonly latestFinishForWork?: string;
+  readonly latestFinishForChain?: string;
+  readonly mustNotMove?: readonly string[];
+  readonly note?: string;
+}
+
+export interface Handoff {
+  readonly id: string;
+  readonly taskId: string;
+  readonly taskTitle: string;
+  readonly kind: string;
+  readonly state: string;
+  readonly fromName: string | null;
+  readonly toName: string | null;
+  readonly completedWorkAtHandover: string;
+  readonly initiatedAt: string;
+  readonly decidedAt: string | null;
+  readonly viewerDecides: boolean;
+}
+
+export interface PendingActions {
+  readonly proposals: number;
+  readonly handoffs: number;
+  readonly total: number;
+}
+
+export interface ProjectStage {
+  readonly _id: string;
+  readonly name: string;
+  readonly order: number;
+  readonly isGate: boolean;
+  readonly dependsOn: readonly string[];
+  readonly partialReleaseAt?: string;
+}
+
+export interface ProjectMute {
+  readonly projectId: string;
+  readonly muted: boolean;
 }

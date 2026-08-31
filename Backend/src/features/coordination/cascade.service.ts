@@ -4,6 +4,7 @@ import { configOrDefault } from '../calendar/companyCalendar.repository.js';
 import type { CompanyCalendarRepository } from '../calendar/companyCalendar.repository.js';
 import {
   dueFromWorkingDays,
+  isWorkingDay,
   nextWorkingDayOnOrAfter,
   workingDaysBetween,
 } from '../calendar/workingDay.js';
@@ -115,3 +116,255 @@ export const computeImpact = (
 
 export const respondentFor = (task: TaskRecord | undefined): Types.ObjectId | null =>
   task?.assignee ?? null;
+
+export interface AlternativesConstraints {
+  readonly earliestStart?: Date;
+  readonly latestFinishForWork?: Date;
+  readonly latestFinishForChain?: Date;
+  readonly mustNotMove: readonly string[];
+}
+
+export const EXPLANATION_CODES = [
+  'earliest_start',
+  'latest_finish_work',
+  'latest_finish_chain',
+  'project_ceiling',
+  'must_not_move',
+  'stage_dependency',
+  'working_calendar',
+  'frozen_work',
+  'pending_commitments',
+  'single_duration',
+  'equivalent_outcomes',
+] as const;
+export type ExplanationCode = (typeof EXPLANATION_CODES)[number];
+
+export interface ExplanationEntry {
+  readonly code: ExplanationCode;
+  readonly anchorsUnavailable?: number;
+  readonly candidatesEliminated?: number;
+  readonly outcomesCollapsed?: number;
+  readonly arrangementsForced?: number;
+  readonly taskIds?: readonly string[];
+  readonly date?: string;
+}
+
+export interface ScheduleCandidate {
+  readonly token: string;
+  readonly startDate: string;
+  readonly dueDate: string;
+  readonly affectedTaskCount: number;
+  readonly affectedProfessionalCount: number;
+  readonly onlyInitiatingWorkMoves: boolean;
+  readonly latestFinishInArrangement: string;
+  readonly equivalentAnchorCount: number;
+}
+
+export interface AlternativesResult {
+  readonly candidates: readonly ScheduleCandidate[];
+  readonly explanation: readonly ExplanationEntry[];
+  readonly sweepTruncated: boolean;
+  readonly anchorsEvaluated: number;
+}
+
+const SWEEP_LIMIT = 60;
+const MS_PER_DAY = 86_400_000;
+
+const distinctSpans = (
+  task: TaskRecord,
+  changes: RequestedChanges,
+  config: WorkingCalendarConfig,
+): readonly number[] => {
+  const committed = Math.max(1, workingDaysBetween(config, task.startDate, task.dueDate));
+  const spans = new Set<number>([committed]);
+
+  if (changes.deltaWorkingDays !== undefined) {
+    spans.add(Math.max(1, committed + changes.deltaWorkingDays));
+  }
+  if (changes.alternativeStart !== undefined && changes.alternativeDue !== undefined) {
+    spans.add(Math.max(1, workingDaysBetween(config, changes.alternativeStart, changes.alternativeDue)));
+  }
+  return [...spans].sort((a, b) => a - b);
+};
+
+export const candidateSchedules = (
+  graph: ProjectGraph,
+  requested: TaskRecord,
+  changes: RequestedChanges,
+  constraints: AlternativesConstraints,
+): AlternativesResult => {
+  const task = graph.tasks.find((row) => row._id.equals(requested._id)) ?? requested;
+  const { config } = graph;
+  const spans = distinctSpans(task, changes, config);
+  const shortest = spans[0] ?? 1;
+
+  const ceilingDate = overrunCeiling(graph.project.originalTargetEndDate, graph.project.overrunAllowanceDays);
+  const upperLimit =
+    constraints.latestFinishForWork !== undefined &&
+    constraints.latestFinishForWork.getTime() < ceilingDate.getTime()
+      ? constraints.latestFinishForWork
+      : ceilingDate;
+
+  const floor =
+    constraints.earliestStart !== undefined &&
+    constraints.earliestStart.getTime() > task.startDate.getTime()
+      ? constraints.earliestStart
+      : task.startDate;
+  const lower = nextWorkingDayOnOrAfter(config, floor);
+
+  const anchors: Date[] = [];
+  let unavailableDays = 0;
+  let cursor = lower;
+  let truncated = false;
+
+  while (anchors.length < SWEEP_LIMIT) {
+    if (dueFromWorkingDays(config, cursor, shortest).getTime() > upperLimit.getTime()) break;
+    if (isWorkingDay(config, cursor)) anchors.push(cursor);
+    else unavailableDays += 1;
+    cursor = new Date(cursor.getTime() + MS_PER_DAY);
+  }
+  if (anchors.length === SWEEP_LIMIT) {
+    let boundary: Date | null = null;
+    let probe = cursor;
+    for (let i = 0; i < 3650; i += 1) {
+      if (dueFromWorkingDays(config, probe, shortest).getTime() > upperLimit.getTime()) break;
+      if (isWorkingDay(config, probe)) boundary = probe;
+      probe = new Date(probe.getTime() + MS_PER_DAY);
+    }
+    if (boundary !== null) {
+      anchors.push(boundary);
+      truncated = true;
+    }
+  }
+
+  let eliminatedByWorkFinish = 0;
+  let eliminatedByChainFinish = 0;
+  let eliminatedByCeiling = 0;
+  const blockedTasks = new Set<string>();
+  let forcedArrangements = 0;
+
+  interface Evaluated {
+    readonly start: Date;
+    readonly due: Date;
+    readonly signature: string;
+    readonly affectedIds: readonly string[];
+    readonly professionals: number;
+    readonly latest: Date;
+  }
+  const kept: Evaluated[] = [];
+
+  for (const anchor of anchors) {
+    for (const span of spans) {
+      const due = dueFromWorkingDays(config, anchor, span);
+      if (
+        constraints.latestFinishForWork !== undefined &&
+        due.getTime() > constraints.latestFinishForWork.getTime()
+      ) {
+        eliminatedByWorkFinish += 1;
+        continue;
+      }
+
+      const { result } = computeImpact(graph, task, { alternativeStart: anchor, alternativeDue: due });
+      let latest = due;
+      for (const item of result.items) {
+        if (item.proposedDue.getTime() > latest.getTime()) latest = item.proposedDue;
+      }
+
+      if (latest.getTime() > ceilingDate.getTime()) {
+        eliminatedByCeiling += 1;
+        continue;
+      }
+      if (
+        constraints.latestFinishForChain !== undefined &&
+        latest.getTime() > constraints.latestFinishForChain.getTime()
+      ) {
+        eliminatedByChainFinish += 1;
+        continue;
+      }
+
+      const moved = result.items
+        .filter((item) => item.reason !== 'initiating')
+        .map((item) => item.taskId);
+      const blocked = moved.filter((id) => constraints.mustNotMove.includes(id));
+      if (blocked.length > 0) {
+        for (const id of blocked) blockedTasks.add(id);
+        continue;
+      }
+      if (moved.length > 0) forcedArrangements += 1;
+
+      const professionals = new Set(
+        moved
+          .map((id) => graph.tasks.find((row) => row._id.toString() === id)?.assignee?.toString())
+          .filter((id): id is string => id !== undefined),
+      );
+      kept.push({
+        start: anchor,
+        due,
+        signature: `${[...moved].sort().join(',')}|${formatCalendarDate(latest)}`,
+        affectedIds: moved,
+        professionals: professionals.size,
+        latest,
+      });
+    }
+  }
+
+  const groups = new Map<string, Evaluated[]>();
+  for (const row of kept) {
+    groups.set(row.signature, [...(groups.get(row.signature) ?? []), row]);
+  }
+
+  const candidates: ScheduleCandidate[] = [...groups.values()]
+    .map((group) => {
+      const representative = group.reduce((earliest, row) =>
+        row.start.getTime() < earliest.start.getTime() ? row : earliest,
+      );
+      return {
+        token: `${formatCalendarDate(representative.start)}_${formatCalendarDate(representative.due)}`,
+        startDate: formatCalendarDate(representative.start),
+        dueDate: formatCalendarDate(representative.due),
+        affectedTaskCount: representative.affectedIds.length + 1,
+        affectedProfessionalCount: representative.professionals,
+        onlyInitiatingWorkMoves: representative.affectedIds.length === 0,
+        latestFinishInArrangement: formatCalendarDate(representative.latest),
+        equivalentAnchorCount: group.length,
+      };
+    })
+    .sort((a, b) => a.startDate.localeCompare(b.startDate));
+
+  const explanation: ExplanationEntry[] = [];
+  const add = (entry: ExplanationEntry): void => {
+    explanation.push(entry);
+  };
+
+  if (constraints.earliestStart !== undefined && constraints.earliestStart.getTime() > task.startDate.getTime()) {
+    add({ code: 'earliest_start', date: formatCalendarDate(lower) });
+  }
+  if (anchors.length === 0) {
+    const bindingIsWorkFinish =
+      constraints.latestFinishForWork !== undefined &&
+      constraints.latestFinishForWork.getTime() === upperLimit.getTime();
+    add({
+      code: bindingIsWorkFinish ? 'latest_finish_work' : 'project_ceiling',
+      date: formatCalendarDate(upperLimit),
+    });
+  }
+  if (unavailableDays > 0) add({ code: 'working_calendar', anchorsUnavailable: unavailableDays });
+  if (spans.length === 1) add({ code: 'single_duration' });
+  if (eliminatedByWorkFinish > 0) {
+    add({ code: 'latest_finish_work', candidatesEliminated: eliminatedByWorkFinish });
+  }
+  if (eliminatedByChainFinish > 0) {
+    add({ code: 'latest_finish_chain', candidatesEliminated: eliminatedByChainFinish });
+  }
+  if (eliminatedByCeiling > 0) add({ code: 'project_ceiling', candidatesEliminated: eliminatedByCeiling });
+  if (blockedTasks.size > 0) add({ code: 'must_not_move', taskIds: [...blockedTasks] });
+  if (forcedArrangements > 0) add({ code: 'stage_dependency', arrangementsForced: forcedArrangements });
+
+  const frozenCount = graph.tasks.filter((row) => frozen(row)).length;
+  if (frozenCount > 0) add({ code: 'frozen_work', arrangementsForced: frozenCount });
+
+  const collapsed = kept.length - candidates.length;
+  if (collapsed > 0) add({ code: 'equivalent_outcomes', outcomesCollapsed: collapsed });
+
+  return { candidates, explanation, sweepTruncated: truncated, anchorsEvaluated: anchors.length };
+};

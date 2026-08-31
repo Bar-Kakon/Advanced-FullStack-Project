@@ -26,6 +26,7 @@ export interface RecordedResponse {
   readonly declineReason?: JustifiedDeclineReason;
   readonly counterStart?: Date;
   readonly counterDue?: Date;
+  readonly otherSolution?: string;
 }
 
 export interface ItemDecision {
@@ -39,6 +40,7 @@ export interface ProposalRepository {
   listOpenForRespondent(respondent: Types.ObjectId): Promise<ProposalRecord[]>;
   listForProject(project: Types.ObjectId, limit: number): Promise<ProposalRecord[]>;
   listResolvedForRespondent(respondent: Types.ObjectId): Promise<ProposalRecord[]>;
+  listAwaitingAction(respondent: Types.ObjectId, managedProjects: readonly Types.ObjectId[]): Promise<ProposalRecord[]>;
   launch(id: Types.ObjectId, by: Types.ObjectId, expiresAt: Date): Promise<ProposalRecord | null>;
   expire(id: Types.ObjectId, at: Date): Promise<ProposalRecord | null>;
   cancel(id: Types.ObjectId, by: Types.ObjectId, at: Date): Promise<ProposalRecord | null>;
@@ -48,6 +50,16 @@ export interface ProposalRepository {
     respondent: Types.ObjectId,
     recorded: RecordedResponse,
     at: Date,
+  ): Promise<ProposalRecord | null>;
+  setAlternativesContext(
+    id: Types.ObjectId,
+    context: ProposalRecord['alternativesContext'],
+  ): Promise<ProposalRecord | null>;
+  replaceItems(
+    id: Types.ObjectId,
+    changes: ProposalRecord['changes'],
+    items: readonly Omit<ProposalRecord['items'][number], '_id'>[],
+    selectedAlternative: string,
   ): Promise<ProposalRecord | null>;
   setExcluded(
     id: Types.ObjectId,
@@ -106,6 +118,17 @@ export const proposalRepository: ProposalRepository = {
       .exec();
   },
 
+  async listAwaitingAction(respondent, managedProjects) {
+    return RescheduleProposalModel.find({
+      $or: [
+        { 'items.respondent': respondent, status: 'open' },
+        { project: { $in: [...managedProjects] }, status: { $in: ['requested', 'open', 'expired'] } },
+      ],
+    })
+      .lean<ProposalRecord[]>()
+      .exec();
+  },
+
   async launch(id, by, expiresAt) {
     return RescheduleProposalModel.findOneAndUpdate(
       { _id: id, status: 'requested' },
@@ -152,6 +175,9 @@ export const proposalRepository: ProposalRepository = {
     if (recorded.counterDue === undefined) unset['items.$[row].counterDue'] = '';
     else set['items.$[row].counterDue'] = recorded.counterDue;
 
+    if (recorded.otherSolution === undefined) unset['items.$[row].otherSolution'] = '';
+    else set['items.$[row].otherSolution'] = recorded.otherSolution;
+
     return RescheduleProposalModel.findOneAndUpdate(
       {
         _id: id,
@@ -165,6 +191,26 @@ export const proposalRepository: ProposalRepository = {
           { 'row._id': itemId, 'row.respondent': respondent, 'row.response': 'pending', 'row.excluded': false },
         ],
       },
+    )
+      .lean<ProposalRecord>()
+      .exec();
+  },
+
+  async setAlternativesContext(id, context) {
+    return RescheduleProposalModel.findOneAndUpdate(
+      { _id: id, status: 'requested' },
+      { $set: { alternativesContext: context } },
+      { new: true },
+    )
+      .lean<ProposalRecord>()
+      .exec();
+  },
+
+  async replaceItems(id, changes, items, selectedAlternative) {
+    return RescheduleProposalModel.findOneAndUpdate(
+      { _id: id, status: 'requested' },
+      { $set: { changes, items: [...items], selectedAlternative } },
+      { new: true },
     )
       .lean<ProposalRecord>()
       .exec();

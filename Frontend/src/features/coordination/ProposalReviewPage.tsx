@@ -22,6 +22,7 @@ import {
   type Proposal,
   type ProposalItem,
 } from '../../api/coordination.types';
+import { AlternativesPanel } from './components/AlternativesPanel';
 import { useProposal } from './useProposal';
 import profileCss from '../profile/profile.css?inline';
 import tasksCss from '../tasks/tasks.css?inline';
@@ -39,6 +40,7 @@ const displayDate = (iso: string, lang: 'he' | 'en'): string => {
 const defaultResolutionFor = (item: ProposalItem): ItemResolution => {
   if (item.excluded) return 'none';
   if (item.response === 'countered') return 'counter';
+  if (item.response === 'other_proposed') return 'other';
   if (item.response === 'accepted') return 'proposed';
   return 'none';
 };
@@ -47,7 +49,7 @@ export const ProposalReviewPage = () => {
   const { t, lang } = useLanguage();
   const { user } = useAuth();
   const { proposalId = '' } = useParams<{ proposalId: string }>();
-  const { proposal, loading, busy, failed, actionFailed, act } = useProposal(proposalId);
+  const { proposal, loading, busy, failed, actionFailed, act, replace } = useProposal(proposalId);
 
   useScreenStylesheet(
     { id: 'profile.css', css: profileCss },
@@ -61,7 +63,8 @@ export const ProposalReviewPage = () => {
   const lastName = user?.lastName ?? '';
 
   const [answering, setAnswering] = useState<string | null>(null);
-  const [mode, setMode] = useState<'accepted' | 'declined' | 'countered'>('accepted');
+  const [mode, setMode] = useState<'accepted' | 'declined' | 'countered' | 'other_proposed'>('accepted');
+  const [otherSolution, setOtherSolution] = useState('');
   const [declineReason, setDeclineReason] = useState('');
   const [counterStart, setCounterStart] = useState('');
   const [counterDue, setCounterDue] = useState('');
@@ -78,6 +81,7 @@ export const ProposalReviewPage = () => {
           ? { declineReason: declineReason as (typeof JUSTIFIED_DECLINE_REASONS)[number] }
           : {}),
         ...(mode === 'countered' ? { counterStart, counterDue } : {}),
+        ...(mode === 'other_proposed' ? { otherSolution } : {}),
       });
       setAnswering(null);
       return next;
@@ -247,6 +251,11 @@ export const ProposalReviewPage = () => {
                                   .replace('{due}', date(item.counterDue))}
                               </span>
                             ) : null}
+                            {item.otherSolution === null ? null : (
+                              <span className="prop-note" dir="auto">
+                                {copy.resolution.other}: {item.otherSolution}
+                              </span>
+                            )}
                             {item.declineReason === null ? null : (
                               <span className="prop-note">
                                 {copy.response.declineReason}: {copy.declineReason[item.declineReason]}
@@ -283,7 +292,7 @@ export const ProposalReviewPage = () => {
                         <>
                           <fieldset className="prop-modes">
                             <legend className="field-label">{copy.response.label}</legend>
-                            {(['accepted', 'declined', 'countered'] as const).map((value) => (
+                            {(['accepted', 'declined', 'countered', 'other_proposed'] as const).map((value) => (
                               <label key={value} className="perm-check">
                                 <input
                                   type="radio"
@@ -297,7 +306,9 @@ export const ProposalReviewPage = () => {
                                     ? copy.actions.accept
                                     : value === 'declined'
                                       ? copy.actions.decline
-                                      : copy.actions.counter}
+                                      : value === 'countered'
+                                        ? copy.actions.counter
+                                        : copy.actions.other}
                                 </span>
                               </label>
                             ))}
@@ -322,6 +333,22 @@ export const ProposalReviewPage = () => {
                                   </option>
                                 ))}
                               </select>
+                            </label>
+                          ) : null}
+
+                          {mode === 'other_proposed' ? (
+                            <label className="field">
+                              <span className="field-label" id={`os-${item.id}`}>
+                                {copy.actions.otherLabel}
+                              </span>
+                              <textarea
+                                className="input"
+                                rows={2}
+                                aria-labelledby={`os-${item.id}`}
+                                value={otherSolution}
+                                disabled={busy}
+                                onChange={(event) => setOtherSolution(event.target.value)}
+                              />
                             </label>
                           ) : null}
 
@@ -380,6 +407,10 @@ export const ProposalReviewPage = () => {
                   ))}
               </section>
             )}
+
+            {proposal.viewer.canAdjustImpact && proposal.status === 'requested' ? (
+              <AlternativesPanel proposal={proposal} onSelected={replace} />
+            ) : null}
 
             {proposal.viewer.seesResponseMatrix ? (
               <section className="panel" aria-labelledby="proposal-decide">
@@ -444,6 +475,9 @@ export const ProposalReviewPage = () => {
                               <option value="proposed">{copy.resolution.proposed}</option>
                               {item.response === 'countered' ? (
                                 <option value="counter">{copy.resolution.counter}</option>
+                              ) : null}
+                              {item.response === 'other_proposed' ? (
+                                <option value="other">{copy.resolution.other}</option>
                               ) : null}
                               <option value="replaced">{copy.resolution.replaced}</option>
                             </select>

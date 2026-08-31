@@ -69,6 +69,7 @@ export interface Project {
   readonly cancellable: boolean;
   /** Real current management authority for this viewer. Never derived from who created it. */
   readonly viewerManages: boolean;
+  readonly pendingActions: number;
   readonly createdAt: string;
   readonly updatedAt: string;
 }

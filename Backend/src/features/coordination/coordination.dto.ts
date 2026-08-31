@@ -69,6 +69,7 @@ export interface ProposalItemDto {
   readonly declineReason: JustifiedDeclineReason | null;
   readonly counterStart: string | null;
   readonly counterDue: string | null;
+  readonly otherSolution: string | null;
   readonly respondedAt: string | null;
   readonly resolution: ItemResolution;
   readonly excluded: boolean;
@@ -79,6 +80,7 @@ export interface ResponseSummaryDto {
   readonly accepted: number;
   readonly declined: number;
   readonly countered: number;
+  readonly otherProposed: number;
   readonly pending: number;
   readonly excluded: number;
 }
@@ -109,6 +111,7 @@ export interface ProposalDto {
   readonly resolvedAt: string | null;
   readonly resolutionNote: string | null;
   readonly parentProposalId: string | null;
+  readonly selectedAlternative: string | null;
   readonly items: readonly ProposalItemDto[];
   readonly summary: ResponseSummaryDto | null;
   readonly viewer: ProposalViewerDto;
@@ -136,4 +139,61 @@ export interface AuditEntryDto {
   readonly proposalId: string | null;
   readonly at: string;
   readonly details: Record<string, unknown>;
+}
+
+export interface ScheduleCandidateDto {
+  readonly token: string;
+  readonly startDate: string;
+  readonly dueDate: string;
+  readonly affectedTaskCount: number;
+  readonly affectedProfessionalCount: number;
+  readonly onlyInitiatingWorkMoves: boolean;
+  readonly latestFinishInArrangement: string;
+  readonly equivalentAnchorCount: number;
+  readonly selected: boolean;
+}
+
+export interface ExplanationEntryDto {
+  readonly code: string;
+  readonly anchorsUnavailable: number | null;
+  readonly candidatesEliminated: number | null;
+  readonly outcomesCollapsed: number | null;
+  readonly arrangementsForced: number | null;
+  readonly taskTitles: readonly string[];
+  readonly date: string | null;
+}
+
+export interface AlternativesDto {
+  readonly requested: boolean;
+  readonly constraints: {
+    readonly earliestStart: string | null;
+    readonly latestFinishForWork: string | null;
+    readonly latestFinishForChain: string | null;
+    readonly mustNotMoveTitles: readonly string[];
+    readonly note: string | null;
+  } | null;
+  readonly candidates: readonly ScheduleCandidateDto[];
+  readonly explanation: readonly ExplanationEntryDto[];
+  readonly sweepTruncated: boolean;
+  readonly anchorsEvaluated: number;
+}
+
+export interface HandoffDto {
+  readonly id: string;
+  readonly taskId: string;
+  readonly taskTitle: string;
+  readonly kind: string;
+  readonly state: string;
+  readonly fromName: string | null;
+  readonly toName: string | null;
+  readonly completedWorkAtHandover: string;
+  readonly initiatedAt: string;
+  readonly decidedAt: string | null;
+  readonly viewerDecides: boolean;
+}
+
+export interface PendingActionsDto {
+  readonly proposals: number;
+  readonly handoffs: number;
+  readonly total: number;
 }

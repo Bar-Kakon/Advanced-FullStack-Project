@@ -49,5 +49,9 @@ export const useProposal = (proposalId: string) => {
     }
   }, []);
 
-  return { proposal, loading, busy, failed, actionFailed, act, reload: load };
+  const replace = useCallback((next: Proposal): void => {
+    setProposal(next);
+  }, []);
+
+  return { proposal, loading, busy, failed, actionFailed, act, replace, reload: load };
 };

@@ -187,3 +187,9 @@
 }
 
 .profile__head-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+
+.project-chip--pending {
+  border-color: var(--primary-30);
+  background: var(--surface);
+  font-weight: 700;
+}

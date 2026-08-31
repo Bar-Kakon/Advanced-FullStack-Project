@@ -72,6 +72,7 @@ export interface Dashboard {
   readonly network: DashboardNetwork;
   readonly reputation: DashboardReputation;
   readonly profileReminder: ProfileReminder;
+  readonly pendingActions: { readonly proposals: number; readonly handoffs: number; readonly total: number };
 }
 
 export interface DashboardResponse {
@@ -80,4 +81,5 @@ export interface DashboardResponse {
 
 export interface ProfileReminderResponse {
   readonly profileReminder: ProfileReminder;
+  readonly pendingActions: { readonly proposals: number; readonly handoffs: number; readonly total: number };
 }

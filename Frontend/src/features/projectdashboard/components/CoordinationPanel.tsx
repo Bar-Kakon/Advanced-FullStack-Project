@@ -1,11 +1,11 @@
 import { Link } from 'react-router-dom';
 
 import { useLanguage } from '../../../i18n/useLanguage';
-import type { AuditEntry, ProposalListRow } from '../../../api/coordination.types';
+import type { AuditEntry, PendingActions, ProposalListRow } from '../../../api/coordination.types';
 
 export interface CoordinationPanelProps {
   readonly openProposals: number;
-  readonly awaitingMe: number;
+  readonly pendingActions: PendingActions;
   readonly proposals: readonly ProposalListRow[];
   readonly audit: readonly AuditEntry[];
   readonly seesEverything: boolean;
@@ -20,7 +20,7 @@ const stamp = (iso: string, lang: 'he' | 'en'): string =>
 
 export const CoordinationPanel = ({
   openProposals,
-  awaitingMe,
+  pendingActions,
   proposals,
   audit,
   seesEverything,
@@ -33,10 +33,13 @@ export const CoordinationPanel = ({
       <section className="panel" aria-labelledby="coordination-title">
         <h2 id="coordination-title" className="panel__title">{copy.project.title}</h2>
         <p className="panel__lede">{copy.project.lede}</p>
+        <p className="panel__lede">{copy.project.open.replace('{n}', String(openProposals))}</p>
         <p className="panel__lede">
-          {copy.project.open.replace('{n}', String(openProposals))}
-          {' · '}
-          {copy.project.awaitingMe.replace('{n}', String(awaitingMe))}
+          <strong>{copy.pending.title}</strong>
+          {': '}
+          {pendingActions.total === 0
+            ? copy.pending.none
+            : `${copy.pending.proposals.replace('{n}', String(pendingActions.proposals))} · ${copy.pending.handoffs.replace('{n}', String(pendingActions.handoffs))}`}
         </p>
 
         {proposals.length === 0 ? (

@@ -10,6 +10,7 @@ import { initialsOf } from '../profile/profileModel';
 import { DelegationPanel } from './components/DelegationPanel';
 import { PrivateWorkPanel } from './components/PrivateWorkPanel';
 import { DateChangePanel } from './components/DateChangePanel';
+import { HandoffPanel } from './components/HandoffPanel';
 import { WorkPlansPanel } from './components/WorkPlansPanel';
 import { useTaskDetail } from './useTaskDetail';
 import profileCss from '../profile/profile.css?inline';
@@ -185,6 +186,13 @@ export const TaskDetailPage = () => {
               taskId={task.id}
               available={task.rescheduleAvailable && task.viewer.canRequestDateChange}
               impact={task.rescheduleImpact}
+            />
+
+            <HandoffPanel
+              taskId={task.id}
+              canInitiate={task.viewer.canRequestDateChange}
+              hasDelegation={task.delegation !== null}
+              onResponsibilityChanged={() => void reload()}
             />
 
             <WorkPlansPanel

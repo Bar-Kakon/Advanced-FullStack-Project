@@ -15,6 +15,7 @@ export const toProjectDto = (
   /** From the Tasks domain. The one fact the closed start rule needs that the project cannot hold. */
   firstTaskStarted: boolean,
   baseConfig?: WorkingCalendarConfig,
+  pendingActions = 0,
 ): ProjectDto => ({
   id: project._id.toString(),
   companyId: project.company.toString(),
@@ -51,6 +52,7 @@ export const toProjectDto = (
   status: deriveStatus(project, firstTaskStarted),
   cancellable: isCancellable(project, firstTaskStarted),
   viewerManages,
+  pendingActions,
   createdAt: project.createdAt.toISOString(),
   updatedAt: project.updatedAt.toISOString(),
 });

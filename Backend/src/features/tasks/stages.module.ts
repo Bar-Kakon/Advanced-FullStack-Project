@@ -16,7 +16,11 @@ import {
 } from '../projects/projectAuthorization.js';
 import { projectScopeParamsSchema } from '../projectmembers/projectMembers.validation.js';
 import { createStagesService } from './stages.service.js';
-import { createStageBodySchema, stageDependenciesBodySchema } from './tasks.validation.js';
+import {
+  createStageBodySchema,
+  stageDependenciesBodySchema,
+  updateStageBodySchema,
+} from './tasks.validation.js';
 import Joi from 'joi';
 
 const stageParamsSchema = projectScopeParamsSchema.keys({
@@ -78,6 +82,20 @@ export const createStagesModule = (requireAccessToken: RequestHandler): Router =
       requireProjectPermission(resolved, 'project.stage.manage');
 
       res.status(201).json({ stage: await stages.create(project._id, body) });
+    },
+  );
+
+  router.patch(
+    '/:stageId',
+    validateRequest({ params: stageParamsSchema, body: updateStageBodySchema }),
+    async (req, res) => {
+      const { projectId, stageId } = getValidated<{ projectId: string; stageId: string }>(res, 'params');
+      const body = getValidated<{ name?: string; isGate?: boolean; order?: number }>(res, 'body');
+
+      const { project, resolved } = await reachProject(getAuthenticatedUserId(res), projectId);
+      requireProjectPermission(resolved, 'project.stage.manage');
+
+      res.json({ stage: await stages.update(project._id, stageId, body) });
     },
   );
 

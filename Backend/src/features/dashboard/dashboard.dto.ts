@@ -63,6 +63,12 @@ export interface DashboardReputationDto {
   readonly completedWork: number;
 }
 
+export interface DashboardPendingActionsDto {
+  readonly proposals: number;
+  readonly handoffs: number;
+  readonly total: number;
+}
+
 export interface DashboardDto {
   readonly identity: DashboardIdentityDto;
   readonly company: DashboardCompanyDto | null;
@@ -70,4 +76,5 @@ export interface DashboardDto {
   readonly team: DashboardTeamDto | null;
   readonly reputation: DashboardReputationDto;
   readonly profileReminder: ProfileReminderDto;
+  readonly pendingActions: DashboardPendingActionsDto;
 }

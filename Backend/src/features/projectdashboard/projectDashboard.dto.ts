@@ -1,4 +1,4 @@
-import type { AuditEntryDto, ProposalListRowDto } from '../coordination/coordination.dto.js';
+import type { AuditEntryDto, PendingActionsDto, ProposalListRowDto } from '../coordination/coordination.dto.js';
 import type { ProjectDto } from '../projects/project.dto.js';
 import type { ProjectTaskSummary } from '../projects/projectLifecycle.service.js';
 
@@ -30,13 +30,14 @@ export interface DashboardViewerDto {
   readonly canManageMembers: boolean;
   readonly canGrantPermissions: boolean;
   readonly canCreateTasks: boolean;
+  readonly canManageStages: boolean;
   readonly canManageSchedule: boolean;
   readonly canPartialRelease: boolean;
 }
 
 export interface ProjectCoordinationDto {
   readonly openProposals: number;
-  readonly awaitingMe: number;
+  readonly pendingActions: PendingActionsDto;
   readonly proposals: readonly ProposalListRowDto[];
   readonly audit: readonly AuditEntryDto[];
 }

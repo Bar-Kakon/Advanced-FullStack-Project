@@ -49,7 +49,9 @@
     "verify:work-plans": "tsx scripts/verify-work-plans.ts",
     "migrate:work-plan-indexes": "tsx scripts/migrate-work-plan-indexes.ts",
     "verify:cascade": "tsx scripts/verify-cascade.ts",
-    "verify:audit": "tsx scripts/verify-audit.ts"
+    "verify:audit": "tsx scripts/verify-audit.ts",
+    "verify:mute": "tsx scripts/verify-mute.ts",
+    "verify:handoff": "tsx scripts/verify-handoff.ts"
   },
   "dependencies": {
     "@types/nodemailer": "^8.0.1",

@@ -99,6 +99,7 @@ const summaryOf = (proposal: ProposalRecord): ResponseSummaryDto => {
     accepted: live.filter((item) => item.response === 'accepted').length,
     declined: live.filter((item) => item.response === 'declined').length,
     countered: live.filter((item) => item.response === 'countered').length,
+    otherProposed: live.filter((item) => item.response === 'other_proposed').length,
     pending: live.filter((item) => item.response === 'pending').length,
     excluded: proposal.items.filter((item) => item.excluded).length,
   };
@@ -126,6 +127,7 @@ const toItemDto = (
     declineReason: item.declineReason ?? null,
     counterStart: item.counterStart === undefined ? null : formatCalendarDate(item.counterStart),
     counterDue: item.counterDue === undefined ? null : formatCalendarDate(item.counterDue),
+    otherSolution: item.otherSolution ?? null,
     respondedAt: item.respondedAt?.toISOString() ?? null,
     resolution: item.resolution,
     excluded: item.excluded,
@@ -161,6 +163,7 @@ export const toProposalDto = (
     resolvedAt: proposal.resolution?.at.toISOString() ?? null,
     resolutionNote: proposal.resolution?.note ?? null,
     parentProposalId: proposal.parentProposal?.toString() ?? null,
+    selectedAlternative: proposal.selectedAlternative ?? null,
     items: visible.map((item) => toItemDto(item, viewer, lookup)),
     summary: matrix ? summaryOf(proposal) : null,
     viewer: {

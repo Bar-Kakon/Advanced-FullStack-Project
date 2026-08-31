@@ -57,6 +57,7 @@ export interface ProjectDto {
    * the project, so My projects can group by the real current relationship.
    */
   readonly viewerManages: boolean;
+  readonly pendingActions: number;
   readonly createdAt: string;
   readonly updatedAt: string;
 }

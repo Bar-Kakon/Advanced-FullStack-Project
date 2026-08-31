@@ -189,8 +189,8 @@ const run = async () => {
 
   await otherPage.locator('.prop-answer button').first().click();
   await otherPage.waitForTimeout(600);
-  check('Three real answers are offered',
-    (await otherPage.locator('.prop-modes .perm-check').count()) === 3);
+  check('Four real answers are offered',
+    (await otherPage.locator('.prop-modes .perm-check').count()) === 4);
   await otherPage.locator('.prop-modes input[type="radio"]').nth(1).check();
   await otherPage.waitForTimeout(400);
   const reasons = await otherPage.locator('.prop-answer select option').allTextContents();
@@ -234,12 +234,91 @@ const run = async () => {
   check('Written in words rather than action codes',
     dashText.includes('הוגשה בקשה לשינוי תאריך') && !ENUM_CODES.some((code) => dashText.includes(code)));
 
-  section('11. Hebrew addresses one person');
+
+  section('11. Alternatives are a management action with real constraints');
+  const altRequest = await call(sub.token, 'POST', `/tasks/${taskId}/date-change`, { deltaWorkingDays: 9 });
+  const altId = altRequest.body.proposal.id;
+  await gcPage.goto(`${APP}/proposals/${altId}`, { waitUntil: 'networkidle' });
+  await gcPage.waitForTimeout(1800);
+
+  const altPanel = gcPage.locator('section[aria-labelledby="alternatives-title"]');
+  check('The alternatives panel is offered to management', (await altPanel.count()) === 1);
+  check('And nothing has been generated on its own',
+    (await altPanel.textContent()).includes('לא נוצרו חלופות'));
+  check('The note is declared as context only, not schedule input',
+    (await altPanel.textContent()).includes('אינה משמשת את חישוב הלוח'));
+
+  await altPanel.locator('button:has-text("יצירת חלופות")').click();
+  await gcPage.waitForTimeout(2500);
+  const generated = await altPanel.textContent();
+  check('Creating them produces at least one arrangement',
+    (await altPanel.locator('.alt-item').count()) >= 1,
+    `${await altPanel.locator('.alt-item').count()}`);
+  check('And explains what shaped the result', generated.includes('מה הגביל את התוצאה'));
+  check('No internal candidate key is rendered',
+    !/as_requested|later_start|no_impact|initiating_only/.test(generated));
+  check('Nothing is preselected as best',
+    (await altPanel.locator('.prop-chip--accepted').count()) === 0);
+
+  await altPanel.locator('.alt-item button').first().click();
+  await gcPage.waitForTimeout(2200);
+  check('Management can select one explicitly',
+    (await gcPage.locator('.alt-item .prop-chip--accepted').count()) === 1);
+
+  const subAltRead = await subPage.goto(`${APP}/proposals/${altId}`, { waitUntil: 'networkidle' });
+  void subAltRead;
+  await subPage.waitForTimeout(1600);
+  check('An ordinary professional never sees the candidate set',
+    (await subPage.locator('section[aria-labelledby="alternatives-title"]').count()) === 0);
+  await call(gc.token, 'POST', `/coordination/proposals/${altId}/cancel`, {});
+
+  section('12. Another workable solution is offered and agreed on screen');
+  const otherRequest = await call(sub.token, 'POST', `/tasks/${taskId}/date-change`, { deltaWorkingDays: 4 });
+  const otherId = otherRequest.body.proposal.id;
+  await call(gc.token, 'POST', `/coordination/proposals/${otherId}/launch`, {});
+
+  await otherPage.goto(`${APP}/proposals/${otherId}`, { waitUntil: 'networkidle' });
+  await otherPage.waitForTimeout(1800);
+  await otherPage.locator('.prop-answer button').first().click();
+  await otherPage.waitForTimeout(600);
+  check('A fourth real answer is offered',
+    (await otherPage.locator('.prop-modes .perm-check').count()) === 4);
+
+  await otherPage.locator('.prop-modes input[type="radio"]').nth(3).check();
+  await otherPage.waitForTimeout(400);
+  await otherPage.locator('.prop-answer textarea').fill('צוות שני בלילה');
+  await otherPage.locator('.prop-answer button:has-text("שליחת התגובה")').click();
+  await otherPage.waitForTimeout(2200);
+  check('The professional records what would let the work carry on',
+    (await otherPage.textContent('main')).includes('הוצע פתרון אחר'));
+
+  await gcPage.goto(`${APP}/proposals/${otherId}`, { waitUntil: 'networkidle' });
+  await gcPage.waitForTimeout(1800);
+  const gcOtherView = await gcPage.textContent('main');
+  check('Management sees what was proposed', gcOtherView.includes('צוות שני בלילה'));
+  const optionText = await gcPage.locator('.prop-decisions select option').allTextContents();
+  check('And can agree to it as its own resolution',
+    optionText.some((option) => option.includes('הפתרון האחר שסוכם')),
+    optionText.join(' | '));
+  check('while the option is absent from an item nobody offered one on',
+    (await gcPage.locator('.prop-decisions select').first().locator('option').allTextContents())
+      .every((option) => !option.includes('הפתרון האחר שסוכם')));
+
+  section('13. Pending actions mean work waiting on this viewer');
+  await subPage.goto(`${APP}/projects/${projectId}`, { waitUntil: 'networkidle' });
+  await subPage.waitForTimeout(2200);
+  const subDash = await subPage.textContent('main');
+  check('The project dashboard states what is waiting on me', subDash.includes('ממתין לי'));
+  check('And keeps the project-wide open count as a separate line',
+    subDash.includes('בקשות פתוחות'));
+  await call(gc.token, 'POST', `/coordination/proposals/${otherId}/cancel`, {});
+
+  section('14. Hebrew addresses one person');
   const he = await gcPage.textContent('main');
   const bad = FORBIDDEN_HE.filter((word) => he.includes(word));
   check('No plural-as-neutral and no slash forms', bad.length === 0, bad.join(' · '));
 
-  section('12. Both languages at three widths');
+  section('15. Both languages at three widths');
   for (const [label, width, height] of [['desktop', 1440, 900], ['tablet', 834, 1100], ['mobile', 390, 844]]) {
     await gcPage.setViewportSize({ width, height });
     for (const lang of ['en', 'עב']) {
@@ -273,7 +352,7 @@ const run = async () => {
 
   await gcPage.setViewportSize({ width: 1440, height: 900 });
 
-  section('13. Page errors');
+  section('16. Page errors');
   const unexpected = errors.filter((e) => !/status of 40[34]/.test(e));
   check('No uncaught page error', unexpected.length === 0, unexpected.slice(0, 2).join(' | '));
 

@@ -41,10 +41,11 @@ export const requestBodySchema = Joi.object({
 });
 
 export const respondBodySchema = Joi.object({
-  response: Joi.string().valid('accepted', 'declined', 'countered').required(),
+  response: Joi.string().valid('accepted', 'declined', 'countered', 'other_proposed').required(),
   declineReason: Joi.string().valid(...JUSTIFIED_DECLINE_REASONS),
   counterStart: calendarDate,
   counterDue: calendarDate,
+  otherSolution: Joi.string().trim().min(1).max(600),
 });
 
 export const excludeBodySchema = Joi.object({ excluded: Joi.boolean().required() });
@@ -71,6 +72,29 @@ export const dateChangeBodySchema = Joi.object({
   reason: Joi.string().trim().max(600),
   responseHours: Joi.number().integer().min(1).max(8760),
 }).or('deltaWorkingDays', 'alternativeStart', 'alternativeDue');
+
+export const alternativeParamsSchema = Joi.object({
+  proposalId: objectId.required(),
+  token: Joi.string().trim().max(40).required(),
+});
+
+export const alternativesBodySchema = Joi.object({
+  earliestStart: calendarDate,
+  latestFinishForWork: calendarDate,
+  latestFinishForChain: calendarDate,
+  mustNotMove: Joi.array().items(objectId).max(50),
+  note: Joi.string().trim().max(600),
+});
+
+export const handoffParamsSchema = Joi.object({ handoffId: objectId.required() });
+
+export const handoffBodySchema = Joi.object({
+  toUserId: objectId.required(),
+  completedWorkAtHandover: Joi.string().trim().min(1).max(600).required(),
+  proposalId: objectId,
+});
+
+export const handoffDecisionSchema = Joi.object({ accept: Joi.boolean().required() });
 
 export const releaseBodySchema = Joi.object({
   taskIds: Joi.array().items(objectId).min(1).required(),

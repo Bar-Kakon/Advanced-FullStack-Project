@@ -86,6 +86,28 @@ export const PersonalDashboardPage = () => {
               </section>
             ) : null}
 
+            <section className="panel" aria-labelledby="dashboard-pending-title">
+              <h2 id="dashboard-pending-title" className="panel__title">{t.coordination.pending.title}</h2>
+              {dashboard.pendingActions.total === 0 ? (
+                <p className="panel__lede">{t.coordination.pending.none}</p>
+              ) : (
+                <StatGroup
+                  stats={[
+                    {
+                      key: 'proposals',
+                      label: t.coordination.pending.proposals.replace(': {n}', ''),
+                      value: dashboard.pendingActions.proposals,
+                    },
+                    {
+                      key: 'handoffs',
+                      label: t.coordination.pending.handoffs.replace(': {n}', ''),
+                      value: dashboard.pendingActions.handoffs,
+                    },
+                  ]}
+                />
+              )}
+            </section>
+
             <section className="panel" aria-labelledby="dashboard-network-title">
               <h2 id="dashboard-network-title" className="panel__title">{t.dashboard.network.title}</h2>
               <p className="panel__lede">{t.dashboard.network.lede}</p>

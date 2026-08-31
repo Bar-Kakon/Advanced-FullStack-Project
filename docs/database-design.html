@@ -1743,9 +1743,11 @@ module.exports = mongoose.model('WorkEntry', workEntrySchema);`
     { name: 'items[].currentStart / currentEnd', type: 'Date', note: 'Snapshot of the dates as they were when the proposal opened, so the before/after preview stays truthful.' },
     { name: 'items[].proposedStart / proposedEnd', type: 'Date', note: 'What the cascade computed.' },
     { name: 'items[].reason', type: "'initiating' | 'gate' | 'sequence'", note: 'Why this work is in the impact at all — the request itself, a true gate holding its whole stage, or ordinary stage sequence. It is what lets the preview explain itself instead of just listing tasks.' },
-    { name: 'items[].response', type: "'pending' | 'accepted' | 'declined' | 'countered'", note: 'One answer per affected professional per proposal. The update filters on `response: pending` **inside the document filter**, not only in the array filter, so a second submission matches nothing and is refused rather than silently no-oping.' },
+    { name: 'items[].response', type: "'pending' | 'accepted' | 'declined' | 'countered' | 'other_proposed'", note: 'One answer per affected professional per proposal. The update filters on `response: pending` **inside the document filter**, not only in the array filter, so a second submission matches nothing and is refused rather than silently no-oping.' },
     { name: 'items[].declineReason', type: 'enum | absent', note: 'One of the seven approved justified reasons — health, plans not ready, equipment failure, permit unavailable, GC stop, materials not arrived, tools not arrived. **Absent means the decline was not justified**, and nothing anywhere guesses justification from free text. This is the only field the Flexibility neutral case reads.' },
-    { name: 'items[].resolution', type: "'none' | 'proposed' | 'counter' | 'replaced'", note: 'What the authorised resolver actually applied to this piece of work. `replaced` records that the professional was replaced — it is the negative Flexibility outcome, and it performs **no** responsibility transfer, which is a separate unbuilt flow.' },
+    { name: 'items[].resolution', type: "'none' | 'proposed' | 'counter' | 'other' | 'replaced'", note: 'What the authorised resolver actually applied to this piece of work. **`other` (2026-08-31)** agrees to an other workable solution the professional offered — it is refused unless they actually offered one, and it **moves no date**, because the work continues by other means. **`replaced`** records that the professional was replaced; on its own it is now worth **nothing** to Flexibility — the negative outcome appears only once an accepted [[workhandoffs]] row exists for that work.' },
+    { name: 'items[].otherSolution', type: 'String', note: '**Added 2026-08-31.** What the professional says would let the work carry on. Required when the answer is `other_proposed`, because the alternative to structured state is guessing an outcome from free text. Management-visible; never in the public Flexibility context.' },
+    { name: 'alternativesContext', type: '{ earliestStart, latestFinishForWork, latestFinishForChain, mustNotMove[], note, requestedBy, requestedAt }', note: '**Added 2026-08-31.** Present only once management explicitly asked for alternatives — its absence is what makes *no chooser was generated* a real state rather than an empty list. The three dates and the fixed-work list are **machine-actionable constraints**; `note` is shown to management and **never read by the schedule arithmetic**. Candidates themselves are computed on demand and deliberately not stored, so they can never go stale against the schedule.' },
     { name: 'items[].excluded', type: 'Boolean', note: 'An authorised manual exclude, kept as a field rather than a deletion so the preview and the audit can both still explain what was taken out and by whom.' },
     { name: 'items[].counterStart / counterDue', type: 'Date', note: 'Set only on `countered`. A counter proposes a *different* date and therefore has its own downstream cascade — **built**, as a child proposal linked by `parentProposal`.' },
     { name: 'items[].respondedAt', type: 'Date', note: '' },
@@ -1830,6 +1832,68 @@ proposalSchema.index({ project: 1, status: 1 });
 proposalSchema.index({ status: 1, expiresAt: 1 });
 
 module.exports = mongoose.model('RescheduleProposal', proposalSchema);`
+},
+
+/* ─────────── workhandoffs ─────────── */
+{
+  id: 'workhandoffs', model: 'WorkHandoff', domain: 'coord', stage: 4,
+  tag: 'responsibility actually moving',
+  pos: { x: 420, y: 660 },
+  purpose: 'One formal transfer of responsibility for a piece of work from one professional to another. **Built 2026-08-31 on `feature/cascade-proposals-audit`, not merged.** It is deliberately NOT confidential delegation: in delegation the responsible party keeps the responsibility and hides the performer, and here the responsibility itself moves and the incoming party becomes the person the project knows.',
+  callout: '**A resolution that records `replaced` is not a replacement.** Until an accepted row exists here, the negative Flexibility outcome does not. That link is the whole reason this collection had to be built rather than deferred.',
+  fields: [
+    { name: '_id', type: 'ObjectId', note: '' },
+    { name: 'project / task', type: 'ObjectId', ref: 'tasks', req: true, idx: true, note: 'The work whose responsibility is moving.' },
+    { name: 'from / to', type: 'ObjectId', ref: 'users', req: true, note: 'The outgoing responsible party and the incoming one. `from` is frozen at open time, so a later change cannot rewrite who handed the work over.' },
+    { name: 'kind', type: "'authority' | 'delegation_disclosure'", req: true, note: 'Two initiation paths, each needing a **second** party to agree. `authority` is opened by a `schedule.change.manage` holder and accepted by the **incoming party**, because responsibility must not land on somebody who never agreed. `delegation_disclosure` is opened by the responsible party naming **their own confidential delegate** and accepted by the **authority** — that is the only way a delegate ever becomes project-facing, and only the delegator can start it.' },
+    { name: 'completedWorkAtHandover', type: 'String', req: true, note: '**Required, and the request is refused without it.** How much of the work was already done at the moment responsibility moved. It is **event-scoped handover information, not routine percentage-progress tracking** — this product has no progress percentage and this field does not introduce one.' },
+    { name: 'state', type: "'proposed' | 'accepted' | 'declined' | 'cancelled'", req: true, note: 'Responsibility moves on `accepted` and on nothing else. The transition is one filtered atomic update, so accepting twice changes nothing.' },
+    { name: 'decidedBy / decidedAt', type: 'ObjectId · Date', note: 'Who answered and when. `decidedAt` is what the Flexibility adapter compares against the proposal resolution time.' },
+    { name: 'proposal', type: 'ObjectId | null', ref: 'rescheduleproposals', note: 'The proposal whose resolution called for the replacement, when there was one.' }
+  ],
+  indexes: [
+    { def: '{ task: 1, state: 1 }', serves: 'The open handover on one piece of work', why: '**Built.** It is what makes *only one handover may be open on a task* cheap to enforce.' },
+    { def: '{ from: 1, state: 1, decidedAt: -1 }', serves: 'Every completed transfer away from one professional', why: '**Built, and it serves Flexibility rather than a screen:** the adapter reads accepted rows for one person to decide whether a `replaced` resolution ever became a real replacement.' },
+    { def: '{ to: 1, state: 1 }', serves: 'What is waiting on the incoming party', why: '**Built.** One of the two halves of the viewer-scoped pending-action count.' }
+  ],
+  why: [
+    '**Its own collection, not fields on [[tasks]].** A transfer is an event with two parties, a decision and a moment — not a property of the work. Putting it on the task would keep only the latest one and lose the history the project audit needs.',
+    '**Responsibility changes inside a transaction with the task.** Accepting sets `tasks.assignee` to the incoming party, records `previousAssignee`, and **clears any delegation** — a disclosed delegate is no longer confidential, and leaving the arrangement in place would keep hiding somebody who is now the responsible party.',
+    '**Two paths, never one.** An authority-opened transfer needs the incoming party to consent; a delegation disclosure needs the authority to accept. Neither side can move responsibility alone, which is what keeps a delegate from being exposed by anybody except the delegator.'
+  ],
+  relations: [
+    { to: 'tasks', via: 'task', store: 'ref', card: 'N:1', why: 'The work whose responsibility moved.' },
+    { to: 'users', via: 'from / to', store: 'ref', card: 'N:1', why: 'The outgoing and incoming responsible parties.' },
+    { to: 'rescheduleproposals', via: 'proposal', store: 'ref', card: 'N:1 (optional)', why: 'Links a replacement back to the resolution that called for it.' }
+  ],
+  sample: `{
+  _id: ObjectId("66a1c0d0c2b9e30012af1a01"),
+  project: ObjectId("6660c3d0c2b9e30012af1001"),
+  task:    ObjectId("6661d7e0c2b9e30012af1201"),
+  from: ObjectId("6650a1f4c2b9e30012af0b21"),   // Dana, who was responsible
+  to:   ObjectId("6650a3d2c2b9e30012af0b44"),   // the replacement the GC accepted
+  kind: "authority",
+  completedWorkAtHandover: "יציקה הושלמה עד קומה 2",
+  state: "accepted",
+  decidedAt: ISODate("2026-09-03T09:00:00Z")
+}`,
+  schema: `const handoffSchema = new Schema({
+  project: { type: Schema.Types.ObjectId, ref: 'Project', required: true },
+  task:    { type: Schema.Types.ObjectId, ref: 'Task', required: true },
+  from:    { type: Schema.Types.ObjectId, ref: 'User', required: true },
+  to:      { type: Schema.Types.ObjectId, ref: 'User', required: true },
+  kind:    { type: String, enum: ['authority','delegation_disclosure'], required: true },
+  completedWorkAtHandover: { type: String, required: true, maxlength: 600 },
+  state:   { type: String, enum: ['proposed','accepted','declined','cancelled'], default: 'proposed' },
+  decidedBy: Schema.Types.ObjectId, decidedAt: Date,
+  proposal:  { type: Schema.Types.ObjectId, ref: 'RescheduleProposal' }
+}, { timestamps: true });
+
+handoffSchema.index({ task: 1, state: 1 });
+handoffSchema.index({ from: 1, state: 1, decidedAt: -1 });
+handoffSchema.index({ to: 1, state: 1 });
+
+module.exports = mongoose.model('WorkHandoff', handoffSchema);`
 },
 
 /* ─────────── auditentries ─────────── */
@@ -2355,7 +2419,7 @@ module.exports = mongoose.model('PasswordResetToken', passwordResetTokenSchema);
   id: 'mutes', model: 'Mute', domain: 'comm', stage: 6,
   tag: 'one small polymorphic collection',
   pos: { x: 1070, y: 30 },
-  purpose: 'A user has muted a contractor, a project, or a conversation. Three different mute controls in the UI, one collection behind them, because the settings screen wants a single list of everything currently muted with an unmute action on each row.',
+  purpose: 'A user has muted a contractor, a project, or a conversation. Three different mute controls in the UI, one collection behind them, because the settings screen wants a single list of everything currently muted with an unmute action on each row. **Built 2026-08-31 on `feature/cascade-proposals-audit`, not merged — the `project` scope is wired to a real surface, the other two are the same collection waiting for their screens.**',
   fields: [
     { name: '_id', type: 'ObjectId', note: '' },
     { name: 'user', type: 'ObjectId', ref: 'users', req: true, idx: true, note: 'Who muted.' },
@@ -2364,12 +2428,15 @@ module.exports = mongoose.model('PasswordResetToken', passwordResetTokenSchema);
     { name: 'createdAt', type: 'Date', note: '' }
   ],
   indexes: [
-    { def: '{ user: 1, scope: 1, target: 1 }', opts: 'unique', serves: 'The mute check before writing a notification', why: 'Unique so muting twice is a no-op rather than a duplicate row. The same index answers the check and powers the settings list.' }
+    { def: '{ user: 1, scope: 1, target: 1 }', opts: 'unique', serves: 'The mute check before writing a notification', why: 'Unique so muting twice is a no-op rather than a duplicate row. The same index answers the check and powers the settings list. **Built, and the no-op claim is asserted rather than assumed:** muting twice leaves exactly one row and unmuting twice leaves none.' },
+    { def: '{ user: 1 }', serves: 'Everything one person has muted', why: '**Built.** The settings list this collection exists for.' }
   ],
   why: [
     '**One collection rather than three arrays.** The obvious alternative is `mutedUsers` on [[users]], `muted` on [[memberships]], and a flag on [[threads]]. That works, but the settings screen then has to read three collections and merge them to show one list. One collection makes the screen one query.',
     '**Polymorphic `target` is acceptable because nothing joins through it.** The field is only ever compared for equality inside a scope that is already known. As with `scope` on [[fileassets]], a polymorphic reference is only dangerous when you need to `populate` it.',
-    '**Mutes are applied at write time**, alongside `notificationPrefs` — see [[notifications]].'
+    '**Mutes are applied at write time**, alongside `notificationPrefs` — see [[notifications]].',
+    '**A mute is a noise preference and nothing else** (2026-08-31). It changes no membership, no grant, no task visibility, no proposal visibility, no audit visibility and no reachability — every one of those is asserted unchanged while a project is muted. It is also **self-only**: no project manager can mute on somebody else\'s behalf, and no permission is needed to set your own.',
+    '**`notificationPreferencePort` is the read boundary**, not the collection. A future notification producer asks *is this user muted for this project* and gets an answer without touching a screen or duplicating persistence. **The mute service answers the preference; it does not erase domain events** — which notification classes are suppressible is a Notifications decision that has not been made, and nothing here pre-empts it.'
   ],
   relations: [
     { to: 'users', via: 'user', store: 'ref', card: 'N:1', why: 'The person doing the muting. `target` is deliberately untyped — it is filtered, never traversed.' }

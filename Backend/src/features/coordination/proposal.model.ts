@@ -5,10 +5,10 @@ export const DEFAULT_PROPOSAL_RESPONSE_HOURS = 72;
 export const PROPOSAL_STATUSES = ['requested', 'open', 'expired', 'resolved', 'cancelled'] as const;
 export type ProposalStatus = (typeof PROPOSAL_STATUSES)[number];
 
-export const ITEM_RESPONSES = ['pending', 'accepted', 'declined', 'countered'] as const;
+export const ITEM_RESPONSES = ['pending', 'accepted', 'declined', 'countered', 'other_proposed'] as const;
 export type ItemResponse = (typeof ITEM_RESPONSES)[number];
 
-export const ITEM_RESOLUTIONS = ['none', 'proposed', 'counter', 'replaced'] as const;
+export const ITEM_RESOLUTIONS = ['none', 'proposed', 'counter', 'other', 'replaced'] as const;
 export type ItemResolution = (typeof ITEM_RESOLUTIONS)[number];
 
 export const JUSTIFIED_DECLINE_REASONS = [
@@ -37,6 +37,7 @@ export interface ProposalItemRecord {
   readonly declineReason?: JustifiedDeclineReason;
   readonly counterStart?: Date;
   readonly counterDue?: Date;
+  readonly otherSolution?: string;
   readonly respondedAt?: Date;
   readonly resolution: ItemResolution;
   readonly excluded: boolean;
@@ -48,6 +49,16 @@ export interface RequestedChanges {
   readonly alternativeStart?: Date;
   readonly alternativeDue?: Date;
   readonly note?: string;
+}
+
+export interface AlternativesContext {
+  readonly earliestStart?: Date;
+  readonly latestFinishForWork?: Date;
+  readonly latestFinishForChain?: Date;
+  readonly mustNotMove: readonly Types.ObjectId[];
+  readonly note?: string;
+  readonly requestedBy: Types.ObjectId;
+  readonly requestedAt: Date;
 }
 
 export interface ProposalResolution {
@@ -69,6 +80,8 @@ export interface ProposalRecord {
   readonly launchedBy?: Types.ObjectId;
   readonly launchedAt?: Date;
   readonly parentProposal?: Types.ObjectId;
+  readonly selectedAlternative?: string;
+  readonly alternativesContext?: AlternativesContext;
   readonly items: readonly ProposalItemRecord[];
   readonly resolution?: ProposalResolution;
   readonly cancelledBy?: Types.ObjectId;
@@ -91,6 +104,7 @@ const itemSchema = new Schema(
     declineReason: { type: String, enum: JUSTIFIED_DECLINE_REASONS },
     counterStart: { type: Date },
     counterDue: { type: Date },
+    otherSolution: { type: String, trim: true, maxlength: 600 },
     respondedAt: { type: Date },
     resolution: { type: String, enum: ITEM_RESOLUTIONS, required: true, default: 'none' },
     excluded: { type: Boolean, required: true, default: false },
@@ -122,6 +136,22 @@ const proposalSchema = new Schema(
     launchedBy: { type: Schema.Types.ObjectId, ref: 'User' },
     launchedAt: { type: Date },
     parentProposal: { type: Schema.Types.ObjectId, ref: 'RescheduleProposal' },
+    selectedAlternative: { type: String, trim: true, maxlength: 40 },
+    alternativesContext: {
+      type: new Schema(
+        {
+          earliestStart: { type: Date },
+          latestFinishForWork: { type: Date },
+          latestFinishForChain: { type: Date },
+          mustNotMove: [{ type: Schema.Types.ObjectId, ref: 'Task' }],
+          note: { type: String, trim: true, maxlength: 600 },
+          requestedBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+          requestedAt: { type: Date, required: true },
+        },
+        { _id: false },
+      ),
+      required: false,
+    },
     items: { type: [itemSchema], default: [] },
     resolution: {
       type: new Schema(

@@ -36,3 +36,27 @@ export const calendarHasNoWorkingDays = (): AppError =>
 
 export const releaseNeedsTasks = (): AppError =>
   new AppError('A partial release must name the work it releases', 400, 'RELEASE_NEEDS_TASKS');
+
+export const otherSolutionNeedsDescription = (): AppError =>
+  new AppError('An other-solution response must describe what was agreed', 400, 'PROPOSAL_OTHER_INCOMPLETE');
+
+export const resolutionNotSupported = (): AppError =>
+  new AppError('That resolution does not match what the professional answered', 409, 'PROPOSAL_RESOLUTION_INVALID');
+
+export const handoffNotFound = (): AppError =>
+  new AppError('Handoff is not available', 404, 'HANDOFF_NOT_FOUND');
+
+export const handoffAlreadyOpen = (): AppError =>
+  new AppError('That work already has a handoff waiting on an answer', 409, 'HANDOFF_ALREADY_OPEN');
+
+export const notPermittedToHandOff = (): AppError =>
+  new AppError('Not permitted to hand this work over', 403, 'HANDOFF_NOT_PERMITTED');
+
+export const handoffNeedsCompletionRecord = (): AppError =>
+  new AppError('A handoff must record how much of the work was already done', 400, 'HANDOFF_NEEDS_COMPLETION');
+
+export const handoffTargetInvalid = (): AppError =>
+  new AppError('That person cannot take this work over', 409, 'HANDOFF_TARGET_INVALID');
+
+export const alternativeNotFound = (): AppError =>
+  new AppError('That alternative is not available', 404, 'ALTERNATIVE_NOT_FOUND');

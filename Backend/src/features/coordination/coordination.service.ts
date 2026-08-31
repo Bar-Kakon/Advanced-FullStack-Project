@@ -6,6 +6,7 @@ import { workingDaysBetween } from '../calendar/workingDay.js';
 import { NoWorkingDaysError } from '../calendar/workingDay.js';
 import type { CompanyContextService } from '../companies/companyContext.service.js';
 import type { ProjectAccessRepository } from '../projectaccess/projectAccess.repository.js';
+import { effectiveProjectPermissions } from '../projectaccess/projectPermission.js';
 import type { ParticipantRepository } from '../projectmembers/participant.repository.js';
 import type { ProjectRecord } from '../projects/project.model.js';
 import type { ProjectRepository } from '../projects/project.repository.js';
@@ -19,7 +20,15 @@ import {
 import { ProjectStageModel, type ProjectStageRecord } from '../tasks/projectStage.model.js';
 import { TaskModel, type TaskRecord } from '../tasks/task.model.js';
 import type { AuditRepository, NewAuditEntry } from './audit.repository.js';
-import { computeImpact, loadProjectGraph, type ProjectGraph } from './cascade.service.js';
+import {
+  candidateSchedules,
+  computeImpact,
+  loadProjectGraph,
+  type AlternativesConstraints,
+  type ProjectGraph,
+} from './cascade.service.js';
+import type { HandoffRecord } from './handoff.model.js';
+import type { HandoffRepository } from './handoff.repository.js';
 import {
   mayAdjustImpact,
   mayCancel,
@@ -32,24 +41,37 @@ import {
   type CoordinationViewer,
 } from './coordination.authority.js';
 import type {
+  AlternativesDto,
   AuditEntryDto,
+  ExplanationEntryDto,
+  HandoffDto,
   ImpactPreviewDto,
+  PendingActionsDto,
   ProposalDto,
   ProposalListRowDto,
+  ScheduleCandidateDto,
 } from './coordination.dto.js';
 import { toPreviewDto, toProposalDto, type NameLookup } from './coordination.mapper.js';
 import {
   alreadyAnswered,
+  alternativeNotFound,
   beyondProjectCeiling,
   calendarHasNoWorkingDays,
   changeIsEmpty,
   counterNeedsDates,
+  handoffAlreadyOpen,
+  handoffNeedsCompletionRecord,
+  handoffNotFound,
+  handoffTargetInvalid,
   notARespondent,
+  notPermittedToHandOff,
   notPermittedToManageSchedule,
   notPermittedToRequest,
+  otherSolutionNeedsDescription,
   proposalNotFound,
   proposalNotOpen,
   releaseNeedsTasks,
+  resolutionNotSupported,
 } from './coordination.errors.js';
 import {
   DEFAULT_PROPOSAL_RESPONSE_HOURS,
@@ -59,6 +81,28 @@ import {
   type RequestedChanges,
 } from './proposal.model.js';
 import type { ItemDecision, ProposalRepository } from './proposal.repository.js';
+
+const toHandoffDto = (
+  handoff: HandoffRecord,
+  taskTitle: string,
+  userId: string,
+  manages: boolean,
+  names: ReadonlyMap<string, string>,
+): HandoffDto => ({
+  id: handoff._id.toString(),
+  taskId: handoff.task.toString(),
+  taskTitle,
+  kind: handoff.kind,
+  state: handoff.state,
+  fromName: names.get(handoff.from.toString()) ?? null,
+  toName: names.get(handoff.to.toString()) ?? null,
+  completedWorkAtHandover: handoff.completedWorkAtHandover,
+  initiatedAt: handoff.initiatedAt.toISOString(),
+  decidedAt: handoff.decidedAt?.toISOString() ?? null,
+  viewerDecides:
+    handoff.state === 'proposed' &&
+    (handoff.kind === 'authority' ? handoff.to.toString() === userId : manages),
+});
 
 const AUDIT_PAGE = 100;
 const MS_PER_HOUR = 3_600_000;
@@ -70,10 +114,25 @@ export interface RequestInput {
 }
 
 export interface RespondInput {
-  readonly response: 'accepted' | 'declined' | 'countered';
+  readonly response: 'accepted' | 'declined' | 'countered' | 'other_proposed';
   readonly declineReason?: JustifiedDeclineReason;
   readonly counterStart?: Date;
   readonly counterDue?: Date;
+  readonly otherSolution?: string;
+}
+
+export interface AlternativesInput {
+  readonly earliestStart?: Date;
+  readonly latestFinishForWork?: Date;
+  readonly latestFinishForChain?: Date;
+  readonly mustNotMove?: readonly string[];
+  readonly note?: string;
+}
+
+export interface HandoffInput {
+  readonly toUserId: string;
+  readonly completedWorkAtHandover: string;
+  readonly proposalId?: string;
 }
 
 export interface ResolveInput {
@@ -99,6 +158,18 @@ export interface CoordinationService {
     taskIds: readonly string[],
     note?: string,
   ): Promise<{ readonly stageId: string; readonly releasedTaskIds: readonly string[] }>;
+  alternatives(userId: string, proposalId: string): Promise<AlternativesDto>;
+  requestAlternatives(
+    userId: string,
+    proposalId: string,
+    input: AlternativesInput,
+  ): Promise<AlternativesDto>;
+  selectAlternative(userId: string, proposalId: string, token: string): Promise<ProposalDto>;
+  initiateHandoff(userId: string, taskId: string, input: HandoffInput): Promise<HandoffDto>;
+  decideHandoff(userId: string, handoffId: string, accept: boolean): Promise<HandoffDto>;
+  handoffForTask(userId: string, taskId: string): Promise<HandoffDto | null>;
+  pendingActionsFor(userId: string): Promise<ReadonlyMap<string, PendingActionsDto>>;
+  pendingActionTotals(userId: string): Promise<PendingActionsDto>;
   pendingFor(userId: string, taskIds: readonly string[]): Promise<ReadonlyMap<string, boolean>>;
   impactCountFor(taskId: string): Promise<number | null>;
   recordEarlyCompletion(taskId: string): Promise<void>;
@@ -106,6 +177,7 @@ export interface CoordinationService {
 
 export interface CoordinationDependencies {
   readonly proposals: ProposalRepository;
+  readonly handoffs: HandoffRepository;
   readonly audit: AuditRepository;
   readonly projects: ProjectRepository;
   readonly access: ProjectAccessRepository;
@@ -117,6 +189,7 @@ export interface CoordinationDependencies {
 
 export const createCoordinationService = ({
   proposals,
+  handoffs,
   audit,
   projects,
   access,
@@ -210,6 +283,96 @@ export const createCoordinationService = ({
   const graphFor = async (project: ProjectRecord, exclude?: Types.ObjectId): Promise<ProjectGraph> => {
     const graph = await loadProjectGraph(project, calendars);
     return withBaseline(graph, await pendingBaseline(project._id, exclude));
+  };
+
+  const constraintsOf = (proposal: ProposalRecord): AlternativesConstraints => {
+    const context = proposal.alternativesContext;
+    return {
+      ...(context?.earliestStart === undefined ? {} : { earliestStart: context.earliestStart }),
+      ...(context?.latestFinishForWork === undefined ? {} : { latestFinishForWork: context.latestFinishForWork }),
+      ...(context?.latestFinishForChain === undefined
+        ? {}
+        : { latestFinishForChain: context.latestFinishForChain }),
+      mustNotMove: (context?.mustNotMove ?? []).map((id) => id.toString()),
+    };
+  };
+
+  const alternativesFor = async (
+    proposal: ProposalRecord,
+    project: ProjectRecord,
+  ): Promise<AlternativesDto> => {
+    const context = proposal.alternativesContext;
+    if (context === undefined) {
+      return {
+        requested: false,
+        constraints: null,
+        candidates: [],
+        explanation: [],
+        sweepTruncated: false,
+        anchorsEvaluated: 0,
+      };
+    }
+
+    const graph = await graphFor(project, proposal._id);
+    const task = graph.tasks.find((row) => row._id.equals(proposal.initiatingTask));
+    const titleOf = (id: string): string =>
+      graph.tasks.find((row) => row._id.toString() === id)?.title ?? '';
+
+    const constraintsDto = {
+      earliestStart: context.earliestStart === undefined ? null : formatCalendarDate(context.earliestStart),
+      latestFinishForWork:
+        context.latestFinishForWork === undefined ? null : formatCalendarDate(context.latestFinishForWork),
+      latestFinishForChain:
+        context.latestFinishForChain === undefined ? null : formatCalendarDate(context.latestFinishForChain),
+      mustNotMoveTitles: context.mustNotMove.map((id) => titleOf(id.toString())),
+      note: context.note ?? null,
+    };
+
+    if (task === undefined) {
+      return {
+        requested: true,
+        constraints: constraintsDto,
+        candidates: [],
+        explanation: [],
+        sweepTruncated: false,
+        anchorsEvaluated: 0,
+      };
+    }
+
+    const found = guardCalendar(() =>
+      candidateSchedules(graph, task, proposal.changes, constraintsOf(proposal)),
+    );
+
+    const candidates: ScheduleCandidateDto[] = found.candidates.map((candidate) => ({
+      token: candidate.token,
+      startDate: candidate.startDate,
+      dueDate: candidate.dueDate,
+      affectedTaskCount: candidate.affectedTaskCount,
+      affectedProfessionalCount: candidate.affectedProfessionalCount,
+      onlyInitiatingWorkMoves: candidate.onlyInitiatingWorkMoves,
+      latestFinishInArrangement: candidate.latestFinishInArrangement,
+      equivalentAnchorCount: candidate.equivalentAnchorCount,
+      selected: proposal.selectedAlternative === candidate.token,
+    }));
+
+    const explanation: ExplanationEntryDto[] = found.explanation.map((entry) => ({
+      code: entry.code,
+      anchorsUnavailable: entry.anchorsUnavailable ?? null,
+      candidatesEliminated: entry.candidatesEliminated ?? null,
+      outcomesCollapsed: entry.outcomesCollapsed ?? null,
+      arrangementsForced: entry.arrangementsForced ?? null,
+      taskTitles: (entry.taskIds ?? []).map(titleOf),
+      date: entry.date ?? null,
+    }));
+
+    return {
+      requested: true,
+      constraints: constraintsDto,
+      candidates,
+      explanation,
+      sweepTruncated: found.sweepTruncated,
+      anchorsEvaluated: found.anchorsEvaluated,
+    };
   };
 
   const shiftDays = (graph: ProjectGraph) => (from: Date, to: Date): number => {
@@ -591,6 +754,9 @@ export const createCoordinationService = ({
       if (input.response === 'countered' && (input.counterStart === undefined || input.counterDue === undefined)) {
         throw counterNeedsDates();
       }
+      if (input.response === 'other_proposed' && (input.otherSolution ?? '').trim() === '') {
+        throw otherSolutionNeedsDescription();
+      }
 
       const actor = new Types.ObjectId(userId);
       const updated = await proposals.recordResponse(
@@ -602,6 +768,7 @@ export const createCoordinationService = ({
           ...(input.declineReason === undefined ? {} : { declineReason: input.declineReason }),
           ...(input.counterStart === undefined ? {} : { counterStart: input.counterStart }),
           ...(input.counterDue === undefined ? {} : { counterDue: input.counterDue }),
+          ...(input.otherSolution === undefined ? {} : { otherSolution: input.otherSolution.trim() }),
         },
         new Date(),
       );
@@ -624,6 +791,19 @@ export const createCoordinationService = ({
           partyDetails: { response: input.response },
         },
       ];
+      if (input.response === 'other_proposed' && input.otherSolution !== undefined) {
+        entries.push({
+          project: project._id,
+          task: item.task,
+          proposal: proposal._id,
+          actor,
+          actorName,
+          action: 'proposal.other_solution_proposed',
+          parties: [actor],
+          details: { otherSolution: input.otherSolution.trim() },
+          partyDetails: { otherSolution: input.otherSolution.trim() },
+        });
+      }
       if (input.response === 'countered' && input.counterStart && input.counterDue) {
         entries.push({
           project: project._id,
@@ -658,7 +838,8 @@ export const createCoordinationService = ({
       for (const decision of decisions) {
         const item = known.get(decision.itemId);
         if (item === undefined) continue;
-        if (decision.resolution === 'counter' && item.response !== 'countered') throw proposalNotOpen();
+        if (decision.resolution === 'counter' && item.response !== 'countered') throw resolutionNotSupported();
+        if (decision.resolution === 'other' && item.response !== 'other_proposed') throw resolutionNotSupported();
         if (decision.resolution === 'proposed' && item.excluded) throw proposalNotOpen();
       }
 
@@ -714,6 +895,22 @@ export const createCoordinationService = ({
             action: decision.resolution === 'counter' ? 'proposal.counter_accepted' : 'proposal.counter_rejected',
             parties: [item.respondent],
             details: {},
+            partyDetails: {},
+          });
+        }
+        if (item.response === 'other_proposed') {
+          entries.push({
+            project: project._id,
+            task: item.task,
+            proposal: proposal._id,
+            actor,
+            actorName,
+            action:
+              decision.resolution === 'other'
+                ? 'proposal.other_solution_agreed'
+                : 'proposal.other_solution_rejected',
+            parties: [item.respondent],
+            details: { otherSolution: item.otherSolution ?? null },
             partyDetails: {},
           });
         }
@@ -910,6 +1107,304 @@ export const createCoordinationService = ({
       );
 
       return { stageId: stage._id.toString(), releasedTaskIds: released.map((task) => task._id.toString()) };
+    },
+
+    async alternatives(userId, proposalId) {
+      const { proposal, project, viewer } = await loadProposal(userId, proposalId);
+      if (!mayAdjustImpact(viewer)) throw notPermittedToManageSchedule();
+
+      return alternativesFor(proposal, project);
+    },
+
+    async requestAlternatives(userId, proposalId, input) {
+      const { proposal, project, viewer } = await loadProposal(userId, proposalId);
+      if (!mayAdjustImpact(viewer)) throw notPermittedToManageSchedule();
+      if (proposal.status !== 'requested') throw proposalNotOpen();
+
+      const actor = new Types.ObjectId(userId);
+      const updated = await proposals.setAlternativesContext(proposal._id, {
+        ...(input.earliestStart === undefined ? {} : { earliestStart: input.earliestStart }),
+        ...(input.latestFinishForWork === undefined ? {} : { latestFinishForWork: input.latestFinishForWork }),
+        ...(input.latestFinishForChain === undefined ? {} : { latestFinishForChain: input.latestFinishForChain }),
+        mustNotMove: (input.mustNotMove ?? [])
+          .filter((id) => Types.ObjectId.isValid(id))
+          .map((id) => new Types.ObjectId(id)),
+        ...(input.note === undefined || input.note.trim() === '' ? {} : { note: input.note.trim() }),
+        requestedBy: actor,
+        requestedAt: new Date(),
+      });
+      if (updated === null) throw proposalNotOpen();
+
+      await audit.append([
+        {
+          project: project._id,
+          task: updated.initiatingTask,
+          proposal: updated._id,
+          actor,
+          actorName: await nameOf(actor),
+          action: 'proposal.alternatives_requested',
+          parties: [],
+          details: {
+            earliestStart: input.earliestStart === undefined ? null : formatCalendarDate(input.earliestStart),
+            latestFinishForWork:
+              input.latestFinishForWork === undefined ? null : formatCalendarDate(input.latestFinishForWork),
+            latestFinishForChain:
+              input.latestFinishForChain === undefined ? null : formatCalendarDate(input.latestFinishForChain),
+            mustNotMove: (input.mustNotMove ?? []).length,
+          },
+          partyDetails: {},
+        },
+      ]);
+
+      return alternativesFor(updated, project);
+    },
+
+    async selectAlternative(userId, proposalId, token) {
+      const { proposal, project, viewer } = await loadProposal(userId, proposalId);
+      if (!mayAdjustImpact(viewer)) throw notPermittedToManageSchedule();
+      if (proposal.status !== 'requested') throw proposalNotOpen();
+      if (proposal.alternativesContext === undefined) throw alternativeNotFound();
+
+      const graph = await graphFor(project, proposal._id);
+      const task = graph.tasks.find((row) => row._id.equals(proposal.initiatingTask));
+      if (task === undefined) throw alternativeNotFound();
+
+      const found = guardCalendar(() =>
+        candidateSchedules(graph, task, proposal.changes, constraintsOf(proposal)),
+      ).candidates.find((candidate) => candidate.token === token);
+      if (found === undefined) throw alternativeNotFound();
+
+      const chosen: RequestedChanges = {
+        alternativeStart: new Date(`${found.startDate}T00:00:00.000Z`),
+        alternativeDue: new Date(`${found.dueDate}T00:00:00.000Z`),
+        ...(proposal.changes.note === undefined ? {} : { note: proposal.changes.note }),
+      };
+      const { items } = buildItems(
+        graph,
+        task,
+        chosen,
+        task.assignee?.toString() === proposal.requestedBy.toString(),
+        proposal.requestedBy,
+      );
+      const updated = await proposals.replaceItems(proposal._id, chosen, items, token);
+      if (updated === null) throw proposalNotOpen();
+
+      const actor = new Types.ObjectId(userId);
+      await audit.append([
+        {
+          project: project._id,
+          task: task._id,
+          proposal: proposal._id,
+          actor,
+          actorName: await nameOf(actor),
+          action: 'proposal.alternative_selected',
+          parties: items.map((row) => row.respondent),
+          details: { startDate: found.startDate, dueDate: found.dueDate, affected: items.length },
+          partyDetails: { affected: items.length },
+        },
+      ]);
+      return present(updated, project, viewer);
+    },
+
+    async initiateHandoff(userId, taskId, input) {
+      const task = await loadTask(taskId);
+      const { project, viewer } = await reach(userId, (task.project as Types.ObjectId).toString());
+
+      if (input.completedWorkAtHandover.trim() === '') throw handoffNeedsCompletionRecord();
+      if (!Types.ObjectId.isValid(input.toUserId)) throw handoffTargetInvalid();
+
+      const from = task.assignee;
+      if (from === undefined) throw handoffTargetInvalid();
+
+      const to = new Types.ObjectId(input.toUserId);
+      if (to.equals(from)) throw handoffTargetInvalid();
+
+      const disclosesOwnDelegate =
+        from.toString() === userId && task.delegation?.delegate.toString() === input.toUserId;
+
+      let kind: HandoffRecord['kind'];
+      if (disclosesOwnDelegate) kind = 'delegation_disclosure';
+      else if (viewer.managesSchedule) {
+        const membership = await access.findActiveMembership(project._id, to);
+        if (membership === null) throw handoffTargetInvalid();
+        kind = 'authority';
+      } else throw notPermittedToHandOff();
+
+      if ((await handoffs.findProposedForTask(task._id)) !== null) throw handoffAlreadyOpen();
+
+      const actor = new Types.ObjectId(userId);
+      const created = await handoffs.create({
+        project: project._id,
+        task: task._id,
+        from,
+        to,
+        kind,
+        initiatedBy: actor,
+        completedWorkAtHandover: input.completedWorkAtHandover.trim(),
+        ...(input.proposalId !== undefined && Types.ObjectId.isValid(input.proposalId)
+          ? { proposal: new Types.ObjectId(input.proposalId) }
+          : {}),
+      });
+
+      await audit.append([
+        {
+          project: project._id,
+          task: task._id,
+          actor,
+          actorName: await nameOf(actor),
+          action: 'work.handoff_initiated',
+          parties: [from, to],
+          details: { taskTitle: task.title, completedWorkAtHandover: created.completedWorkAtHandover },
+          partyDetails: { taskTitle: task.title, completedWorkAtHandover: created.completedWorkAtHandover },
+        },
+      ]);
+      return toHandoffDto(created, task.title, userId, viewer.managesSchedule, await namesOf([from, to]));
+    },
+
+    async decideHandoff(userId, handoffId, accept) {
+      const handoff = await handoffs.findById(handoffId);
+      if (handoff === null) throw handoffNotFound();
+
+      const { project, viewer } = await reach(userId, handoff.project.toString()).catch(() => {
+        throw handoffNotFound();
+      });
+
+      const decides =
+        handoff.kind === 'authority'
+          ? handoff.to.toString() === userId
+          : viewer.managesSchedule;
+      if (!decides) throw notPermittedToHandOff();
+
+      const actor = new Types.ObjectId(userId);
+      const at = new Date();
+      const task = await TaskModel.findById(handoff.task).lean<TaskRecord>().exec();
+
+      let settled: HandoffRecord | null;
+      if (accept) {
+        settled = await transactions.run(async (session) => {
+          const won = await handoffs.accept(handoff._id, actor, at, session);
+          if (won === null) return null;
+
+          await TaskModel.updateOne(
+            { _id: won.task, assignee: won.from },
+            {
+              $set: { assignee: won.to, previousAssignee: won.from },
+              $unset: { delegation: '' },
+            },
+            { session },
+          ).exec();
+          return won;
+        });
+      } else {
+        settled = await handoffs.settle(handoff._id, 'declined', actor, at);
+      }
+      if (settled === null) throw handoffNotFound();
+
+      await audit.append([
+        {
+          project: project._id,
+          task: settled.task,
+          actor: settled.from,
+          actorName: await nameOf(settled.from),
+          action: accept ? 'work.handoff_accepted' : 'work.handoff_declined',
+          parties: [settled.from, settled.to],
+          details: { taskTitle: task?.title ?? null },
+          partyDetails: { taskTitle: task?.title ?? null },
+        },
+      ]);
+      return toHandoffDto(
+        settled,
+        task?.title ?? '',
+        userId,
+        viewer.managesSchedule,
+        await namesOf([settled.from, settled.to]),
+      );
+    },
+
+    async handoffForTask(userId, taskId) {
+      const task = await loadTask(taskId);
+      const { viewer } = await reach(userId, (task.project as Types.ObjectId).toString());
+
+      const handoff = await handoffs.findProposedForTask(task._id);
+      if (handoff === null) return null;
+
+      const involved =
+        handoff.from.toString() === userId ||
+        handoff.to.toString() === userId ||
+        viewer.managesSchedule;
+      if (!involved) return null;
+
+      return toHandoffDto(
+        handoff,
+        task.title,
+        userId,
+        viewer.managesSchedule,
+        await namesOf([handoff.from, handoff.to]),
+      );
+    },
+
+    async pendingActionsFor(userId) {
+      const user = new Types.ObjectId(userId);
+      const memberships = await access.listActiveMembershipsForUser(user);
+      const managed = memberships
+        .filter((row) => effectiveProjectPermissions(row).includes('schedule.change.manage'))
+        .map((row) => row.project);
+      const managedIds = new Set(managed.map((id) => id.toString()));
+
+      const counts = new Map<string, { proposals: number; handoffs: number }>();
+      const bump = (projectId: string, field: 'proposals' | 'handoffs'): void => {
+        const current = counts.get(projectId) ?? { proposals: 0, handoffs: 0 };
+        counts.set(projectId, { ...current, [field]: current[field] + 1 });
+      };
+
+      const now = Date.now();
+      const rows = await proposals.listAwaitingAction(user, managed);
+      for (const row of rows) {
+        const projectId = row.project.toString();
+        const live = row.items.filter((item) => !item.excluded);
+        const lapsed = row.expiresAt !== undefined && row.expiresAt.getTime() <= now;
+
+        const mineIsPending =
+          row.status === 'open' &&
+          !lapsed &&
+          live.some((item) => item.respondent.toString() === userId && item.response === 'pending');
+        if (mineIsPending) bump(projectId, 'proposals');
+
+        if (!managedIds.has(projectId)) continue;
+
+        const needsMe =
+          row.status === 'requested' ||
+          row.status === 'expired' ||
+          (row.status === 'open' &&
+            (lapsed || live.every((item) => item.response !== 'pending')));
+        if (needsMe) bump(projectId, 'proposals');
+      }
+
+      for (const handoff of await handoffs.listPendingFor(user, managed)) {
+        const decides =
+          handoff.kind === 'authority'
+            ? handoff.to.toString() === userId
+            : managedIds.has(handoff.project.toString());
+        if (decides) bump(handoff.project.toString(), 'handoffs');
+      }
+
+      return new Map(
+        [...counts.entries()].map(([projectId, value]) => [
+          projectId,
+          { ...value, total: value.proposals + value.handoffs },
+        ]),
+      );
+    },
+
+    async pendingActionTotals(userId) {
+      const perProject = await this.pendingActionsFor(userId);
+      let proposals = 0;
+      let handoffCount = 0;
+      for (const value of perProject.values()) {
+        proposals += value.proposals;
+        handoffCount += value.handoffs;
+      }
+      return { proposals, handoffs: handoffCount, total: proposals + handoffCount };
     },
 
     async pendingFor(userId, taskIds) {

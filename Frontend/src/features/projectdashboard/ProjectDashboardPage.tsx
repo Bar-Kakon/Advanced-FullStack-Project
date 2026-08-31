@@ -12,6 +12,7 @@ import { initialsOf } from '../profile/profileModel';
 import { ProjectCalendarPanel } from '../projects/components/ProjectCalendarPanel';
 import { CalendarVersionPanel } from './components/CalendarVersionPanel';
 import { CoordinationPanel } from './components/CoordinationPanel';
+import { MutePanel } from './components/MutePanel';
 import { ProjectPermissionsPanel } from './components/ProjectPermissionsPanel';
 import { useProjectDashboard } from './useProjectDashboard';
 import profileCss from '../profile/profile.css?inline';
@@ -209,11 +210,21 @@ export const ProjectDashboardPage = () => {
 
             <CoordinationPanel
               openProposals={data.coordination.openProposals}
-              awaitingMe={data.coordination.awaitingMe}
+              pendingActions={data.coordination.pendingActions}
               proposals={data.coordination.proposals}
               audit={data.coordination.audit}
               seesEverything={viewer.canManageSchedule}
             />
+
+            <section className="panel" aria-labelledby="stage-entry-title">
+              <h2 id="stage-entry-title" className="panel__title">{t.coordination.stages.title}</h2>
+              <p className="panel__lede">{t.coordination.stages.lede}</p>
+              <Link to={`/projects/${projectId}/stages`} className="btn btn--ghost btn--sm">
+                {t.coordination.stages.open}
+              </Link>
+            </section>
+
+            <MutePanel projectId={projectId} />
 
             <CalendarVersionPanel calendar={data.calendar} />
 

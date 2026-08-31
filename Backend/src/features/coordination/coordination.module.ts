@@ -12,14 +12,21 @@ import { participantRepository } from '../projectmembers/participant.repository.
 import { projectRepository } from '../projects/project.repository.js';
 import { parseCalendarDate } from '../projects/projectDates.js';
 import { auditRepository } from './audit.repository.js';
+import { handoffRepository } from './handoff.repository.js';
 import { changeIsEmpty, counterNeedsDates } from './coordination.errors.js';
 import { createCoordinationService, type CoordinationService } from './coordination.service.js';
 import {
   excludeBodySchema,
   previewBodySchema,
   projectParamsSchema,
+  alternativeParamsSchema,
+  alternativesBodySchema,
+  handoffBodySchema,
+  handoffDecisionSchema,
+  handoffParamsSchema,
   proposalItemParamsSchema,
   proposalParamsSchema,
+  taskParamsSchema,
   releaseBodySchema,
   releaseParamsSchema,
   requestBodySchema,
@@ -63,6 +70,7 @@ export const toRequestedChanges = (body: ChangesBody): RequestedChanges => {
 export const buildCoordinationService = (): CoordinationService =>
   createCoordinationService({
     proposals: proposalRepository,
+    handoffs: handoffRepository,
     audit: auditRepository,
     projects: projectRepository,
     access: projectAccessRepository,
@@ -150,10 +158,11 @@ export const createCoordinationModule = (
     async (req, res) => {
       const { proposalId, itemId } = getValidated<{ proposalId: string; itemId: string }>(res, 'params');
       const body = getValidated<{
-        response: 'accepted' | 'declined' | 'countered';
+        response: 'accepted' | 'declined' | 'countered' | 'other_proposed';
         declineReason?: JustifiedDeclineReason;
         counterStart?: string;
         counterDue?: string;
+        otherSolution?: string;
       }>(res, 'body');
 
       const counterStart = body.counterStart === undefined ? null : parseCalendarDate(body.counterStart);
@@ -168,6 +177,7 @@ export const createCoordinationModule = (
           ...(body.declineReason === undefined ? {} : { declineReason: body.declineReason }),
           ...(counterStart === null ? {} : { counterStart }),
           ...(counterDue === null ? {} : { counterDue }),
+          ...(body.otherSolution === undefined ? {} : { otherSolution: body.otherSolution }),
         }),
       });
     },
@@ -185,6 +195,96 @@ export const createCoordinationModule = (
       });
     },
   );
+
+  router.get(
+    '/proposals/:proposalId/alternatives',
+    validateRequest({ params: proposalParamsSchema }),
+    async (req, res) => {
+      const { proposalId } = getValidated<{ proposalId: string }>(res, 'params');
+      res.json({ alternatives: await service.alternatives(getAuthenticatedUserId(res), proposalId) });
+    },
+  );
+
+  router.post(
+    '/proposals/:proposalId/alternatives',
+    validateRequest({ params: proposalParamsSchema, body: alternativesBodySchema }),
+    async (req, res) => {
+      const { proposalId } = getValidated<{ proposalId: string }>(res, 'params');
+      const body = getValidated<{
+        earliestStart?: string;
+        latestFinishForWork?: string;
+        latestFinishForChain?: string;
+        mustNotMove?: string[];
+        note?: string;
+      }>(res, 'body');
+
+      const asDate = (value: string | undefined): Date | undefined => {
+        if (value === undefined) return undefined;
+        const parsed = parseCalendarDate(value);
+        if (parsed === null) throw changeIsEmpty();
+        return parsed;
+      };
+
+      res.status(201).json({
+        alternatives: await service.requestAlternatives(getAuthenticatedUserId(res), proposalId, {
+          ...(body.earliestStart === undefined ? {} : { earliestStart: asDate(body.earliestStart) as Date }),
+          ...(body.latestFinishForWork === undefined
+            ? {}
+            : { latestFinishForWork: asDate(body.latestFinishForWork) as Date }),
+          ...(body.latestFinishForChain === undefined
+            ? {}
+            : { latestFinishForChain: asDate(body.latestFinishForChain) as Date }),
+          ...(body.mustNotMove === undefined ? {} : { mustNotMove: body.mustNotMove }),
+          ...(body.note === undefined ? {} : { note: body.note }),
+        }),
+      });
+    },
+  );
+
+  router.post(
+    '/proposals/:proposalId/alternatives/:token/select',
+    validateRequest({ params: alternativeParamsSchema }),
+    async (req, res) => {
+      const { proposalId, token } = getValidated<{ proposalId: string; token: string }>(res, 'params');
+      res.json({ proposal: await service.selectAlternative(getAuthenticatedUserId(res), proposalId, token) });
+    },
+  );
+
+  router.get('/tasks/:taskId/handoff', validateRequest({ params: taskParamsSchema }), async (req, res) => {
+    const { taskId } = getValidated<{ taskId: string }>(res, 'params');
+    res.json({ handoff: await service.handoffForTask(getAuthenticatedUserId(res), taskId) });
+  });
+
+  router.post(
+    '/tasks/:taskId/handoff',
+    validateRequest({ params: taskParamsSchema, body: handoffBodySchema }),
+    async (req, res) => {
+      const { taskId } = getValidated<{ taskId: string }>(res, 'params');
+      const body = getValidated<{ toUserId: string; completedWorkAtHandover: string; proposalId?: string }>(res, 'body');
+      res.status(201).json({
+        handoff: await service.initiateHandoff(getAuthenticatedUserId(res), taskId, body),
+      });
+    },
+  );
+
+  router.post(
+    '/handoffs/:handoffId/decision',
+    validateRequest({ params: handoffParamsSchema, body: handoffDecisionSchema }),
+    async (req, res) => {
+      const { handoffId } = getValidated<{ handoffId: string }>(res, 'params');
+      const { accept } = getValidated<{ accept: boolean }>(res, 'body');
+      res.json({ handoff: await service.decideHandoff(getAuthenticatedUserId(res), handoffId, accept) });
+    },
+  );
+
+  router.get('/pending-actions', async (req, res) => {
+    const userId = getAuthenticatedUserId(res);
+    const perProject = await service.pendingActionsFor(userId);
+    res.json({
+      totals: await service.pendingActionTotals(userId),
+      byProject: Object.fromEntries(perProject),
+    });
+  });
 
   router.get(
     '/projects/:projectId/proposals',

@@ -596,6 +596,183 @@ const run = async (): Promise<void> => {
     check(!flexShape.includes(forbidden), `the public context names no ${forbidden}`);
   }
 
+
+  section('22. Another workable solution is agreed by both sides, never declared by one');
+  const otherReq = await post(`/api/tasks/${t1._id.toString()}/date-change`, subA.token, { deltaWorkingDays: 4 });
+  const otherId = (otherReq.body as { proposal: ProposalDto }).proposal.id;
+  await post(`/api/coordination/proposals/${otherId}/launch`, gc.token);
+  const otherOpen = (await get(`/api/coordination/proposals/${otherId}`, gc.token)).body as { proposal: ProposalDto };
+  const otherItem = otherOpen.proposal.items.find((row) => row.taskId !== t1._id.toString());
+  check(otherItem !== undefined, 'somebody else work is affected, so there is a second side');
+
+  const fabricated = await post(`/api/coordination/proposals/${otherId}/resolve`, gc.token, {
+    decisions: [{ itemId: otherItem?.id ?? '', resolution: 'other' }],
+  });
+  check(fabricated.status === 409 && fabricated.body['code'] === 'PROPOSAL_RESOLUTION_INVALID',
+    'management cannot record an agreed other solution the professional never offered',
+    `${fabricated.status} ${String(fabricated.body['code'])}`);
+
+  const blankOther = await post(
+    `/api/coordination/proposals/${otherId}/items/${otherItem?.id ?? ''}/respond`,
+    subB.token,
+    { response: 'other_proposed' },
+  );
+  check(blankOther.status === 400 && blankOther.body['code'] === 'PROPOSAL_OTHER_INCOMPLETE',
+    'and the professional must say what the solution actually is',
+    `${blankOther.status} ${String(blankOther.body['code'])}`);
+
+  const offered = await post(
+    `/api/coordination/proposals/${otherId}/items/${otherItem?.id ?? ''}/respond`,
+    subB.token,
+    { response: 'other_proposed', otherSolution: 'צוות שני בלילה, בלי להזיז תאריך' },
+  );
+  check(offered.status === 200, 'the professional offers another workable solution', offered.status);
+  const offeredState = (offered.body as { proposal: ProposalDto }).proposal;
+  check(offeredState.items[0]?.response === 'other_proposed', 'it is recorded as its own answer');
+
+  const beforeOther = await TaskModel.findById(otherItem?.taskId ?? '').lean().exec();
+  const agreed = await post(`/api/coordination/proposals/${otherId}/resolve`, gc.token, {
+    decisions: (otherOpen.proposal.items).map((row) => ({
+      itemId: row.id,
+      resolution: row.id === otherItem?.id ? 'other' : 'proposed',
+    })),
+  });
+  check(agreed.status === 200, 'and management agrees to it explicitly', agreed.status);
+  const afterOther = await TaskModel.findById(otherItem?.taskId ?? '').lean().exec();
+  check(afterOther?.dueDate.getTime() === beforeOther?.dueDate.getTime(),
+    'an agreed other solution moves no date — the work continues by other means');
+
+  const otherAudit = await AuditEntryModel.countDocuments({
+    project, action: { $in: ['proposal.other_solution_proposed', 'proposal.other_solution_agreed'] },
+  }).exec();
+  check(otherAudit === 2, 'both the offer and the agreement are in the history', `${otherAudit}`);
+
+  const subBAfterOther = await flexOf(subB.token);
+  check(subBAfterOther?.schedule?.context['alternativesAgreed'] === 1,
+    'the agreed other solution counts as a workable resolution',
+    String(subBAfterOther?.schedule?.context['alternativesAgreed']));
+  check(subBAfterOther?.schedule?.score === 100,
+    'and it carries exactly the same weight as a direct acceptance',
+    String(subBAfterOther?.schedule?.score));
+  const publicShape = JSON.stringify(subBAfterOther);
+  check(!publicShape.includes('צוות שני'),
+    'while what was actually agreed never reaches the public Flexibility context');
+
+  section('23. Alternatives are created by management, never generated on their own');
+  const altReq = await post(`/api/tasks/${t1._id.toString()}/date-change`, subA.token, { deltaWorkingDays: 8 });
+  const altId = (altReq.body as { proposal: ProposalDto }).proposal.id;
+
+  const beforeAsking = await get(`/api/coordination/proposals/${altId}/alternatives`, gc.token);
+  const beforeBody = (beforeAsking.body as { alternatives: { requested: boolean; candidates: unknown[] } }).alternatives;
+  check(beforeBody.requested === false && beforeBody.candidates.length === 0,
+    'an ordinary request generates no alternatives chooser at all');
+
+  const subARead = await get(`/api/coordination/proposals/${altId}/alternatives`, subA.token);
+  check(subARead.status === 403,
+    'and an ordinary professional cannot reach the candidate set', subARead.status);
+  const subACreate = await request(baseUrl, 'POST', `/api/coordination/proposals/${altId}/alternatives`, {
+    token: subA.token, json: { note: 'x' },
+  });
+  check(subACreate.status === 403, 'nor create it', subACreate.status);
+
+  const madeAlternatives = await post(`/api/coordination/proposals/${altId}/alternatives`, gc.token, {
+    note: 'המנוף פנוי רק בהמשך החודש',
+  });
+  check(madeAlternatives.status === 201, 'management creates them explicitly', madeAlternatives.status);
+  const alts = (madeAlternatives.body as {
+    alternatives: {
+      requested: boolean;
+      candidates: { token: string; startDate: string; dueDate: string; onlyInitiatingWorkMoves: boolean; selected: boolean }[];
+      explanation: { code: string }[];
+      constraints: { note: string | null };
+    };
+  }).alternatives;
+  check(alts.requested, 'the mode is now on for this request');
+  check(alts.candidates.length >= 1, 'and it produced at least one schedule-valid arrangement',
+    `${alts.candidates.length}`);
+  check(alts.candidates.every((row) => !row.selected),
+    'nothing is preselected — the system does not choose a winner');
+  check(alts.explanation.length > 0,
+    'and it explains what shaped the result rather than saying nothing',
+    alts.explanation.map((row) => row.code).join(','));
+  check(alts.constraints.note === 'המנוף פנוי רק בהמשך החודש',
+    'the note is carried for the person reading, not for the arithmetic');
+
+  const chosen = alts.candidates[0];
+  const picked = await post(`/api/coordination/proposals/${altId}/alternatives/${chosen?.token ?? ''}/select`, gc.token);
+  check(picked.status === 200, 'management selects one explicitly', picked.status);
+  const pickedProposal = (picked.body as { proposal: ProposalDto & { changes: { alternativeStart: string | null } } }).proposal;
+  check(pickedProposal.changes.alternativeStart === chosen?.startDate,
+    'and the selected arrangement becomes the basis of the real proposal',
+    `${String(pickedProposal.changes.alternativeStart)} vs ${String(chosen?.startDate)}`);
+
+  const selectedAudit = await AuditEntryModel.countDocuments({
+    project, action: 'proposal.alternative_selected',
+  }).exec();
+  check(selectedAudit === 1, 'the selection is a recorded management action', `${selectedAudit}`);
+
+  const impossible = await post(`/api/coordination/proposals/${altId}/alternatives`, gc.token, {
+    latestFinishForWork: iso(day(2)),
+  });
+  const noneLeft = (impossible.body as { alternatives: { candidates: unknown[]; explanation: { code: string }[] } }).alternatives;
+  check(noneLeft.candidates.length === 0,
+    'an impossible constraint yields no arrangement rather than a relaxed one',
+    `${noneLeft.candidates.length}`);
+  check(noneLeft.explanation.some((row) => row.code === 'latest_finish_work'),
+    'and the explanation names the constraint that did it',
+    noneLeft.explanation.map((row) => row.code).join(','));
+  await post(`/api/coordination/proposals/${altId}/cancel`, gc.token);
+
+  section('24. Pending actions mean work waiting on THIS viewer');
+  const pendingTotals = async (token: string): Promise<{ total: number; proposals: number }> =>
+    ((await get('/api/coordination/pending-actions', token)).body as {
+      totals: { total: number; proposals: number };
+    }).totals;
+
+  const gcBase = (await pendingTotals(gc.token)).total;
+  const subBBase = (await pendingTotals(subB.token)).total;
+  const subCBase = (await pendingTotals(subC.token)).total;
+
+  const counted = await post(`/api/tasks/${t1._id.toString()}/date-change`, subA.token, { deltaWorkingDays: 5 });
+  const countedId = (counted.body as { proposal: ProposalDto }).proposal.id;
+  check((await pendingTotals(gc.token)).total === gcBase + 1,
+    'a request waiting to be launched is management own pending action');
+
+  await post(`/api/coordination/proposals/${countedId}/launch`, gc.token);
+  const live = (await get(`/api/coordination/proposals/${countedId}`, gc.token)).body as { proposal: ProposalDto };
+  const stillPending = live.proposal.items.filter((row) => row.response === 'pending');
+
+  check((await pendingTotals(gc.token)).total === gcBase,
+    'once launched, management has nothing to do while professionals still owe an answer');
+
+  const subBOwed = stillPending.filter((row) => row.respondentName === 'Verify Account3').length;
+  const subCOwed = stillPending.filter((row) => row.respondentName === 'Verify Account4').length;
+  check((await pendingTotals(subB.token)).total === subBBase + subBOwed,
+    'each professional counts exactly the answers they owe',
+    `${(await pendingTotals(subB.token)).total} vs ${subBBase + subBOwed}`);
+  check((await pendingTotals(subC.token)).total === subCBase + subCOwed,
+    'and nobody counts an answer somebody else owes',
+    `${(await pendingTotals(subC.token)).total} vs ${subCBase + subCOwed}`);
+
+  const subAView = await get('/api/coordination/pending-actions', subA.token);
+  check(!JSON.stringify(subAView.body).includes('Verify Account3'),
+    'the count discloses no other professional');
+
+  for (const item of stillPending) {
+    const token = item.respondentName === 'Verify Account3' ? subB.token : subC.token;
+    await post(`/api/coordination/proposals/${countedId}/items/${item.id}/respond`, token, {
+      response: 'accepted',
+    });
+  }
+  check((await pendingTotals(gc.token)).total === gcBase + 1,
+    'once every required answer is in, the decision becomes management pending action');
+  check((await pendingTotals(subB.token)).total === subBBase,
+    'and the professionals owe nothing further');
+
+  await post(`/api/coordination/proposals/${countedId}/cancel`, gc.token);
+  check((await pendingTotals(gc.token)).total === gcBase,
+    'a cancelled request waits on nobody');
+
   await RescheduleProposalModel.deleteMany({ project }).exec();
   await AuditEntryModel.deleteMany({ project }).exec();
   await TaskModel.deleteMany({ project }).exec();

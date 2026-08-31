@@ -1,4 +1,4 @@
-import type { AuditEntry, ProposalListRow } from './coordination.types';
+import type { AuditEntry, PendingActions, ProposalListRow } from './coordination.types';
 
 import type { Project } from './projects.types';
 
@@ -28,13 +28,14 @@ export interface DashboardViewer {
   readonly canManageMembers: boolean;
   readonly canGrantPermissions: boolean;
   readonly canCreateTasks: boolean;
+  readonly canManageStages: boolean;
   readonly canManageSchedule: boolean;
   readonly canPartialRelease: boolean;
 }
 
 export interface ProjectCoordination {
   readonly openProposals: number;
-  readonly awaitingMe: number;
+  readonly pendingActions: PendingActions;
   readonly proposals: readonly ProposalListRow[];
   readonly audit: readonly AuditEntry[];
 }

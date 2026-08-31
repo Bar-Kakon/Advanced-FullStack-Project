@@ -5,6 +5,7 @@
 import { Types } from 'mongoose';
 
 import { outcomeOf } from '../src/features/coordination/coordinationOutcome.adapter.js';
+import type { HandoffRecord } from '../src/features/coordination/handoff.model.js';
 import type { ProposalItemRecord, ProposalRecord } from '../src/features/coordination/proposal.model.js';
 
 import {
@@ -193,8 +194,38 @@ const run = async (): Promise<void> => {
     'a decline with no reason and no replacement produces no event at all',
   );
   check(
-    outcomeOf(proposalOf(), itemOf({ response: 'declined', resolution: 'replaced' })) === 'unresolved_replaced',
-    'and one the resolver answered by replacing the professional is the negative case',
+    outcomeOf(proposalOf(), itemOf({ response: 'other_proposed', resolution: 'other' })) === 'other_solution_agreed',
+    'an other workable solution both sides agreed to is its own positive outcome',
+  );
+  check(
+    outcomeOf(proposalOf(), itemOf({ response: 'other_proposed', resolution: 'none' })) === null,
+    'while one the resolver did not agree to produces nothing',
+  );
+  check(
+    outcomeOf(proposalOf(), itemOf({ response: 'declined', resolution: 'replaced' })) === null,
+    'a replacement with no completed handover is not yet an outcome',
+  );
+  const handoverFor = (item: ProposalItemRecord, at: Date) => [
+    {
+      state: 'accepted',
+      task: item.task,
+      from: item.respondent,
+      decidedAt: at,
+    } as unknown as HandoffRecord,
+  ];
+  const replacedItem = itemOf({
+    response: 'declined',
+    resolution: 'replaced',
+    task: new Types.ObjectId(),
+    respondent: new Types.ObjectId(),
+  });
+  const resolvedProposal = proposalOf({
+    resolution: { by: new Types.ObjectId(), at: new Date(2027, 0, 1) },
+  });
+  check(
+    outcomeOf(resolvedProposal, replacedItem, handoverFor(replacedItem, new Date(2027, 0, 2))) ===
+      'unresolved_replaced',
+    'and it becomes the negative case only once responsibility really moved',
   );
   check(outcomeOf(proposalOf(), itemOf()) === null, 'a pending item is not an outcome');
   check(
@@ -209,6 +240,7 @@ const run = async (): Promise<void> => {
   const workable = [
     outcomeOf(proposalOf(), itemOf({ response: 'accepted', resolution: 'proposed' })),
     outcomeOf(proposalOf(), itemOf({ response: 'countered', resolution: 'counter' })),
+    outcomeOf(proposalOf(), itemOf({ response: 'other_proposed', resolution: 'other' })),
     outcomeOf(
       proposalOf({ changes: { alternativeDue: new Date() } }),
       itemOf({ response: 'accepted', resolution: 'proposed' }),
@@ -216,7 +248,7 @@ const run = async (): Promise<void> => {
   ].filter((outcome): outcome is CoordinationOutcome => outcome !== null);
   check(
     scheduleOf(workable.map((outcome) => event(outcome)))?.score === 100,
-    'the three of them carry exactly the same weight',
+    'all four of them carry exactly the same weight',
     String(scheduleOf(workable.map((outcome) => event(outcome)))?.score),
   );
 

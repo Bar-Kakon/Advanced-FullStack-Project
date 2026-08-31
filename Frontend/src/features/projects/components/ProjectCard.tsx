@@ -30,6 +30,11 @@ export const ProjectCard = ({ project }: { project: Project }) => {
               ? project.projectTypeOther
               : t.projects.type[project.projectType]}
           </span>
+          {project.pendingActions > 0 ? (
+            <span className="project-chip project-chip--pending">
+              {t.coordination.pending.badge.replace('{n}', String(project.pendingActions))}
+            </span>
+          ) : null}
           <span className={`project-chip project-chip--${project.status}`}>
             {t.projects.status[project.status]}
           </span>

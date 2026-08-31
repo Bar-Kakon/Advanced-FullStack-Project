@@ -34,6 +34,11 @@ export interface DashboardDependencies {
   readonly ratings: RatingRepository;
   readonly workEntries: WorkEntryRepository;
   readonly dismissals: ProfileReminderDismissalRepository;
+  readonly pendingActions: PendingActionsSource;
+}
+
+export interface PendingActionsSource {
+  totalsFor(userId: string): Promise<{ proposals: number; handoffs: number; total: number }>;
 }
 
 const countNetwork = (
@@ -71,6 +76,7 @@ export const createDashboardService = ({
   ratings,
   workEntries,
   dismissals,
+  pendingActions,
 }: DashboardDependencies): DashboardService => {
   const load = async (userId: string) => {
     const user = await users.findProfileById(userId);
@@ -157,6 +163,7 @@ export const createDashboardService = ({
           completedWork: state.work.length,
         },
         profileReminder: buildReminder(state.missing, state.dismissal?.dismissedKeys ?? null),
+        pendingActions: await pendingActions.totalsFor(userId),
       };
     },
 

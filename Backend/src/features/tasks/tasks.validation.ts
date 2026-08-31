@@ -56,6 +56,12 @@ export const createStageBodySchema = Joi.object({
   order: Joi.number().integer().min(0).optional(),
 });
 
+export const updateStageBodySchema = Joi.object({
+  name: Joi.string().trim().min(1).max(120),
+  isGate: Joi.boolean(),
+  order: Joi.number().integer().min(0),
+}).min(1);
+
 const CALENDAR_DATE = /^\d{4}-\d{2}-\d{2}$/;
 const calendarDate = Joi.string().trim().pattern(CALENDAR_DATE).required();
 
