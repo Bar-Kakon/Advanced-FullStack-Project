@@ -88,6 +88,18 @@ export const he = {
       decline: 'הסתמכות על ההתראות בתוך FieldSync בלבד',
       changeable: 'אפשר לשנות את הבחירה בהמשך בהגדרות ההתראות.',
     },
+
+    /**
+     * Shown when Register is completing a Google sign-in. Google supplies the identity and nothing
+     * else — the trade, the business and the location are FieldSync's own onboarding and are still
+     * asked for here, with no value guessed at from the Google account.
+     */
+    googleOnboarding: {
+      notice: 'זוהית דרך Google בכתובת {email}. להשלמת ההרשמה נדרשים עוד פרטי העסק.',
+      emailLocked: 'הכתובת מגיעה מחשבון ה-Google ואינה ניתנת לעריכה.',
+      noPassword: 'החשבון ייפתח ללא סיסמה, וההתחברות תתבצע דרך Google.',
+      submit: 'סיום ההרשמה',
+    },
   },
 
   /** The three registration routes. Each opens its own taxonomy below. */
@@ -385,6 +397,21 @@ export const he = {
       emailRequired: 'יש להזין כתובת אימייל.',
       emailInvalid: 'כתובת אימייל לא תקינה.',
       passwordRequired: 'יש להזין סיסמה.',
+    },
+
+    /**
+     * No provider message ever reaches the screen. Google's own errors are written for developers
+     * and can name internals, so every case here is answered in the product's own words.
+     */
+    googleErrors: {
+      // The address already has a FieldSync account with no Google link. It says whose move it is,
+      // because the person cannot fix this from the Google side.
+      linkRequired: 'לכתובת הזו כבר קיים חשבון עם סיסמה. יש להתחבר עם הסיסמה, ואז לקשר את Google מתוך החשבון.',
+      identityClaimed: 'חשבון ה-Google הזה כבר מקושר לחשבון FieldSync אחר.',
+      emailNotVerified: 'Google לא אימת את כתובת האימייל של החשבון הזה.',
+      notConfigured: 'התחברות עם Google אינה זמינה כרגע. אפשר להתחבר עם אימייל וסיסמה.',
+      credential: 'לא הצלחנו לאמת את חשבון ה-Google. אפשר לנסות שוב.',
+      cancelled: 'ההתחברות עם Google הופסקה.',
     },
   },
 
@@ -1486,6 +1513,143 @@ export const he = {
     },
 
     footerNote: 'FieldSync — אב־טיפוס אקדמי בפיתוח.',
+  },
+
+  /**
+   * From the approved static prototype, with the reconciliations the decision log records: the
+   * visual-simulation rows are gone with the feature they metered, the project labels follow the
+   * current My projects wording, and dependencies are named between stages.
+   */
+  subscriptions: {
+    documentTitle: 'תוכניות ומנוי / Plans & subscription — FieldSync',
+    title: 'תוכניות ומנוי',
+    lede: 'בחירת התוכנית שמתאימה לקצב העבודה. אפשר לשדרג, לרדת תוכנית או לבטל בכל שלב — הפרויקטים נשמרים בכל מקרה.',
+    loading: 'טעינת התוכניות…',
+    retry: 'ניסיון נוסף',
+    loadFailed: 'לא הצלחנו לטעון את התוכניות.',
+
+    planNames: { free: 'חינמית', basic: 'בסיסית', premium: 'פרימיום' },
+    taglines: {
+      free: 'לניהול העבודה השוטפת, ולעבודה בפרויקטים של אחרים.',
+      basic: 'לניהול כמה אתרים במקביל, עם יותר מרחב תכנון.',
+      premium: 'לעבודה בהיקף גדול, עם פרטיות מלאה על מי שמבצע בפועל.',
+    },
+
+    currentFlag: 'התוכנית שלי',
+    popularFlag: 'הנבחרת ביותר',
+    freePrice: 'חינם',
+    forever: 'לתמיד',
+    perMonth: 'לחודש',
+    currentPlan: 'התוכנית הנוכחית',
+    upgradeTo: 'שדרוג לתוכנית ה{plan}',
+    downgradeTo: 'מעבר לתוכנית ה{plan}',
+    cancelPlan: 'ביטול המנוי',
+
+    /** Replaces the control when the deployment has no payment provider, rather than a dead button. */
+    checkoutUnavailable: 'התשלום אינו זמין עדיין. התוכנית החינמית פעילה ללא הגבלת זמן.',
+    checkoutUnavailableShort: 'התשלום אינו זמין עדיין',
+
+    period: {
+      renews: 'התוכנית מתחדשת ב-{date}.',
+      scheduled: 'ב-{date} תיכנס לתוקף התוכנית ה{plan}.',
+      canceled: 'המנוי מסתיים ב-{date}, ולאחר מכן החשבון יעבור לתוכנית החינמית.',
+      keepPlan: 'ביטול השינוי המתוכנן',
+      pastDue: 'תקופת החיוב הסתיימה. החשבון פועל כעת בתוכנית החינמית.',
+    },
+
+    compare: {
+      title: 'השוואת תוכניות',
+      lede: 'כל שורה כאן משתנה בין התוכניות — זה בדיוק מה שמשתדרג.',
+      capability: 'יכולת',
+      included: 'כלול',
+      notIncluded: 'לא כלול',
+      unlimited: 'ללא הגבלה',
+      megabytes: '{n}MB',
+      lastDays: '{n} ימים אחרונים',
+      months: '{n} חודשים',
+      complete: 'מלאה',
+    },
+
+    rows: {
+      activeProjects: 'פרויקטים בניהולי',
+      activeDelegations: 'האצלות חסויות פעילות',
+      privateExecutionLayer: 'מרחב עבודה פרטי',
+      agreementForm: 'יצירת משימה אוטומטית',
+      moderatedThreads: 'ניהול שיחות בפרויקט',
+      muteControls: 'הגדרות השתקה',
+      fileMaxBytes: 'העלאת קבצים',
+      auditRetentionDays: 'היסטוריית פרויקט',
+      notificationChannels: 'ערוצי התראות',
+      connections: 'רשת אנשי קשר',
+      supportTier: 'תמיכה',
+    },
+
+    channels: {
+      inApp: 'בתוך המערכת',
+      inAppAndEmail: 'במערכת ובמייל',
+      inAppEmailAndDigest: 'במערכת, במייל וסיכום יומי',
+    },
+
+    support: { community: 'מרכז עזרה', email: 'מייל', priority: 'מייל בעדיפות' },
+
+    common: {
+      title: 'כלול בכל תוכנית',
+      lede: 'היכולות הבאות זהות בכל התוכניות ואינן משתנות עם השדרוג.',
+      everyPlan: 'בכל תוכנית',
+      rows: [
+        { label: 'משימות לפרויקט', value: 'ללא הגבלה' },
+        { label: 'חברי צוות לפרויקט', value: 'ללא הגבלה' },
+        // The current My projects wording. The prototype's `פרויקטים בהשתתפותכם` predates it.
+        { label: 'פרויקטים שאינם בניהולי', value: 'ללא הגבלה' },
+        { label: 'בקשות לשינוי תאריך', value: 'כלול' },
+        // Dependencies run between stages. The prototype's `תלויות בין משימות` names a task-level
+        // graph this product does not have.
+        { label: 'תלויות בין שלבים', value: 'כלול, עם בדיקת התנגשויות' },
+        // No longer a plan difference: work plans are append-only, so every version is kept on
+        // every plan and a per-tier depth would have implied a deletion that never happens.
+        { label: 'תוכניות עבודה בגרסאות', value: 'כלול, ההיסטוריה נשמרת' },
+        { label: 'פרופיל ציבורי וציון גמישות', value: 'כלול' },
+      ],
+    },
+
+    faq: {
+      title: 'שאלות נפוצות',
+      items: [
+        {
+          q: 'מה נחשב האצלה חסויה פעילה?',
+          a: 'האצלה נחשבת פעילה כל עוד המשימה שהועברה עדיין פתוחה. עם סיומה המקום מתפנה להאצלה הבאה. בכל התוכניות, הקבלן שמעליי אינו רואה למי הועברה העבודה.',
+        },
+        {
+          q: 'קבלני המשנה שאני מזמין צריכים לשלם?',
+          a: 'לא. הצטרפות לפרויקט של מישהו אחר, קבלת משימות, עדכון סטטוס, פתיחת בקשות לשינוי תאריך ומענה להן — הכול כלול בתוכנית החינמית וללא הגבלה.',
+        },
+        {
+          q: 'מה קורה לפרויקטים שלי אם אני יורד תוכנית?',
+          a: 'שום דבר לא נמחק. המעבר לתוכנית הנמוכה נכנס לתוקף בסוף תקופת החיוב הנוכחית, ועד אז התוכנית הקיימת ממשיכה לפעול כרגיל.',
+        },
+        {
+          q: 'אפשר לבטל בכל שלב?',
+          a: 'כן. הביטול נכנס לתוקף בסוף מחזור החיוב הנוכחי, ועד אז התוכנית ממשיכה לעבוד כרגיל. אין התחייבות לתקופה.',
+        },
+        {
+          q: 'באיזה מטבע אני מחויב?',
+          a: 'בשקלים. המחיר המוצג הוא המחיר הסופי וכולל מע״מ.',
+        },
+      ],
+    },
+
+    note: 'המחירים כוללים מע״מ · החיוב חודשי · אפשר לבטל בכל שלב.',
+    provisional: 'המחירים והמכסות זמניים ועשויים להשתנות.',
+
+    errors: {
+      alreadyOnPlan: 'זו כבר התוכנית הנוכחית.',
+      notPurchasable: 'לא ניתן לרכוש את התוכנית הזו.',
+      noActiveSubscription: 'אין מנוי פעיל לשינוי.',
+      providerNotConfigured: 'התשלום אינו זמין כרגע.',
+      checkoutFailed: 'לא הצלחנו לפתוח את דף התשלום. אפשר לנסות שוב.',
+      network: 'לא הצלחנו להגיע לשרת. כדאי לבדוק את החיבור ולנסות שוב.',
+      unknown: 'לא הצלחנו להשלים את הפעולה כרגע.',
+    },
   },
 
   notFound: {

@@ -32,6 +32,11 @@ export interface RegisterFormValues {
   availability: Availability;
   password: string;
   confirmPassword: string;
+  /**
+   * Set only while Register is completing a Google sign-in. It replaces the two password fields
+   * rather than joining them: the account is opened with one credential or the other.
+   */
+  googleIdToken: string | null;
   acceptedTerms: boolean;
   /** `null` until the person answers. Neither option is preselected. */
   operationalEmail: boolean | null;
@@ -58,6 +63,7 @@ export const emptyRegisterForm: RegisterFormValues = {
   availability: 'open',
   password: '',
   confirmPassword: '',
+  googleIdToken: null,
   acceptedTerms: false,
   operationalEmail: null,
 };
@@ -122,8 +128,11 @@ export const buildRegisterPayload = (values: RegisterFormValues): RegisterPayloa
     companyName: values.companyName.trim(),
     ...(isEmployee ? { companyPosition: values.companyPosition as CompanyPosition } : {}),
     email: values.email.trim(),
-    password: values.password,
-    confirmPassword: values.confirmPassword,
+    // One credential or the other, never both. The server marks the two password fields
+    // `forbidden()` alongside a Google token, so sending them empty would fail the whole request.
+    ...(values.googleIdToken === null
+      ? { password: values.password, confirmPassword: values.confirmPassword }
+      : { googleIdToken: values.googleIdToken }),
     registrationCategory: values.registrationCategory,
     specialty: values.specialty,
     ...(wantsOther && specialtyOther ? { specialtyOther } : {}),

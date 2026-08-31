@@ -1,12 +1,15 @@
 import { useCallback } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 
 import { AuthShell } from '../../components/AuthShell';
+import { FormAlert } from '../../components/FormAlert';
+import { GoogleSignInButton } from '../../components/GoogleSignInButton';
+import { useGoogleAuth } from '../../auth/useGoogleAuth';
 import { useLanguage } from '../../i18n/useLanguage';
 import { useDocumentTitle } from '../../routes/useDocumentTitle';
 import { useScreenStylesheet } from '../../styles/useScreenStylesheet';
 import { RegisterForm } from './RegisterForm';
-import { useRegisterForm } from './useRegisterForm';
+import { useRegisterForm, type GoogleRegistration } from './useRegisterForm';
 import registerCss from './register.css?inline';
 import placeCss from '../../location/place.css?inline';
 
@@ -25,6 +28,7 @@ import placeCss from '../../location/place.css?inline';
 export const RegisterPage = () => {
   const { t } = useLanguage();
   const navigate = useNavigate();
+  const location = useLocation();
   useScreenStylesheet(
     { id: 'register.css', css: registerCss },
     { id: 'place.css', css: placeCss },
@@ -35,7 +39,15 @@ export const RegisterPage = () => {
     navigate('/login', { replace: true });
   }, [navigate]);
 
-  const form = useRegisterForm(onSuccess);
+  /**
+   * Set by Login when Google verified somebody who has no FieldSync account yet. It carries the
+   * identity and the credential, and nothing about their trade or their business: those are this
+   * screen's own questions and are still asked.
+   */
+  const google = (location.state as { google?: GoogleRegistration } | null)?.google ?? null;
+
+  const form = useRegisterForm(onSuccess, google);
+  const googleAuth = useGoogleAuth();
 
   return (
     <AuthShell brand={t.brand}>
@@ -44,25 +56,33 @@ export const RegisterPage = () => {
         <p className="form-subtitle">{t.form.subtitle}</p>
       </header>
 
+      {google === null ? null : (
+        <p className="form-note form-note--google">
+          {t.form.googleOnboarding.notice.replace('{email}', google.email)}
+        </p>
+      )}
+
       <RegisterForm form={form} />
 
-      <div className="divider" aria-hidden="true">
-        <span className="divider__line" />
-        <span className="divider__label">{t.form.dividerOr}</span>
-        <span className="divider__line" />
-      </div>
+      {/* Absent once Google has already identified this person: they are finishing that signup,
+          not starting a second one. */}
+      {google !== null ? null : (
+        <>
+          <div className="divider" aria-hidden="true">
+            <span className="divider__line" />
+            <span className="divider__label">{t.form.dividerOr}</span>
+            <span className="divider__line" />
+          </div>
 
-      {/* Google sign-up is still a stub: no provider has been configured. */}
-      <button type="button" className="btn btn--google btn--full">
-        <svg className="google-icon" width="18" height="18" viewBox="0 0 18 18"
-             xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-          <path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844a4.14 4.14 0 0 1-1.796 2.716v2.259h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="#4285F4" />
-          <path d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z" fill="#34A853" />
-          <path d="M3.964 10.706A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.706V4.962H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.038l3.007-2.332z" fill="#FBBC05" />
-          <path d="M9 3.58c1.62 0 3.06.56 4.21 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.962L3.964 7.294C4.672 5.163 6.656 3.58 9 3.58z" fill="#EA4335" />
-        </svg>
-        {t.form.google}
-      </button>
+          {googleAuth.error === null ? null : <FormAlert message={googleAuth.error} />}
+
+          <GoogleSignInButton
+            onCredential={googleAuth.submit}
+            text="signup_with"
+            disabled={googleAuth.busy}
+          />
+        </>
+      )}
 
       <p className="form-footer">
         {t.form.haveAccount}{' '}

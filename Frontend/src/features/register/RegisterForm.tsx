@@ -36,7 +36,7 @@ export const RegisterForm = ({ form }: { form: ReturnType<typeof useRegisterForm
   const { t } = useLanguage();
   const {
     values, setValue, setStanding, setCategory, setSpecialty, touched, markTouched, errors,
-    step, goNext, goBack, detailsComplete, isComplete, submitting, failure,
+    step, goNext, goBack, detailsComplete, isComplete, submitting, failure, viaGoogle,
   } = form;
 
   const alertMessage =
@@ -158,6 +158,9 @@ export const RegisterForm = ({ form }: { form: ReturnType<typeof useRegisterForm
             <TextField
               className="col--half" id="email" label={t.form.email.label} type="email" dir="ltr"
               placeholder={t.form.email.placeholder} autoComplete="email" maxLength={MAX.email} required
+              // The address Google verified is the one the account is opened for, and the server
+              // refuses any other, so it is not offered as an editable field.
+              {...(viaGoogle ? { readOnly: true } : {})}
               value={values.email} onChange={(v) => setValue('email', v)}
               onBlur={() => markTouched('email')} touched={!!touched.email}
               {...(errors.email ? { error: t.form.email.error } : {})}
@@ -265,24 +268,32 @@ export const RegisterForm = ({ form }: { form: ReturnType<typeof useRegisterForm
               />
             )}
 
-            <PasswordField
-              className="col--half"
-              id="password" name="password" label={t.form.password.label} placeholder={t.form.password.placeholder}
-              hint={t.form.password.hint} toggleLabel={t.form.togglePassword}
-              minLength={MIN_PASSWORD_LENGTH} maxLength={MAX.password}
-              value={values.password} onChange={(v) => setValue('password', v)}
-              onBlur={() => markTouched('password')} touched={!!touched.password}
-              {...(errors.password ? { error: t.form.password.error } : {})}
-            />
-            <PasswordField
-              className="col--half"
-              id="password-confirm" name="confirmPassword" label={t.form.confirmPassword.label}
-              placeholder={t.form.confirmPassword.placeholder} toggleLabel={t.form.togglePassword}
-              maxLength={MAX.password}
-              value={values.confirmPassword} onChange={(v) => setValue('confirmPassword', v)}
-              onBlur={() => markTouched('confirmPassword')} touched={!!touched.confirmPassword}
-              {...(errors.confirmPassword ? { error: t.form.confirmPassword.error } : {})}
-            />
+            {/* A Google account is opened with no password, so the fields are absent rather than
+                shown and ignored — there is nothing here for the person to fill in or to lose. */}
+            {viaGoogle ? (
+              <p className="form-note col--full">{t.form.googleOnboarding.noPassword}</p>
+            ) : (
+              <>
+                <PasswordField
+                  className="col--half"
+                  id="password" name="password" label={t.form.password.label} placeholder={t.form.password.placeholder}
+                  hint={t.form.password.hint} toggleLabel={t.form.togglePassword}
+                  minLength={MIN_PASSWORD_LENGTH} maxLength={MAX.password}
+                  value={values.password} onChange={(v) => setValue('password', v)}
+                  onBlur={() => markTouched('password')} touched={!!touched.password}
+                  {...(errors.password ? { error: t.form.password.error } : {})}
+                />
+                <PasswordField
+                  className="col--half"
+                  id="password-confirm" name="confirmPassword" label={t.form.confirmPassword.label}
+                  placeholder={t.form.confirmPassword.placeholder} toggleLabel={t.form.togglePassword}
+                  maxLength={MAX.password}
+                  value={values.confirmPassword} onChange={(v) => setValue('confirmPassword', v)}
+                  onBlur={() => markTouched('confirmPassword')} touched={!!touched.confirmPassword}
+                  {...(errors.confirmPassword ? { error: t.form.confirmPassword.error } : {})}
+                />
+              </>
+            )}
 
             <button
               type="submit"
