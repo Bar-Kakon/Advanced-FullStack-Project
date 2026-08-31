@@ -89,7 +89,7 @@ export const PlaceAutocomplete = ({
           <div className="input-wrapper">
             <input
               id={inputId}
-              className={`form-input${invalid ? ' touched' : ''}`}
+              className={`form-input${invalid ? ' touched is-invalid' : ''}`}
               type="text"
               role="combobox"
               aria-expanded={open}
@@ -109,7 +109,9 @@ export const PlaceAutocomplete = ({
               onFocus={() => setOpen(true)}
               onKeyDown={onKeyDown}
             />
-            {required ? <InputWarning /> : null}
+            {/* Tied to the error state, never to `required`: a field that has not been answered
+                yet is not a field somebody got wrong. */}
+            {invalid ? <InputWarning /> : null}
           </div>
 
           {invalid && error ? (
