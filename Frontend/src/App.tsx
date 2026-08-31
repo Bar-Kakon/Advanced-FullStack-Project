@@ -73,6 +73,8 @@ const ScheduleExceptionsPage = lazy(() =>
   import('./features/scheduleexceptions/ScheduleExceptionsPage').then((m) => ({ default: m.ScheduleExceptionsPage })));
 const EditTaskPage = lazy(() =>
   import('./features/tasks/EditTaskPage').then((m) => ({ default: m.EditTaskPage })));
+const MessagesPage = lazy(() =>
+  import('./features/messaging/MessagesPage').then((m) => ({ default: m.MessagesPage })));
 const AuditLogPage = lazy(() =>
   import('./features/moderation/AuditLogPage').then((m) => ({ default: m.AuditLogPage })));
 
@@ -121,6 +123,7 @@ export const App = () => (
                   about an invitation has to be readable before one is accepted. */}
               <Route path="/settings" element={<SettingsPage />} />
               <Route path="/notifications" element={<NotificationsPage />} />
+              <Route path="/messages" element={<MessagesPage />} />
               <Route path="/waiting-for-approval" element={<WaitingForApprovalPage />} />
 
               <Route element={<MembershipRoute />}>

@@ -72,6 +72,7 @@ export const AppNav = ({ name, initials }: { name: string; initials: string }) =
           <Link to="/network" className="app-nav__link">{t.nav.network}</Link>
           <Link to="/projects" className="app-nav__link">{t.nav.projects}</Link>
           <Link to="/tasks" className="app-nav__link">{t.nav.myTasks}</Link>
+          <Link to="/messages" className="app-nav__link">{t.nav.messages}</Link>
           {showEmployees ? (
             <Link to="/employees" className="app-nav__link">{t.nav.employees}</Link>
           ) : null}
