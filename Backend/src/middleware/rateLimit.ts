@@ -16,6 +16,9 @@ const MINUTE = 60 * 1000;
 /** Windows and counts are engineering defaults, not approved product values. */
 export const AUTH_RATE_LIMITS = {
   login: { windowMs: 15 * MINUTE, limit: 10 },
+  // Limited like a login even though no password is compared: each attempt costs a signature
+  // verification against Google's published keys.
+  googleSignIn: { windowMs: 15 * MINUTE, limit: 10 },
   register: { windowMs: 60 * MINUTE, limit: 10 },
   forgotPassword: { windowMs: 15 * MINUTE, limit: 5 },
   resetPassword: { windowMs: 15 * MINUTE, limit: 10 },

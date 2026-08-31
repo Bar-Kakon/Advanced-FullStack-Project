@@ -43,6 +43,37 @@ export interface GoogleMapsConfig {
   readonly timeoutMs: number;
 }
 
+/**
+ * The OAuth client every Google ID token must be issued for. It is a public identifier rather than
+ * a secret: the server needs it as the audience to verify against, and the browser needs the same
+ * value to obtain a token at all.
+ *
+ * Absent is supported. The Google endpoints answer GOOGLE_AUTH_NOT_CONFIGURED and password login
+ * is untouched, rather than the process refusing to start.
+ */
+export interface GoogleAuthConfig {
+  readonly clientId: string | undefined;
+}
+
+/**
+ * Billing provider credentials, all three together or none — the same rule SMTP follows, for the
+ * same reason: a partial set is a deployment that looks able to take money and fails at the first
+ * checkout.
+ *
+ * With none of them set the provider is `none`. Free works completely, the plan comparison
+ * renders, and checkout answers BILLING_PROVIDER_NOT_CONFIGURED instead of pretending.
+ */
+export type BillingConfig =
+  | {
+      readonly provider: 'payplus';
+      readonly apiKey: string;
+      readonly secretKey: string;
+      readonly paymentPageUid: string;
+      readonly baseUrl: string;
+      readonly timeoutMs: number;
+    }
+  | { readonly provider: 'none' };
+
 export interface AppConfig {
   readonly nodeEnv: NodeEnv;
   readonly port: number;
@@ -54,6 +85,8 @@ export interface AppConfig {
   /** Base URL of the React client. The reset link is built against it. */
   readonly frontendUrl: string;
   readonly googleMaps: GoogleMapsConfig;
+  readonly googleAuth: GoogleAuthConfig;
+  readonly billing: BillingConfig;
 }
 
 interface RawEnv {
@@ -74,6 +107,12 @@ interface RawEnv {
   readonly MAIL_FROM?: string;
   readonly GOOGLE_MAPS_API_KEY?: string;
   readonly GOOGLE_MAPS_TIMEOUT_MS: number;
+  readonly GOOGLE_OAUTH_CLIENT_ID?: string;
+  readonly PAYPLUS_API_KEY?: string;
+  readonly PAYPLUS_SECRET_KEY?: string;
+  readonly PAYPLUS_PAYMENT_PAGE_UID?: string;
+  readonly PAYPLUS_BASE_URL: string;
+  readonly PAYPLUS_TIMEOUT_MS: number;
 }
 
 const MIN_SECRET_LENGTH = 32;
@@ -110,6 +149,17 @@ const rawEnvSchema: Joi.ObjectSchema<RawEnv> = Joi.object({
 
   GOOGLE_MAPS_API_KEY: Joi.string().trim().min(1).optional(),
   GOOGLE_MAPS_TIMEOUT_MS: Joi.number().integer().min(1000).max(30000).default(8000),
+
+  GOOGLE_OAUTH_CLIENT_ID: Joi.string().trim().min(1).optional(),
+
+  PAYPLUS_API_KEY: Joi.string().trim().min(1).optional(),
+  PAYPLUS_SECRET_KEY: Joi.string().trim().min(1).optional(),
+  PAYPLUS_PAYMENT_PAGE_UID: Joi.string().trim().min(1).optional(),
+  // Defaults to the sandbox. Production is an explicit act, never something a missing value does.
+  PAYPLUS_BASE_URL: Joi.string()
+    .uri({ scheme: ['https'] })
+    .default('https://restapidev.payplus.co.il/api/v1.0'),
+  PAYPLUS_TIMEOUT_MS: Joi.number().integer().min(1000).max(30000).default(10000),
 }).unknown(true);
 
 /**
@@ -136,6 +186,33 @@ const buildMailConfig = (value: RawEnv): MailConfig => {
     user: value.SMTP_USER as string,
     pass: value.SMTP_PASS as string,
     from: value.MAIL_FROM as string,
+  };
+};
+
+/**
+ * All three PayPlus values or none, for the reason `buildMailConfig` gives: two out of three is a
+ * deployment that boots, renders a checkout button and fails the moment somebody presses it.
+ */
+const buildBillingConfig = (value: RawEnv): BillingConfig => {
+  const supplied = [value.PAYPLUS_API_KEY, value.PAYPLUS_SECRET_KEY, value.PAYPLUS_PAYMENT_PAGE_UID];
+  const present = supplied.filter((entry) => entry !== undefined && entry !== '');
+
+  if (present.length === 0) return { provider: 'none' };
+
+  if (present.length !== supplied.length) {
+    throw new Error(
+      'PayPlus is partially configured. Set PAYPLUS_API_KEY, PAYPLUS_SECRET_KEY and ' +
+        'PAYPLUS_PAYMENT_PAGE_UID together, or leave all three unset to run without checkout.',
+    );
+  }
+
+  return {
+    provider: 'payplus',
+    apiKey: value.PAYPLUS_API_KEY as string,
+    secretKey: value.PAYPLUS_SECRET_KEY as string,
+    paymentPageUid: value.PAYPLUS_PAYMENT_PAGE_UID as string,
+    baseUrl: normaliseBaseUrl(value.PAYPLUS_BASE_URL),
+    timeoutMs: value.PAYPLUS_TIMEOUT_MS,
   };
 };
 
@@ -194,5 +271,7 @@ export const loadConfig = (source: NodeJS.ProcessEnv = process.env): AppConfig =
     mail: buildMailConfig(value),
     frontendUrl: normaliseBaseUrl(value.FRONTEND_URL),
     googleMaps: { apiKey: value.GOOGLE_MAPS_API_KEY, timeoutMs: value.GOOGLE_MAPS_TIMEOUT_MS },
+    googleAuth: { clientId: value.GOOGLE_OAUTH_CLIENT_ID },
+    billing: buildBillingConfig(value),
   };
 };

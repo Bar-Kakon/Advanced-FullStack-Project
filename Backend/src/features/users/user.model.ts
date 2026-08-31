@@ -189,6 +189,21 @@ export interface StoredExcludedTravelLocation {
   readonly excludedAt: Date;
 }
 
+/** The external sign-in providers an account may be linked to. */
+export const AUTH_PROVIDERS = ['google'] as const;
+export type AuthProvider = (typeof AUTH_PROVIDERS)[number];
+
+/**
+ * One link between a FieldSync account and an external provider. `subject` is the provider's own
+ * stable identifier for the person, never their email — an email can be reassigned, a subject
+ * cannot.
+ */
+export interface ProviderIdentity {
+  readonly provider: AuthProvider;
+  readonly subject: string;
+  readonly linkedAt: Date;
+}
+
 export interface UserRecord {
   readonly _id: Types.ObjectId;
   readonly email: string;
@@ -197,6 +212,7 @@ export interface UserRecord {
   readonly lastName: string;
   readonly language: UserLanguage;
   readonly profileComplete: boolean;
+  readonly identities?: readonly ProviderIdentity[];
   readonly security?: {
     readonly passwordChangedAt?: Date;
     readonly tokenVersion?: number;
@@ -206,8 +222,12 @@ export interface UserRecord {
 /** The identity fields plus everything the profile screens read. */
 export interface UserProfileRecord extends UserRecord, UserProfileFields {}
 
+/**
+ * `null` is a real answer: a Google-only account has never had a local password, and no value is
+ * invented for it. Password login treats the two the same way it treats a wrong password.
+ */
 export interface UserWithPasswordHash extends UserRecord {
-  readonly passwordHash: string;
+  readonly passwordHash: string | null;
 }
 
 export const USER_STATUSES: readonly UserStatus[] = ['active', 'deactivated', 'banned', 'deleted'];
@@ -251,10 +271,26 @@ const excludedTravelLocationSchema = new Schema(
   { _id: false },
 );
 
+const providerIdentitySchema = new Schema(
+  {
+    provider: { type: String, enum: AUTH_PROVIDERS, required: true },
+    subject: { type: String, required: true, trim: true },
+    linkedAt: { type: Date, required: true },
+  },
+  { _id: false },
+);
+
 const userSchema = new Schema(
   {
     email: { type: String, required: true, unique: true, lowercase: true, trim: true },
-    passwordHash: { type: String, required: true, select: false },
+
+    // Optional because a Google-only account has no local password, and inventing one would give
+    // the account a credential nobody chose. Register writes it on the password path; the provider
+    // path never does, and Login answers a missing hash the way it answers a wrong one.
+    passwordHash: { type: String, select: false },
+
+    // Append-only links to external sign-in providers. The subject is the provider's stable id.
+    identities: { type: [providerIdentitySchema], default: undefined },
     status: { type: String, enum: USER_STATUSES, default: 'active', required: true, index: true },
     firstName: { type: String, required: true, trim: true },
     lastName: { type: String, required: true, trim: true },
@@ -343,5 +379,15 @@ userSchema.index({ 'approvedTravelLocations.placeId': 1 });
 
 // Browse's discovery sort and its cursor tiebreaker.
 userSchema.index({ status: 1, createdAt: -1, _id: -1 });
+
+/**
+ * One Google subject may resolve to exactly one account, enforced by the database rather than by
+ * the sign-in code. Partial, so the accounts with no identity at all are not all indexed as one
+ * missing value. Both fields live in the same array, so this is a legal multikey compound.
+ */
+userSchema.index(
+  { 'identities.provider': 1, 'identities.subject': 1 },
+  { unique: true, partialFilterExpression: { 'identities.subject': { $exists: true } } },
+);
 
 export const UserModel = model('User', userSchema);

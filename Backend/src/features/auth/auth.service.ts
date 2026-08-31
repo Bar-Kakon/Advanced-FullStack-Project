@@ -58,7 +58,9 @@ export const createAuthService = ({
   async login({ email, password }) {
     const user = await users.findByEmailWithPasswordHash(email);
 
-    if (user === null) {
+    // A Google-only account has no hash to compare against, and takes the same path and the same
+    // time as an address that has no account at all. Nothing here reveals which one it was.
+    if (user === null || user.passwordHash === null) {
       await passwords.simulateVerify();
       throw invalidCredentials();
     }

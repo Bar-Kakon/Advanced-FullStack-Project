@@ -4,6 +4,8 @@ import type { DbSession } from '../../db/mongoose.js';
 import {
   INITIAL_TOKEN_VERSION,
   UserModel,
+  type AuthProvider,
+  type ProviderIdentity,
   type DrillingType,
   type HeavyEquipment,
   type NotificationPreferences,
@@ -20,7 +22,7 @@ import {
   type UserWithPasswordHash,
 } from './user.model.js';
 
-const IDENTITY_FIELDS = 'email status firstName lastName language profileComplete security.passwordChangedAt security.tokenVersion';
+const IDENTITY_FIELDS = 'email status firstName lastName language profileComplete identities security.passwordChangedAt security.tokenVersion';
 
 /**
  * Everything the profile screens read, and nothing else. `passwordHash` is `select: false` and is
@@ -39,7 +41,10 @@ const PROFILE_FIELDS = `${IDENTITY_FIELDS} bio registrationCategory specialties 
  */
 export interface NewUser {
   readonly email: string;
-  readonly passwordHash: string;
+  /** Absent on the provider path. No placeholder is written, so no password can be guessed at. */
+  readonly passwordHash?: string;
+  /** Written at creation on the provider path, so the link and the account commit together. */
+  readonly identities?: readonly ProviderIdentity[];
   readonly firstName: string;
   readonly lastName: string;
   readonly registrationCategory: RegistrationCategory;
@@ -117,6 +122,15 @@ export interface UserRepository {
   updatePassword(id: Types.ObjectId, update: PasswordUpdate, session?: DbSession): Promise<void>;
   existsByEmail(email: string): Promise<boolean>;
   create(user: NewUser, session?: DbSession): Promise<UserRecord>;
+  /** Resolves a provider sign-in by the provider's own stable id, never by the email beside it. */
+  findByProviderIdentity(provider: AuthProvider, subject: string): Promise<UserRecord | null>;
+  /**
+   * Attaches a provider to an account that has none of that provider yet. Answers `false` when a
+   * link already exists, so a second attempt cannot silently overwrite the first.
+   */
+  linkProviderIdentity(id: Types.ObjectId, identity: ProviderIdentity): Promise<boolean>;
+  /** Whether a local password exists, without the hash leaving the repository. */
+  hasPassword(id: string): Promise<boolean>;
 }
 
 /**
@@ -124,11 +138,17 @@ export interface UserRepository {
  * boundary, so nothing downstream can call a Mongoose document method or re-save the user.
  */
 export const userRepository: UserRepository = {
+  /** A document with no stored hash answers `null` rather than an absent key, so the caller has
+   *  one shape to handle and cannot read `undefined` as a hash. */
   async findByEmailWithPasswordHash(email) {
-    return UserModel.findOne({ email })
+    const found = await UserModel.findOne({ email })
       .select(`${IDENTITY_FIELDS} +passwordHash`)
-      .lean<UserWithPasswordHash>()
+      .lean<UserRecord & { passwordHash?: string }>()
       .exec();
+    if (found === null) return null;
+
+    const { passwordHash, ...user } = found;
+    return { ...user, passwordHash: passwordHash ?? null };
   },
 
   async findByEmail(email) {
@@ -268,7 +288,7 @@ export const userRepository: UserRepository = {
    * ride along, because it is not in that projection. The read joins the caller's session, or it
    * would not see a document the open transaction has not committed yet.
    */
-  async create({ specialties, drillingTypes, termsAcceptances, ...user }, session) {
+  async create({ specialties, drillingTypes, termsAcceptances, identities, ...user }, session) {
     const [created] = await UserModel.create(
       [
         {
@@ -276,6 +296,7 @@ export const userRepository: UserRepository = {
           specialties: [...specialties],
           termsAcceptances: [...termsAcceptances],
           ...(drillingTypes === undefined ? {} : { drillingTypes: [...drillingTypes] }),
+          ...(identities === undefined ? {} : { identities: [...identities] }),
         },
       ],
       session ? { session } : {},
@@ -286,5 +307,36 @@ export const userRepository: UserRepository = {
     if (session) query.session(session);
 
     return query.lean<UserRecord>().orFail().exec();
+  },
+
+  async findByProviderIdentity(provider, subject) {
+    return UserModel.findOne({ identities: { $elemMatch: { provider, subject } } })
+      .select(IDENTITY_FIELDS)
+      .lean<UserRecord>()
+      .exec();
+  },
+
+  /**
+   * The filter is what makes this safe under concurrency: the account is matched only while it
+   * holds no link for that provider, so two simultaneous link attempts cannot both write one.
+   */
+  async linkProviderIdentity(id, identity) {
+    const result = await UserModel.updateOne(
+      { _id: id, 'identities.provider': { $ne: identity.provider } },
+      { $push: { identities: identity } },
+    ).exec();
+
+    return result.modifiedCount === 1;
+  },
+
+  async hasPassword(id) {
+    if (!Types.ObjectId.isValid(id)) return false;
+
+    const found = await UserModel.findById(id)
+      .select('+passwordHash')
+      .lean<{ passwordHash?: string }>()
+      .exec();
+
+    return typeof found?.passwordHash === 'string' && found.passwordHash.length > 0;
   },
 };

@@ -39,3 +39,41 @@ export const invalidResetToken = (): AppError =>
  */
 export const emailAlreadyRegistered = (): AppError =>
   new AppError('Email is already registered', 409, 'EMAIL_ALREADY_REGISTERED');
+
+/** No OAuth client is configured, so this deployment cannot verify a Google credential at all. */
+export const googleAuthNotConfigured = (): AppError =>
+  new AppError('Google sign-in is not configured', 503, 'GOOGLE_AUTH_NOT_CONFIGURED');
+
+/** One answer for forged, expired, wrong-audience and malformed credentials alike. */
+export const invalidGoogleCredential = (): AppError =>
+  new AppError('Google credential is not usable', 401, 'INVALID_GOOGLE_CREDENTIAL');
+
+/**
+ * Google itself reports the address as unconfirmed, so it proves nothing about who holds the
+ * mailbox and cannot be used to reach an account.
+ */
+export const googleEmailNotVerified = (): AppError =>
+  new AppError('Google has not verified this email address', 401, 'GOOGLE_EMAIL_NOT_VERIFIED');
+
+/**
+ * The verified Google email already belongs to a FieldSync account carrying no Google link.
+ *
+ * Linking on the strength of that match alone would be unsafe: registration never proves the
+ * person controls the address they typed, so an account opened under somebody else's email would
+ * capture that person's first Google sign-in. The owner signs in with their password and links
+ * Google deliberately instead.
+ */
+export const googleLinkRequired = (): AppError =>
+  new AppError('Sign in with your password to link Google', 409, 'GOOGLE_LINK_REQUIRED');
+
+/** This account already holds a Google link, so a second would overwrite the first. */
+export const googleAlreadyLinked = (): AppError =>
+  new AppError('This account is already linked to Google', 409, 'GOOGLE_ALREADY_LINKED');
+
+/** The Google identity is linked to a different account. One subject resolves to one account. */
+export const googleIdentityClaimed = (): AppError =>
+  new AppError('This Google account is linked elsewhere', 409, 'GOOGLE_IDENTITY_CLAIMED');
+
+/** Registration opens the account for the address Google verified, never for another one. */
+export const googleEmailMismatch = (): AppError =>
+  new AppError('The email does not match the Google account', 409, 'GOOGLE_EMAIL_MISMATCH');

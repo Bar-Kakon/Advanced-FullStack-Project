@@ -5,10 +5,13 @@ import { getAuthenticatedUserId } from './requireAccessToken.middleware.js';
 import type { AuthService } from './auth.service.js';
 import type {
   ForgotPasswordBody,
+  GoogleCredentialBody,
   LoginBody,
   RegisterBody,
   ResetPasswordBody,
 } from './auth.validation.js';
+import { googleAuthNotConfigured } from './auth.errors.js';
+import type { GoogleAuthService } from './googleAuth.service.js';
 import type { PasswordResetService } from './passwordReset.service.js';
 import type { RegistrationService } from './registration.service.js';
 import { REFRESH_TOKEN_COOKIE, type RefreshTokenCookie } from './refreshTokenCookie.js';
@@ -21,6 +24,8 @@ export interface AuthController {
   readonly handleMe: RequestHandler;
   readonly handleForgotPassword: RequestHandler;
   readonly handleResetPassword: RequestHandler;
+  readonly handleGoogleSignIn: RequestHandler;
+  readonly handleGoogleLink: RequestHandler;
 }
 
 export interface AuthControllerDependencies {
@@ -28,6 +33,8 @@ export interface AuthControllerDependencies {
   readonly registrationService: RegistrationService;
   readonly passwordResetService: PasswordResetService;
   readonly cookie: RefreshTokenCookie;
+  /** `null` when no OAuth client is configured. Both Google routes then answer 503 and write nothing. */
+  readonly googleAuthService: GoogleAuthService | null;
 }
 
 /**
@@ -42,9 +49,15 @@ export const createAuthController = ({
   registrationService,
   passwordResetService,
   cookie,
+  googleAuthService,
 }: AuthControllerDependencies): AuthController => {
   const sendRefreshToken = (res: Response, refreshToken: string): void => {
     res.cookie(REFRESH_TOKEN_COOKIE, refreshToken, cookie.options);
+  };
+
+  const google = (): GoogleAuthService => {
+    if (googleAuthService === null) throw googleAuthNotConfigured();
+    return googleAuthService;
   };
 
   return {
@@ -103,6 +116,37 @@ export const createAuthController = ({
       await passwordResetService.resetPassword(input);
 
       res.json({ status: 'ok' });
+    },
+
+    /**
+     * Two 200s with different meanings, told apart by `outcome`.
+     *
+     * `signed_in` is the same body Login answers, through the same token path and the same cookie,
+     * so a Google session and a password session are indistinguishable from here on. Google cannot
+     * supply a registration category, a specialty, a business or a location, so a first-time
+     * visitor gets `onboarding_required` and the identity they were verified as — and no account
+     * exists until they complete Register.
+     */
+    handleGoogleSignIn: async (req: Request, res: Response) => {
+      const { idToken } = getValidated<GoogleCredentialBody>(res, 'body');
+      const result = await google().signIn(idToken);
+
+      if (result.outcome === 'onboarding_required') {
+        res.json({ outcome: result.outcome, profile: result.profile });
+        return;
+      }
+
+      const { accessToken, refreshToken, user } = result;
+      sendRefreshToken(res, refreshToken);
+      res.json({ outcome: result.outcome, accessToken, user });
+    },
+
+    /** Authenticated: the session names the account, so the body never has to. */
+    handleGoogleLink: async (req: Request, res: Response) => {
+      const { idToken } = getValidated<GoogleCredentialBody>(res, 'body');
+      const { linkedEmail } = await google().link(getAuthenticatedUserId(res), idToken);
+
+      res.json({ linkedEmail });
     },
   };
 };
