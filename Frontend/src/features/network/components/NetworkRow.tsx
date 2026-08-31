@@ -1,5 +1,6 @@
 import { ButtonSpinner } from '../../../components/ButtonSpinner';
 import { useLanguage } from '../../../i18n/useLanguage';
+import { localeOf } from '../../../i18n/dateFormat';
 import type { NetworkTab } from '../../../api/network.types';
 import type { NetworkAction, Row } from '../useMyNetwork';
 
@@ -34,7 +35,7 @@ export const NetworkRow = ({ row, tab, pending, onAct, onViewProfile }: NetworkR
   const date = new Date(row.at);
   const when = Number.isNaN(date.getTime())
     ? null
-    : date.toLocaleDateString(lang === 'he' ? 'he-IL' : 'en-GB', {
+    : date.toLocaleDateString(localeOf(lang), {
         year: 'numeric',
         month: 'long',
         day: 'numeric',

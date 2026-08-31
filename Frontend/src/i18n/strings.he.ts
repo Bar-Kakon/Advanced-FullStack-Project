@@ -2379,6 +2379,10 @@ export const he = {
     removedMessage: 'ההודעה הוסרה',
     composerPlaceholder: 'כתיבת הודעה',
     send: 'שליחה',
+    report: 'דיווח',
+    reported: 'הדיווח נשלח',
+    cancel: 'ביטול',
+    reportReasons: { spam: 'ספאם', harassment: 'הטרדה', impersonation: 'התחזות', other: 'אחר' },
     acceptAgreement: 'אישור הסיכום',
     declineAgreement: 'דחיית הסיכום',
     agreementStates: {

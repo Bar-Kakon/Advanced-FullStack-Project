@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 
 import { useLanguage } from '../../../i18n/useLanguage';
+import { localeOf } from '../../../i18n/dateFormat';
 import type { AuditEntry, PendingActions, ProposalListRow } from '../../../api/coordination.types';
 
 export interface CoordinationPanelProps {
@@ -12,7 +13,7 @@ export interface CoordinationPanelProps {
 }
 
 const stamp = (iso: string, lang: 'he' | 'en'): string =>
-  new Date(iso).toLocaleDateString(lang === 'he' ? 'he-IL' : 'en-GB', {
+  new Date(iso).toLocaleDateString(localeOf(lang), {
     year: 'numeric',
     month: 'short',
     day: 'numeric',

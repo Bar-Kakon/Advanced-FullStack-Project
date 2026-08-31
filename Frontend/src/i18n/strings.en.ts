@@ -2306,6 +2306,10 @@ export const en: Strings = {
     removedMessage: 'This message was removed',
     composerPlaceholder: 'Write a message',
     send: 'Send',
+    report: 'Report',
+    reported: 'Report sent',
+    cancel: 'Cancel',
+    reportReasons: { spam: 'Spam', harassment: 'Harassment', impersonation: 'Impersonation', other: 'Other' },
     acceptAgreement: 'Accept agreement',
     declineAgreement: 'Decline agreement',
     agreementStates: {

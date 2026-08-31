@@ -1,33 +1,32 @@
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit';
 
-import type { AuthenticatedUser } from '../api/types';
-
 export interface SessionState {
-  readonly user: AuthenticatedUser | null;
-  /** Notification badge count, read by the navbar on every screen. */
+  /** The navbar badge, rendered on every screen, so no single screen owns it. */
   readonly unreadNotifications: number;
 }
 
 /**
- * Session-derived CLIENT state, not a second copy of the server's answer: the API stays the source
- * of truth and this holds what the whole shell needs to render — who is signed in, and the badge
- * count the navbar shows on every screen.
+ * Session-DERIVED client state, and deliberately not the session itself.
+ *
+ * Who is signed in stays owned by `AuthContext` over `tokenStorage`, because the route guards read
+ * it synchronously on the very first render and it has to survive a reload — a store that hydrates
+ * empty would bounce an authenticated visitor to Login for a frame. Mirroring the user in here as
+ * well would have created a second copy with no reader, which is worse than no Redux at all.
+ *
+ * What does belong here is the unread count: the navbar renders it on every screen and no screen
+ * owns it, which is the actual test for global state.
  */
 export const sessionSlice = createSlice({
   name: 'session',
-  initialState: { user: null, unreadNotifications: 0 } as SessionState,
+  initialState: { unreadNotifications: 0 } as SessionState,
   reducers: {
-    sessionEstablished(state, action: PayloadAction<AuthenticatedUser | null>) {
-      state.user = action.payload;
-    },
-    sessionCleared(state) {
-      state.user = null;
-      state.unreadNotifications = 0;
-    },
     unreadNotificationsSet(state, action: PayloadAction<number>) {
       state.unreadNotifications = Math.max(0, action.payload);
+    },
+    unreadNotificationsCleared(state) {
+      state.unreadNotifications = 0;
     },
   },
 });
 
-export const { sessionEstablished, sessionCleared, unreadNotificationsSet } = sessionSlice.actions;
+export const { unreadNotificationsSet, unreadNotificationsCleared } = sessionSlice.actions;

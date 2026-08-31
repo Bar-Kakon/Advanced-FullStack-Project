@@ -5,6 +5,7 @@ import { AppNav } from '../../components/AppNav';
 import { FormAlert } from '../../components/FormAlert';
 import { useAuth } from '../../auth/useAuth';
 import { useLanguage } from '../../i18n/useLanguage';
+import { formatCalendarDate } from '../../i18n/dateFormat';
 import { useDocumentTitle } from '../../routes/useDocumentTitle';
 import { useScreenStylesheet } from '../../styles/useScreenStylesheet';
 import { adoptCurrentCalendar } from '../../api/projects.api';
@@ -22,14 +23,6 @@ import membersCss from '../members/members.css?inline';
 import projectDashboardCss from './project-dashboard.css?inline';
 import coordinationCss from '../coordination/coordination.css?inline';
 
-const displayDate = (iso: string, lang: 'he' | 'en'): string => {
-  const [year, month, day] = iso.split('-').map(Number);
-  if (!year || !month || !day) return iso;
-  return new Date(Date.UTC(year, month - 1, day)).toLocaleDateString(
-    lang === 'he' ? 'he-IL' : 'en-GB',
-    { year: 'numeric', month: 'short', day: 'numeric', timeZone: 'UTC' },
-  );
-};
 
 /**
  * The working context of ONE project.
@@ -133,16 +126,16 @@ export const ProjectDashboardPage = () => {
                 </dd>
 
                 <dt>{copy.summary.start}</dt>
-                <dd>{displayDate(project.dates.startDate, lang)}</dd>
+                <dd>{formatCalendarDate(project.dates.startDate, lang)}</dd>
 
                 <dt>{copy.summary.target}</dt>
-                <dd>{displayDate(project.dates.targetEndDate, lang)}</dd>
+                <dd>{formatCalendarDate(project.dates.targetEndDate, lang)}</dd>
 
                 <dt>{copy.summary.original}</dt>
-                <dd>{displayDate(project.dates.originalTargetEndDate, lang)}</dd>
+                <dd>{formatCalendarDate(project.dates.originalTargetEndDate, lang)}</dd>
 
                 <dt>{copy.summary.ceiling}</dt>
-                <dd>{displayDate(project.dates.overrunCeilingDate, lang)}</dd>
+                <dd>{formatCalendarDate(project.dates.overrunCeilingDate, lang)}</dd>
 
                 <dt>{copy.summary.overrun}</dt>
                 <dd>
