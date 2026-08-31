@@ -7,7 +7,7 @@ import { PROJECT_PERMISSIONS, type ProjectPermission } from './projectPermission
  * have to be configured by hand on every project.
  *
  * It is always owned by a company. There are deliberately no built-in, system-wide templates keyed
- * to a role: a universal "site manager template" would be FieldSync deciding what a job title may
+ * to a role: a universal "site manager template" would be Blokta deciding what a job title may
  * do, which is exactly what the grant-based model exists to avoid.
  *
  * Applying a template COPIES its grants onto a membership at that moment. Editing the template

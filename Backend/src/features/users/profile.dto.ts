@@ -15,7 +15,7 @@ export interface WorkEntryDto {
   readonly title: string;
   readonly scope?: string;
   readonly meta: string;
-  /** The `Completed on FieldSync` badge. Server-derived, and only ever true for proved work. */
+  /** The `Completed on Blokta` badge. Server-derived, and only ever true for proved work. */
   readonly onFieldSync: boolean;
   /** Path to this API's own asset route, or `null`. Never a storage path. */
   readonly imageUrl: string | null;

@@ -37,7 +37,7 @@ export const PermissionsPage = () => {
     { id: 'projects.css', css: projectsCss },
     { id: 'permissions.css', css: permissionsCss },
   );
-  useDocumentTitle('ניהול הרשאות / Permissions — FieldSync');
+  useDocumentTitle('ניהול הרשאות / Permissions — Blokta');
 
   const firstName = user?.firstName ?? '';
   const lastName = user?.lastName ?? '';

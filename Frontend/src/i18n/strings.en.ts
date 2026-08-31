@@ -5,13 +5,14 @@ import type { Strings } from './strings.types';
  * file's shape, so a key that is renamed on one side and not the other stops the build instead of
  * rendering an empty label in one language only.
  *
- * Copy is verbatim from `screens/register.html`. Where a Hebrew and English pair say different
+ * Copy is verbatim from the approved Register screen. Where a Hebrew and English pair say different
  * things, that difference is deliberate and predates this migration.
  */
 export const en: Strings = {
   langName: 'EN',
   otherLangName: 'עב',
   langSwitchLabel: 'Language / שפה',
+  routeLoading: 'Loading…',
 
   brand: {
     beta: 'Beta',
@@ -57,7 +58,7 @@ export const en: Strings = {
     businessPhone: { label: 'Business phone', placeholder: '050-1234567' },
     availability: { label: 'Availability', hint: 'You can change this at any time from your profile.' },
     standing: {
-      label: 'How are you joining FieldSync?',
+      label: 'How are you joining Blokta?',
       placeholder: 'Select…',
       owner: 'Company owner',
       employee: 'Company employee',
@@ -79,11 +80,11 @@ export const en: Strings = {
 
     emailNotifications: {
       legend: 'Email notifications',
-      body: 'FieldSync can send operational messages by email about projects, tasks, requests, approvals and schedule changes that may need attention.',
-      inApp: 'The notifications themselves also appear inside FieldSync, according to the nature of the event and the account settings.',
-      optOut: 'You can choose not to receive email messages and carry on using the system as usual. In that case it matters to follow the notifications inside FieldSync, because an update that needs timely attention may not be read straight away.',
+      body: 'Blokta can send operational messages by email about projects, tasks, requests, approvals and schedule changes that may need attention.',
+      inApp: 'The notifications themselves also appear inside Blokta, according to the nature of the event and the account settings.',
+      optOut: 'You can choose not to receive email messages and carry on using the system as usual. In that case it matters to follow the notifications inside Blokta, because an update that needs timely attention may not be read straight away.',
       accept: 'Receive operational messages by email',
-      decline: 'Rely on notifications inside FieldSync only',
+      decline: 'Rely on notifications inside Blokta only',
       changeable: 'This choice can be changed later in Notification Settings.',
     },
 
@@ -254,7 +255,7 @@ export const en: Strings = {
       noApprovedPlaces: 'No approved locations have been set.',
       work: 'Completed work',
       noWork: 'No completed work yet.',
-      badge: 'Completed on FieldSync',
+      badge: 'Completed on Blokta',
       phones: 'Contact details',
       officePhone: 'Office phone',
       businessPhone: 'Business phone',
@@ -316,7 +317,7 @@ export const en: Strings = {
   },
 
   nav: {
-    home: 'FieldSync — home',
+    home: 'Blokta — home',
     label: 'Main',
     browse: 'Browse',
     network: 'Network',
@@ -373,7 +374,7 @@ export const en: Strings = {
     googleErrors: {
       linkRequired:
         'That address already has an account with a password. Sign in with your password, then connect Google from your account.',
-      identityClaimed: 'This Google account is already connected to a different FieldSync account.',
+      identityClaimed: 'This Google account is already connected to a different Blokta account.',
       emailNotVerified: 'Google has not verified the email address on that account.',
       notConfigured: 'Google sign-in is unavailable right now. You can sign in with email and password.',
       credential: 'We could not verify that Google account. Please try again.',
@@ -497,6 +498,7 @@ export const en: Strings = {
       'project.member.manage': 'Manage participants',
       'project.permission.grant': 'Grant permissions',
       'task.create': 'Create tasks',
+      'task.edit': 'Edit tasks',
       'task.assign': 'Assign tasks',
       'schedule.exception.approve': 'Approve calendar exceptions',
       'schedule.partial_release.manage': 'Release work partially to the next trade',
@@ -1251,8 +1253,8 @@ export const en: Strings = {
     about: 'About',
     work: {
       title: 'Completed work',
-      lede: 'The "Completed on FieldSync" mark means the completion is recorded on the platform; it is not a judgement of quality.',
-      badge: 'Completed on FieldSync',
+      lede: 'The "Completed on Blokta" mark means the completion is recorded on the platform; it is not a judgement of quality.',
+      badge: 'Completed on Blokta',
     },
     details: {
       title: 'Details and work area',
@@ -1393,9 +1395,9 @@ export const en: Strings = {
   },
 
   landing: {
-    documentTitle: 'FieldSync — תיאום עבודה באתר / Construction coordination',
+    documentTitle: 'Blokta — תיאום עבודה באתר / Construction coordination',
     metaDescription:
-      'FieldSync — a coordination platform for construction professionals: assign work, link the tasks that depend on each other, and manage dates and changes in one place.',
+      'Blokta — a coordination platform for construction professionals: assign work, link the tasks that depend on each other, and manage dates and changes in one place.',
     skip: 'Skip to content',
     navLabel: 'Menu',
     signIn: 'Sign in',
@@ -1403,7 +1405,7 @@ export const en: Strings = {
 
     hero: {
       title: 'Tasks, dates and dependencies — coordinated in one place, not over the phone.',
-      lede: 'FieldSync is a coordination platform for construction professionals: assign work, link the tasks that depend on each other, and manage dates and changes — all in one place.',
+      lede: 'Blokta is a coordination platform for construction professionals: assign work, link the tasks that depend on each other, and manage dates and changes — all in one place.',
     },
 
     example: {
@@ -1500,7 +1502,7 @@ export const en: Strings = {
     },
 
     footerContact: 'Contact',
-    footerNote: 'FieldSync — an academic prototype in development.',
+    footerNote: 'Blokta — an academic earlier screen in development.',
   },
 
   coordination: {
@@ -1778,7 +1780,7 @@ export const en: Strings = {
     sections: [
       {
         heading: 'The service',
-        body: 'FieldSync is a platform for professional coordination and information management in construction. It brings tasks, dates, dependencies and contacts together in one place.',
+        body: 'Blokta is a platform for professional coordination and information management in construction. It brings tasks, dates, dependencies and contacts together in one place.',
       },
       {
         heading: 'Accuracy of information',
@@ -1843,8 +1845,8 @@ export const en: Strings = {
 
   moderation: {
     navLabel: 'Moderation',
-    documentTitle: 'תור המודרציה / Moderation queue — FieldSync',
-    detailDocumentTitle: 'פרטי דיווח / Report detail — FieldSync',
+    documentTitle: 'תור המודרציה / Moderation queue — Blokta',
+    detailDocumentTitle: 'פרטי דיווח / Report detail — Blokta',
     queueTitle: 'Moderation queue',
     queueLede: 'Reports filed by users, newest first.',
     filterLabel: 'Filter by state',
@@ -1932,7 +1934,7 @@ export const en: Strings = {
   },
 
   subscriptions: {
-    documentTitle: 'תוכניות ומנוי / Plans & subscription — FieldSync',
+    documentTitle: 'תוכניות ומנוי / Plans & subscription — Blokta',
     title: 'Plans & subscription',
     lede: 'Choose the plan that fits how you work. Upgrade, downgrade or cancel at any time — your projects are kept either way.',
     loading: 'Loading plans…',
@@ -2058,7 +2060,7 @@ export const en: Strings = {
   },
 
   notFound: {
-    documentTitle: 'הדף אינו זמין / Page unavailable — FieldSync',
+    documentTitle: 'הדף אינו זמין / Page unavailable — Blokta',
     code: '404',
     title: "This page isn't available",
     lede: 'The page requested could not be displayed. You can go back and carry on from there.',
@@ -2069,5 +2071,30 @@ export const en: Strings = {
       'The content requested cannot be reached right now',
     ],
     ctaHome: 'Back to Home',
+  },
+  audit: {
+    documentTitle: 'Audit log — Blokta',
+    title: 'Platform audit log',
+    lede: 'Administrative actions, newest first. Project history has its own trail.',
+    filterAction: 'Action',
+    filterTarget: 'Target',
+    allActions: 'All actions',
+    allTargets: 'All targets',
+    loading: 'Loading the audit log…',
+    failure: 'The audit log could not be loaded.',
+    empty: 'No administrative actions have been recorded yet.',
+    loadMore: 'Load more',
+    unknownActor: 'Account no longer available',
+    actions: {
+      'report.claimed': 'Report moved to under review',
+      'report.dismissed': 'Report dismissed',
+      'report.actioned': 'Report actioned',
+      'report.note_redacted': 'Report note redacted',
+      'account.restricted': 'Account restricted',
+      'account.unrestricted': 'Restriction removed',
+      'account.deleted': 'Account deleted',
+      'account.restored': 'Account restored',
+    },
+    targets: { report: 'Report', user: 'Account' },
   },
 };

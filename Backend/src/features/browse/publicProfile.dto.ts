@@ -70,13 +70,15 @@ export interface PublicPhonesDto {
 }
 
 /**
- * `hidden_no_approved_case` is the current default: the approved automatic cases need Projects and
- * Work Commitments, which are unbuilt, and the professional's own control has no storage yet.
+ * `visible_work_commitment` is still unreachable: no canonical Work Commitment relationship exists,
+ * and a bare `createdBy` ↔ `assignee` pair is not one. `hidden_no_approved_case` covers it until
+ * that relationship is built.
  */
 export const PHONE_VISIBILITY_REASONS = [
   'self',
   'visible_shared_project_role',
   'visible_work_commitment',
+  'visible_contact_setting',
   'hidden_no_approved_case',
 ] as const;
 export type PhoneVisibilityReason = (typeof PHONE_VISIBILITY_REASONS)[number];

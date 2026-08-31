@@ -20,9 +20,9 @@ const formatDate = (iso: string, lang: 'he' | 'en'): string =>
   });
 
 /**
- * The Subscriptions screen, migrated from the approved static prototype.
+ * The Subscriptions screen.
  *
- * Three reconciliations against that prototype, each recorded in the decision log: the visual
+ * Three reconciliations recorded in the decision log: the visual
  * simulation rows and the weekly usage strip are gone with the feature they metered, the project
  * labels follow the current My projects wording, and dependencies are named between stages.
  *

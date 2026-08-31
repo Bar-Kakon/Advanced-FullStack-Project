@@ -47,7 +47,7 @@ const run = async (): Promise<void> => {
     const email = `${MARKER}-${name}@example.com`.toLowerCase();
     const created = await request(baseUrl, 'POST', '/api/auth/register', {
       json: {
-        firstName: name, lastName: 'Rate', standing: 'owner',
+        firstName: name, lastName: 'Rate', standing: 'owner', contractorCategory: 'subcontractor',
         companyName: `${MARKER} ${name} Ltd`, email,
         password: PASSWORD, confirmPassword: PASSWORD,
         registrationCategory: 'contractor', specialty: 'electrical',

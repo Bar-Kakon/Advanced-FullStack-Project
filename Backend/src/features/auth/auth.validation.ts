@@ -2,7 +2,12 @@ import Joi from 'joi';
 
 import { structuredPlaceSchema, type StructuredPlaceBody } from '../location/place.validation.js';
 
-import { AVAILABILITY_STATUSES, type Availability } from '../companies/company.model.js';
+import {
+  AVAILABILITY_STATUSES,
+  CONTRACTOR_CATEGORIES,
+  type Availability,
+  type ContractorCategory,
+} from '../companies/company.model.js';
 import {
   COMPANY_POSITIONS,
   COMPANY_STANDINGS,
@@ -51,6 +56,8 @@ export interface RegisterBody {
   readonly companyName: string;
   /** Employee only. Part of what identifies the seat being claimed. */
   readonly companyPosition?: CompanyPosition;
+  /** Owner only. The business classification, which an employee inherits from their company. */
+  readonly contractorCategory?: ContractorCategory;
   readonly email: string;
   /** Both absent on the Google path: that account is opened with no local password at all. */
   readonly password?: string;
@@ -157,6 +164,16 @@ export const registerBodySchema = Joi.object<RegisterBody>({
     is: 'employee',
     then: Joi.string()
       .valid(...COMPANY_POSITIONS)
+      .required(),
+    otherwise: Joi.any().forbidden(),
+  }),
+
+  // The owner classifies the business they are creating. An employee is refused it rather than
+  // ignored: their classification is the company's, and a claimed one would be trusted input.
+  contractorCategory: Joi.when('standing', {
+    is: 'owner',
+    then: Joi.string()
+      .valid(...CONTRACTOR_CATEGORIES)
       .required(),
     otherwise: Joi.any().forbidden(),
   }),

@@ -44,7 +44,7 @@ export const ResetPasswordPage = () => {
     { id: 'login.css', css: loginCss },
     { id: 'password-reset.css', css: resetCss },
   );
-  useDocumentTitle('סיסמה חדשה / New Password — FieldSync');
+  useDocumentTitle('סיסמה חדשה / New Password — Blokta');
 
   const token = params.get('token') ?? '';
 

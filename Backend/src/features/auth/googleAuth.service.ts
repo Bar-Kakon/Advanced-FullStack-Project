@@ -16,7 +16,7 @@ import type { TokenPair, TokenPairService } from './tokens/tokenPair.service.js'
 
 /**
  * What Google could tell us about a first-time visitor. It is never enough to open an account:
- * FieldSync needs a registration category, a specialty, a business and a location, and Google
+ * Blokta needs a registration category, a specialty, a business and a location, and Google
  * knows none of them. So this is carried back to the client to pre-fill Register, and nothing is
  * written until the person completes it.
  */
@@ -103,10 +103,10 @@ export const createGoogleAuthService = ({
     },
 
     /**
-     * The session proves the FieldSync account, and the credential proves the Google one. Both
+     * The session proves the Blokta account, and the credential proves the Google one. Both
      * halves are established before anything is written, which is what the link is for.
      *
-     * The two email addresses are deliberately not required to match. A contractor's FieldSync
+     * The two email addresses are deliberately not required to match. A contractor's Blokta
      * account is often a business address and their Google account a personal one, and requiring
      * a match would refuse that without protecting anything: whoever is holding both credentials
      * at this point already controls both accounts.

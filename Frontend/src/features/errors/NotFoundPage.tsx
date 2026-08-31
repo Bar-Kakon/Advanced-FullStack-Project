@@ -9,7 +9,7 @@ import { useDocumentTitle } from '../../routes/useDocumentTitle';
 import { useScreenStylesheet } from '../../styles/useScreenStylesheet';
 import errorCss from './error.css?inline';
 
-/** The prototype carried `<meta name="robots" content="noindex">`; a single-page app has to add it. */
+/** The earlier screen carried `<meta name="robots" content="noindex">`; a single-page app has to add it. */
 const useNoIndex = (): void => {
   useEffect(() => {
     const meta = document.createElement('meta');
@@ -66,7 +66,7 @@ export const NotFoundPage = () => {
                 <line x1="32" y1="14" x2="32" y2="26" stroke="rgba(35,56,77,0.40)" strokeWidth="1.5" strokeDasharray="3 2" />
               </svg>
             </span>
-            <span className="err__brand-name">FieldSync</span>
+            <span className="err__brand-name">Blokta</span>
           </div>
 
           {/* Digits are weak-directional; <bdi> keeps the numeral LTR inside the Hebrew layout. */}

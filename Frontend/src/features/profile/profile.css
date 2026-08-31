@@ -1,4 +1,4 @@
-/* FieldSync — Profile feature, shared stylesheet */
+/* Blokta — Profile feature, shared stylesheet */
 /* Shared by my-profile.html (view) and edit-profile.html (edit) ONLY. */
 /* Deliberately NOT a global layer: it holds profile page structure, not app-wide UI. */
 /* Approved palette only, plus the approved --error exception for validation states. */
@@ -127,7 +127,7 @@ fieldset { border: 0; }
   clip: rect(0, 0, 0, 0);
 }
 
-/* App shell. It no longer carries a `direction` of its own: the prototype had to, because the
+/* App shell. It no longer carries a `direction` of its own: the earlier screen had to, because the
    radio-sibling rule that flipped it to LTR could only reach `.app`, and §3.4 rule 1 says
    direction belongs on <html> and nowhere else. The shell now inherits it like everything else. */
 .app {
@@ -888,10 +888,10 @@ fieldset { border: 0; }
 }
 
 /* ═══ Language — Hebrew + RTL is the default, English + LTR on toggle ═══ */
-/* The prototype stored the language in a hidden radio and rendered every string twice so CSS
+/* The earlier screen stored the language in a hidden radio and rendered every string twice so CSS
    could hide one copy; React holds the language in a context and renders one of each. What is
    left is direction and typeface, and both moved from `.app` to the root element. That move is
-   the fix for a bug the prototypes all carried: `body` is an ancestor of `.app`, so it resolved
+   the fix for a bug the earlier screens all carried: `body` is an ancestor of `.app`, so it resolved
    --font-sans against :root and English copy computed Heebo instead of Inter. */
 
 /* ── Toggle button active states ──

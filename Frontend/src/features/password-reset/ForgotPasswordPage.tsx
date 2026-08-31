@@ -34,7 +34,7 @@ export const ForgotPasswordPage = () => {
     { id: 'login.css', css: loginCss },
     { id: 'password-reset.css', css: resetCss },
   );
-  useDocumentTitle('שחזור סיסמה / Reset Password — FieldSync');
+  useDocumentTitle('שחזור סיסמה / Reset Password — Blokta');
 
   const [sentTo, setSentTo] = useState<string | null>(null);
   const [resending, setResending] = useState(false);

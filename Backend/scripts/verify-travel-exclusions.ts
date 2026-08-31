@@ -219,6 +219,7 @@ const run = async (): Promise<void> => {
   const email = `${MARKER}@example.com`;
   const registered = await send('POST', '/auth/register', {
     firstName: 'Travel', lastName: 'Tester', standing: 'owner', companyName: 'Travel Verify Ltd',
+    contractorCategory: 'subcontractor',
     email, password: PASSWORD, confirmPassword: PASSWORD,
     registrationCategory: 'contractor', specialty: 'electrical', city: 'חיפה', region: 'haifa',
     availability: 'open', acceptedTerms: true, operationalEmail: true,

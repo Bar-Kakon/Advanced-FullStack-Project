@@ -1,6 +1,6 @@
 /* ─────────────────────────────────────────────
-   FieldSync — Register / Create account
-   Static HTML/CSS prototype for the academic project.
+   Blokta — Register / Create account
+   Blokta register styling.
    The visual language is a luxury blueprint board:
    deep technical grid, warm vellum sheet, precise
    registration marks, and calm construction geometry.
@@ -763,7 +763,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 }
 
 /* ── Trade select — native <select> dressed as a field ──
-   One control per field. The prototype needed two, one per language, because option text is not
+   One control per field. The earlier screen needed two, one per language, because option text is not
    a span and could not be toggled; here the options are rendered from the string resource. */
 .select-wrap { position: relative; }
 .form-select {
@@ -787,7 +787,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
    :has() lets the form-group react to the currently-checked <option>; works for
    whichever language select is active since both carry an option[value="other"]. */
 /* React only renders this block when the trade is "other", so the modifier class is what shows
-   it. The prototype had to ask the DOM the same question with :has(), because it could not
+   it. The earlier screen had to ask the DOM the same question with :has(), because it could not
    choose whether to render the element at all. */
 .other-trade { display: none; }
 .other-trade--visible {
@@ -881,7 +881,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   display: block;
 }
 
-/* The prototype's `.password-error` rule stood here. It is gone rather than kept, because React
+/* The earlier screen's `.password-error` rule stood here. It is gone rather than kept, because React
    renders no such element: the password message is now shown by `.field-error--visible` on the
    same terms as every other message, including the match check CSS could never express. */
 
@@ -891,7 +891,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 }
 
 /* "Create account" stays disabled until every required field is filled and valid.
-   The prototype computed this in CSS with a chain of :has() rules, because it had no JavaScript.
+   The earlier screen computed this in CSS with a chain of :has() rules, because it had no JavaScript.
    Here the form's validity is already in React state, so the button carries a real `disabled`
    attribute and this rule only paints it. Two reasons for the move: deriving validity a second
    time from the DOM would give one answer two sources that can disagree, and `pointer-events`
@@ -1277,7 +1277,7 @@ button.checkbox-label__doc:focus-visible {
 
 /* ─────────────────────────────────────────────
    Language — Hebrew + RTL is the default, English + LTR on toggle
-   The prototype stored the language in a hidden radio because it had no JavaScript, and rendered
+   The earlier screen stored the language in a hidden radio because it had no JavaScript, and rendered
    every string and every field twice so CSS could hide one copy. React holds the language in a
    context and renders one of each, so all that duplication is gone: what remains is the part that
    was never about duplication — the direction and the typeface, still set on the root element.

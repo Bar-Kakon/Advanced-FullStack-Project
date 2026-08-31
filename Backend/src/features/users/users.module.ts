@@ -6,6 +6,8 @@ import { createCompaniesRouter } from '../companies/companies.routes.js';
 import { fileAssetRepository } from '../files/fileAsset.repository.js';
 import { createFileAssetService } from '../files/fileAsset.service.js';
 import { workEntryRepository } from '../workentries/workEntry.repository.js';
+import { platformAuditService } from '../moderation/platformAudit.instance.js';
+import { createAccountLifecycleService } from './accountLifecycle.service.js';
 import { createProfileController } from './profile.controller.js';
 import { createCoordinationOutcomeAdapter } from '../coordination/coordinationOutcome.adapter.js';
 import { handoffRepository } from '../coordination/handoff.repository.js';
@@ -37,7 +39,12 @@ export const createUsersModule = (requireAccessToken: RequestHandler): UsersModu
     flexibility: createFlexibilityService(createCoordinationOutcomeAdapter(proposalRepository, handoffRepository)),
   });
 
-  const controller = createProfileController({ profiles });
+  const lifecycle = createAccountLifecycleService({
+    users: userRepository,
+    audit: platformAuditService,
+  });
+
+  const controller = createProfileController({ profiles, lifecycle });
 
   return {
     router: createUsersRouter(controller, requireAccessToken),

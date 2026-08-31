@@ -4,7 +4,7 @@ import { FieldLabel } from './FieldLabel';
 import { InputWarning } from './InputWarning';
 
 /**
- * A password box with the show/hide eye. The prototype drew the button and left it inert with a
+ * A password box with the show/hide eye. The earlier screen drew the button and left it inert with a
  * note saying it needed JavaScript; this is that JavaScript.
  *
  * `revealed` is local state rather than form state: whether the characters are visible is a

@@ -1,5 +1,5 @@
 /**
- * The error banner above the form. The prototype drew it permanently hidden with a note that a
+ * The error banner above the form. The earlier screen drew it permanently hidden with a note that a
  * class would reveal it once validation was real; React renders it only when there is something
  * to say, so `.alert--visible` is applied at the same moment the text exists.
  *

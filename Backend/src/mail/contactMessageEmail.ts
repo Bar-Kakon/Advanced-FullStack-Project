@@ -30,7 +30,7 @@ export const buildContactNotificationEmail = (
   to: string,
   { name, email, topic, message, language, reference }: ContactNotificationInput,
 ): MailMessage => {
-  const subject = `Contact form — ${TOPIC_LABELS[topic]} — FieldSync`;
+  const subject = `Contact form — ${TOPIC_LABELS[topic]} — Blokta`;
 
   const text = [
     `From:      ${name} <${email}>`,
@@ -44,7 +44,7 @@ export const buildContactNotificationEmail = (
   const html = `<!doctype html>
 <html lang="en" dir="ltr">
   <body style="font-family: Arial, Helvetica, sans-serif; line-height: 1.6; color: #1F2428;">
-    <h2 style="margin: 0 0 12px;">Contact form — FieldSync</h2>
+    <h2 style="margin: 0 0 12px;">Contact form — Blokta</h2>
     <p style="margin: 0 0 6px;"><strong>From:</strong> ${escapeHtml(name)} &lt;${escapeHtml(email)}&gt;</p>
     <p style="margin: 0 0 6px;"><strong>Topic:</strong> ${escapeHtml(TOPIC_LABELS[topic])}</p>
     <p style="margin: 0 0 6px;"><strong>Language:</strong> ${escapeHtml(language)}</p>

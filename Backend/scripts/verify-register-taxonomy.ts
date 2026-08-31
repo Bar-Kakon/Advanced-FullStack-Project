@@ -41,6 +41,7 @@ const baseBody = (over: Record<string, unknown> = {}): Record<string, unknown> =
   firstName: 'Taxonomy',
   lastName: 'Verify',
   standing: 'owner',
+  contractorCategory: 'subcontractor',
   companyName: `${MARKER} Ltd`,
   email: 'taxonomy@example.com',
   password: PASSWORD,

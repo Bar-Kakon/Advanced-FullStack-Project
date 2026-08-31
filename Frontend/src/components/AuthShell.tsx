@@ -8,7 +8,7 @@ import { LanguageSwitch } from './LanguageSwitch';
  * blueprint brand panel, and the cream card the form lives in.
  *
  * Four screens share it — Login, Register, Forgot password and Reset password — which is exactly
- * the duplication the static prototypes could not avoid: they were four documents, so the shell
+ * the duplication the earlier static screens could not avoid: they were four documents, so the shell
  * was copied four times and could drift four ways. Here the shell exists once and each screen
  * supplies only what is different: its brand copy, and what goes in the card.
  */
@@ -30,7 +30,7 @@ export const AuthShell = ({ brand, children }: { brand: BrandPanelContent; child
               <line x1="14" y1="23" x2="26" y2="29" stroke="#23384D" strokeWidth="1.5" strokeDasharray="3 2" />
               <line x1="32" y1="14" x2="32" y2="26" stroke="#23384D" strokeWidth="1.5" strokeDasharray="3 2" />
             </svg>
-            <span className="mobile-logo__name">FieldSync</span>
+            <span className="mobile-logo__name">Blokta</span>
           </div>
 
           {children}

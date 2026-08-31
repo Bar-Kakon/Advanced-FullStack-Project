@@ -21,7 +21,7 @@ export const EmployeeManagementPage = () => {
     { id: 'edit-profile.css', css: editProfileCss },
     { id: 'employees.css', css: employeesCss },
   );
-  useDocumentTitle('ניהול עובדים / Employee management — FieldSync');
+  useDocumentTitle('ניהול עובדים / Employee management — Blokta');
 
   const firstName = user?.firstName ?? '';
   const lastName = user?.lastName ?? '';

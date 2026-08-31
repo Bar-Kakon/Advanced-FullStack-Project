@@ -38,7 +38,7 @@ export const ProjectMembersPage = () => {
     { id: 'permissions.css', css: permissionsCss },
     { id: 'members.css', css: membersCss },
   );
-  useDocumentTitle('משתתפים בפרויקט / Project members — FieldSync');
+  useDocumentTitle('משתתפים בפרויקט / Project members — Blokta');
 
   // Templates are company-owned and live on the Permissions surface; this screen only applies them.
   useEffect(() => {

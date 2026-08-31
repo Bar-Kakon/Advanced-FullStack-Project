@@ -1,12 +1,18 @@
 import type { Types } from 'mongoose';
 
 import type { DbSession } from '../../db/mongoose.js';
-import { CompanyModel, type Availability, type CompanyRecord } from './company.model.js';
+import {
+  CompanyModel,
+  type Availability,
+  type CompanyRecord,
+  type ContractorCategory,
+} from './company.model.js';
 
 export interface NewCompany {
   readonly name: string;
   readonly officePhone?: string;
   readonly availability: Availability;
+  readonly contractorCategory?: ContractorCategory;
 }
 
 export interface CompanyUpdate {
@@ -21,6 +27,8 @@ export interface CompanyRepository {
   /** Every company holding this name. The name is not unique, so this returns a list. */
   findIdsByName(name: string): Promise<Types.ObjectId[]>;
   findById(id: Types.ObjectId): Promise<CompanyRecord | null>;
+  /** Classifies a business that has no classification yet. Never overwrites one that has. */
+  classifyIfUnset(id: Types.ObjectId, category: ContractorCategory): Promise<boolean>;
   update(id: Types.ObjectId, update: CompanyUpdate): Promise<void>;
   /** Stamps employee setup as done. Idempotent, and the first stamp is the one that survives. */
   markEmployeeSetupComplete(id: Types.ObjectId, at: Date): Promise<void>;
@@ -44,6 +52,15 @@ export const companyRepository: CompanyRepository = {
 
   async findById(id) {
     return CompanyModel.findById(id).lean<CompanyRecord>().exec();
+  },
+
+  async classifyIfUnset(id, category) {
+    const result = await CompanyModel.updateOne(
+      { _id: id, contractorCategory: { $exists: false } },
+      { $set: { contractorCategory: category } },
+    ).exec();
+
+    return result.modifiedCount === 1;
   },
 
   async update(id, update) {

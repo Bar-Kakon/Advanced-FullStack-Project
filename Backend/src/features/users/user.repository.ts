@@ -8,6 +8,7 @@ import {
   UserModel,
   type AuthProvider,
   type ProviderIdentity,
+  type ContactVisibility,
   type DrillingType,
   type HeavyEquipment,
   type NotificationPreferences,
@@ -31,7 +32,7 @@ const IDENTITY_FIELDS = 'email status isAdmin firstName lastName language profil
  * absent from this list anyway; `termsAcceptances` and `security` are deliberately not here,
  * because no profile screen shows them and a projection is the cheapest place to keep it that way.
  */
-const PROFILE_FIELDS = `${IDENTITY_FIELDS} bio registrationCategory specialties specialtyOther heavyEquipment drillingTypes notificationPreferences businessPhone location approvedTravelLocations schedulingPrefs avatar`;
+const PROFILE_FIELDS = `${IDENTITY_FIELDS} bio registrationCategory specialties specialtyOther heavyEquipment drillingTypes notificationPreferences businessPhone contactVisibility location approvedTravelLocations schedulingPrefs avatar`;
 
 /**
  * The write shape, deliberately separate from `UserRecord`. A caller can only supply what it lists,
@@ -55,6 +56,7 @@ export interface NewUser {
   readonly drillingTypes?: readonly DrillingType[];
   readonly notificationPreferences: NotificationPreferences;
   readonly businessPhone?: string;
+  readonly contactVisibility?: ContactVisibility;
   readonly location: { readonly city: string; readonly region: Region; readonly place?: StoredPlace };
   readonly termsAcceptances: readonly TermsAcceptance[];
 }
@@ -71,6 +73,7 @@ export interface ProfileUpdate {
   /** Likewise: drilling is held, no subtype is named yet. */
   readonly drillingTypes?: readonly DrillingType[];
   readonly businessPhone?: string | null;
+  readonly contactVisibility?: ContactVisibility;
   readonly city?: string;
   readonly region?: Region;
   /** Written only when the person picked a real Google place; never derived from `city`. */
@@ -297,6 +300,7 @@ export const userRepository: UserRepository = {
     if (update.heavyEquipment !== undefined) $set['heavyEquipment'] = [...update.heavyEquipment];
     if (update.drillingTypes !== undefined) $set['drillingTypes'] = [...update.drillingTypes];
     put('businessPhone', update.businessPhone);
+    put('contactVisibility', update.contactVisibility);
     put('location.city', update.city);
     put('location.region', update.region);
     put('location.place', update.place);

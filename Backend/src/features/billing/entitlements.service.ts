@@ -23,7 +23,7 @@ export interface Entitlements {
  *
  * It is deliberately NOT where project authorization lives. Full Authority, `project.edit` and
  * every other permission are relationships between a person and a project; a plan is a commercial
- * relationship between a person and FieldSync. Mixing them would let a purchase grant access to
+ * relationship between a person and Blokta. Mixing them would let a purchase grant access to
  * somebody else's project.
  */
 export interface EntitlementService {

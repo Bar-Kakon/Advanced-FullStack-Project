@@ -4,7 +4,7 @@
  * compile error. That direction is why this file imports nothing — importing the type it
  * defines would be circular.
  *
- * Every string here is lifted verbatim from `screens/register.html`. Nothing was reworded in the
+ * Every string here is lifted verbatim from the approved Register screen. Nothing was reworded in the
  * migration — the copy on this screen has been reviewed and some Hebrew/English pairs deliberately
  * differ, which is recorded in the source-of-truth document.
  */
@@ -12,6 +12,7 @@ export const he = {
   langName: 'עב',
   otherLangName: 'EN',
   langSwitchLabel: 'Language / שפה',
+  routeLoading: 'טוען…',
 
   brand: {
     beta: 'בטא',
@@ -24,7 +25,7 @@ export const he = {
       'ציוני אמון מהתנהגות אמיתית — לא מדיווח עצמי',
     ],
     footerNote:
-      'אותו קבלן יכול להיות קבלן ראשי בפרויקט אחד וקבלן משנה באחר. התפקיד עוקב אחר העבודה, לא אחרי האדם.',
+      'אותו קבלן יכול להיות קבלן ביצוע ראשי בפרויקט אחד וקבלן משנה באחר. התפקיד עוקב אחר העבודה, לא אחרי האדם.',
   },
 
   form: {
@@ -57,7 +58,7 @@ export const he = {
     businessPhone: { label: 'טלפון עסקי', placeholder: '050-1234567' },
     availability: { label: 'זמינות', hint: 'אפשר לשנות בכל שלב בפרופיל.' },
     standing: {
-      label: 'איך מצטרפים ל-FieldSync?',
+      label: 'איך מצטרפים ל-Blokta?',
       placeholder: 'בחירה…',
       owner: 'בעלות על חברה',
       employee: 'העסקה בחברה',
@@ -81,17 +82,17 @@ export const he = {
     // The owner-approved wording, unchanged. Refusing email blocks nothing.
     emailNotifications: {
       legend: 'התראות בדוא״ל',
-      body: 'FieldSync יכולה לשלוח הודעות תפעוליות בדוא״ל בנוגע לפרויקטים, משימות, בקשות, אישורים ושינויים בלוחות זמנים שעשויים לדרוש התייחסות.',
-      inApp: 'ההתראות עצמן יופיעו גם בתוך FieldSync בהתאם לאופי האירוע ולהגדרות החשבון.',
-      optOut: 'אפשר לבחור שלא לקבל הודעות בדוא״ל ולהמשיך להשתמש במערכת כרגיל. במקרה כזה, חשוב לעקוב אחר ההתראות בתוך FieldSync, משום שעדכון שדורש התייחסות בזמן עלול שלא להיקרא מיד.',
+      body: 'Blokta יכולה לשלוח הודעות תפעוליות בדוא״ל בנוגע לפרויקטים, משימות, בקשות, אישורים ושינויים בלוחות זמנים שעשויים לדרוש התייחסות.',
+      inApp: 'ההתראות עצמן יופיעו גם בתוך Blokta בהתאם לאופי האירוע ולהגדרות החשבון.',
+      optOut: 'אפשר לבחור שלא לקבל הודעות בדוא״ל ולהמשיך להשתמש במערכת כרגיל. במקרה כזה, חשוב לעקוב אחר ההתראות בתוך Blokta, משום שעדכון שדורש התייחסות בזמן עלול שלא להיקרא מיד.',
       accept: 'קבלת הודעות תפעוליות בדוא״ל',
-      decline: 'הסתמכות על ההתראות בתוך FieldSync בלבד',
+      decline: 'הסתמכות על ההתראות בתוך Blokta בלבד',
       changeable: 'אפשר לשנות את הבחירה בהמשך בהגדרות ההתראות.',
     },
 
     /**
      * Shown when Register is completing a Google sign-in. Google supplies the identity and nothing
-     * else — the trade, the business and the location are FieldSync's own onboarding and are still
+     * else — the trade, the business and the location are Blokta's own onboarding and are still
      * asked for here, with no value guessed at from the Google account.
      */
     googleOnboarding: {
@@ -279,7 +280,7 @@ export const he = {
       noApprovedPlaces: 'לא הוגדרו מקומות מאושרים.',
       work: 'עבודות שהושלמו',
       noWork: 'אין עדיין עבודות שהושלמו.',
-      badge: 'הושלם ב־FieldSync',
+      badge: 'הושלם ב־Blokta',
       phones: 'פרטי קשר',
       officePhone: 'טלפון משרד',
       businessPhone: 'טלפון עסקי',
@@ -343,7 +344,7 @@ export const he = {
 
   /** The app navbar, shared by every authenticated screen. */
   nav: {
-    home: 'FieldSync — דף הבית',
+    home: 'Blokta — דף הבית',
     label: 'ניווט ראשי',
     browse: 'עיון בקבלנים',
     network: 'הרשת שלי',
@@ -375,7 +376,7 @@ export const he = {
         'ציוני אמון מהתנהגות אמיתית — לא מדיווח עצמי',
       ],
       footerNote:
-        'אותו קבלן יכול להיות קבלן ראשי בפרויקט אחד וקבלן משנה באחר. התפקיד עוקב אחר העבודה, לא אחרי האדם.',
+        'אותו קבלן יכול להיות קבלן ביצוע ראשי בפרויקט אחד וקבלן משנה באחר. התפקיד עוקב אחר העבודה, לא אחרי האדם.',
     },
     title: 'ברוכים השבים',
     subtitle: 'התחברות לחשבון כדי להמשיך',
@@ -405,10 +406,10 @@ export const he = {
      * and can name internals, so every case here is answered in the product's own words.
      */
     googleErrors: {
-      // The address already has a FieldSync account with no Google link. It says whose move it is,
+      // The address already has a Blokta account with no Google link. It says whose move it is,
       // because the person cannot fix this from the Google side.
       linkRequired: 'לכתובת הזו כבר קיים חשבון עם סיסמה. יש להתחבר עם הסיסמה, ואז לקשר את Google מתוך החשבון.',
-      identityClaimed: 'חשבון ה-Google הזה כבר מקושר לחשבון FieldSync אחר.',
+      identityClaimed: 'חשבון ה-Google הזה כבר מקושר לחשבון Blokta אחר.',
       emailNotVerified: 'Google לא אימת את כתובת האימייל של החשבון הזה.',
       notConfigured: 'התחברות עם Google אינה זמינה כרגע. אפשר להתחבר עם אימייל וסיסמה.',
       credential: 'לא הצלחנו לאמת את חשבון ה-Google. אפשר לנסות שוב.',
@@ -417,7 +418,7 @@ export const he = {
   },
 
   /**
-   * Copy lifted verbatim from `screens/forgot-password.html`. The non-committal wording is the
+   * Copy lifted verbatim from the approved Forgot password screen. The non-committal wording is the
    * point of the screen: the same answer is shown whether or not an account exists, so the form
    * cannot be used to discover who is registered.
    */
@@ -540,6 +541,7 @@ export const he = {
       'project.member.manage': 'ניהול משתתפים',
       'project.permission.grant': 'מתן הרשאות',
       'task.create': 'יצירת משימות',
+      'task.edit': 'עריכת משימות',
       'task.assign': 'שיוך משימות',
       'schedule.exception.approve': 'אישור חריגים בלוח',
       'schedule.partial_release.manage': 'שחרור חלקי של עבודה להמשך',
@@ -1312,8 +1314,8 @@ export const he = {
     about: 'על עצמי',
     work: {
       title: 'עבודות שהושלמו',
-      lede: 'הסימון "הושלם ב־FieldSync" מציין שההשלמה רשומה במערכת, ואינו חוות דעת על איכות העבודה.',
-      badge: 'הושלם ב־FieldSync',
+      lede: 'הסימון "הושלם ב־Blokta" מציין שההשלמה רשומה במערכת, ואינו חוות דעת על איכות העבודה.',
+      badge: 'הושלם ב־Blokta',
     },
     details: {
       title: 'פרטים ואזור עבודה',
@@ -1454,9 +1456,9 @@ export const he = {
   },
 
   landing: {
-    documentTitle: 'FieldSync — תיאום עבודה באתר / Construction coordination',
+    documentTitle: 'Blokta — תיאום עבודה באתר / Construction coordination',
     metaDescription:
-      'FieldSync — a coordination platform for construction professionals: assign work, link the tasks that depend on each other, and manage dates and changes in one place.',
+      'Blokta — a coordination platform for construction professionals: assign work, link the tasks that depend on each other, and manage dates and changes in one place.',
     skip: 'דילוג',
     navLabel: 'תפריט',
     signIn: 'כניסה',
@@ -1464,7 +1466,7 @@ export const he = {
 
     hero: {
       title: 'משימות, תאריכים ותלויות — מתואמים במקום אחד, לא בטלפון.',
-      lede: 'FieldSync היא פלטפורמת תיאום לאנשי מקצוע בענף הבנייה: הקצאת עבודה, קישור בין משימות שתלויות זו בזו, וניהול תאריכים ושינויים — הכול במקום אחד.',
+      lede: 'Blokta היא פלטפורמת תיאום לאנשי מקצוע בענף הבנייה: הקצאת עבודה, קישור בין משימות שתלויות זו בזו, וניהול תאריכים ושינויים — הכול במקום אחד.',
     },
 
     example: {
@@ -1502,7 +1504,7 @@ export const he = {
       cards: [
         {
           title: 'כולם משתמשים שווים',
-          body: 'אותו קבלן יכול להיות קבלן ראשי בפרויקט אחד וקבלן משנה באחר. התפקיד עוקב אחר העבודה, לא אחרי האדם — והפלטפורמה מתווכת בין הצדדים במקום לשרת צד אחד.',
+          body: 'אותו קבלן יכול להיות קבלן ביצוע ראשי בפרויקט אחד וקבלן משנה באחר. התפקיד עוקב אחר העבודה, לא אחרי האדם — והפלטפורמה מתווכת בין הצדדים במקום לשרת צד אחד.',
         },
         {
           title: 'סימני אמון שקשה לשחק בהם',
@@ -1561,7 +1563,7 @@ export const he = {
     },
 
     footerContact: 'יצירת קשר',
-    footerNote: 'FieldSync — אב־טיפוס אקדמי בפיתוח.',
+    footerNote: 'Blokta — אב־טיפוס אקדמי בפיתוח.',
   },
 
   coordination: {
@@ -1839,7 +1841,7 @@ export const he = {
     sections: [
       {
         heading: 'השירות',
-        body: 'FieldSync היא פלטפורמה לתיאום מקצועי ולניהול מידע בענף הבנייה. הפלטפורמה מרכזת משימות, תאריכים, תלויות ואנשי קשר במקום אחד.',
+        body: 'Blokta היא פלטפורמה לתיאום מקצועי ולניהול מידע בענף הבנייה. הפלטפורמה מרכזת משימות, תאריכים, תלויות ואנשי קשר במקום אחד.',
       },
       {
         heading: 'דיוק המידע',
@@ -1905,8 +1907,8 @@ export const he = {
 
   moderation: {
     navLabel: 'מודרציה',
-    documentTitle: 'תור המודרציה / Moderation queue — FieldSync',
-    detailDocumentTitle: 'פרטי דיווח / Report detail — FieldSync',
+    documentTitle: 'תור המודרציה / Moderation queue — Blokta',
+    detailDocumentTitle: 'פרטי דיווח / Report detail — Blokta',
     queueTitle: 'תור המודרציה',
     queueLede: 'דיווחים שהוגשו על ידי משתמשים, החדש ביותר תחילה.',
     filterLabel: 'סינון לפי מצב',
@@ -1994,12 +1996,12 @@ export const he = {
   },
 
   /**
-   * From the approved static prototype, with the reconciliations the decision log records: the
+   * From the approved earlier static screen, with the reconciliations the decision log records: the
    * visual-simulation rows are gone with the feature they metered, the project labels follow the
    * current My projects wording, and dependencies are named between stages.
    */
   subscriptions: {
-    documentTitle: 'תוכניות ומנוי / Plans & subscription — FieldSync',
+    documentTitle: 'תוכניות ומנוי / Plans & subscription — Blokta',
     title: 'תוכניות ומנוי',
     lede: 'בחירת התוכנית שמתאימה לקצב העבודה. אפשר לשדרג, לרדת תוכנית או לבטל בכל שלב — הפרויקטים נשמרים בכל מקרה.',
     loading: 'טעינת התוכניות…',
@@ -2077,10 +2079,10 @@ export const he = {
       rows: [
         { label: 'משימות לפרויקט', value: 'ללא הגבלה' },
         { label: 'חברי צוות לפרויקט', value: 'ללא הגבלה' },
-        // The current My projects wording. The prototype's `פרויקטים בהשתתפותכם` predates it.
+        // The current My projects wording. The earlier screen's `פרויקטים בהשתתפותכם` predates it.
         { label: 'פרויקטים שאינם בניהולי', value: 'ללא הגבלה' },
         { label: 'בקשות לשינוי תאריך', value: 'כלול' },
-        // Dependencies run between stages. The prototype's `תלויות בין משימות` names a task-level
+        // Dependencies run between stages. The earlier screen's `תלויות בין משימות` names a task-level
         // graph this product does not have.
         { label: 'תלויות בין שלבים', value: 'כלול, עם בדיקת התנגשויות' },
         // No longer a plan difference: work plans are append-only, so every version is kept on
@@ -2131,7 +2133,7 @@ export const he = {
   },
 
   notFound: {
-    documentTitle: 'הדף אינו זמין / Page unavailable — FieldSync',
+    documentTitle: 'הדף אינו זמין / Page unavailable — Blokta',
     code: '404',
     title: 'הדף הזה אינו זמין',
     lede: 'לא ניתן להציג את הדף המבוקש. אפשר לחזור ולהמשיך משם.',
@@ -2142,5 +2144,30 @@ export const he = {
       'לא ניתן להגיע לתוכן המבוקש כרגע',
     ],
     ctaHome: 'חזרה לדף הבית',
+  },
+  audit: {
+    documentTitle: 'יומן ביקורת — Blokta',
+    title: 'יומן ביקורת פלטפורמה',
+    lede: 'פעולות ניהול, מהחדשה לישנה. להיסטוריית הפרויקט יש יומן נפרד.',
+    filterAction: 'פעולה',
+    filterTarget: 'יעד',
+    allActions: 'כל הפעולות',
+    allTargets: 'כל היעדים',
+    loading: 'טעינת יומן הביקורת…',
+    failure: 'לא ניתן לטעון את יומן הביקורת.',
+    empty: 'טרם נרשמו פעולות ניהול.',
+    loadMore: 'טעינת עוד',
+    unknownActor: 'החשבון אינו זמין עוד',
+    actions: {
+      'report.claimed': 'דיווח הועבר לבדיקה',
+      'report.dismissed': 'דיווח נדחה',
+      'report.actioned': 'טופל דיווח',
+      'report.note_redacted': 'הערת הדיווח הוסתרה',
+      'account.restricted': 'חשבון הוגבל',
+      'account.unrestricted': 'ההגבלה הוסרה',
+      'account.deleted': 'חשבון נמחק',
+      'account.restored': 'חשבון שוחזר',
+    },
+    targets: { report: 'דיווח', user: 'חשבון' },
   },
 } as const;

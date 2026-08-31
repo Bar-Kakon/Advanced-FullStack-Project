@@ -1,11 +1,11 @@
-import { createContext, useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, type ReactNode } from 'react';
 
+import { useAppDispatch, useAppSelector } from '../store/hooks';
+import { languageChanged } from '../store/uiSlice';
+import { LanguageContext } from './languageContextObject';
 import { he } from './strings.he';
 import { en } from './strings.en';
 import type { Language, Strings } from './strings.types';
-
-/** Shared with the static prototypes, so a language chosen on either side is honoured by both. */
-const STORAGE_KEY = 'fieldsync-lang';
 
 export interface LanguageValue {
   readonly lang: Language;
@@ -14,24 +14,12 @@ export interface LanguageValue {
   setLang(next: Language): void;
 }
 
-export const LanguageContext = createContext<LanguageValue | null>(null);
-
-const read = (): Language => {
-  try {
-    return localStorage.getItem(STORAGE_KEY) === 'en' ? 'en' : 'he';
-  } catch {
-    // Private browsing and blocked site data both throw here rather than returning null.
-    return 'he';
-  }
-};
-
 /**
  * Direction and typeface belong on the root element, not on a panel: the stylesheet redefines
  * `--font-sans` there, and `body` resolves that variable against an ancestor. Scoped any lower,
  * English copy still computed the Hebrew font.
  *
- * `data-lang` is what the stylesheet matches on. It replaces `html:has(#lang-en:checked)`, which
- * only existed because a page with no JavaScript had to store the language in a radio button.
+ * `data-lang` is what the stylesheet matches on.
  */
 const applyToRoot = (lang: Language): void => {
   const root = document.documentElement;
@@ -40,8 +28,14 @@ const applyToRoot = (lang: Language): void => {
   root.dataset['lang'] = lang;
 };
 
+/**
+ * The language now lives in the Redux store, which is what makes it one value rather than one per
+ * screen. This provider stays because `useLanguage` is the API every screen already calls, and it
+ * is where the root attributes are kept in step with the store.
+ */
 export const LanguageProvider = ({ children }: { children: ReactNode }) => {
-  const [lang, setLangState] = useState<Language>(read);
+  const lang = useAppSelector((state) => state.ui.language);
+  const dispatch = useAppDispatch();
 
   // Runs after the first paint and after every change, so the root attributes never disagree with
   // what is on screen. Without it the page would render English text inside an RTL layout.
@@ -49,14 +43,12 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
     applyToRoot(lang);
   }, [lang]);
 
-  const setLang = useCallback((next: Language): void => {
-    setLangState(next);
-    try {
-      localStorage.setItem(STORAGE_KEY, next);
-    } catch {
-      // Persistence is a convenience; failing to store it must not break the toggle.
-    }
-  }, []);
+  const setLang = useCallback(
+    (next: Language): void => {
+      dispatch(languageChanged(next));
+    },
+    [dispatch],
+  );
 
   const value = useMemo<LanguageValue>(
     () => ({ lang, t: lang === 'he' ? (he as unknown as Strings) : en, isRtl: lang === 'he', setLang }),
@@ -65,3 +57,4 @@ export const LanguageProvider = ({ children }: { children: ReactNode }) => {
 
   return <LanguageContext.Provider value={value}>{children}</LanguageContext.Provider>;
 };
+

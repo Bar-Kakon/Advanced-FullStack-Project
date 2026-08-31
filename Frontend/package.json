@@ -1,16 +1,14 @@
 {
-  "name": "contractor-coordination-platform",
+  "name": "blokta-frontend",
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "React (Vite) client, alongside the static HTML/CSS screen prototypes it is replacing one screen at a time.",
+  "description": "Blokta React (Vite) client.",
   "scripts": {
     "dev": "vite",
     "build": "tsc -p tsconfig.json && vite build",
     "preview": "vite preview",
     "typecheck": "tsc -p tsconfig.json",
-    "build:screens": "tsc -p tsconfig.screens.json",
-    "watch:screens": "tsc -p tsconfig.screens.json --watch",
     "verify:layout": "node scripts/verify-browse-layout.mjs",
     "verify:profile-data": "node scripts/verify-profile-real-data.mjs",
     "verify:invitation-ui": "node scripts/verify-invitation-ui.mjs",
@@ -46,9 +44,11 @@
     "@emotion/styled": "^11.14.1",
     "@mui/icons-material": "^9.4.0",
     "@mui/material": "^9.4.0",
+    "@reduxjs/toolkit": "^2.12.0",
     "axios": "^1.20.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
+    "react-redux": "^9.3.0",
     "react-router-dom": "^7.18.3"
   }
 }

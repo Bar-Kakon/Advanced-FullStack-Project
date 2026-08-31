@@ -74,15 +74,19 @@ export const createPublicProfileService = ({
         relationships.between(viewerId, subjectUserId),
         ratings.summaryFor(subjectUserId),
         workEntries.listByOwner(subject._id),
-        phones.decide({ viewerId, subjectId: subjectUserId }),
+        phones.decide({
+          viewerId,
+          subjectId: subjectUserId,
+          ...(subject.contactVisibility === undefined
+            ? {}
+            : { subjectContactVisibility: subject.contactVisibility }),
+        }),
         eligibility.hasAnyWorkEvidence(viewerId, subjectUserId),
         flexibility.forUser(subjectUserId),
       ]);
 
     const isSelf = viewerId === subjectUserId;
-    const showPhones = phoneVisibility === 'self'
-      || phoneVisibility === 'visible_shared_project_role'
-      || phoneVisibility === 'visible_work_commitment';
+    const showPhones = phoneVisibility !== 'hidden_no_approved_case';
 
     const work: PublicWorkEntryDto[] = entries.map((entry) => ({
       id: entry._id.toString(),

@@ -53,7 +53,7 @@ export const ProjectDashboardPage = () => {
     { id: 'project-dashboard.css', css: projectDashboardCss },
     { id: 'coordination.css', css: coordinationCss },
   );
-  useDocumentTitle('לוח הפרויקט / Project dashboard — FieldSync');
+  useDocumentTitle('לוח הפרויקט / Project dashboard — Blokta');
 
   const firstName = user?.firstName ?? '';
   const lastName = user?.lastName ?? '';

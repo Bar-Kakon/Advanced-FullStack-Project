@@ -26,7 +26,7 @@ interface Wording {
 
 const WORDING: Record<UserLanguage, Wording> = {
   he: {
-    subject: 'איפוס סיסמה — FieldSync',
+    subject: 'איפוס סיסמה — Blokta',
     heading: 'איפוס סיסמה',
     intro: 'התקבלה בקשה לאיפוס הסיסמה שלכם. לבחירת סיסמה חדשה:',
     expiry: (minutes) => `הקישור תקף ל-${minutes} דקות והוא חד-פעמי.`,
@@ -35,7 +35,7 @@ const WORDING: Record<UserLanguage, Wording> = {
     align: 'right',
   },
   en: {
-    subject: 'Reset your password — FieldSync',
+    subject: 'Reset your password — Blokta',
     heading: 'Reset your password',
     intro: 'A password reset was requested for your account. To choose a new password:',
     expiry: (minutes) => `The link is valid for ${minutes} minutes and can be used once.`,
@@ -57,7 +57,7 @@ export const buildPasswordResetEmail = (
   const html = `<!doctype html>
 <html lang="${language}" dir="${w.dir}">
   <body style="font-family: Arial, Helvetica, sans-serif; line-height: 1.6; color: #1F2428; text-align: ${w.align};">
-    <h2 style="margin: 0 0 12px;">${w.heading} — FieldSync</h2>
+    <h2 style="margin: 0 0 12px;">${w.heading} — Blokta</h2>
     <p style="margin: 0 0 12px;">${w.intro}</p>
     <p style="margin: 0 0 12px;"><a href="${url}">${url}</a></p>
     <p style="margin: 0 0 12px;">${w.expiry(expiryMinutes)}</p>

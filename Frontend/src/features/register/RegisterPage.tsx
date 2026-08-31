@@ -33,14 +33,14 @@ export const RegisterPage = () => {
     { id: 'register.css', css: registerCss },
     { id: 'place.css', css: placeCss },
   );
-  useDocumentTitle('יצירת חשבון / Create account — FieldSync');
+  useDocumentTitle('יצירת חשבון / Create account — Blokta');
 
   const onSuccess = useCallback((): void => {
     navigate('/login', { replace: true });
   }, [navigate]);
 
   /**
-   * Set by Login when Google verified somebody who has no FieldSync account yet. It carries the
+   * Set by Login when Google verified somebody who has no Blokta account yet. It carries the
    * identity and the credential, and nothing about their trade or their business: those are this
    * screen's own questions and are still asked.
    */

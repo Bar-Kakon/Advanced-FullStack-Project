@@ -4,6 +4,9 @@ import type {
   ModerationQueueResponse,
   ModerationReportResponse,
   ModerationReportStatus,
+  PlatformAuditAction,
+  PlatformAuditPageResponse,
+  PlatformAuditTargetType,
   ResolutionOutcome,
 } from './moderation.types';
 
@@ -47,5 +50,20 @@ export const applyAccountAction = async (
     `/moderation/reports/${reportId}/account-action`,
     { action, reason },
   );
+  return data;
+};
+
+export const fetchPlatformAudit = async (query: {
+  action?: PlatformAuditAction;
+  targetType?: PlatformAuditTargetType;
+  cursor?: string;
+}): Promise<PlatformAuditPageResponse> => {
+  const { data } = await api.get<PlatformAuditPageResponse>('/moderation/audit', {
+    params: {
+      ...(query.action === undefined ? {} : { action: query.action }),
+      ...(query.targetType === undefined ? {} : { targetType: query.targetType }),
+      ...(query.cursor === undefined ? {} : { cursor: query.cursor }),
+    },
+  });
   return data;
 };

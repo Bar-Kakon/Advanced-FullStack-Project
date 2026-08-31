@@ -52,3 +52,33 @@ export interface ModerationReportResponse {
 
 export type ResolutionOutcome = 'dismissed' | 'actioned';
 export type AccountAction = 'restrict' | 'unrestrict';
+
+export const PLATFORM_AUDIT_ACTIONS = [
+  'report.claimed',
+  'report.dismissed',
+  'report.actioned',
+  'report.note_redacted',
+  'account.restricted',
+  'account.unrestricted',
+  'account.deleted',
+  'account.restored',
+] as const;
+export type PlatformAuditAction = (typeof PLATFORM_AUDIT_ACTIONS)[number];
+
+export const PLATFORM_AUDIT_TARGET_TYPES = ['report', 'user'] as const;
+export type PlatformAuditTargetType = (typeof PLATFORM_AUDIT_TARGET_TYPES)[number];
+
+export interface PlatformAuditRow {
+  readonly id: string;
+  readonly action: PlatformAuditAction;
+  readonly actor: { readonly userId: string; readonly name: string | null };
+  readonly targetType: PlatformAuditTargetType;
+  readonly targetId: string;
+  readonly metadata: Record<string, unknown>;
+  readonly at: string;
+}
+
+export interface PlatformAuditPageResponse {
+  readonly rows: readonly PlatformAuditRow[];
+  readonly nextCursor: string | null;
+}

@@ -98,7 +98,7 @@ export const addMonth = (from: Date): Date => {
  * D11 left open whether the account country becomes a field on `users` or is derived at checkout,
  * and nothing has closed it. Until it does, the shekel price is used: it is the only one of the
  * two the product is certain about, the site is Hebrew by default, and picking by interface
- * language — which the static prototype does — would let switching to English change the price.
+ * language — which the earlier static screen does — would let switching to English change the price.
  */
 const CURRENCY: Currency = 'ILS';
 

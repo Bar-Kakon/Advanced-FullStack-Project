@@ -56,7 +56,7 @@ export const googleEmailNotVerified = (): AppError =>
   new AppError('Google has not verified this email address', 401, 'GOOGLE_EMAIL_NOT_VERIFIED');
 
 /**
- * The verified Google email already belongs to a FieldSync account carrying no Google link.
+ * The verified Google email already belongs to a Blokta account carrying no Google link.
  *
  * Linking on the strength of that match alone would be unsafe: registration never proves the
  * person controls the address they typed, so an account opened under somebody else's email would

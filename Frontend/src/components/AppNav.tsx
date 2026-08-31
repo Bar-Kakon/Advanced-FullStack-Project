@@ -4,11 +4,12 @@ import { useAuth } from '../auth/useAuth';
 import { useLanguage } from '../i18n/useLanguage';
 import { AccountMenu } from './AccountMenu';
 import { LanguageSwitch } from './LanguageSwitch';
+import { useAppSelector } from '../store/hooks';
 
 /**
  * The application navbar every authenticated screen carries.
  *
- * The static prototypes each held their own copy of this markup, and the source-of-truth document
+ * The earlier static screens each held their own copy of this markup, and the source-of-truth document
  * records that the copies had already drifted three rules apart. This is the single component
  * those notes said the drift collapses into, so the fixes that had landed on only some copies —
  * the 800px link wrap and the logical chip padding — are simply what the component does.
@@ -18,6 +19,8 @@ import { LanguageSwitch } from './LanguageSwitch';
  */
 export const AppNav = ({ name, initials }: { name: string; initials: string }) => {
   const { t } = useLanguage();
+  // Read from the store, so every screen's navbar shows the same count.
+  const unread = useAppSelector((state) => state.session.unreadNotifications);
   const { user } = useAuth();
 
   // Hiding is a courtesy; the API refuses either way.
@@ -39,7 +42,7 @@ export const AppNav = ({ name, initials }: { name: string; initials: string }) =
               <line x1="32" y1="14" x2="32" y2="26" stroke="rgba(255,253,248,0.40)" strokeWidth="1.5" strokeDasharray="3 2" />
             </svg>
           </span>
-          <span className="app-nav__name">FieldSync</span>
+          <span className="app-nav__name">Blokta</span>
         </Link>
 
         <nav className="app-nav__links" aria-label={t.nav.label}>
@@ -58,6 +61,7 @@ export const AppNav = ({ name, initials }: { name: string; initials: string }) =
 
         <div className="app-nav__actions">
           <button type="button" className="nav-icon-btn" aria-label={t.nav.notifications} disabled>
+            {unread > 0 ? <span className="nav-icon-btn__badge">{unread}</span> : null}
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                  strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
