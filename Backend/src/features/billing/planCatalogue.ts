@@ -21,6 +21,9 @@ const MB = 1024 * 1024;
  *   - Active delegations are 1 / 5 / unlimited. The design document's field note says 1 / 10 /
  *     null, which predates the ladder rebuild; the rebuilt ladder and the approved screen both say
  *     5, and the newer wording wins.
+ *   - `notificationDigest` was false on Basic, contradicting the closed tier rule: Free is blocking
+ *     coverage, BASIC IS THE DIGEST, Premium is the digest plus timing controls. Corrected here,
+ *     and `notificationTimingControls` added as the Premium half the ladder had no field for.
  */
 export interface PlanSeed {
   readonly code: PlanCode;
@@ -51,6 +54,7 @@ export const PLAN_CATALOGUE: readonly PlanSeed[] = [
       muteControls: false,
       agreementForm: false,
       notificationDigest: false,
+      notificationTimingControls: false,
       privateExecutionLayer: false,
       emailNotifications: false,
       supportTier: 'community',
@@ -74,7 +78,8 @@ export const PLAN_CATALOGUE: readonly PlanSeed[] = [
       moderatedThreads: true,
       muteControls: true,
       agreementForm: false,
-      notificationDigest: false,
+      notificationDigest: true,
+      notificationTimingControls: false,
       privateExecutionLayer: false,
       emailNotifications: true,
       supportTier: 'email',
@@ -99,6 +104,7 @@ export const PLAN_CATALOGUE: readonly PlanSeed[] = [
       muteControls: true,
       agreementForm: true,
       notificationDigest: true,
+      notificationTimingControls: true,
       privateExecutionLayer: true,
       emailNotifications: true,
       supportTier: 'priority',

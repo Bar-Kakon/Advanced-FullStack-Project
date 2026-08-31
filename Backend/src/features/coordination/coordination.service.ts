@@ -478,7 +478,7 @@ export const createCoordinationService = ({
   const shiftDays = (graph: ProjectGraph) => (from: Date, to: Date): number => {
     if (to.getTime() === from.getTime()) return 0;
     const forward = to.getTime() > from.getTime();
-    const span = workingDaysBetween(graph.config, forward ? from : to, forward ? to : from);
+    const span = workingDaysBetween(graph.projectCalendar, forward ? from : to, forward ? to : from);
     return forward ? Math.max(0, span - 1) : -Math.max(0, span - 1);
   };
 

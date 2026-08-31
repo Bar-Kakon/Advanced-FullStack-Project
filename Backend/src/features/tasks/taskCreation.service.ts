@@ -3,6 +3,8 @@ import { Types } from 'mongoose';
 import { configOrDefault, type CompanyCalendarRepository } from '../calendar/companyCalendar.repository.js';
 import { isWorkingDay } from '../calendar/workingDay.js';
 import { resolveEffectiveCalendar } from '../calendar/workingCalendar.types.js';
+import { calendarFor } from '../scheduleexceptions/exceptionCalendar.js';
+import { scheduleExceptionRepository } from '../scheduleexceptions/scheduleException.repository.js';
 import type { CompanyContextService } from '../companies/companyContext.service.js';
 import { projectNotFound } from '../projects/project.errors.js';
 import { overrunCeiling } from '../projects/projectDates.js';
@@ -114,14 +116,25 @@ export const createTaskCreationService = ({
     if (start < project.startDate || due > ceiling) throw outsideProjectWindow();
   };
 
-  /** Advisory only, and only from the weekly pattern the project already stores. */
+  /**
+   * Advisory only, and read from the same calendar the cascade computes against: the weekly
+   * pattern the project stores plus the exceptions approved on it. A date a professional was
+   * granted permission to work is not warned about here.
+   */
   const nonWorkingWarnings = async (
     project: ProjectRecord,
+    assigneeId: string | undefined,
     start: Date,
     due: Date,
   ): Promise<TaskWarning[]> => {
-    const version = await calendars.findById(project.calendarVersion);
-    const calendar = resolveEffectiveCalendar(configOrDefault(version), project.calendarOverrides);
+    const [version, exceptions] = await Promise.all([
+      calendars.findById(project.calendarVersion),
+      scheduleExceptionRepository.listApproved(project._id),
+    ]);
+    const config = resolveEffectiveCalendar(configOrDefault(version), project.calendarOverrides);
+    const calendar = calendarFor(config, exceptions, {
+      ...(assigneeId === undefined ? {} : { professionalId: assigneeId }),
+    });
 
     const warnings: TaskWarning[] = [];
     if (!isWorkingDay(calendar, start)) {
@@ -233,7 +246,12 @@ export const createTaskCreationService = ({
 
       return {
         task: toDto(created),
-        warnings: await nonWorkingWarnings(project, input.startDate, input.dueDate),
+        warnings: await nonWorkingWarnings(
+          project,
+          input.assigneeId,
+          input.startDate,
+          input.dueDate,
+        ),
       };
     },
 

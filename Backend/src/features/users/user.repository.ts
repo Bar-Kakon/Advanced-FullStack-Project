@@ -366,13 +366,19 @@ export const userRepository: UserRepository = {
    * ride along, because it is not in that projection. The read joins the caller's session, or it
    * would not see a document the open transaction has not committed yet.
    */
-  async create({ specialties, drillingTypes, termsAcceptances, identities, ...user }, session) {
+  async create(
+    { specialties, drillingTypes, termsAcceptances, identities, notificationPreferences, ...user },
+    session,
+  ) {
     const [created] = await UserModel.create(
       [
         {
           ...user,
           specialties: [...specialties],
           termsAcceptances: [...termsAcceptances],
+          // Registration chooses the opt-in and nothing else; the Premium timing fields are absent
+          // until Settings writes them, so they are not defaulted into existence here.
+          notificationPreferences: { operationalEmail: notificationPreferences.operationalEmail },
           ...(drillingTypes === undefined ? {} : { drillingTypes: [...drillingTypes] }),
           ...(identities === undefined ? {} : { identities: [...identities] }),
         },

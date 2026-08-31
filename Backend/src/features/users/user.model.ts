@@ -134,9 +134,47 @@ export const HEAVY_EQUIPMENT = [
 export type Region = (typeof REGIONS)[number];
 export type HeavyEquipment = (typeof HEAVY_EQUIPMENT)[number];
 
-export interface NotificationPreferences {
-  readonly operationalEmail: boolean;
+/**
+ * A Premium timing control for one notification class.
+ *
+ * It moves WHEN a delivery goes out, never WHETHER it does: a blocking notification still appears
+ * in-app immediately on every plan, and a quiet window only holds back the email that follows it.
+ * Premium buys control, never access to essential coordination information.
+ */
+export interface NotificationTimingRule {
+  readonly notificationClass: 'blocking' | 'nonblocking';
+  /** Minutes from midnight. A delivery falling inside the window waits until it ends. */
+  readonly quietFromMinute: number;
+  readonly quietToMinute: number;
 }
+
+export interface NotificationPreferences {
+  /** Explicit opt-in, chosen at registration with no default. The platform works without it. */
+  readonly operationalEmail: boolean;
+  /** Premium only, and enforced on the server — never trusted from a request body. */
+  readonly timing?: readonly NotificationTimingRule[];
+  /** Which hour the daily digest goes out in, 0–23. Premium only. */
+  readonly digestHour?: number;
+}
+
+/**
+ * The professional's own control over their published contact details — the fourth part of the
+ * closed phone-visibility policy: every case the two automatic ones do not cover is theirs to
+ * decide. It never widens the automatic cases, and it never reaches a personal phone, which this
+ * model does not store at all.
+ */
+export interface ContactVisibility {
+  readonly email: boolean;
+  readonly businessPhone: boolean;
+  readonly officePhone: boolean;
+}
+
+/** A profile shows the email; the two business numbers start withheld, which is the safe way. */
+export const DEFAULT_CONTACT_VISIBILITY: ContactVisibility = {
+  email: true,
+  businessPhone: false,
+  officePhone: false,
+};
 
 /**
  * One recorded consent. The version is what makes it provable: a timestamp alone cannot say *what*
@@ -156,6 +194,7 @@ export interface UserProfileFields {
   readonly heavyEquipment?: readonly HeavyEquipment[];
   readonly drillingTypes?: readonly DrillingType[];
   readonly notificationPreferences?: NotificationPreferences;
+  readonly contactVisibility?: ContactVisibility;
   readonly businessPhone?: string;
   readonly location?: {
     readonly city?: string;
@@ -345,9 +384,34 @@ const userSchema = new Schema(
     // Refines the `drilling` specialty.
     drillingTypes: [{ type: String, enum: DRILLING_TYPES }],
 
-    // Chosen explicitly at registration, with no default: neither answer may be assumed.
+    // Chosen explicitly at registration, with no default: neither answer may be assumed. The
+    // timing fields below it are absent until a Premium account sets one, and the entitlement is
+    // re-checked on every write rather than trusted from whatever wrote them last.
     notificationPreferences: {
       operationalEmail: { type: Boolean, required: true },
+      timing: {
+        type: [
+          new Schema(
+            {
+              notificationClass: { type: String, enum: ['blocking', 'nonblocking'], required: true },
+              quietFromMinute: { type: Number, required: true, min: 0, max: 1440 },
+              quietToMinute: { type: Number, required: true, min: 0, max: 1440 },
+            },
+            { _id: false },
+          ),
+        ],
+        default: undefined,
+      },
+      digestHour: { type: Number, min: 0, max: 23 },
+    },
+
+    // The self-controlled half of phone visibility. It only ever decides the cases the two
+    // automatic ones do not cover, and it can never expose a personal phone — there is no such
+    // field on this document, by design.
+    contactVisibility: {
+      email: { type: Boolean, default: true },
+      businessPhone: { type: Boolean, default: false },
+      officePhone: { type: Boolean, default: false },
     },
 
     // The individual's own business number. Never a fallback for the company office number, which
