@@ -2533,7 +2533,7 @@ module.exports = mongoose.model('Rule', ruleSchema);`
     { name: 'limits.agreementForm', type: 'Boolean', req: true, note: 'Shown to users as **Automatic task creation** — a refinement over plain task creation, so gating it withholds convenience rather than capability.' },
     { name: 'limits.notificationDigest', type: 'Boolean', req: true, note: 'Daily summary email in addition to per-event notifications.' },
     { name: 'limits.auditRetentionDays', type: 'Number | null', req: true, note: 'How far back [[auditentries]] are **readable**: 30, 365, or null for the complete history. Entries are never deleted — this filters the query, because an audit trail that deletes itself is not an audit trail.' },
-    { name: 'limits.activeDelegations', type: 'Number | null', req: true, note: 'How many confidential delegations may be **open at once** — the `delegate` field on [[tasks]], counted where the delegated task is not yet complete. 1, 10, null. Replaced an earlier `canDelegate` boolean: gating the product signature feature entirely meant free and basic users could never see what they would be buying, so it became a concurrency limit instead of an on/off switch.' },
+    { name: 'limits.activeDelegations', type: 'Number | null', req: true, note: 'How many confidential delegations may be **open at once** — the `delegate` field on [[tasks]], counted where the delegated task is not yet complete. **Free 1 · Basic 5 · Premium unlimited (`null`).** This note read *"1, 10, null"* until 2026-08-31; `10` was the pre-`7db18af` value and has not been the approved ladder since 2026-08-13, when *rebuild the Basic/Premium ladder* replaced it with 5 on the approved screen. `planCatalogue.ts` and `verify:subscriptions` already agreed on 5 — this page was the last place still saying 10. Replaced an earlier `canDelegate` boolean: gating the product signature feature entirely meant free and basic users could never see what they would be buying, so it became a concurrency limit instead of an on/off switch.' },
     { name: 'limits.privateExecutionLayer', type: 'Boolean', req: true, note: 'Private sub-tasks and notes on [[tasks]]. Premium only. Shown to users as **Private workspace** — this document keeps the §3.3 term, the screen uses the one a contractor reads without translation. Same feature.' },
     { name: 'limits.emailNotifications', type: 'Boolean', req: true, note: 'Whether [[notifications]] are also delivered by email. In-app delivery is never gated.' },
     { name: 'limits.supportTier', type: "'community' | 'email' | 'priority'", req: true, note: 'A code, not a sentence — translated at render like every other enum in this schema.' },
@@ -2765,86 +2765,6 @@ subscriptionSchema.index({ status: 1, currentPeriodEnd: 1 });
 
 module.exports = mongoose.model('Subscription', subscriptionSchema);`
 },
-
-/* ─────────── usagecounters ─────────── */
-{
-  id: 'usagecounters', model: 'UsageCounter', domain: 'billing', stage: 4,
-  tag: 'metered allowances, per window',
-  pos: { x: 30, y: 510 },
-  purpose: 'One document per user, per metered action, per time window. The only metric today is `visual_simulation` — a visual representation the simulator builds from the details and selections a contractor entered, which the free and basic tiers ration. Premium is unmetered and writes no document at all.',
-  callout: 'The quota is enforced **inside the update filter**, never by reading the counter and then deciding. A read-then-write check lets two concurrent requests both pass while the counter sits on its last unit; putting the comparison in the filter makes the database the arbiter, which is the only place the answer can be correct under concurrency.',
-  fields: [
-    { name: '_id', type: 'ObjectId', note: '' },
-    { name: 'user', type: 'ObjectId', ref: 'users', req: true, idx: true, note: 'Whose allowance this is.' },
-    { name: 'metric', type: "'visual_simulation'", req: true, idx: true, note: 'An enum with a single value today. Because a metric is a code, adding a second meter later is a new value rather than a new collection.' },
-    { name: 'windowStart', type: 'Date', req: true, idx: true, note: 'Start of the usage window, normalised to **Monday 00:00 UTC**. Fixed boundaries rather than a rolling seven days, so that "3 per week" resets on a date the user can predict instead of one they have to remember.' },
-    { name: 'windowEnd', type: 'Date', req: true, note: '`windowStart` plus seven days. Stored rather than derived so the TTL index has a field to expire on.' },
-    { name: 'count', type: 'Number', req: true, note: 'Incremented atomically by the guarded update. Never written directly.' },
-    { name: 'limit', type: 'Number', req: true, note: '**Copied from the plan when the window document is first created.** An upgrade mid-week therefore raises the ceiling from the *next* window rather than rewriting the current one — the alternative silently changes what the user was allowed yesterday.' },
-    { name: 'createdAt / updatedAt', type: 'Date', note: 'Mongoose `timestamps: true`.' }
-  ],
-  indexes: [
-    { def: '{ user: 1, metric: 1, windowStart: 1 }', opts: 'unique', serves: 'The atomic increment-with-quota-check', why: 'Correctness: it is what makes the upsert safe. Without it, two parallel requests can create two counter documents for the same window and each is then granted the full allowance.' },
-    { def: '{ windowEnd: 1 }', opts: 'expireAfterSeconds: 7776000', serves: 'Housekeeping', why: 'A TTL index drops counters ninety days after their window closes. Usage metering is not an audit record — [[auditentries]] is — so there is no reason to retain it forever.' }
-  ],
-  why: [
-    '**A document per window, not a running total on [[users]].** A total cannot express "3 per week" without a reset job, and a reset job that fails silently hands somebody unlimited usage. A window document simply stops matching once the week rolls over.',
-    '**The limit is copied in, not joined.** The counter has to answer the quota question in a single atomic update; a join would force a read first, which is exactly the race this design avoids.',
-    '**Unlimited writes nothing.** When a metric carries no limit for the tier, the request skips this collection entirely, so unmetered usage costs no writes and leaves no rows to expire.',
-    '⚠️ **This collection currently meters a feature that no longer exists (flagged 2026-08-31, NOT resolved here).** Its only metric is `visual_simulation`, and architectural visualization was removed from the product — the `plans` limit that rationed it, `simulationsPerWeek`, was removed in the same pass that added this note. Nothing in `Backend/src` reads or writes this collection today. **Whether it is deleted outright or kept as the meter a future metric would reuse is a product decision and is deliberately left open** rather than settled as a side effect of a documentation reconciliation.',
-    '**Fixed windows over rolling ones.** A rolling seven-day window is fairer in theory but cannot be answered by a single indexed lookup, and it makes "when do I get more?" unanswerable for the user.',
-    '**Metering lives here, not in [[auditentries]].** The audit trail records what happened to the work; this records consumption of a paid allowance. Mixing them would put billing pressure on a collection whose integrity the privacy model depends on.'
-  ],
-  relations: [
-    { to: 'users', via: 'user', store: 'ref', card: 'N:1', why: 'Many counters per user — one per metric per week — and the compound unique index is what keeps a window from being duplicated.' }
-  ],
-  sample: `{
-  _id: ObjectId("66a3c2d0c2b9e30012af2301"),
-  user: ObjectId("6650a1f4c2b9e30012af0b21"),
-  metric: "visual_simulation",
-
-  windowStart: ISODate("2026-07-27T00:00:00Z"),    // Monday 00:00 UTC
-  windowEnd:   ISODate("2026-08-03T00:00:00Z"),
-  count: 12,
-  limit: 30,                                       // copied from the plan at creation
-
-  createdAt: ISODate("2026-07-27T06:41:00Z"),
-  updatedAt: ISODate("2026-08-01T15:02:00Z")
-}`,
-  schema: `const mongoose = require('mongoose');
-const { Schema } = mongoose;
-
-const usageCounterSchema = new Schema({
-  user:        { type: Schema.Types.ObjectId, ref: 'User', required: true },
-  metric:      { type: String, enum: ['visual_simulation'], required: true },
-  windowStart: { type: Date, required: true },
-  windowEnd:   { type: Date, required: true },
-  count:       { type: Number, required: true, default: 0 },
-  limit:       { type: Number, required: true }
-}, { timestamps: true });
-
-usageCounterSchema.index({ user: 1, metric: 1, windowStart: 1 }, { unique: true });
-usageCounterSchema.index({ windowEnd: 1 }, { expireAfterSeconds: 7776000 });
-
-const UsageCounter = mongoose.model('UsageCounter', usageCounterSchema);
-
-// The quota check and the increment are ONE atomic operation.
-// Reading the count and then deciding would let two concurrent
-// requests both pass on the last remaining unit.
-async function consume(userId, limit) {
-  if (limit === null) return true;               // unlimited: no document, no write
-  const windowStart = startOfIsoWeekUtc(new Date());
-  const doc = await UsageCounter.findOneAndUpdate(
-    { user: userId, metric: 'visual_simulation', windowStart,
-      $expr: { $lt: ['$count', '$limit'] } },
-    { $inc: { count: 1 } },
-    { new: true }
-  );
-  return Boolean(doc);                           // null => allowance exhausted
-}
-
-module.exports = { UsageCounter, consume };`
-}
 
 ];
 
@@ -3539,8 +3459,8 @@ const OPEN_DECISIONS = [
     impact: 'Connection only, or connection **or** shared project? Today the gate is one `findOne` against [[connections]] at thread-creation time. Widening it adds a second check against [[memberships]] — no new fields. What is genuinely open is what happens to an existing thread on disconnect, block or mute.' },
   { id: 'D10', title: 'i18n mechanism under React', affects: ['users', 'notifications'], closed: true,
     impact: 'The **storage** side was already settled — `users.language`, language-neutral enum codes, and structured rather than pre-rendered payloads. **The client mechanism closed 2026-08-28: the hand-rolled option**, a shared `LanguageContext` plus centralized Hebrew/English string resources, one field per logical value, with RTL/LTR derived from the selected language. `react-i18next` was rejected on cost rather than capability. The static prototypes render every string twice and hide one with CSS — `he-text`/`en-text` spans and twin inputs — and that mechanism is explicitly **not** carried into React: it exists only because a prototype with no JavaScript cannot swap an attribute. **None of this changes a field.** Two sub-questions still reach the server and add none either: which language **outbound email** uses (the stored `users.language`, or the request `Accept-Language`), and whether the URL carries the locale.' },
-  { id: 'D11', title: 'Subscription data model & quota enforcement', affects: ['plans', 'subscriptions', 'usagecounters', 'users'],
-    impact: 'The **storage shape is now designed**: a seeded [[plans]] catalogue, one [[subscriptions]] document per period with a partial unique index permitting exactly one active row per user, a [[usagecounters]] document per user per metric per week, and a denormalised `users.planCode` for the authorization check. What remains open is **product, not shape** — every limit and price carries `provisional: true` and is expected to move; what a *read-only* project concretely forbids after a downgrade is unspecified; and whether the account country that selects `currency` becomes a field on [[users]] or is derived at checkout is undecided. None of this is an agreed price or a required feature — it is the structure that lets those answers land later without a migration.' },
+  { id: 'D11', title: 'Subscription data model & quota enforcement', affects: ['plans', 'subscriptions', 'users'],
+    impact: 'The **storage shape is now designed**: a seeded [[plans]] catalogue, one [[subscriptions]] document per period with a partial unique index permitting exactly one active row per user, and a denormalised `users.planCode` for the authorization check. **A `usagecounters` collection was part of this shape and was removed on 2026-08-31**: its only metric measured architectural visualization, which is no longer in the product, and no code ever read or wrote it. A future metering domain is to be designed from the requirement that needs it rather than inherited from a removed feature. What remains open is **product, not shape** — every limit and price carries `provisional: true` and is expected to move; what a *read-only* project concretely forbids after a downgrade is unspecified; and whether the account country that selects `currency` becomes a field on [[users]] or is derived at checkout is undecided. None of this is an agreed price or a required feature — it is the structure that lets those answers land later without a migration.' },
   { id: 'D13', title: 'Completed-work storage shape', affects: ['workentries', 'users', 'fileassets', 'tasks', 'projects'],
     impact: '**Built 2026-08-29 as a [[workentries]] collection — one of the two shapes this row names — and the owner has not formally closed the storage half.** The feature had to be built, so a shape was chosen rather than invented: entries are added and removed one at a time, each may carry a [[fileassets]] photo and will later reference [[projects]] and [[tasks]], and the list is unbounded over a career, all of which argue against an embedded array that every profile read would carry whole. The sub-questions this row raised are answered *by the implementation, not by decision*: a linked entry stores **both** the project and the task, so a task-scoped entry can render without implying the whole project; and the badge is a stored `fieldSyncVerifiedAt` timestamp — frozen at link time — rather than recomputed on read. **The one question the build does not touch is what a free-standing entry validates as**, since it has no [[tasks]] row to prove completion against; today it validates as itself and simply carries no badge. The original text follows, with its one superseded sentence marked. Opened 2026-08-18 by the profile refinement pass. *(Superseded: "nothing has been added to the collections above for it yet, deliberately" — a collection now exists.)* This row recorded the gap rather than closing it. The *product* model is decided: an entry may stand free or be optionally linked to work coordinated on the platform, and only a linked entry whose specific work is complete carries the `Completed on FieldSync` badge. What is **not** decided is where the data lives: a `workentries` collection of its own **versus** an embedded array on [[users]] referencing [[fileassets]]; whether a linked entry stores the [[tasks]] id, the [[projects]] id, or both, so that a task-scoped entry can be rendered without implying responsibility for the whole project; and whether the badge is recomputed on read — is the task still complete? — or frozen at link time. Whatever shape is chosen must be able to enforce the delegation rule sharpened on 2026-08-19: an image from work done through confidential delegation **may** appear, because forbidding it outright was itself a signal, but a **delegate must not receive the badge** for delegated work, no project or task linkage may be published for it, and there is never a "delegated" label of any kind. **Half of this row closed 2026-08-29 by owner decision, and it constrains every shape above.** A Completed Work entry **may be added for work that was not completed inside FieldSync**. Two entry types are legitimate: a **FieldSync-linked** entry, and a **free-standing** entry with no project or task link at all — a valid professional portfolio entry in its own right, including work predating the account. **So no schema and no endpoint here may require a link:** any `project` or `task` reference is optional by rule, validation must accept an entry carrying neither, and a free-standing entry **must never** be presented as FieldSync-verified — the badge would be the platform vouching for work it has no record of. The corollary for the API is that the verification flag is **derived server-side from a link the server proved complete**, never accepted from a request body. This settles what an entry *is* and nothing about where an entry lives: the storage question above is untouched, and one new question arrives with it — **what a free-standing entry validates as**, since it has no [[tasks]] row to prove completion against.' },
   { id: 'D14', title: 'Availability status and heavy-equipment selection', affects: ['users'],
