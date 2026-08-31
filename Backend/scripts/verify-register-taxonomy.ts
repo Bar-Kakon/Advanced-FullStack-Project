@@ -37,24 +37,35 @@ const RETIRED_CODES = [
   'doors', 'sandpumps', 'aluminum', 'development',
 ];
 
-const baseBody = (over: Record<string, unknown> = {}): Record<string, unknown> => ({
-  firstName: 'Taxonomy',
-  lastName: 'Verify',
-  standing: 'owner',
-  contractorCategory: 'subcontractor',
-  companyName: `${MARKER} Ltd`,
-  email: 'taxonomy@example.com',
-  password: PASSWORD,
-  confirmPassword: PASSWORD,
-  registrationCategory: 'contractor',
-  specialty: 'electrical',
-  city: 'חיפה',
-  region: 'haifa',
-  availability: 'open',
-  acceptedTerms: true,
-  operationalEmail: true,
-  ...over,
-});
+/**
+ * `contractorCategory` classifies a contracting business, so it rides along only on the contractor
+ * route. A supplier or an architectural registration carrying one is refused, which is what the
+ * matrix below asserts directly.
+ */
+const baseBody = (over: Record<string, unknown> = {}): Record<string, unknown> => {
+  const body: Record<string, unknown> = {
+    firstName: 'Taxonomy',
+    lastName: 'Verify',
+    standing: 'owner',
+    companyName: `${MARKER} Ltd`,
+    email: 'taxonomy@example.com',
+    password: PASSWORD,
+    confirmPassword: PASSWORD,
+    registrationCategory: 'contractor',
+    specialty: 'electrical',
+    city: 'חיפה',
+    region: 'haifa',
+    availability: 'open',
+    acceptedTerms: true,
+    operationalEmail: true,
+    ...over,
+  };
+
+  if (body['standing'] === 'owner' && body['registrationCategory'] === 'contractor') {
+    return { contractorCategory: 'subcontractor', ...body };
+  }
+  return body;
+};
 
 const accepts = (over: Record<string, unknown>): boolean =>
   registerBodySchema.validate(baseBody(over), VALIDATION_OPTIONS).error === undefined;

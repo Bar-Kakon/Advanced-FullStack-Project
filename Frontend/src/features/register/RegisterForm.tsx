@@ -328,9 +328,10 @@ export const RegisterForm = ({ form }: { form: ReturnType<typeof useRegisterForm
 
             {/* Availability is the organization's, set by whoever runs it — so an employee is not
                 asked, and the server refuses the field on that path anyway. */}
-            {/* Account level, so only the person creating the business answers it. An employee
-                inherits their company's, and the server refuses the field on that path. */}
-            {isEmployee ? null : (
+            {/* Contractor route only: it classifies a CONTRACTING business, so a supplier and an
+                architectural professional are never asked. An employee inherits their company's,
+                and the server refuses the field on both of those paths. */}
+            {isEmployee || values.registrationCategory !== 'contractor' ? null : (
               <ContractorCategoryChoice
                 legend={t.form.contractorCategory.label} hint={t.form.contractorCategory.hint}
                 labels={t.contractorCategories}
