@@ -23,6 +23,10 @@ export const NOTIFICATION_TYPES = [
   'responsibility.transfer_invited',
   'responsibility.transfer_accepted',
   'workplan.version_added',
+  'message.received',
+  'message.request_received',
+  'agreement.received',
+  'agreement.answered',
 ] as const;
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
 
@@ -53,6 +57,11 @@ export const CLASS_OF: Readonly<Record<NotificationType, NotificationClass>> = {
   'responsibility.transfer_invited': 'blocking',
   'responsibility.transfer_accepted': 'nonblocking',
   'workplan.version_added': 'nonblocking',
+  // A message needs answering, so it is in-app immediately on every plan. Never its content.
+  'message.received': 'blocking',
+  'message.request_received': 'blocking',
+  'agreement.received': 'blocking',
+  'agreement.answered': 'blocking',
 };
 
 /**

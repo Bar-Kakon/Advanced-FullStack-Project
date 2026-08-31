@@ -56,6 +56,10 @@ const WORDING: Record<UserLanguage, Wording> = {
       'responsibility.transfer_invited': 'הוצעה לך העברת אחריות על עבודה',
       'responsibility.transfer_accepted': 'העברת אחריות אושרה',
       'workplan.version_added': 'נוספה גרסה לתוכנית עבודה',
+      'message.received': 'הודעה חדשה',
+      'message.request_received': 'בקשת התכתבות חדשה',
+      'agreement.received': 'הצעת סיכום עבודה חדשה',
+      'agreement.answered': 'התקבלה תשובה להצעת סיכום עבודה',
     },
   },
   en: {
@@ -85,6 +89,10 @@ const WORDING: Record<UserLanguage, Wording> = {
       'responsibility.transfer_invited': 'A responsibility transfer was offered to you',
       'responsibility.transfer_accepted': 'A responsibility transfer was accepted',
       'workplan.version_added': 'A work plan version was added',
+      'message.received': 'A new message',
+      'message.request_received': 'A new message request',
+      'agreement.received': 'A work agreement was proposed',
+      'agreement.answered': 'A work agreement was answered',
     },
   },
 };
