@@ -8,6 +8,7 @@
 import { CompanyModel } from '../src/features/companies/company.model.js';
 import { CompanyMembershipModel } from '../src/features/companies/companyMembership.model.js';
 import { ProjectModel } from '../src/features/projects/project.model.js';
+import { UserModel } from '../src/features/users/user.model.js';
 import { TaskModel } from '../src/features/tasks/task.model.js';
 import { CompanyCalendarVersionModel } from '../src/features/calendar/companyCalendarVersion.model.js';
 import { ProjectMembershipModel } from '../src/features/projectaccess/projectMembership.model.js';
@@ -63,6 +64,17 @@ const run = async (): Promise<void> => {
   const bob = await createAccount(baseUrl, MARKER, 2);
   const carol = await createAccount(baseUrl, MARKER, 3);
   const carolId = carol.userId.toString();
+
+  /*
+   * This script is about project permissions, and it opens more projects than the Free plan
+   * allows. The subscription ceiling is a real refusal, proved in verify-subscriptions; here it
+   * would only be a second and unrelated reason for a create to fail, so these companies are put
+   * on the tier that does not cap what is actually under test.
+   */
+  await UserModel.updateMany(
+    { _id: { $in: [alice.userId, bob.userId, carol.userId] } },
+    { $set: { planCode: 'premium' } },
+  ).exec();
 
   const valid = {
     name: 'מגדל הצפון',
