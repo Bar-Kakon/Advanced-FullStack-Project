@@ -30,7 +30,8 @@
     "verify:landing-ui": "node scripts/verify-landing-ui.mjs",
     "verify:404-ui": "node scripts/verify-404-ui.mjs",
     "verify:proposal-ui": "node scripts/verify-proposal-ui.mjs",
-    "verify:stage-graph-ui": "node scripts/verify-stage-graph-ui.mjs"
+    "verify:stage-graph-ui": "node scripts/verify-stage-graph-ui.mjs",
+    "verify:moderation-ui": "node scripts/verify-moderation-ui.mjs"
   },
   "devDependencies": {
     "@types/react": "^19.2.18",

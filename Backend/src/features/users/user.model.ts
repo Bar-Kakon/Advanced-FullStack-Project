@@ -1,6 +1,6 @@
 import { Schema, model, type Types } from 'mongoose';
 
-export type UserStatus = 'active' | 'deactivated' | 'banned' | 'deleted';
+export type UserStatus = 'active' | 'restricted' | 'deactivated' | 'banned' | 'deleted';
 export type UserLanguage = 'he' | 'en';
 
 export const REGISTRATION_CATEGORIES = ['contractor', 'architectural', 'supplier'] as const;
@@ -193,6 +193,7 @@ export interface UserRecord {
   readonly _id: Types.ObjectId;
   readonly email: string;
   readonly status: UserStatus;
+  readonly isAdmin: boolean;
   readonly firstName: string;
   readonly lastName: string;
   readonly language: UserLanguage;
@@ -210,7 +211,19 @@ export interface UserWithPasswordHash extends UserRecord {
   readonly passwordHash: string;
 }
 
-export const USER_STATUSES: readonly UserStatus[] = ['active', 'deactivated', 'banned', 'deleted'];
+export const USER_STATUSES: readonly UserStatus[] = [
+  'active',
+  'restricted',
+  'deactivated',
+  'banned',
+  'deleted',
+];
+
+/**
+ * A restricted account still works. Discovery, new connections and new projects stop; everything
+ * already committed runs to completion, which is the whole point of the restricted-only rule.
+ */
+export const PARTICIPATING_STATUSES: readonly UserStatus[] = ['active', 'restricted'];
 
 /** Where every account starts, and what an Access Token minted before the claim existed counts as. */
 export const INITIAL_TOKEN_VERSION = 0;
@@ -256,6 +269,12 @@ const userSchema = new Schema(
     email: { type: String, required: true, unique: true, lowercase: true, trim: true },
     passwordHash: { type: String, required: true, select: false },
     status: { type: String, enum: USER_STATUSES, default: 'active', required: true, index: true },
+
+    // The only global role in the system. It gates platform moderation and nothing else — no
+    // project role, no company position and no granted project authority can stand in for it.
+    // Never settable through any request body; see `NewUser` and `ProfileUpdate`.
+    isAdmin: { type: Boolean, default: false, required: true },
+
     firstName: { type: String, required: true, trim: true },
     lastName: { type: String, required: true, trim: true },
     language: { type: String, enum: ['he', 'en'], default: 'he', required: true },

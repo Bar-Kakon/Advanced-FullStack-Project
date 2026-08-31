@@ -34,9 +34,19 @@ export const toAuthenticatedUser = (user: UserRecord): AuthenticatedUser => ({
  */
 export interface SessionUser extends AuthenticatedUser {
   readonly company: CompanyContext | null;
+  /**
+   * The viewer's own platform role, and only ever their own. It is here so the client can decide
+   * whether to draw a moderation entry point at all — a route guard, never the authorization: the
+   * moderation API reads `isAdmin` from the account on every request regardless of what is sent.
+   *
+   * Register does not carry it: `AuthenticatedUser` has no such field, and a new account is never
+   * an admin.
+   */
+  readonly isAdmin: boolean;
 }
 
 export const toSessionUser = (user: UserRecord, company: CompanyContext | null): SessionUser => ({
   ...toAuthenticatedUser(user),
   company,
+  isAdmin: user.isAdmin === true,
 });

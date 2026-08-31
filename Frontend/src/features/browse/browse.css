@@ -370,3 +370,63 @@
   .travel-dialog { width: 100%; min-height: 100vh; border-radius: 0; }
   .travel-dialog__foot .btn { width: 100%; }
 }
+
+/* ═══ Report a user ═══ */
+/* Lives here because the public profile panel is the only entry point the product approves
+   today. A second entry point moves this into a sheet of its own. */
+
+.pp-report { margin-block-start: 12px; }
+
+.report-dialog {
+  margin-block-start: 14px;
+  padding: 16px 18px;
+  border: 1px solid var(--primary-30);
+  border-radius: var(--r-md);
+  background: var(--background);
+}
+
+.report-dialog__title {
+  font-family: var(--font-serif);
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--primary);
+  margin-block-end: 4px;
+}
+
+.report-dialog__subject {
+  font-size: 14px;
+  color: var(--text-soft);
+  overflow-wrap: anywhere;
+  margin-block-end: 8px;
+}
+
+.report-dialog__body {
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--text);
+  margin-block-end: 14px;
+  max-width: 62ch;
+}
+
+.report-dialog__field { margin-block-end: 14px; }
+
+.report-dialog__note { resize: vertical; min-height: 84px; }
+
+.report-dialog__hint {
+  font-size: 13px;
+  color: var(--text-mute);
+  margin-block-start: 6px;
+  max-width: 62ch;
+}
+
+.report-dialog__error {
+  font-size: 14px;
+  color: var(--error);
+  background: var(--error-bg);
+  border: 1px solid var(--error-border);
+  border-radius: var(--r-sm);
+  padding: 10px 12px;
+  margin-block-end: 14px;
+}
+
+.report-dialog__actions { display: flex; flex-wrap: wrap; gap: 8px; }

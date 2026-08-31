@@ -20,7 +20,7 @@ import {
   type UserWithPasswordHash,
 } from './user.model.js';
 
-const IDENTITY_FIELDS = 'email status firstName lastName language profileComplete security.passwordChangedAt security.tokenVersion';
+const IDENTITY_FIELDS = 'email status isAdmin firstName lastName language profileComplete security.passwordChangedAt security.tokenVersion';
 
 /**
  * Everything the profile screens read, and nothing else. `passwordHash` is `select: false` and is
@@ -80,6 +80,19 @@ export interface CredentialState {
   readonly tokenVersion: number;
 }
 
+/**
+ * The account state a moderator reviews and acts on. It is deliberately not the profile: reviewing
+ * a report needs an identity and a status, never a bio, a phone or a travel list.
+ */
+export interface ModerationSubject {
+  readonly id: Types.ObjectId;
+  readonly email: string;
+  readonly firstName: string;
+  readonly lastName: string;
+  readonly status: UserStatus;
+  readonly isAdmin: boolean;
+}
+
 export interface TravelPreferencesUpdate {
   readonly travelRadiusKm?: number;
   readonly place?: StoredPlace;
@@ -113,6 +126,19 @@ export interface UserRepository {
   findTravelPreferences(id: string): Promise<TravelPreferencesRecord | null>;
   /** The narrowest read the auth middleware can make: `null` when no such user exists. */
   findCredentialState(id: string): Promise<CredentialState | null>;
+  /** The one question the platform-authority middleware asks, straight from the database. */
+  isPlatformAdmin(id: string): Promise<boolean>;
+  findModerationSubject(id: string): Promise<ModerationSubject | null>;
+  /**
+   * Display names for a set of accounts, as one query. An id with no row is simply absent from
+   * the map, which is how a deleted account renders as the neutral identity rather than crashing.
+   */
+  findDisplayNames(ids: readonly Types.ObjectId[]): Promise<Map<string, string>>;
+  /**
+   * The moderation status transition. The filter names the status being moved away from, so two
+   * moderators acting at once cannot both believe they applied it.
+   */
+  transitionStatus(id: Types.ObjectId, from: UserStatus, to: UserStatus): Promise<boolean>;
   /** The hash and the change stamp move together, so one call writes both. */
   updatePassword(id: Types.ObjectId, update: PasswordUpdate, session?: DbSession): Promise<void>;
   existsByEmail(email: string): Promise<boolean>;
@@ -148,6 +174,52 @@ export const userRepository: UserRepository = {
       status: found.status,
       tokenVersion: found.security?.tokenVersion ?? INITIAL_TOKEN_VERSION,
     };
+  },
+
+  /**
+   * Read from the account, never from the request and never from a token claim, so no payload a
+   * caller controls can promote itself. The cost is one indexed lookup on an admin route only.
+   */
+  async isPlatformAdmin(id) {
+    if (!Types.ObjectId.isValid(id)) return false;
+
+    const found = await UserModel.findById(id)
+      .select('isAdmin')
+      .lean<{ isAdmin?: boolean }>()
+      .exec();
+
+    return found?.isAdmin === true;
+  },
+
+  async findModerationSubject(id) {
+    if (!Types.ObjectId.isValid(id)) return null;
+
+    const found = await UserModel.findById(id)
+      .select('email firstName lastName status isAdmin')
+      .lean<Omit<ModerationSubject, 'id'> & { _id: Types.ObjectId }>()
+      .exec();
+
+    if (found === null) return null;
+    const { _id, ...rest } = found;
+    return { id: _id, ...rest, isAdmin: rest.isAdmin === true };
+  },
+
+  async findDisplayNames(ids) {
+    if (ids.length === 0) return new Map();
+
+    const rows = await UserModel.find({ _id: { $in: [...ids] } })
+      .select('firstName lastName')
+      .lean<{ _id: Types.ObjectId; firstName: string; lastName: string }[]>()
+      .exec();
+
+    return new Map(
+      rows.map((row) => [row._id.toString(), `${row.firstName} ${row.lastName}`.trim()]),
+    );
+  },
+
+  async transitionStatus(id, from, to) {
+    const result = await UserModel.updateOne({ _id: id, status: from }, { $set: { status: to } }).exec();
+    return result.modifiedCount === 1;
   },
 
   async updatePassword(id, { passwordHash, passwordChangedAt }, session) {

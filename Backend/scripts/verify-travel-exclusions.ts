@@ -23,7 +23,7 @@ import type {
 import { userRepository } from '../src/features/users/user.repository.js';
 import type { SaveTravelBody } from '../src/features/location/location.validation.js';
 
-const API = 'http://localhost:3000/api';
+const API = process.env['API_URL'] ?? 'http://localhost:3000/api';
 const MARKER = 'travel-exclusion-verify';
 const PASSWORD = 'CorrectHorse42!';
 

@@ -1,4 +1,7 @@
+import { useEffect, useState } from 'react';
+
 import { useLanguage } from '../../../i18n/useLanguage';
+import { ReportDialog } from '../../reports/ReportDialog';
 import { ProfileAvatar } from '../../profile/components/ProfileAvatar';
 import { initialsOf } from '../../profile/profileModel';
 import { WorkPhoto } from '../../profile/components/WorkPhoto';
@@ -17,6 +20,10 @@ export const PublicProfilePanel = ({
   onClose: () => void;
 }) => {
   const { t } = useLanguage();
+  const [reporting, setReporting] = useState(false);
+
+  // Selecting a different contractor must not carry an open report form across to them.
+  useEffect(() => setReporting(false), [profile?.userId]);
 
   const facts = profile === null ? [] : [
     ...(profile.city ? [{ term: t.browse.profile.city, value: profile.city, auto: true }] : []),
@@ -171,6 +178,23 @@ export const PublicProfilePanel = ({
             <p className="pp-foot">
               {profile.isSelf ? t.browse.profile.cannotRateSelf : t.browse.profile.cannotRateYet}
             </p>
+          )}
+
+          {/* Absent on your own profile, because self-reporting is refused by the server anyway. */}
+          {profile.isSelf ? null : reporting ? (
+            <ReportDialog
+              subjectUserId={profile.userId}
+              subjectName={`${profile.firstName} ${profile.lastName}`.trim()}
+              onClose={() => setReporting(false)}
+            />
+          ) : (
+            <button
+              type="button"
+              className="btn btn--ghost btn--sm pp-report"
+              onClick={() => setReporting(true)}
+            >
+              {t.reports.trigger}
+            </button>
           )}
         </div>
       ) : null}

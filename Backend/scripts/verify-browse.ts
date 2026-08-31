@@ -14,7 +14,7 @@ import { CompanyModel } from '../src/features/companies/company.model.js';
 import { CompanyMembershipModel } from '../src/features/companies/companyMembership.model.js';
 import { UserModel } from '../src/features/users/user.model.js';
 
-const API = 'http://localhost:3000/api';
+const API = process.env['API_URL'] ?? 'http://localhost:3000/api';
 const MARKER = 'browse-verify';
 const PASSWORD = 'CorrectHorse42!';
 

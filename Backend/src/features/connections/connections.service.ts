@@ -1,6 +1,7 @@
 import { Types } from 'mongoose';
 
 import type { BlocksService } from '../blocks/blocks.service.js';
+import { isRestricted } from '../moderation/restriction.js';
 import type { UserRepository } from '../users/user.repository.js';
 import { REACTIVATABLE_CONNECTION_STATUSES } from './connection.model.js';
 import type { ConnectionRepository } from './connection.repository.js';
@@ -36,7 +37,12 @@ export const createConnectionsService = ({
 }: ConnectionsDependencies): ConnectionsService => ({
   async request(actorId, targetUserId) {
     if (actorId === targetUserId) throw cannotConnectToSelf();
-    if ((await users.findById(targetUserId)) === null) throw connectionTargetNotFound();
+
+    // A restricted target reads as not found: leaving discovery is what restriction does, and a
+    // distinct error would confirm the account state to anyone who asked. The restricted *actor*
+    // is refused a step earlier, by `requireUnrestricted` on the route.
+    const target = await users.findById(targetUserId);
+    if (target === null || isRestricted(target.status)) throw connectionTargetNotFound();
 
     // A block in either direction hides the person, so the request never reaches the collection.
     const hidden = await blocks.hiddenUserIdsFor(actorId);

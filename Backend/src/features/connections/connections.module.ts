@@ -2,6 +2,7 @@ import { Router, type RequestHandler } from 'express';
 
 import { validateRequest } from '../../middleware/validateRequest.js';
 import type { BlocksService } from '../blocks/blocks.service.js';
+import { requireUnrestricted } from '../moderation/restriction.js';
 import { userRepository } from '../users/user.repository.js';
 import { connectionRepository } from './connection.repository.js';
 import { createConnectionsController } from './connections.controller.js';
@@ -30,7 +31,9 @@ export const createConnectionsModule = (
   router.use(requireAccessToken);
 
   const params = validateRequest({ params: connectionUserParamsSchema });
-  router.post('/:userId/request', params, controller.handleRequest);
+  // Only the route that starts a new connection. Answering, declining, withdrawing and removing
+  // stay open to a restricted account, because none of them begins anything.
+  router.post('/:userId/request', requireUnrestricted, params, controller.handleRequest);
   router.post('/:userId/accept', params, controller.handleAccept);
   router.post('/:userId/decline', params, controller.handleDecline);
   router.post('/:userId/remove', params, controller.handleRemove);

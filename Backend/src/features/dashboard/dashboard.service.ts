@@ -6,6 +6,7 @@ import type { CompanyMembershipRepository } from '../companies/companyMembership
 import type { CompanyMembershipRecord } from '../companies/companyMembership.model.js';
 import type { ConnectionRepository } from '../connections/connection.repository.js';
 import type { RatingRepository } from '../ratings/rating.repository.js';
+import { PARTICIPATING_STATUSES } from '../users/user.model.js';
 import type { UserRepository } from '../users/user.repository.js';
 import type { WorkEntryRepository } from '../workentries/workEntry.repository.js';
 import { dashboardUserNotFound } from './dashboard.errors.js';
@@ -80,7 +81,9 @@ export const createDashboardService = ({
 }: DashboardDependencies): DashboardService => {
   const load = async (userId: string) => {
     const user = await users.findProfileById(userId);
-    if (user === null || user.status !== 'active') throw dashboardUserNotFound();
+    // A restricted account keeps its dashboard: it is where the commitments it must still finish
+    // are read from, and restriction never reaches into work already committed.
+    if (user === null || !PARTICIPATING_STATUSES.includes(user.status)) throw dashboardUserNotFound();
 
     const membership = await memberships.findCurrentByUser(userId);
     const company = membership === null ? null : await companies.findById(membership.company);

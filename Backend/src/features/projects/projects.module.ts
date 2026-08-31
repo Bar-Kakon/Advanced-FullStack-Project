@@ -4,6 +4,7 @@ import { validateRequest } from '../../middleware/validateRequest.js';
 import { companyRepository } from '../companies/company.repository.js';
 import { companyMembershipRepository } from '../companies/companyMembership.repository.js';
 import { createCompanyContextService } from '../companies/companyContext.service.js';
+import { requireUnrestricted } from '../moderation/restriction.js';
 import { createProjectsController } from './projects.controller.js';
 import { projectRepository } from './project.repository.js';
 import { companyCalendarRepository } from '../calendar/companyCalendar.repository.js';
@@ -44,7 +45,14 @@ export const createProjectsModule = (requireAccessToken: RequestHandler): Router
 
   const params = validateRequest({ params: projectParamsSchema });
 
-  router.post('/', validateRequest({ body: createProjectBodySchema }), controller.handleCreate);
+  // Creation only. Every other project route stays reachable, because a restricted account has to
+  // be able to run its existing projects to completion.
+  router.post(
+    '/',
+    requireUnrestricted,
+    validateRequest({ body: createProjectBodySchema }),
+    controller.handleCreate,
+  );
   router.get('/', validateRequest({ query: projectListQuerySchema }), controller.handleList);
   router.get('/calendar/outdated', controller.handleOutdatedCalendarCount);
   router.get('/:projectId', params, controller.handleGetOne);

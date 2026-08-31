@@ -29,6 +29,8 @@ import {
 } from '../features/coordination/coordination.module.js';
 import { responsibilityTransferListener } from '../features/coordination/membershipOutcome.adapter.js';
 import { createMutesModule } from '../features/mutes/mutes.module.js';
+import { createReportsModule } from '../features/reports/reports.module.js';
+import { createModerationModule } from '../features/moderation/moderation.module.js';
 import { createHealthRouter } from './health.routes.js';
 import { createHealthAuthRouter } from './healthAuth.routes.js';
 
@@ -57,6 +59,9 @@ export const createApiRouter = (config: AppConfig): Router => {
     createDashboardModule({ requireAccessToken: auth.requireAccessToken, blocks: blocks.service }),
   );
   router.use('/network', createNetworkModule(auth.requireAccessToken));
+  // Filing a report and reviewing one are two different authorities, so they are two routers.
+  router.use('/reports', createReportsModule(auth.requireAccessToken).router);
+  router.use('/moderation', createModerationModule(auth.requireAccessToken));
   router.use('/work-plans', createWorkPlansModule(auth.requireAccessToken));
   router.use('/coordination', createCoordinationModule(auth.requireAccessToken, coordination));
   router.use('/mutes', createMutesModule(auth.requireAccessToken));
