@@ -326,6 +326,7 @@ export const en: Strings = {
     accountMenu: 'Account menu',
     account: {
       myProfile: 'My profile',
+      subscriptions: 'Plans & subscription',
       settings: 'Settings',
       logOut: 'Log out',
     },

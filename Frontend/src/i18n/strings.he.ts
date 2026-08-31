@@ -353,6 +353,7 @@ export const he = {
     accountMenu: 'תפריט חשבון',
     account: {
       myProfile: 'הפרופיל שלי',
+      subscriptions: 'תוכניות ומנוי',
       settings: 'הגדרות',
       logOut: 'התנתקות',
     },

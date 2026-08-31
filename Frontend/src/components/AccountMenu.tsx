@@ -32,6 +32,11 @@ export const AccountMenu = ({ name, initials }: { name: string; initials: string
     navigate('/profile');
   }, [close, navigate]);
 
+  const goToSubscriptions = useCallback((): void => {
+    close();
+    navigate('/subscriptions');
+  }, [close, navigate]);
+
   /* The session is ended first, so the route guard sees a signed-out state when Login renders. */
   const logOut = useCallback(async (): Promise<void> => {
     close();
@@ -75,6 +80,10 @@ export const AccountMenu = ({ name, initials }: { name: string; initials: string
       >
         <MenuItem onClick={goToProfile}>
           <ListItemText>{t.nav.account.myProfile}</ListItemText>
+        </MenuItem>
+
+        <MenuItem onClick={goToSubscriptions}>
+          <ListItemText>{t.nav.account.subscriptions}</ListItemText>
         </MenuItem>
 
         <MenuItem disabled aria-disabled="true">
