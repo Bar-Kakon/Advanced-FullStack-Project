@@ -57,6 +57,7 @@ export const he = {
     officePhone: { label: 'טלפון משרד', placeholder: '03-1234567' },
     businessPhone: { label: 'טלפון עסקי', placeholder: '050-1234567' },
     availability: { label: 'זמינות', hint: 'אפשר לשנות בכל שלב בפרופיל.' },
+    contractorCategory: { label: 'סוג העסק', hint: 'קובע אילו יכולות זמינות לחשבון.' },
     standing: {
       label: 'איך מצטרפים ל-Blokta?',
       placeholder: 'בחירה…',
@@ -2392,4 +2393,5 @@ export const he = {
       withdrawn: 'בוטל',
     },
   },
+  contractorCategories: { main_contractor: 'קבלן ביצוע ראשי', subcontractor: 'קבלן משנה' },
 } as const;

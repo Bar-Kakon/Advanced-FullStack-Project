@@ -57,6 +57,14 @@ export const REGIONS = [
   'nationwide', 'north', 'haifa', 'sharon', 'center', 'telaviv', 'jerusalem', 'lowlands', 'south',
 ] as const;
 
+/**
+ * The account/company-level business classification. It is what gates Confidential Delegation, and
+ * it is deliberately NOT a per-project role — a קבלן ביצוע ראשי invited into somebody else's
+ * project is still a קבלן ביצוע ראשי.
+ */
+export const CONTRACTOR_CATEGORIES = ['main_contractor', 'subcontractor'] as const;
+export type ContractorCategory = (typeof CONTRACTOR_CATEGORIES)[number];
+
 export const AVAILABILITY_STATUSES = ['open', 'limited', 'closed'] as const;
 
 /** The ten machine codes that refine `heavy_equipment`. Mirrored from `user.model.ts`. */
@@ -131,6 +139,8 @@ export interface RegisterPayload {
   readonly operationalEmail: boolean;
   /** The structured place behind `city`, when the browser resolved one. */
   readonly place?: StructuredPlace;
+  /** Owner path only; the server refuses it for an employee. */
+  contractorCategory?: ContractorCategory;
 }
 
 /**
