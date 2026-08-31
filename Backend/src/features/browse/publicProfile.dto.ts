@@ -57,6 +57,8 @@ export interface PublicProfileDto extends ContractorSummaryDto {
   readonly work: readonly PublicWorkEntryDto[];
   /** D15. Absent unless the viewer is entitled; never a fallback from one number to the other. */
   readonly phones: PublicPhonesDto;
+  /** The one contact detail published by default, and still the professional's to withdraw. */
+  readonly email: string | null;
   /** Backend-decided. React must not offer a rating this says is not available. */
   readonly rateable: RateabilityDto;
   readonly isSelf: boolean;
