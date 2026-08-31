@@ -1,6 +1,8 @@
 import { Types } from 'mongoose';
 
 import type { DbSession } from '../../db/mongoose.js';
+import type { PlanCode } from '../billing/plan.model.js';
+import { DEFAULT_PLAN_CODE } from '../billing/planCatalogue.js';
 import {
   INITIAL_TOKEN_VERSION,
   UserModel,
@@ -131,6 +133,10 @@ export interface UserRepository {
   linkProviderIdentity(id: Types.ObjectId, identity: ProviderIdentity): Promise<boolean>;
   /** Whether a local password exists, without the hash leaving the repository. */
   hasPassword(id: string): Promise<boolean>;
+  /** The cached tier. `null` only when no such account exists. */
+  findPlanCode(id: string): Promise<PlanCode | null>;
+  /** Written only by the subscription lifecycle, and only ever inside its transaction. */
+  setPlanCode(id: Types.ObjectId, planCode: PlanCode, session?: DbSession): Promise<void>;
 }
 
 /**
@@ -338,5 +344,23 @@ export const userRepository: UserRepository = {
       .exec();
 
     return typeof found?.passwordHash === 'string' && found.passwordHash.length > 0;
+  },
+
+  async findPlanCode(id) {
+    if (!Types.ObjectId.isValid(id)) return null;
+
+    const found = await UserModel.findById(id)
+      .select('planCode')
+      .lean<{ planCode?: PlanCode }>()
+      .exec();
+    if (found === null) return null;
+
+    return found.planCode ?? DEFAULT_PLAN_CODE;
+  },
+
+  async setPlanCode(id, planCode, session) {
+    const query = UserModel.updateOne({ _id: id }, { $set: { planCode } });
+    if (session) query.session(session);
+    await query.exec();
   },
 };

@@ -10,6 +10,7 @@ import { companyCalendarRepository } from '../calendar/companyCalendar.repositor
 import { projectAccessRepository } from '../projectaccess/projectAccess.repository.js';
 import { projectGrantRepository } from '../projectaccess/projectGrant.repository.js';
 import { createProjectsService } from './projects.service.js';
+import { planCapacityAdapter } from '../billing/planCapacity.adapter.js';
 import { taskExecutionAdapter } from '../tasks/taskExecution.adapter.js';
 import {
   adoptCalendarBodySchema,
@@ -32,6 +33,7 @@ export const createProjectsModule = (requireAccessToken: RequestHandler): Router
       calendars: companyCalendarRepository,
       access: projectAccessRepository,
       grants: projectGrantRepository,
+      planCapacity: planCapacityAdapter,
     }),
   );
 

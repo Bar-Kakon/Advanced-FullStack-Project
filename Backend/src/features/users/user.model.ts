@@ -1,5 +1,7 @@
 import { Schema, model, type Types } from 'mongoose';
 
+import { PLAN_CODES, type PlanCode } from '../billing/plan.model.js';
+
 export type UserStatus = 'active' | 'deactivated' | 'banned' | 'deleted';
 export type UserLanguage = 'he' | 'en';
 
@@ -213,6 +215,13 @@ export interface UserRecord {
   readonly language: UserLanguage;
   readonly profileComplete: boolean;
   readonly identities?: readonly ProviderIdentity[];
+  /**
+   * Cached from whichever subscription is currently `active`, defaulting to `free`. The
+   * entitlement boundary reads it on effectively every check, so the cost belongs on the rare
+   * write — a purchase, a cancellation, an expiry sweep — rather than on the common read. The
+   * `subscriptions` collection stays the source of truth and is this field's only writer.
+   */
+  readonly planCode?: PlanCode;
   readonly security?: {
     readonly passwordChangedAt?: Date;
     readonly tokenVersion?: number;
@@ -291,6 +300,10 @@ const userSchema = new Schema(
 
     // Append-only links to external sign-in providers. The subject is the provider's stable id.
     identities: { type: [providerIdentitySchema], default: undefined },
+
+    // Written ONLY by the subscription lifecycle, never by a profile edit. Free is where every
+    // account starts, and it is a product state rather than the absence of one.
+    planCode: { type: String, enum: PLAN_CODES, default: 'free', required: true, index: true },
     status: { type: String, enum: USER_STATUSES, default: 'active', required: true, index: true },
     firstName: { type: String, required: true, trim: true },
     lastName: { type: String, required: true, trim: true },

@@ -2,6 +2,7 @@ import { Router } from 'express';
 
 import type { AppConfig } from '../config/env.js';
 import { createAuthModule } from '../features/auth/auth.module.js';
+import { createBillingModule } from '../features/billing/billing.module.js';
 import { createBlocksModule } from '../features/blocks/blocks.module.js';
 import { createBrowseModule } from '../features/browse/browse.module.js';
 import { createCompaniesModule } from '../features/companies/companies.module.js';
@@ -38,6 +39,8 @@ export const createApiRouter = (config: AppConfig): Router => {
   const connections = createConnectionsModule(auth.requireAccessToken, blocks.service);
   const routes = createGoogleRoutesAdapter(config.googleMaps);
 
+  const billing = createBillingModule(config, auth.requireAccessToken, config.apiPublicUrl);
+
   router.use('/health', createHealthRouter());
   router.use('/health-auth', createHealthAuthRouter(auth.requireAccessToken));
   router.use('/auth', auth.router);
@@ -49,6 +52,7 @@ export const createApiRouter = (config: AppConfig): Router => {
     '/dashboard',
     createDashboardModule({ requireAccessToken: auth.requireAccessToken, blocks: blocks.service }),
   );
+  router.use('/billing', billing.router);
   router.use('/network', createNetworkModule(auth.requireAccessToken));
   router.use('/work-plans', createWorkPlansModule(auth.requireAccessToken));
   router.use('/projects/:projectId/stages', createStagesModule(auth.requireAccessToken));

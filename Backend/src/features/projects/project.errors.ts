@@ -28,3 +28,10 @@ export const projectAlreadyStarted = (): AppError =>
 
 export const calendarVersionMissing = (): AppError =>
   new AppError('The company has no working calendar version to adopt.', 409, 'CALENDAR_VERSION_MISSING');
+
+/**
+ * The business is already at the project capacity its plan allows. A commercial limit, not an
+ * authorization failure: everybody who may create a project still may, once there is room.
+ */
+export const projectPlanLimitReached = (): AppError =>
+  new AppError('The current plan allows no further projects.', 409, 'PROJECT_PLAN_LIMIT_REACHED');

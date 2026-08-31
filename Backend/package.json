@@ -47,7 +47,9 @@
     "verify:register-taxonomy": "tsx scripts/verify-register-taxonomy.ts",
     "verify:token-version": "tsx scripts/verify-token-version.ts",
     "verify:work-plans": "tsx scripts/verify-work-plans.ts",
-    "migrate:work-plan-indexes": "tsx scripts/migrate-work-plan-indexes.ts"
+    "migrate:work-plan-indexes": "tsx scripts/migrate-work-plan-indexes.ts",
+    "seed:plans": "tsx scripts/seed-plans.ts",
+    "billing:sweep": "tsx scripts/billing-sweep.ts"
   },
   "dependencies": {
     "@types/nodemailer": "^8.0.1",

@@ -57,6 +57,8 @@ const baseDeps = (): Omit<RegistrationDependencies, 'memberships' | 'users'> => 
   passwords: passwordService,
   transactions: { run: runInTransaction },
   termsVersion: TERMS_VERSION,
+  // These registrations all carry a password, so the Google path is never reached.
+  googleIdentity: null,
 });
 
 const countLeftovers = async (): Promise<{ companies: number; users: number; memberships: number }> => {

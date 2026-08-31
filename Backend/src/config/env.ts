@@ -84,6 +84,11 @@ export interface AppConfig {
   readonly mail: MailConfig;
   /** Base URL of the React client. The reset link is built against it. */
   readonly frontendUrl: string;
+  /**
+   * Where this API is reachable from the public internet, including the `/api` prefix. The payment
+   * provider posts its callbacks to it, so it cannot be inferred from a request.
+   */
+  readonly apiPublicUrl: string;
   readonly googleMaps: GoogleMapsConfig;
   readonly googleAuth: GoogleAuthConfig;
   readonly billing: BillingConfig;
@@ -113,6 +118,7 @@ interface RawEnv {
   readonly PAYPLUS_PAYMENT_PAGE_UID?: string;
   readonly PAYPLUS_BASE_URL: string;
   readonly PAYPLUS_TIMEOUT_MS: number;
+  readonly API_PUBLIC_URL?: string;
 }
 
 const MIN_SECRET_LENGTH = 32;
@@ -160,6 +166,10 @@ const rawEnvSchema: Joi.ObjectSchema<RawEnv> = Joi.object({
     .uri({ scheme: ['https'] })
     .default('https://restapidev.payplus.co.il/api/v1.0'),
   PAYPLUS_TIMEOUT_MS: Joi.number().integer().min(1000).max(30000).default(10000),
+
+  API_PUBLIC_URL: Joi.string()
+    .uri({ scheme: ['http', 'https'] })
+    .optional(),
 }).unknown(true);
 
 /**
@@ -216,6 +226,26 @@ const buildBillingConfig = (value: RawEnv): BillingConfig => {
   };
 };
 
+/**
+ * Where the payment provider posts its callbacks. It cannot be inferred from an incoming request,
+ * because the request that needs it comes from the provider rather than from this server.
+ *
+ * Required only when a provider is configured, and refused rather than defaulted: a callback URL
+ * pointing at localhost is a deployment that takes payments and never hears the outcome.
+ */
+const buildApiPublicUrl = (value: RawEnv, billing: BillingConfig): string => {
+  if (value.API_PUBLIC_URL !== undefined) return normaliseBaseUrl(value.API_PUBLIC_URL);
+
+  if (billing.provider !== 'none') {
+    throw new Error(
+      'API_PUBLIC_URL must be set when a payment provider is configured: it is where the ' +
+        'provider posts payment callbacks, and it cannot be derived from an incoming request.',
+    );
+  }
+
+  return '';
+};
+
 /** Trailing slash removed once here, so no caller has to think about double slashes in a link. */
 const normaliseBaseUrl = (value: string): string => value.replace(/\/+$/, '');
 
@@ -261,6 +291,8 @@ export const loadConfig = (source: NodeJS.ProcessEnv = process.env): AppConfig =
     throw new Error(`Invalid environment configuration:\n${problems}`);
   }
 
+  const billing = buildBillingConfig(value);
+
   return {
     nodeEnv: value.NODE_ENV,
     port: value.PORT,
@@ -271,7 +303,8 @@ export const loadConfig = (source: NodeJS.ProcessEnv = process.env): AppConfig =
     mail: buildMailConfig(value),
     frontendUrl: normaliseBaseUrl(value.FRONTEND_URL),
     googleMaps: { apiKey: value.GOOGLE_MAPS_API_KEY, timeoutMs: value.GOOGLE_MAPS_TIMEOUT_MS },
+    apiPublicUrl: buildApiPublicUrl(value, billing),
     googleAuth: { clientId: value.GOOGLE_OAUTH_CLIENT_ID },
-    billing: buildBillingConfig(value),
+    billing,
   };
 };
