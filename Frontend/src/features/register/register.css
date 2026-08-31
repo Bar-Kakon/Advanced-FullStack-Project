@@ -871,6 +871,40 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   box-shadow: 0 0 0 4px var(--error-bg);
 }
 
+/* The same red state for the rules a stylesheet cannot see — a name carrying digits, a phone that
+   is not a number, two passwords that differ. React adds `.is-invalid` only while an issue is
+   actually held against the field, so it leaves on the keystroke that fixes the value.
+   `:not(:focus)` hides the red while the person is back in the field correcting it. */
+.form-input.is-invalid:not(:focus),
+.form-select.is-invalid:not(:focus) {
+  border-color: var(--error);
+  border-inline-start-color: var(--error);
+  box-shadow:
+    0 0 0 4px var(--error-bg),
+    inset 0 -2px 0 var(--error),
+    4px 4px 0 rgba(166, 50, 50, 0.08);
+}
+
+.checkbox-input.is-invalid:not(:focus) + .checkbox-box {
+  border-color: var(--error);
+  box-shadow: 0 0 0 4px var(--error-bg);
+}
+
+/* The in-field hard-hat, which the city box is the only field here to carry. It is hidden by
+   default and positioned on the trailing edge; React renders it only for a field actually in
+   error, so nothing shows it on a form nobody has filled in yet. */
+.input-warn {
+  position: absolute;
+  top: 0;
+  inset-inline-end: 12px;
+  height: 54px;
+  display: none;
+  align-items: center;
+  color: var(--error);
+  pointer-events: none;
+}
+.form-input.is-invalid:not(:focus) ~ .input-warn { display: flex; }
+
 /* React decides when a message applies — including the passwords-do-not-match case, which no CSS
    selector can express, since a stylesheet cannot compare two values. The two native rules below
    are kept because they still hold for the fields they name and cost nothing. */

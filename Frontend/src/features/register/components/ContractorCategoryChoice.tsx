@@ -9,15 +9,19 @@ import { CONTRACTOR_CATEGORIES, type ContractorCategory } from '../../../api/typ
  * be assumed on somebody's behalf.
  */
 export const ContractorCategoryChoice = ({
-  legend, hint, value, onChange, labels,
+  legend, hint, value, onChange, onBlur, labels, invalid = false, error,
 }: {
   legend: string;
   hint: string;
   value: ContractorCategory | '';
   onChange: (next: ContractorCategory) => void;
+  onBlur?: () => void;
   labels: Record<ContractorCategory, string>;
+  /** Set once the person has been through the group and left it unanswered. */
+  invalid?: boolean;
+  error?: string;
 }) => (
-  <fieldset className="form-group avail-filter col--half">
+  <fieldset className="form-group avail-filter col--half" aria-invalid={invalid}>
     <legend className="form-label form-label--plain">
       <span className="form-label__text">{legend}</span>
     </legend>
@@ -30,6 +34,7 @@ export const ContractorCategoryChoice = ({
           value={category}
           checked={value === category}
           onChange={() => onChange(category)}
+          {...(onBlur ? { onBlur } : {})}
         />
         <span className="avail-option__box" aria-hidden="true">
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -41,5 +46,8 @@ export const ContractorCategoryChoice = ({
       </label>
     ))}
     <p className="field-hint">{hint}</p>
+    {invalid && error ? (
+      <p className="field-error field-error--visible" aria-live="polite">{error}</p>
+    ) : null}
   </fieldset>
 );

@@ -93,8 +93,68 @@ const MAX_NAME_LENGTH = 100;
 const MAX_COMPANY_NAME_LENGTH = 120;
 const MAX_CITY_LENGTH = 80;
 const MAX_SPECIALTY_OTHER_LENGTH = 60;
-/** A bound, not a format. What counts as a valid number here has never been approved — see D27. */
+/**
+ * A bound and a structural guard. Which numbers are valid is still D27's question and is not
+ * answered here: this only refuses input that cannot be a phone number at all.
+ */
 const MAX_PHONE_LENGTH = 30;
+const MIN_PHONE_DIGITS = 7;
+/** Digits and the separators the approved placeholders already use, and nothing else. */
+const PHONE_CHARACTERS = /^[+(\d][\d\s()-]*$/;
+
+/** Prose rather than a code: it has to carry a letter, and it may not carry markup characters. */
+const HAS_LETTER = /\p{L}/u;
+const MARKUP_CHARACTERS = /[<>{}\\|^~`]/;
+/** A credential made only of spaces is an empty one, whatever its length. */
+const HAS_NON_SPACE = /\S/;
+
+/**
+ * The approved policy is unchanged — eight characters — with the one addition that eight spaces is
+ * not eight characters. The value itself is never trimmed: altering a credential on the way in
+ * would mean the password stored is not the password typed.
+ */
+const registerPassword = (): Joi.StringSchema =>
+  Joi.string()
+    .min(MIN_PASSWORD_LENGTH)
+    .max(MAX_PASSWORD_LENGTH)
+    .pattern(HAS_NON_SPACE, { name: 'content' })
+    .messages({ 'string.pattern.name': 'must contain more than whitespace' });
+
+/**
+ * The two phone fields share one rule, because the shape of a phone number does not change between
+ * the office line and the business one.
+ */
+const phone = (): Joi.StringSchema =>
+  Joi.string()
+    .trim()
+    .max(MAX_PHONE_LENGTH)
+    .pattern(PHONE_CHARACTERS)
+    .custom((value: string, helpers) =>
+      (value.match(/\d/g) ?? []).length >= MIN_PHONE_DIGITS ? value : helpers.error('any.invalid'),
+    )
+    .messages({
+      'string.pattern.base': 'must contain digits, spaces, hyphens, parentheses or + only',
+      'any.invalid': `must contain at least ${MIN_PHONE_DIGITS} digits`,
+    });
+
+/**
+ * Free prose the person typed — a name, a company, a city, a free-text specialty. It has to say
+ * something rather than being digits or punctuation alone, and it may not carry markup.
+ *
+ * It stops short of "letters and separators only", which would refuse a name carrying a digit.
+ * That is a stricter rule than the product has ever held and it is not taken here unasked.
+ */
+const prose = (max: number): Joi.StringSchema =>
+  Joi.string()
+    .trim()
+    .min(1)
+    .max(max)
+    .pattern(HAS_LETTER, { name: 'letter' })
+    .pattern(MARKUP_CHARACTERS, { name: 'markup', invert: true })
+    .messages({
+      'string.pattern.name': 'must contain at least one letter',
+      'string.pattern.invert.name': 'must not contain markup characters',
+    });
 /** The issued token is 64 hex characters; the bound is slack, not a format check. */
 const MAX_RESET_TOKEN_LENGTH = 200;
 /** A signed JWT with a certificate chain behind it. Bounded so nothing unbounded reaches Google. */
@@ -142,8 +202,8 @@ export const resetPasswordBodySchema = Joi.object<ResetPasswordBody>({
  * likewise not stored: D25 has not settled whether the documents it refers to will exist.
  */
 export const registerBodySchema = Joi.object<RegisterBody>({
-  firstName: Joi.string().trim().min(1).max(MAX_NAME_LENGTH).required(),
-  lastName: Joi.string().trim().min(1).max(MAX_NAME_LENGTH).required(),
+  firstName: prose(MAX_NAME_LENGTH).required(),
+  lastName: prose(MAX_NAME_LENGTH).required(),
 
   // Required, and deliberately not defaulted. It decides which of two registrations this is, and a
   // request that does not say should be answered rather than guessed at.
@@ -156,7 +216,7 @@ export const registerBodySchema = Joi.object<RegisterBody>({
    * are creating. An employee names the one that invited them — and it is MATCHED, never trusted:
    * on its own it proves nothing, it only narrows the search for a seat somebody already opened.
    */
-  companyName: Joi.string().trim().min(1).max(MAX_COMPANY_NAME_LENGTH).required(),
+  companyName: prose(MAX_COMPANY_NAME_LENGTH).required(),
 
   // The employee's job, and one of the three values their invitation is matched on. It describes
   // the role and grants nothing: capabilities come only from `permissions`.
@@ -191,7 +251,7 @@ export const registerBodySchema = Joi.object<RegisterBody>({
   password: Joi.when('googleIdToken', {
     is: Joi.exist(),
     then: Joi.any().forbidden(),
-    otherwise: Joi.string().min(MIN_PASSWORD_LENGTH).max(MAX_PASSWORD_LENGTH).required(),
+    otherwise: registerPassword().required(),
   }),
   confirmPassword: Joi.when('googleIdToken', {
     is: Joi.exist(),
@@ -224,7 +284,7 @@ export const registerBodySchema = Joi.object<RegisterBody>({
     is: Joi.string()
       .valid(...OTHER_SPECIALTIES)
       .required(),
-    then: Joi.string().trim().min(1).max(MAX_SPECIALTY_OTHER_LENGTH).required(),
+    then: prose(MAX_SPECIALTY_OTHER_LENGTH).required(),
     otherwise: Joi.any().forbidden(),
   }),
 
@@ -238,7 +298,7 @@ export const registerBodySchema = Joi.object<RegisterBody>({
     otherwise: Joi.any().forbidden(),
   }),
 
-  city: Joi.string().trim().min(1).max(MAX_CITY_LENGTH).required(),
+  city: prose(MAX_CITY_LENGTH).required(),
   region: Joi.string()
     .valid(...REGIONS)
     .required(),
@@ -257,9 +317,9 @@ export const registerBodySchema = Joi.object<RegisterBody>({
   officePhone: Joi.when('standing', {
     is: 'employee',
     then: Joi.any().forbidden(),
-    otherwise: Joi.string().trim().max(MAX_PHONE_LENGTH).optional(),
+    otherwise: phone().optional(),
   }),
-  businessPhone: Joi.string().trim().max(MAX_PHONE_LENGTH).optional(),
+  businessPhone: phone().optional(),
   place: structuredPlaceSchema.optional(),
 
   /*
