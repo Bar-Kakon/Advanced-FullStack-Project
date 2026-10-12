@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
 
 import { AppNav } from '../../components/AppNav';
 import { FormAlert } from '../../components/FormAlert';
@@ -8,6 +8,7 @@ import { useLanguage } from '../../i18n/useLanguage';
 import { formatCalendarDate } from '../../i18n/dateFormat';
 import { useDocumentTitle } from '../../routes/useDocumentTitle';
 import { useScreenStylesheet } from '../../styles/useScreenStylesheet';
+import { openProjectRoom } from '../../api/messaging.api';
 import { adoptCurrentCalendar } from '../../api/projects.api';
 import { initialsOf } from '../profile/profileModel';
 import { ProjectCalendarPanel } from '../projects/components/ProjectCalendarPanel';
@@ -36,7 +37,10 @@ export const ProjectDashboardPage = () => {
   const { user } = useAuth();
   const { projectId = '' } = useParams<{ projectId: string }>();
   const { data, loading, failure, reload } = useProjectDashboard(projectId);
+  const navigate = useNavigate();
   const [busy, setBusy] = useState(false);
+  const [roomBusy, setRoomBusy] = useState(false);
+  const [roomFailed, setRoomFailed] = useState(false);
 
   useScreenStylesheet(
     { id: 'profile.css', css: profileCss },
@@ -61,6 +65,21 @@ export const ProjectDashboardPage = () => {
       setBusy(false);
     }
     await reload();
+  };
+
+  // The room is the project's own conversation; membership is the server's answer, asked live.
+  const openRoom = async (): Promise<void> => {
+    if (roomBusy) return;
+    setRoomBusy(true);
+    setRoomFailed(false);
+    try {
+      const conversation = await openProjectRoom(projectId);
+      void navigate(`/messages?c=${conversation.id}`);
+    } catch {
+      setRoomFailed(true);
+    } finally {
+      setRoomBusy(false);
+    }
   };
 
   const project = data?.project;
@@ -153,6 +172,17 @@ export const ProjectDashboardPage = () => {
             <section className="panel" aria-labelledby="actions-title">
               <h2 id="actions-title" className="panel__title">{copy.actions.title}</h2>
               <p className="panel__lede">{copy.actions.lede}</p>
+              {roomFailed ? <FormAlert message={copy.actions.conversationFailed} /> : null}
+              <div className="dash-actions">
+                <button
+                  type="button"
+                  className="btn btn--primary btn--sm"
+                  disabled={roomBusy}
+                  onClick={() => void openRoom()}
+                >
+                  {copy.actions.conversation}
+                </button>
+              </div>
               {anyAction ? (
                 <div className="dash-actions">
                   {viewer.canEdit ? (
@@ -171,9 +201,7 @@ export const ProjectDashboardPage = () => {
                     </Link>
                   ) : null}
                 </div>
-              ) : (
-                <p className="panel__lede">{copy.actions.none}</p>
-              )}
+              ) : null}
             </section>
 
             <section className="panel" aria-labelledby="members-count-title">

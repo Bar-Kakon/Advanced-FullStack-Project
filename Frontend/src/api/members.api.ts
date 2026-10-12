@@ -44,8 +44,14 @@ export const setMemberRole = async (
   return data.member;
 };
 
-export const removeMember = async (projectId: string, membershipId: string): Promise<void> => {
-  await api.delete(`/projects/${projectId}/members/${membershipId}`);
+export const removeMember = async (
+  projectId: string,
+  membershipId: string,
+  roomMessages?: 'keep' | 'delete',
+): Promise<void> => {
+  await api.delete(`/projects/${projectId}/members/${membershipId}`, {
+    params: roomMessages === undefined ? {} : { roomMessages },
+  });
 };
 
 export const fetchMyInvitations = async (

@@ -29,6 +29,12 @@ export interface MyTaskDto {
   /** Resolved per viewer. `null` means nobody — the row says so in its own words. */
   readonly counterparty: CounterpartyRef | null;
 
+  /**
+   * True when this work arrived through an accepted agreement. The counterparty is then the
+   * commissioning party — the work owner — read from the agreement message, never from the row.
+   */
+  readonly fromAgreement: boolean;
+
   /** True only for the two parties to the delegation. The party above never sees it. */
   readonly delegated: boolean;
   /** Whether THIS viewer is the hidden performer. */
@@ -50,6 +56,28 @@ export interface MyTaskDto {
 export interface MyTasksPageDto {
   readonly tasks: readonly MyTaskDto[];
   readonly nextCursor: string | null;
+}
+
+/** The tracking page: the caller's live authority, and the rows the visibility rules allow. */
+export interface CommissionedWorkPageDto {
+  /** Whether the caller may commission NEW work right now — the company `task.create`, read live. */
+  readonly canCommission: boolean;
+  readonly commissioned: readonly CommissionedWorkDto[];
+}
+
+/**
+ * One row of the commissioning party's read-only tracking: the status of work they commissioned
+ * through an agreement. Nothing else of the performer's world is in this shape, and no route
+ * mutates through it.
+ */
+export interface CommissionedWorkDto {
+  readonly id: string;
+  readonly title: string;
+  readonly startDate: string;
+  readonly dueDate: string;
+  readonly state: TaskState;
+  readonly overdue: boolean;
+  readonly performer: CounterpartyRef | null;
 }
 
 /**

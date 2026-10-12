@@ -14,6 +14,11 @@ export const messageIdParamsSchema = Joi.object({
 
 export const userIdParamsSchema = Joi.object({ userId: OBJECT_ID.required() });
 
+export const fileParamsSchema = Joi.object({
+  conversationId: OBJECT_ID.required(),
+  fileId: OBJECT_ID.required(),
+});
+
 export const projectIdParamsSchema = Joi.object({ projectId: OBJECT_ID.required() });
 
 export interface InboxQueryInput {
@@ -40,12 +45,15 @@ export const historyQuerySchema = Joi.object({
 });
 
 export interface SendMessageBody {
-  readonly body: string;
+  readonly body?: string;
+  readonly attachments?: readonly string[];
 }
 
+/** A message carries text, attachments, or both — never neither. */
 export const sendMessageBodySchema = Joi.object({
-  body: Joi.string().trim().min(1).max(4000).required(),
-});
+  body: Joi.string().trim().min(1).max(4000).optional(),
+  attachments: Joi.array().items(OBJECT_ID).min(1).max(10).optional(),
+}).or('body', 'attachments');
 
 export interface StartDirectBody {
   readonly body: string;

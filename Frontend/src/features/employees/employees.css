@@ -140,3 +140,8 @@
   .onboarding-actions__row .btn,
   .waiting__actions .btn { width: 100%; }
 }
+
+
+.employee-row__permissions { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 10px 18px; border: 1px solid var(--line, #d8dde4); border-radius: 10px; padding: 10px 12px; margin: 8px 0 0; }
+.employee-row__permissions-title { font-size: 0.8rem; color: #66727f; padding: 0 4px; }
+.employee-row__permission { display: flex; align-items: center; gap: 6px; font-size: 0.86rem; cursor: pointer; }

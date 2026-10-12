@@ -144,3 +144,6 @@
   .settings-section { padding: 16px; }
   .settings-mute { flex-direction: column; align-items: stretch; }
 }
+
+.settings-choice--stack { flex-direction: column; align-items: stretch; gap: 6px; }
+.settings-choice--stack select { max-width: 420px; }

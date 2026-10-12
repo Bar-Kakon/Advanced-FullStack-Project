@@ -1,7 +1,7 @@
 import { Schema, model, type Types } from 'mongoose';
 
 /** What a stored file is attached to. Filtered on, never joined through. */
-export const FILE_SCOPES = ['avatar', 'work_entry', 'task', 'project'] as const;
+export const FILE_SCOPES = ['avatar', 'work_entry', 'task', 'project', 'message'] as const;
 export type FileScope = (typeof FILE_SCOPES)[number];
 
 /** The two scopes a versioned work plan may hang from. */

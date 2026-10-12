@@ -21,6 +21,7 @@ import {
 } from './taskDetail.errors.js';
 import type { TaskRepository } from './task.repository.js';
 import { deriveTaskState, isOverdue, overdueDays } from './taskState.js';
+import type { AgreementOriginPort } from './agreementOrigin.port.js';
 import { counterpartyIdFor, projectForDelegate, viewpointOf, type TaskViewpoint } from './taskVisibility.js';
 
 export interface StageRef {
@@ -45,6 +46,8 @@ export interface TaskDetailDto {
   readonly overdue: boolean;
   readonly overdueDays: number;
   readonly counterparty: { readonly userId: string; readonly name: string } | null;
+  /** True when this work arrived through an accepted agreement; the counterparty is its owner. */
+  readonly fromAgreement: boolean;
 
   /** Only the two parties to a delegation ever see it. */
   readonly delegation: {
@@ -86,6 +89,7 @@ export interface TaskDetailDependencies {
   readonly participants: ParticipantRepository;
   readonly reschedule: RescheduleRequestPort;
   readonly eligibility: ContractorEligibilityService;
+  readonly origins: AgreementOriginPort;
 }
 
 export const createTaskDetailService = ({
@@ -95,6 +99,7 @@ export const createTaskDetailService = ({
   participants,
   reschedule,
   eligibility,
+  origins,
 }: TaskDetailDependencies): TaskDetailService => {
   /**
    * Loads a task and works out where this viewer stands. Anybody with no standing — including a
@@ -142,7 +147,13 @@ export const createTaskDetailService = ({
     const isDelegate = viewpoint === 'delegate';
     const delegateView = isDelegate ? projectForDelegate(task) : null;
 
-    const counterpartyId = counterpartyIdFor(task, viewpoint, userId);
+    // Agreement-born work names the commissioning party, never shown through the delegate wall.
+    const [origin] =
+      task.kind === 'standalone' && viewpoint === 'assignee'
+        ? await origins.findByTaskIds([task._id])
+        : [];
+    const counterpartyId =
+      origin !== undefined ? origin.proposer : counterpartyIdFor(task, viewpoint, userId);
     const counterpartyName = await nameOf(counterpartyId);
 
     // A delegate is told neither the project nor where the work sits in it.
@@ -196,6 +207,7 @@ export const createTaskDetailService = ({
         counterpartyId === null || counterpartyName === null
           ? null
           : { userId: counterpartyId.toString(), name: counterpartyName },
+      fromAgreement: origin !== undefined,
 
       delegation:
         task.delegation === undefined || (viewpoint !== 'assignee' && !isDelegate)
@@ -316,7 +328,7 @@ export const createTaskDetailService = ({
       const updated = await PrivateWorkItemModel.findOneAndUpdate(
         { _id: new Types.ObjectId(itemId), task: task._id, owner: new Types.ObjectId(userId) },
         { $set: { done } },
-        { new: true },
+        { returnDocument: 'after' },
       )
         .lean<PrivateWorkItemRecord>()
         .exec();

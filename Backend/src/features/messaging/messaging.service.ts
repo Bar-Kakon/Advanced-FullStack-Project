@@ -1,6 +1,10 @@
 import { Types } from 'mongoose';
 
 import type { BlockRepository } from '../blocks/block.repository.js';
+import type { AuditRepository } from '../coordination/audit.repository.js';
+import type { FileAssetRecord } from '../files/fileAsset.model.js';
+import type { FileAssetRepository } from '../files/fileAsset.repository.js';
+import type { ProjectMembershipRecord } from '../projectaccess/projectMembership.model.js';
 import type { NotificationDispatchService } from '../notifications/notificationDispatch.service.js';
 import type { ProjectAccessRepository } from '../projectaccess/projectAccess.repository.js';
 import type { ProjectRepository } from '../projects/project.repository.js';
@@ -10,14 +14,19 @@ import type { AgreementRecord, MessageRecord } from './message.model.js';
 import {
   agreementAlreadyBecameTask,
   agreementNotPending,
+  attachmentNotFound,
   cannotAnswerOwnAgreement,
   cannotMessageSelf,
   conversationNotFound,
+  messageKept,
   messageNotFound,
   noContactWithUser,
+  notMessageSender,
+  notPermittedToCommission,
   requestAwaitingResponse,
   requestNotPending,
   requestNotYours,
+  roomModerationForbidden,
 } from './messaging.errors.js';
 import { encodeCursor, type MessagingRepository } from './messaging.repository.js';
 
@@ -32,6 +41,13 @@ export interface ConversationSummaryDto {
   readonly lastMessageAt: string | null;
 }
 
+export interface MessageAttachmentDto {
+  readonly id: string;
+  readonly filename: string;
+  readonly mimeType: string;
+  readonly sizeBytes: number;
+}
+
 export interface MessageDto {
   readonly id: string;
   readonly senderId: string;
@@ -40,6 +56,11 @@ export interface MessageDto {
   readonly kind: 'text' | 'agreement';
   readonly body: string | null;
   readonly removed: boolean;
+  /** The remover's project role at removal time, for the attribution placeholder. */
+  readonly removedByRole: string | null;
+  readonly deleted: boolean;
+  readonly kept: boolean;
+  readonly attachments: readonly MessageAttachmentDto[];
   readonly agreement: {
     readonly title: string;
     readonly description: string | null;
@@ -56,6 +77,10 @@ export interface MessageDto {
 export interface HistoryPageDto {
   readonly messages: readonly MessageDto[];
   readonly nextCursor: string | null;
+  /** Whether the viewer holds the unified Project-Room moderation authority here. */
+  readonly canModerate: boolean;
+  /** Whether the viewer may commission work — the company `task.create` capability, read live. */
+  readonly canProposeAgreement: boolean;
 }
 
 export interface InboxPageDto {
@@ -66,7 +91,10 @@ export interface InboxPageDto {
 export interface MessagingService {
   inbox(userId: string, folder: 'inbox' | 'requests', limit: number, cursor?: string): Promise<InboxPageDto>;
   startDirect(userId: string, otherUserId: string, body: string): Promise<ConversationSummaryDto>;
-  send(userId: string, conversationId: string, body: string): Promise<MessageDto>;
+  send(userId: string, conversationId: string, input: SendInput): Promise<MessageDto>;
+  deleteOwnMessage(userId: string, conversationId: string, messageId: string): Promise<MessageDto>;
+  removeMessage(userId: string, conversationId: string, messageId: string): Promise<MessageDto>;
+  keepMessage(userId: string, conversationId: string, messageId: string): Promise<MessageDto>;
   history(userId: string, conversationId: string, limit: number, cursor?: string): Promise<HistoryPageDto>;
   answerRequest(userId: string, conversationId: string, accept: boolean): Promise<void>;
   hide(userId: string, conversationId: string): Promise<void>;
@@ -77,6 +105,11 @@ export interface MessagingService {
   reachable(userId: string, conversationId: string): Promise<ConversationRecord>;
 }
 
+export interface SendInput {
+  readonly body?: string;
+  readonly attachments?: readonly string[];
+}
+
 export interface AgreementInput {
   readonly title: string;
   readonly description?: string;
@@ -85,16 +118,19 @@ export interface AgreementInput {
   readonly projectId?: string;
 }
 
+/** Whether this account may commission new work for its company. Read live on every ask. */
+export interface CommissioningPort {
+  mayCommissionWork(userId: string): Promise<boolean>;
+}
+
 /** Creates the canonical Task from an accepted agreement. The task domain owns the schema. */
 export interface AgreementTaskPort {
   create(input: {
-    creatorId: string;
     assigneeId: string;
     title: string;
     description?: string;
     startDate: string;
     dueDate: string;
-    projectId?: string;
   }): Promise<Types.ObjectId>;
 }
 
@@ -106,6 +142,9 @@ export interface MessagingDependencies {
   readonly projects: ProjectRepository;
   readonly notifications: NotificationDispatchService;
   readonly tasks: AgreementTaskPort;
+  readonly files: FileAssetRepository;
+  readonly audit: AuditRepository;
+  readonly commissioning: CommissioningPort;
 }
 
 export const createMessagingService = ({
@@ -116,6 +155,9 @@ export const createMessagingService = ({
   projects,
   notifications,
   tasks,
+  files,
+  audit,
+  commissioning,
 }: MessagingDependencies): MessagingService => {
   const nameOf = async (id: Types.ObjectId): Promise<string> =>
     (await users.findDisplayNames([id])).get(id.toString()) ?? '';
@@ -184,16 +226,27 @@ export const createMessagingService = ({
     };
   };
 
+  const toAttachmentDto = (asset: FileAssetRecord): MessageAttachmentDto => ({
+    id: asset._id.toString(),
+    filename: asset.filename,
+    mimeType: asset.mimeType,
+    sizeBytes: asset.sizeBytes,
+  });
+
   /**
-   * A removed message keeps its place and its time, and is represented neutrally: the body is
-   * withheld rather than the row disappearing, so the thread does not silently reshape itself.
+   * A removed or author-deleted message keeps its place and its time, and is represented
+   * neutrally: the body is withheld rather than the row disappearing, so the thread does not
+   * silently reshape itself. The row survives either way, which is the internal moderation copy.
    */
   const toMessageDto = (
     message: MessageRecord,
     userId: string,
     names: Map<string, string>,
+    assets: ReadonlyMap<string, MessageAttachmentDto>,
   ): MessageDto => {
     const removed = message.removedAt !== undefined;
+    const deleted = message.deletedAt !== undefined;
+    const gone = removed || deleted;
     const agreement: AgreementRecord | undefined = message.agreement;
 
     return {
@@ -202,10 +255,19 @@ export const createMessagingService = ({
       senderName: names.get(message.sender.toString()) ?? '',
       mine: message.sender.toString() === userId,
       kind: message.kind,
-      body: removed ? null : message.body ?? null,
+      body: gone ? null : message.body ?? null,
       removed,
+      removedByRole: message.removedByRole ?? null,
+      deleted,
+      kept: message.keptAt !== undefined,
+      attachments: gone
+        ? []
+        : message.attachments.flatMap((id) => {
+            const found = assets.get(id.toString());
+            return found === undefined ? [] : [found];
+          }),
       agreement:
-        agreement === undefined || removed
+        agreement === undefined || gone
           ? null
           : {
               title: agreement.title,
@@ -218,6 +280,63 @@ export const createMessagingService = ({
             },
       sentAt: message.createdAt.toISOString(),
     };
+  };
+
+  const assetsFor = async (
+    rows: readonly MessageRecord[],
+  ): Promise<Map<string, MessageAttachmentDto>> => {
+    const ids = rows.flatMap((row) =>
+      row.removedAt !== undefined || row.deletedAt !== undefined ? [] : row.attachments,
+    );
+    if (ids.length === 0) return new Map();
+
+    const found = await files.listByIds(ids);
+    return new Map(found.map((asset) => [asset._id.toString(), toAttachmentDto(asset)]));
+  };
+
+  /** The unified Project-Room authority: the GC's role, or an explicit `room.moderate` grant. */
+  const moderatorMembership = async (
+    userId: string,
+    conversation: ConversationRecord,
+  ): Promise<ProjectMembershipRecord | null> => {
+    if (conversation.kind !== 'project_room' || conversation.project === undefined) return null;
+
+    const membership = await access.findActiveMembership(
+      conversation.project,
+      new Types.ObjectId(userId),
+    );
+    if (membership === null) return null;
+
+    const may =
+      membership.projectRole === 'main_contractor' ||
+      membership.fullAuthority ||
+      membership.permissions.includes('room.moderate');
+    return may ? membership : null;
+  };
+
+  const recordRoomAudit = async (
+    conversation: ConversationRecord,
+    actorId: string,
+    action: 'room.message_removed' | 'room.message_kept',
+    message: MessageRecord,
+  ): Promise<void> => {
+    if (conversation.project === undefined) return;
+
+    const actor = new Types.ObjectId(actorId);
+    await audit.append([
+      {
+        project: conversation.project,
+        actor,
+        actorName: await nameOf(actor),
+        action,
+        parties: [message.sender],
+        details: {
+          conversationId: conversation._id.toString(),
+          messageId: message._id.toString(),
+        },
+        partyDetails: {},
+      },
+    ]);
   };
 
   /**
@@ -336,7 +455,7 @@ export const createMessagingService = ({
       return toSummary(refreshed, userId, new Map());
     },
 
-    async send(userId, conversationId, body) {
+    async send(userId, conversationId, input) {
       const conversation = await reachable(userId, conversationId);
 
       if (conversation.kind === 'direct') {
@@ -365,12 +484,23 @@ export const createMessagingService = ({
         }
       }
 
+      // Every attachment must be the sender's own upload, bound to THIS conversation already.
+      const requested = [...new Set(input.attachments ?? [])];
+      const found = await Promise.all(
+        requested.map((id) => files.findMessageScoped(id, conversation._id)),
+      );
+      const attached = found.flatMap((asset) =>
+        asset === null || asset.owner.toString() !== userId ? [] : [asset],
+      );
+      if (attached.length !== requested.length) throw attachmentNotFound();
+
       const sentAt = new Date();
       const message = await conversations.appendMessage({
         conversation: conversation._id,
         sender: new Types.ObjectId(userId),
         kind: 'text',
-        body,
+        ...(input.body === undefined ? {} : { body: input.body }),
+        ...(attached.length === 0 ? {} : { attachments: attached.map((asset) => asset._id) }),
       });
 
       // Clears every hide, so a thread the other side deleted returns with all of its history.
@@ -382,7 +512,12 @@ export const createMessagingService = ({
         `message:${message._id.toString()}`,
       );
 
-      return toMessageDto(message, userId, await namesFor([message.sender]));
+      return toMessageDto(
+        message,
+        userId,
+        await namesFor([message.sender]),
+        new Map(attached.map((asset) => [asset._id.toString(), toAttachmentDto(asset)])),
+      );
     },
 
     async history(userId, conversationId, limit, cursor) {
@@ -395,6 +530,7 @@ export const createMessagingService = ({
       await conversations.markRead(conversation._id, new Types.ObjectId(userId));
 
       const names = await namesFor(rows.map((row) => row.sender));
+      const assets = await assetsFor(rows);
       const last = rows.at(-1);
 
       return {
@@ -402,9 +538,11 @@ export const createMessagingService = ({
         messages: rows
           .slice()
           .reverse()
-          .map((row) => toMessageDto(row, userId, names)),
+          .map((row) => toMessageDto(row, userId, names, assets)),
         nextCursor:
           last !== undefined && rows.length === limit ? encodeCursor(last.createdAt, last._id) : null,
+        canModerate: (await moderatorMembership(userId, conversation)) !== null,
+        canProposeAgreement: await commissioning.mayCommissionWork(userId),
       };
     },
 
@@ -449,6 +587,9 @@ export const createMessagingService = ({
     async proposeAgreement(userId, conversationId, input) {
       const conversation = await reachable(userId, conversationId);
 
+      // Proposing commissions new work on the company's behalf; accepting never asks this.
+      if (!(await commissioning.mayCommissionWork(userId))) throw notPermittedToCommission();
+
       const sentAt = new Date();
       const message = await conversations.appendMessage({
         conversation: conversation._id,
@@ -467,7 +608,7 @@ export const createMessagingService = ({
       await conversations.touchAndReveal(conversation._id, sentAt);
       await announce(conversation, userId, 'agreement.received', `agreement:${message._id.toString()}`);
 
-      return toMessageDto(message, userId, await namesFor([message.sender]));
+      return toMessageDto(message, userId, await namesFor([message.sender]), new Map());
     },
 
     /**
@@ -494,9 +635,9 @@ export const createMessagingService = ({
 
       let task: Types.ObjectId | undefined;
       if (accept) {
+        // The accepter becomes the responsible performer. The commissioning party is not written
+        // onto the task: the agreement message itself stays the record of both parties.
         task = await tasks.create({
-          // The proposer commits the work; the party accepting performs it.
-          creatorId: message.sender.toString(),
           assigneeId: userId,
           title: message.agreement.title,
           ...(message.agreement.description === undefined
@@ -504,9 +645,6 @@ export const createMessagingService = ({
             : { description: message.agreement.description }),
           startDate: message.agreement.startDate,
           dueDate: message.agreement.dueDate,
-          ...(message.agreement.project === undefined
-            ? {}
-            : { projectId: message.agreement.project.toString() }),
         });
       }
 
@@ -525,7 +663,74 @@ export const createMessagingService = ({
         `agreement-answer:${message._id.toString()}`,
       );
 
-      return toMessageDto(answered, userId, await namesFor([answered.sender]));
+      return toMessageDto(answered, userId, await namesFor([answered.sender]), new Map());
+    },
+
+    /**
+     * Rule (b) of the deletion layer: the author deletes for everyone, and the message's place
+     * survives as the deletion placeholder. Rule (e) outranks it: a kept message never deletes.
+     */
+    async deleteOwnMessage(userId, conversationId, messageId) {
+      const conversation = await reachable(userId, conversationId);
+
+      const message = await conversations.findMessage(messageId);
+      if (message === null || message.conversation.toString() !== conversation._id.toString()) {
+        throw messageNotFound();
+      }
+      if (message.sender.toString() !== userId) throw notMessageSender();
+      if (message.keptAt !== undefined) throw messageKept();
+      if (message.deletedAt !== undefined) {
+        return toMessageDto(message, userId, await namesFor([message.sender]), new Map());
+      }
+
+      const updated = await conversations.setAuthorDeleted(message._id, new Types.ObjectId(userId));
+      if (updated === null) throw messageKept();
+
+      return toMessageDto(updated, userId, await namesFor([updated.sender]), new Map());
+    },
+
+    async removeMessage(userId, conversationId, messageId) {
+      const conversation = await reachable(userId, conversationId);
+      const membership = await moderatorMembership(userId, conversation);
+      if (membership === null) throw roomModerationForbidden();
+
+      const message = await conversations.findMessage(messageId);
+      if (message === null || message.conversation.toString() !== conversation._id.toString()) {
+        throw messageNotFound();
+      }
+      if (message.keptAt !== undefined) throw messageKept();
+      if (message.removedAt !== undefined) {
+        return toMessageDto(message, userId, await namesFor([message.sender]), new Map());
+      }
+
+      const updated = await conversations.setRemoved(
+        message._id,
+        new Types.ObjectId(userId),
+        membership.projectRole,
+      );
+      if (updated === null) throw messageKept();
+
+      await recordRoomAudit(conversation, userId, 'room.message_removed', updated);
+      return toMessageDto(updated, userId, await namesFor([updated.sender]), new Map());
+    },
+
+    async keepMessage(userId, conversationId, messageId) {
+      const conversation = await reachable(userId, conversationId);
+      if ((await moderatorMembership(userId, conversation)) === null) {
+        throw roomModerationForbidden();
+      }
+
+      const message = await conversations.findMessage(messageId);
+      if (message === null || message.conversation.toString() !== conversation._id.toString()) {
+        throw messageNotFound();
+      }
+      if (message.keptAt !== undefined) {
+        return toMessageDto(message, userId, await namesFor([message.sender]), new Map());
+      }
+
+      const updated = (await conversations.setKept(message._id, new Types.ObjectId(userId))) ?? message;
+      await recordRoomAudit(conversation, userId, 'room.message_kept', updated);
+      return toMessageDto(updated, userId, await namesFor([updated.sender]), new Map());
     },
   };
 };

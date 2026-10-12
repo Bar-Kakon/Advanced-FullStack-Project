@@ -1,6 +1,7 @@
 import { createContext, useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 
 import { logout } from '../api/auth.api';
+import { SESSION_EXPIRED_EVENT } from '../api/client';
 import type { LoginResponse, SessionUser } from '../api/types';
 import { ACCESS_TOKEN_KEY, clearAccessToken, getAccessToken, setAccessToken } from './tokenStorage';
 import { USER_KEY, clearStoredUser, readStoredUser, storeUser } from './session';
@@ -50,6 +51,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
     window.addEventListener('storage', onStorage);
     return () => window.removeEventListener('storage', onStorage);
+  }, [reread]);
+
+  // The HTTP client failed to renew the session and already cleared storage. The `storage` event
+  // never fires in the tab that wrote, so this is how the same tab finds out and redirects.
+  useEffect(() => {
+    const onExpired = (): void => reread();
+    window.addEventListener(SESSION_EXPIRED_EVENT, onExpired);
+    return () => window.removeEventListener(SESSION_EXPIRED_EVENT, onExpired);
   }, [reread]);
 
   const signIn = useCallback(

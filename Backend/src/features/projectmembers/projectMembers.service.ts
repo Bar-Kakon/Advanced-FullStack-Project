@@ -31,6 +31,8 @@ import {
   participantNotFound,
 } from './projectMembers.errors.js';
 import type { ParticipantRepository } from './participant.repository.js';
+import type { RoomHistoryPort, RoomMessagesDecision } from './roomHistory.port.js';
+import { roomMessagesDecisionRequired } from './projectMembers.errors.js';
 
 export interface InviteMemberInput extends GrantSource {
   readonly userId: string;
@@ -41,7 +43,12 @@ export interface ProjectMembersService {
   list(userId: string, projectId: string): Promise<ProjectMembersDto>;
   invite(userId: string, projectId: string, input: InviteMemberInput): Promise<ProjectMemberDto>;
   setRole(userId: string, projectId: string, membershipId: string, projectRole: ProjectRole): Promise<ProjectMemberDto>;
-  remove(userId: string, projectId: string, membershipId: string): Promise<void>;
+  remove(
+    userId: string,
+    projectId: string,
+    membershipId: string,
+    roomMessages?: RoomMessagesDecision,
+  ): Promise<void>;
 }
 
 export interface ProjectMembersDependencies {
@@ -53,6 +60,7 @@ export interface ProjectMembersDependencies {
   readonly participants: ParticipantRepository;
   readonly blocks: BlocksService;
   readonly notifications: NotificationDispatchService;
+  readonly roomHistory: RoomHistoryPort;
 }
 
 const holds = (resolved: ResolvedProjectAccess, permission: ProjectPermission): boolean =>
@@ -67,6 +75,7 @@ export const createProjectMembersService = ({
   participants,
   blocks,
   notifications,
+  roomHistory,
 }: ProjectMembersDependencies): ProjectMembersService => {
   /**
    * Loads a project this caller may reach and what they may do on it. A project they may not reach
@@ -229,7 +238,7 @@ export const createProjectMembersService = ({
       return toMemberDto(updated, people, userId, holds(resolved, 'project.permission.grant'));
     },
 
-    async remove(userId, projectId, membershipId) {
+    async remove(userId, projectId, membershipId, roomMessages) {
       const { project, resolved } = await load(userId, projectId);
       const row = await loadRow(project._id, membershipId);
 
@@ -241,7 +250,22 @@ export const createProjectMembersService = ({
       }
 
       if (row.user.toString() === userId) throw cannotRemoveOwnAuthority();
+
+      // Removing an active member carries the explicit per-case choice over their room messages.
+      if (row.status === 'active' && roomMessages === undefined) {
+        throw roomMessagesDecisionRequired();
+      }
+
       await grants.revoke(row._id);
+
+      if (row.status === 'active' && roomMessages !== undefined) {
+        await roomHistory.applyRemovalDecision(
+          new Types.ObjectId(userId),
+          project._id,
+          row.user,
+          roomMessages,
+        );
+      }
     },
   };
 };

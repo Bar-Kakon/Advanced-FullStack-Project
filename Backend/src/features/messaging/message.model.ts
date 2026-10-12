@@ -1,5 +1,7 @@
 import { Schema, model, type Types } from 'mongoose';
 
+import { PROJECT_ROLES, type ProjectRole } from '../projectaccess/projectMembership.model.js';
+
 /**
  * `agreement` is a structured exchange inside the conversation, never a screen of its own. It is a
  * message like any other, so it paginates, it keeps its place in the history, and it cannot drift
@@ -36,9 +38,17 @@ export interface MessageRecord {
   readonly body?: string;
   readonly agreement?: AgreementRecord;
   readonly attachments: readonly Types.ObjectId[];
-  /** Moderation removal. The row stays; ordinary readers see the neutral placeholder. */
+  /** Moderation removal. The row stays; ordinary readers see the attribution placeholder. */
   readonly removedAt?: Date;
   readonly removedBy?: Types.ObjectId;
+  /** The remover's project role, captured at the moment of the act so it cannot drift later. */
+  readonly removedByRole?: ProjectRole;
+  /** Author delete-for-everyone. The row and its body stay; readers see the deletion placeholder. */
+  readonly deletedAt?: Date;
+  readonly deletedBy?: Types.ObjectId;
+  /** An explicit keep. It overrides author deletion and moderation removal, and is never reversed. */
+  readonly keptAt?: Date;
+  readonly keptBy?: Types.ObjectId;
   /** The persisted send time. Every timestamp and date separator is derived from this, never
    *  from when a client happened to receive it. */
   readonly createdAt: Date;
@@ -70,11 +80,30 @@ const messageSchema = new Schema(
     attachments: [{ type: Schema.Types.ObjectId, ref: 'FileAsset' }],
     removedAt: { type: Date },
     removedBy: { type: Schema.Types.ObjectId, ref: 'User' },
+    removedByRole: { type: String, enum: PROJECT_ROLES },
+    deletedAt: { type: Date },
+    deletedBy: { type: Schema.Types.ObjectId, ref: 'User' },
+    keptAt: { type: Date },
+    keptBy: { type: Schema.Types.ObjectId, ref: 'User' },
   },
   { timestamps: true },
 );
 
 // The history read, newest first, and the exact shape the cursor walks.
 messageSchema.index({ conversation: 1, createdAt: -1, _id: -1 });
+
+// The Work Commitment lookup (D15): accepted agreements between a pair. Partial, so the index
+// holds only the few rows that ever became commitments.
+messageSchema.index(
+  { sender: 1, 'agreement.respondedBy': 1 },
+  { partialFilterExpression: { 'agreement.state': 'accepted' } },
+);
+
+// The task→agreement reverse lookup: My Tasks attribution and Commissioned Work both resolve a
+// task back to the agreement that commissioned it. Partial — only task-creating agreements.
+messageSchema.index(
+  { 'agreement.task': 1 },
+  { partialFilterExpression: { 'agreement.task': { $exists: true } } },
+);
 
 export const MessageModel = model('Message', messageSchema);

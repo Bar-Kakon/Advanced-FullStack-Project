@@ -6,6 +6,7 @@ import { userRepository } from '../users/user.repository.js';
 import { createAccountLifecycleService } from '../users/accountLifecycle.service.js';
 import { createModerationController } from './moderation.controller.js';
 import { platformAuditService } from './platformAudit.instance.js';
+import { createReportedMessageAdapter } from '../messaging/reportedMessage.adapter.js';
 import { createModerationService, type ModerationService } from './moderation.service.js';
 import {
   accountActionBodySchema,
@@ -27,6 +28,7 @@ export const createModerationModule = (requireAccessToken: RequestHandler): Rout
     reports: reportRepository,
     users: userRepository,
     audit: platformAuditService,
+    reportedMessages: createReportedMessageAdapter(),
   });
   const lifecycle = createAccountLifecycleService({
     users: userRepository,

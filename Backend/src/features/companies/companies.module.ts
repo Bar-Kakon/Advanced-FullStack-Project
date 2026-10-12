@@ -5,7 +5,7 @@ import { companyRepository } from './company.repository.js';
 import { companyMembershipRepository } from './companyMembership.repository.js';
 import { createEmployeeManagementController } from './employeeManagement.controller.js';
 import { createEmployeeManagementService } from './employeeManagement.service.js';
-import { createInvitationBodySchema } from './employeeManagement.validation.js';
+import { createInvitationBodySchema, setPermissionsBodySchema } from './employeeManagement.validation.js';
 
 /**
  * Everything served under `/companies`, composed in one place. Every route is authenticated first
@@ -30,6 +30,11 @@ export const createCompaniesModule = (
   router.get('/employees', controller.handleList);
   router.post('/employees/approve-all', controller.handleApproveAll);
   router.post('/employees/:membershipId/approve', controller.handleApprove);
+  router.patch(
+    '/employees/:membershipId/permissions',
+    validateRequest({ body: setPermissionsBodySchema }),
+    controller.handleSetPermissions,
+  );
   router.delete('/employees/invitations/:membershipId', controller.handleCancelInvitation);
 
   // Not under `/employees`: it is recorded whether or not anybody was ever invited.

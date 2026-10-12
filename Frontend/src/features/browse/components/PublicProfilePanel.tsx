@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 import { useLanguage } from '../../../i18n/useLanguage';
 import { ReportDialog } from '../../reports/ReportDialog';
+import { StartMessageDialog } from '../../messaging/components/StartMessageDialog';
 import { ProfileAvatar } from '../../profile/components/ProfileAvatar';
 import { initialsOf } from '../../profile/profileModel';
 import { WorkPhoto } from '../../profile/components/WorkPhoto';
@@ -20,10 +22,15 @@ export const PublicProfilePanel = ({
   onClose: () => void;
 }) => {
   const { t } = useLanguage();
+  const navigate = useNavigate();
   const [reporting, setReporting] = useState(false);
+  const [messaging, setMessaging] = useState(false);
 
-  // Selecting a different contractor must not carry an open report form across to them.
-  useEffect(() => setReporting(false), [profile?.userId]);
+  // Selecting a different contractor must not carry an open form across to them.
+  useEffect(() => {
+    setReporting(false);
+    setMessaging(false);
+  }, [profile?.userId]);
 
   const facts = profile === null ? [] : [
     ...(profile.city ? [{ term: t.browse.profile.city, value: profile.city, auto: true }] : []),
@@ -170,6 +177,24 @@ export const PublicProfilePanel = ({
               </ul>
             )}
           </section>
+
+          {/* Absent on your own profile; blocks and pending requests are the server's answer. */}
+          {profile.isSelf ? null : messaging ? (
+            <StartMessageDialog
+              recipientId={profile.userId}
+              recipientName={`${profile.firstName} ${profile.lastName}`.trim()}
+              onClose={() => setMessaging(false)}
+              onOpened={(conversationId) => void navigate(`/messages?c=${conversationId}`)}
+            />
+          ) : (
+            <button
+              type="button"
+              className="btn btn--primary btn--sm"
+              onClick={() => setMessaging(true)}
+            >
+              {t.browse.profile.message}
+            </button>
+          )}
 
           {/* Absent rather than disabled: the server decides whether a rating may be given. */}
           {profile.rateable.canRate ? (

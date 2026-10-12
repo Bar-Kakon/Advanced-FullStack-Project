@@ -1,5 +1,15 @@
+import { isAxiosError } from 'axios';
+
 import { api } from './client';
-import type { ConversationMessage, ConversationSummary, HistoryPage, InboxPage } from './messaging.types';
+import type { ApiErrorBody } from './types';
+import type {
+  ConversationMessage,
+  ConversationSummary,
+  HistoryPage,
+  InboxPage,
+  MessageAttachment,
+  StartDirectFailure,
+} from './messaging.types';
 
 export const fetchInbox = async (folder: 'inbox' | 'requests', cursor?: string): Promise<InboxPage> => {
   const { data } = await api.get<InboxPage>('/conversations', {
@@ -17,13 +27,80 @@ export const fetchHistory = async (conversationId: string, cursor?: string): Pro
 
 export const sendMessage = async (
   conversationId: string,
-  body: string,
+  input: { body?: string; attachments?: readonly string[] },
 ): Promise<ConversationMessage> => {
   const { data } = await api.post<{ message: ConversationMessage }>(
     `/conversations/${conversationId}/messages`,
-    { body },
+    input,
   );
   return data.message;
+};
+
+/** Delete-for-everyone of the caller's own message. The reply is the placeholder state. */
+export const deleteMessage = async (
+  conversationId: string,
+  messageId: string,
+): Promise<ConversationMessage> => {
+  const { data } = await api.delete<{ message: ConversationMessage }>(
+    `/conversations/${conversationId}/messages/${messageId}`,
+  );
+  return data.message;
+};
+
+export const removeMessageForAll = async (
+  conversationId: string,
+  messageId: string,
+): Promise<ConversationMessage> => {
+  const { data } = await api.post<{ message: ConversationMessage }>(
+    `/conversations/${conversationId}/messages/${messageId}/remove`,
+  );
+  return data.message;
+};
+
+export const keepMessage = async (
+  conversationId: string,
+  messageId: string,
+): Promise<ConversationMessage> => {
+  const { data } = await api.post<{ message: ConversationMessage }>(
+    `/conversations/${conversationId}/messages/${messageId}/keep`,
+  );
+  return data.message;
+};
+
+export const uploadAttachment = async (
+  conversationId: string,
+  file: File,
+): Promise<MessageAttachment> => {
+  const form = new FormData();
+  form.append('file', file);
+  const { data } = await api.post<{ attachment: MessageAttachment }>(
+    `/conversations/${conversationId}/attachments`,
+    form,
+  );
+  return data.attachment;
+};
+
+/** The guarded path an attachment's bytes are served from; fetched as a blob, never an <img src>. */
+export const attachmentPath = (conversationId: string, fileId: string): string =>
+  `/conversations/${conversationId}/files/${fileId}`;
+
+export const classifyStartDirectError = (error: unknown): StartDirectFailure => {
+  if (!isAxiosError(error)) return 'UNKNOWN';
+  if (!error.response) return 'NETWORK';
+
+  const body = error.response.data as ApiErrorBody | undefined;
+  switch (body?.code) {
+    case 'CANNOT_MESSAGE_SELF':
+      return 'SELF';
+    case 'NO_CONTACT':
+      return 'NO_CONTACT';
+    case 'MESSAGE_REQUEST_AWAITING_RESPONSE':
+      return 'AWAITING';
+    case 'CONVERSATION_NOT_FOUND':
+      return 'NOT_FOUND';
+    default:
+      return 'UNKNOWN';
+  }
 };
 
 export const startDirect = async (userId: string, body: string): Promise<ConversationSummary> => {

@@ -86,7 +86,8 @@ export const createPublicProfileService = ({
       ]);
 
     const isSelf = viewerId === subjectUserId;
-    const showPhones = phoneVisibility !== 'hidden_no_approved_case';
+    const showsOffice = phoneVisibility.officePhone !== 'hidden_no_approved_case';
+    const showsBusiness = phoneVisibility.businessPhone !== 'hidden_no_approved_case';
 
     const work: PublicWorkEntryDto[] = entries.map((entry) => ({
       id: entry._id.toString(),
@@ -129,10 +130,10 @@ export const createPublicProfileService = ({
       },
       work,
       phones: {
-        // The personal/login number is never in this shape at all.
-        officePhone: showPhones ? company?.officePhone ?? null : null,
-        businessPhone: showPhones ? subject.businessPhone ?? null : null,
-        visibility: phoneVisibility,
+        // The personal/login number is never in this shape at all, and each field answers alone.
+        officePhone: showsOffice ? company?.officePhone ?? null : null,
+        businessPhone: showsBusiness ? subject.businessPhone ?? null : null,
+        visibility: phoneVisibility.businessPhone,
       },
       rateable: isSelf
         ? { canRate: false, reason: 'self' }

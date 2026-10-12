@@ -6,6 +6,7 @@ import {
   type ConversationRecord,
   type RequestState,
 } from './conversation.model.js';
+import type { ProjectRole } from '../projectaccess/projectMembership.model.js';
 import { MessageModel, type MessageRecord } from './message.model.js';
 
 export interface CursorPage {
@@ -29,6 +30,13 @@ const parseCursor = (cursor?: string): { at: Date; id: Types.ObjectId } | null =
 
 export const encodeCursor = (at: Date, id: Types.ObjectId): string =>
   `${at.toISOString()}|${id.toString()}`;
+
+/** One accepted, task-creating agreement: the commitment's two parties and the task it became. */
+export interface AgreementTaskOrigin {
+  readonly task: Types.ObjectId;
+  readonly proposer: Types.ObjectId;
+  readonly accepter: Types.ObjectId;
+}
 
 export interface MessagingRepository {
   findById(id: string): Promise<ConversationRecord | null>;
@@ -58,7 +66,32 @@ export interface MessagingRepository {
     kind: 'text' | 'agreement';
     body?: string;
     agreement?: MessageRecord['agreement'];
+    attachments?: readonly Types.ObjectId[];
   }): Promise<MessageRecord>;
+  /** Author deletion, conditional in the query: a kept or already-deleted row is never matched. */
+  setAuthorDeleted(messageId: Types.ObjectId, sender: Types.ObjectId): Promise<MessageRecord | null>;
+  /** Moderation removal, refused by the filter itself on a kept or already-removed row. */
+  setRemoved(
+    messageId: Types.ObjectId,
+    moderator: Types.ObjectId,
+    moderatorRole?: ProjectRole,
+  ): Promise<MessageRecord | null>;
+  setKept(messageId: Types.ObjectId, moderator: Types.ObjectId): Promise<MessageRecord | null>;
+  removeAllFromSender(
+    conversation: Types.ObjectId,
+    sender: Types.ObjectId,
+    moderator: Types.ObjectId,
+    moderatorRole?: ProjectRole,
+  ): Promise<number>;
+  /** Whether an accepted, task-creating agreement ever bound these two people — in either
+   *  direction, and regardless of what later happened to the work (D15: history persists). */
+  hasAcceptedAgreementBetween(a: Types.ObjectId, b: Types.ObjectId): Promise<boolean>;
+  listAgreementOriginsByTask(tasks: readonly Types.ObjectId[]): Promise<AgreementTaskOrigin[]>;
+  listAgreementOriginsByProposer(proposer: Types.ObjectId): Promise<AgreementTaskOrigin[]>;
+  findMessageWithAttachment(
+    conversation: Types.ObjectId,
+    attachment: Types.ObjectId,
+  ): Promise<MessageRecord | null>;
   history(conversation: Types.ObjectId, page: CursorPage): Promise<MessageRecord[]>;
   findMessage(id: string): Promise<MessageRecord | null>;
   answerAgreement(
@@ -98,7 +131,7 @@ export const messagingRepository: MessagingRepository = {
           participantStates: [{ user: from }, { user: to }],
         },
       },
-      { upsert: true, new: true },
+      { upsert: true, returnDocument: 'after' },
     )
       .lean<ConversationRecord>()
       .exec();
@@ -111,7 +144,7 @@ export const messagingRepository: MessagingRepository = {
     const created = await ConversationModel.findOneAndUpdate(
       { project },
       { $setOnInsert: { kind: 'project_room', project, participants: [], participantStates: [] } },
-      { upsert: true, new: true },
+      { upsert: true, returnDocument: 'after' },
     )
       .lean<ConversationRecord>()
       .exec();
@@ -212,6 +245,112 @@ export const messagingRepository: MessagingRepository = {
     return created.toObject() as unknown as MessageRecord;
   },
 
+  async setAuthorDeleted(messageId, sender) {
+    return MessageModel.findOneAndUpdate(
+      { _id: messageId, sender, keptAt: { $exists: false }, deletedAt: { $exists: false } },
+      { $set: { deletedAt: new Date(), deletedBy: sender } },
+      { returnDocument: 'after' },
+    )
+      .lean<MessageRecord>()
+      .exec();
+  },
+
+  async setRemoved(messageId, moderator, moderatorRole) {
+    return MessageModel.findOneAndUpdate(
+      { _id: messageId, keptAt: { $exists: false }, removedAt: { $exists: false } },
+      {
+        $set: {
+          removedAt: new Date(),
+          removedBy: moderator,
+          ...(moderatorRole === undefined ? {} : { removedByRole: moderatorRole }),
+        },
+      },
+      { returnDocument: 'after' },
+    )
+      .lean<MessageRecord>()
+      .exec();
+  },
+
+  async setKept(messageId, moderator) {
+    return MessageModel.findOneAndUpdate(
+      { _id: messageId, keptAt: { $exists: false } },
+      { $set: { keptAt: new Date(), keptBy: moderator } },
+      { returnDocument: 'after' },
+    )
+      .lean<MessageRecord>()
+      .exec();
+  },
+
+  async removeAllFromSender(conversation, sender, moderator, moderatorRole) {
+    const result = await MessageModel.updateMany(
+      { conversation, sender, keptAt: { $exists: false }, removedAt: { $exists: false } },
+      {
+        $set: {
+          removedAt: new Date(),
+          removedBy: moderator,
+          ...(moderatorRole === undefined ? {} : { removedByRole: moderatorRole }),
+        },
+      },
+    ).exec();
+    return result.modifiedCount;
+  },
+
+  async hasAcceptedAgreementBetween(a, b) {
+    const found = await MessageModel.exists({
+      kind: 'agreement',
+      'agreement.state': 'accepted',
+      'agreement.task': { $exists: true },
+      $or: [
+        { sender: a, 'agreement.respondedBy': b },
+        { sender: b, 'agreement.respondedBy': a },
+      ],
+    }).exec();
+    return found !== null;
+  },
+
+  async listAgreementOriginsByTask(taskIds) {
+    if (taskIds.length === 0) return [];
+
+    const rows = await MessageModel.find({
+      kind: 'agreement',
+      'agreement.state': 'accepted',
+      'agreement.task': { $in: taskIds },
+    })
+      .select('sender agreement.task agreement.respondedBy')
+      .lean<Pick<MessageRecord, 'sender' | 'agreement'>[]>()
+      .exec();
+
+    return rows.flatMap((row) =>
+      row.agreement?.task === undefined || row.agreement.respondedBy === undefined
+        ? []
+        : [{ task: row.agreement.task, proposer: row.sender, accepter: row.agreement.respondedBy }],
+    );
+  },
+
+  async listAgreementOriginsByProposer(proposer) {
+    const rows = await MessageModel.find({
+      kind: 'agreement',
+      sender: proposer,
+      'agreement.state': 'accepted',
+      'agreement.task': { $exists: true },
+    })
+      .select('sender agreement.task agreement.respondedBy')
+      .lean<Pick<MessageRecord, 'sender' | 'agreement'>[]>()
+      .exec();
+
+    return rows.flatMap((row) =>
+      row.agreement?.task === undefined || row.agreement.respondedBy === undefined
+        ? []
+        : [{ task: row.agreement.task, proposer: row.sender, accepter: row.agreement.respondedBy }],
+    );
+  },
+
+  async findMessageWithAttachment(conversation, attachment) {
+    return MessageModel.findOne({ conversation, attachments: attachment })
+      .lean<MessageRecord>()
+      .exec();
+  },
+
   async history(conversation, { limit, cursor }) {
     const after = parseCursor(cursor);
 
@@ -254,7 +393,7 @@ export const messagingRepository: MessagingRepository = {
           ...(task === undefined ? {} : { 'agreement.task': task }),
         },
       },
-      { new: true },
+      { returnDocument: 'after' },
     )
       .lean<MessageRecord>()
       .exec();

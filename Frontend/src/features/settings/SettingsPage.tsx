@@ -183,22 +183,38 @@ export const SettingsPage = () => {
               <p className="settings-section__note">{t.settings.contact.automaticNote}</p>
               <p className="settings-section__note">{t.settings.contact.connectionNote}</p>
 
+              <label className="settings-choice">
+                <input
+                  type="checkbox"
+                  checked={settings.contactVisibility.email}
+                  onChange={(event) => void setContactVisibility({ email: event.target.checked })}
+                />
+                <span className="settings-choice__label">{t.settings.contact.email}</span>
+              </label>
+
               {(
                 [
-                  ['email', t.settings.contact.email],
                   ['businessPhone', t.settings.contact.businessPhone],
                   ['officePhone', t.settings.contact.officePhone],
                 ] as const
               ).map(([field, label]) => (
-                <label className="settings-choice" key={field}>
-                  <input
-                    type="checkbox"
-                    checked={settings.contactVisibility[field]}
-                    onChange={(event) =>
-                      void setContactVisibility({ [field]: event.target.checked })
-                    }
-                  />
+                <label className="settings-choice settings-choice--stack" key={field}>
                   <span className="settings-choice__label">{label}</span>
+                  <select
+                    className="form-input"
+                    value={settings.contactVisibility[field]}
+                    onChange={(event) =>
+                      void setContactVisibility({
+                        [field]: event.target.value as 'default' | 'always' | 'hidden',
+                      })
+                    }
+                  >
+                    {(['default', 'always', 'hidden'] as const).map((choice) => (
+                      <option key={choice} value={choice}>
+                        {t.settings.contact.phoneChoices[choice]}
+                      </option>
+                    ))}
+                  </select>
                 </label>
               ))}
               {savedIn('contact')}

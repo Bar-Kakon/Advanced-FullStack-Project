@@ -52,7 +52,8 @@ export const createProjectMembersController = (
 
   handleRemove: async (req: Request, res: Response) => {
     const { projectId, membershipId } = getValidated<MembershipParams>(res, 'params');
-    await service.remove(getAuthenticatedUserId(res), projectId, membershipId);
+    const { roomMessages } = getValidated<{ roomMessages?: 'keep' | 'delete' }>(res, 'query');
+    await service.remove(getAuthenticatedUserId(res), projectId, membershipId, roomMessages);
 
     res.status(204).send();
   },

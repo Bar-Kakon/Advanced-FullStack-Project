@@ -1,5 +1,5 @@
 import { ButtonSpinner } from '../../../components/ButtonSpinner';
-import type { EmployeeMembership } from '../../../api/types';
+import { COMPANY_PERMISSIONS, type EmployeeMembership } from '../../../api/types';
 import { useLanguage } from '../../../i18n/useLanguage';
 import type { EmployeeManagementState } from '../useEmployeeManagement';
 
@@ -62,6 +62,37 @@ const EmployeeRow = ({
           {t.employees.actions.cancelInvitation}
           {cancelling ? <ButtonSpinner /> : null}
         </button>
+      ) : null}
+
+      {/* The owner's grant-and-revoke. Rendered only where the server would accept the write:
+          an active employee seat, and a viewer the server says may manage permissions. */}
+      {state.canManagePermissions && row.status === 'active' && row.standing === 'employee' ? (
+        <fieldset
+          className="employee-row__permissions"
+          disabled={state.savingPermissionsId !== null}
+          aria-busy={state.savingPermissionsId === row.id}
+        >
+          <legend className="employee-row__permissions-title">
+            {t.employees.permissions.title}
+          </legend>
+          {COMPANY_PERMISSIONS.map((code) => (
+            <label key={code} className="employee-row__permission">
+              <input
+                type="checkbox"
+                checked={row.permissions.includes(code)}
+                onChange={(event) =>
+                  void state.setPermissions(
+                    row.id,
+                    event.target.checked
+                      ? [...row.permissions, code]
+                      : row.permissions.filter((held) => held !== code),
+                  )
+                }
+              />
+              <span>{t.employees.permissions[code]}</span>
+            </label>
+          ))}
+        </fieldset>
       ) : null}
     </li>
   );

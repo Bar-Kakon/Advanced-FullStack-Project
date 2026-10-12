@@ -17,6 +17,9 @@ export interface FileAssetRepository {
   findOwnedById(id: string, owner: Types.ObjectId): Promise<FileAssetRecord | null>;
   deleteById(id: Types.ObjectId): Promise<void>;
   attachToScopeId(id: Types.ObjectId, scopeId: Types.ObjectId): Promise<void>;
+  /** A message attachment, found only inside the conversation it was uploaded for. */
+  findMessageScoped(id: string, conversation: Types.ObjectId): Promise<FileAssetRecord | null>;
+  listByIds(ids: readonly Types.ObjectId[]): Promise<FileAssetRecord[]>;
 }
 
 /** Everything except a work plan, whose history is append-only and whose reads have their own rules. */
@@ -42,5 +45,22 @@ export const fileAssetRepository: FileAssetRepository = {
 
   async attachToScopeId(id, scopeId) {
     await FileAssetModel.updateOne({ _id: id }, { $set: { 'scope.id': scopeId } }).exec();
+  },
+
+  async findMessageScoped(id, conversation) {
+    if (!Types.ObjectId.isValid(id)) return null;
+
+    return FileAssetModel.findOne({
+      _id: new Types.ObjectId(id),
+      'scope.type': 'message',
+      'scope.id': conversation,
+    })
+      .lean<FileAssetRecord>()
+      .exec();
+  },
+
+  async listByIds(ids) {
+    if (ids.length === 0) return [];
+    return FileAssetModel.find({ _id: { $in: ids } }).lean<FileAssetRecord[]>().exec();
   },
 };

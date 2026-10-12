@@ -23,3 +23,11 @@ export const nothingToCancel = (): AppError =>
 /** The Main Contractor job is already held, so a second seat for it may not be opened. */
 export const mainContractorSeatTaken = (): AppError =>
   new AppError('This company already has a Main Contractor', 409, 'MAIN_CONTRACTOR_SEAT_TAKEN');
+
+/** Granting authority is the owner's alone — never a job title, never another permission. */
+export const notPermittedToManagePermissions = (): AppError =>
+  new AppError('Only the company owner may manage employee permissions', 403, 'COMPANY_PERMISSION_DENIED');
+
+/** The membership named is not an active employee seat of this company. */
+export const permissionsTargetNotFound = (): AppError =>
+  new AppError('No active employee matched', 404, 'ACTIVE_EMPLOYEE_NOT_FOUND');

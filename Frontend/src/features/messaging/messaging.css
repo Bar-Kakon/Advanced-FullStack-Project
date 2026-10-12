@@ -41,3 +41,24 @@
 .msg-thread__bar { display: flex; flex-wrap: wrap; gap: 8px; padding: 10px 12px; border-bottom: 1px solid var(--line, #d8dde4); }
 .msg-thread__action { font: inherit; font-size: 0.8rem; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line, #d8dde4); background: #fff; cursor: pointer; }
 .msg-thread__action[aria-pressed='true'] { background: var(--ink, #22303f); color: #fff; border-color: transparent; }
+
+.msg-dialog { display: flex; flex-direction: column; gap: 10px; margin-bottom: 14px; padding: 14px; border: 1px solid var(--line, #d8dde4); border-radius: 12px; background: #fff; }
+.msg-dialog__title { margin: 0; font-size: 1rem; }
+.msg-dialog__subject { margin: 0; font-size: 0.86rem; color: #66727f; }
+.msg-dialog__error { margin: 0; font-size: 0.84rem; color: #a33; }
+.msg-dialog__input { resize: vertical; }
+.msg-dialog__field { display: flex; flex-direction: column; gap: 4px; }
+.msg-dialog__dates { display: flex; flex-wrap: wrap; gap: 10px; }
+.msg-dialog__dates .msg-dialog__field { flex: 1; min-width: 150px; }
+.msg-dialog__actions { display: flex; gap: 8px; }
+
+.msg-recipients { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; max-height: 40vh; overflow-y: auto; }
+.msg-recipients__row { display: flex; flex-direction: column; gap: 2px; width: 100%; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--line, #d8dde4); background: #fff; cursor: pointer; font: inherit; text-align: start; }
+.msg-recipients__company { font-size: 0.8rem; color: #66727f; }
+
+.msg-bubble__kept { display: block; font-size: 0.72rem; color: #4a5568; margin-top: 3px; }
+.msg-attachment__image { display: block; max-width: 100%; max-height: 260px; border-radius: 8px; margin-top: 6px; }
+.msg-attachment__file { display: flex; align-items: center; gap: 8px; margin-top: 6px; font-size: 0.84rem; }
+.msg-attachment__name { overflow-wrap: anywhere; }
+.msg-composer__pending { display: flex; flex-wrap: wrap; gap: 10px; padding: 8px 12px; border-top: 1px solid var(--line, #d8dde4); }
+.msg-composer__notice { padding: 8px 12px; border-top: 1px solid var(--line, #d8dde4); }

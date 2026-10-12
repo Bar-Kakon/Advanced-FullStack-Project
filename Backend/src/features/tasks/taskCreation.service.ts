@@ -55,6 +55,14 @@ export interface CreateStandaloneTaskInput {
 
 export type CreateTaskInput = CreateProjectTaskInput | CreateStandaloneTaskInput;
 
+/** What an accepted agreement hands over. The performer comes from the session, never from here. */
+export interface AcceptedAgreementTaskInput {
+  readonly title: string;
+  readonly description?: string;
+  readonly startDate: Date;
+  readonly dueDate: Date;
+}
+
 export interface CreateTaskResult {
   readonly task: CreatedTaskDto;
   readonly warnings: readonly TaskWarning[];
@@ -62,6 +70,16 @@ export interface CreateTaskResult {
 
 export interface TaskCreationService {
   create(userId: string, input: CreateTaskInput): Promise<CreateTaskResult>;
+  /**
+   * The task a valid agreement acceptance becomes. Receiving work is not creating work, so the
+   * manual `task.create` gate is deliberately not asked; the caller has already proved the
+   * performer is the agreement's addressee. Every standalone invariant still holds, and this is
+   * reachable from no route of its own.
+   */
+  createFromAcceptedAgreement(
+    userId: string,
+    input: AcceptedAgreementTaskInput,
+  ): Promise<CreateTaskResult>;
   options(userId: string): Promise<CreateOptionsDto>;
   projectOptions(userId: string, projectId: string): Promise<ProjectCreateOptionsDto>;
 }
@@ -269,6 +287,28 @@ export const createTaskCreationService = ({
           input.dueDate,
         ),
       };
+    },
+
+    async createFromAcceptedAgreement(userId, input) {
+      if (input.dueDate < input.startDate) throw dueBeforeStart();
+
+      const context = await companyContext.forUser(userId);
+      requireActiveCompany(context, userId);
+
+      const created = await tasks.create({
+        kind: 'standalone',
+        title: input.title,
+        ...(input.description === undefined ? {} : { description: input.description }),
+        createdBy: new Types.ObjectId(userId),
+        assignee: new Types.ObjectId(userId),
+        ...(context === null ? {} : { company: new Types.ObjectId(context.id) }),
+        startDate: input.startDate,
+        dueDate: input.dueDate,
+        ownCrewOnly: false,
+        delegatorOnSiteRequired: false,
+      });
+
+      return { task: toDto(created), warnings: [] };
     },
 
     /** Only the projects this account may actually open work in — the picker offers nothing else. */

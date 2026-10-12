@@ -35,8 +35,8 @@ const notificationsBodySchema = Joi.object({
 
 const contactVisibilityBodySchema = Joi.object({
   email: Joi.boolean(),
-  businessPhone: Joi.boolean(),
-  officePhone: Joi.boolean(),
+  businessPhone: Joi.string().valid('default', 'always', 'hidden'),
+  officePhone: Joi.string().valid('default', 'always', 'hidden'),
 }).min(1);
 
 export const buildSettingsService = (): SettingsService =>

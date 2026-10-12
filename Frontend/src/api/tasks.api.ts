@@ -2,7 +2,13 @@ import { isAxiosError } from 'axios';
 
 import { api } from './client';
 import type { ApiErrorBody } from './types';
-import { NO_PROJECT, type MyTask, type MyTasksFilters, type MyTasksPage } from './tasks.types';
+import {
+  NO_PROJECT,
+  type CommissionedWorkPage,
+  type MyTask,
+  type MyTasksFilters,
+  type MyTasksPage,
+} from './tasks.types';
 
 const toParams = (filters: MyTasksFilters, cursor: string | null, limit: number): URLSearchParams => {
   const params = new URLSearchParams();
@@ -27,6 +33,11 @@ export const listMyTasks = async (
     params: toParams(filters, cursor, limit),
     ...(signal ? { signal } : {}),
   });
+  return data;
+};
+
+export const fetchCommissionedWork = async (): Promise<CommissionedWorkPage> => {
+  const { data } = await api.get<CommissionedWorkPage>('/tasks/commissioned');
   return data;
 };
 

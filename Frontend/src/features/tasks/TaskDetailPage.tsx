@@ -120,7 +120,11 @@ export const TaskDetailPage = () => {
                     .replace('{due}', formatCalendarDate(task.dueDate, lang))}
                 </dd>
 
-                <dt>{t.tasks.row.from.replace('{name}', '').trim()}</dt>
+                <dt>
+                  {task.fromAgreement
+                    ? t.tasks.row.workOwnerLabel
+                    : t.tasks.row.from.replace('{name}', '').trim()}
+                </dt>
                 <dd dir="auto">
                   {task.counterparty === null
                     ? t.tasks.row.selfOpened
