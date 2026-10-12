@@ -3,8 +3,9 @@ import { Types } from 'mongoose';
 import type { CompanyMembershipRepository } from '../companies/companyMembership.repository.js';
 import type { CompanyPosition } from '../companies/companyMembership.model.js';
 import type { ProjectAccessRepository } from '../projectaccess/projectAccess.repository.js';
-import type { ContactVisibility } from '../users/user.model.js';
+import { normalizeVisibilityChoice, type ContactVisibility } from '../users/user.model.js';
 import type { PhoneVisibilityReason } from './publicProfile.dto.js';
+import type { WorkCommitmentPort } from './workCommitment.port.js';
 
 export interface PhoneVisibilityInput {
   readonly viewerId: string;
@@ -12,17 +13,20 @@ export interface PhoneVisibilityInput {
   readonly subjectContactVisibility?: ContactVisibility;
 }
 
-/** Absent means the account predates the setting, and the safe default withholds both numbers. */
-const publishesNumbers = (setting?: ContactVisibility): boolean =>
-  setting?.businessPhone === true || setting?.officePhone === true;
+/** One answer per field: the two numbers are decided independently and never ride together. */
+export interface PhoneVisibilityDecision {
+  readonly businessPhone: PhoneVisibilityReason;
+  readonly officePhone: PhoneVisibilityReason;
+}
 
 export interface PhoneVisibilityService {
-  decide(input: PhoneVisibilityInput): Promise<PhoneVisibilityReason>;
+  decide(input: PhoneVisibilityInput): Promise<PhoneVisibilityDecision>;
 }
 
 export interface PhoneVisibilityDependencies {
   readonly access: ProjectAccessRepository;
   readonly memberships: CompanyMembershipRepository;
+  readonly commitments: WorkCommitmentPort;
 }
 
 /**
@@ -39,26 +43,26 @@ const asObjectId = (value: string): Types.ObjectId | null =>
   Types.ObjectId.isValid(value) ? new Types.ObjectId(value) : null;
 
 /**
- * D15, enforced on the server.
+ * D15, enforced on the server, in the owner's final precedence: self · explicit hidden · explicit
+ * always · approved project role · recognized Work Commitment · otherwise hidden. The explicit
+ * choice always beats the relationship defaults, and each field answers for itself.
  *
  * Automatic disclosure comes from an approved coordinating ROLE on a project both people are active
- * on. It is never read from `schedule.change.manage`, from `fullAuthority`, or from any other
- * project permission: a grant says what somebody may do, not whose number they may read.
- *
- * A delegate is deliberately not a project member, so the confidential-delegation wall is never
- * crossed by the shared-project test.
+ * on, or from a Work Commitment the two once established — never from `schedule.change.manage`,
+ * from `fullAuthority`, or from any other grant. Being connected is not consulted and grants
+ * nothing. A delegate is deliberately not a project member, so the confidential-delegation wall is
+ * never crossed by the shared-project test.
  */
 export const createPhoneVisibilityService = ({
   access,
   memberships,
-}: PhoneVisibilityDependencies): PhoneVisibilityService => ({
-  async decide({ viewerId, subjectId, subjectContactVisibility }) {
-    if (viewerId === subjectId) return 'self';
-
-    const viewer = asObjectId(viewerId);
-    const subject = asObjectId(subjectId);
-    if (viewer === null || subject === null) return 'hidden_no_approved_case';
-
+  commitments,
+}: PhoneVisibilityDependencies): PhoneVisibilityService => {
+  const relationshipCase = async (
+    viewer: Types.ObjectId,
+    subject: Types.ObjectId,
+    viewerId: string,
+  ): Promise<PhoneVisibilityReason | null> => {
     const [viewerMemberships, subjectMemberships] = await Promise.all([
       access.listActiveMembershipsForUser(viewer),
       access.listActiveMembershipsForUser(subject),
@@ -79,10 +83,44 @@ export const createPhoneVisibilityService = ({
       }
     }
 
-    // Outside the approved automatic cases the professional's own setting is the only answer, and
-    // an unset one stays private. Being connected is not consulted and grants nothing.
-    return publishesNumbers(subjectContactVisibility)
-      ? 'visible_contact_setting'
-      : 'hidden_no_approved_case';
-  },
-});
+    // Once established, a commitment stays a recognized basis — the work ending never revokes it.
+    if (await commitments.wasEstablishedBetween(viewer, subject)) {
+      return 'visible_work_commitment';
+    }
+
+    return null;
+  };
+
+  return {
+    async decide({ viewerId, subjectId, subjectContactVisibility }) {
+      if (viewerId === subjectId) return { businessPhone: 'self', officePhone: 'self' };
+
+      const viewer = asObjectId(viewerId);
+      const subject = asObjectId(subjectId);
+      if (viewer === null || subject === null) {
+        return {
+          businessPhone: 'hidden_no_approved_case',
+          officePhone: 'hidden_no_approved_case',
+        };
+      }
+
+      const business = normalizeVisibilityChoice(subjectContactVisibility?.businessPhone);
+      const office = normalizeVisibilityChoice(subjectContactVisibility?.officePhone);
+
+      // The relationship cases are read once, and only when some field actually defers to them.
+      const automatic =
+        business === 'default' || office === 'default'
+          ? await relationshipCase(viewer, subject, viewerId)
+          : null;
+
+      const forField = (choice: typeof business): PhoneVisibilityReason =>
+        choice === 'hidden'
+          ? 'hidden_no_approved_case'
+          : choice === 'always'
+            ? 'visible_contact_setting'
+            : automatic ?? 'hidden_no_approved_case';
+
+      return { businessPhone: forField(business), officePhone: forField(office) };
+    },
+  };
+};

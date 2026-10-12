@@ -163,17 +163,30 @@ export interface NotificationPreferences {
  * decide. It never widens the automatic cases, and it never reaches a personal phone, which this
  * model does not store at all.
  */
+/**
+ * The tri-state choice D15 needs: `default` lets the approved relationship cases decide, `always`
+ * publishes to every profile view, and `hidden` withholds the number even from an authorized
+ * project role or a recognized Work Commitment. The explicit choice always wins over a default.
+ */
+export const CONTACT_VISIBILITY_CHOICES = ['default', 'always', 'hidden'] as const;
+export type ContactVisibilityChoice = (typeof CONTACT_VISIBILITY_CHOICES)[number];
+
 export interface ContactVisibility {
   readonly email: boolean;
-  readonly businessPhone: boolean;
-  readonly officePhone: boolean;
+  /** Documents written before 2026-10-12 hold booleans; `normalizeVisibilityChoice` reads both. */
+  readonly businessPhone: ContactVisibilityChoice | boolean;
+  readonly officePhone: ContactVisibilityChoice | boolean;
 }
 
-/** A profile shows the email; the two business numbers start withheld, which is the safe way. */
+/** The stored legacy booleans map onto the tri-state without a migration: true was "publish". */
+export const normalizeVisibilityChoice = (value: unknown): ContactVisibilityChoice =>
+  value === true || value === 'always' ? 'always' : value === 'hidden' ? 'hidden' : 'default';
+
+/** A profile shows the email; the two business numbers start on the relationship defaults. */
 export const DEFAULT_CONTACT_VISIBILITY: ContactVisibility = {
   email: true,
-  businessPhone: false,
-  officePhone: false,
+  businessPhone: 'default',
+  officePhone: 'default',
 };
 
 /**
@@ -410,8 +423,10 @@ const userSchema = new Schema(
     // field on this document, by design.
     contactVisibility: {
       email: { type: Boolean, default: true },
-      businessPhone: { type: Boolean, default: false },
-      officePhone: { type: Boolean, default: false },
+      // Mixed, because documents written before the tri-state hold booleans and both shapes must
+      // read without casting. The settings route validates every write against the choice enum.
+      businessPhone: { type: Schema.Types.Mixed, default: 'default' },
+      officePhone: { type: Schema.Types.Mixed, default: 'default' },
     },
 
     // The individual's own business number. Never a fallback for the company office number, which

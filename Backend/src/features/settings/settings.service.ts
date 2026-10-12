@@ -4,7 +4,7 @@ import type { EntitlementService } from '../billing/entitlements.service.js';
 import type { MuteRepository } from '../mutes/mute.repository.js';
 import type { ProjectRepository } from '../projects/project.repository.js';
 import {
-  DEFAULT_CONTACT_VISIBILITY,
+  normalizeVisibilityChoice,
   type ContactVisibility,
   type NotificationTimingRule,
   type UserLanguage,
@@ -85,7 +85,11 @@ export const createSettingsService = ({
         timing: mayControlTiming ? row.notificationPreferences?.timing ?? [] : [],
         digestHour: mayControlTiming ? row.notificationPreferences?.digestHour ?? null : null,
       },
-      contactVisibility: { ...DEFAULT_CONTACT_VISIBILITY, ...(row.contactVisibility ?? {}) },
+      contactVisibility: {
+        email: row.contactVisibility?.email ?? true,
+        businessPhone: normalizeVisibilityChoice(row.contactVisibility?.businessPhone),
+        officePhone: normalizeVisibilityChoice(row.contactVisibility?.officePhone),
+      },
       mutedProjects: names.map((project) => ({
         projectId: project._id.toString(),
         name: project.name,
