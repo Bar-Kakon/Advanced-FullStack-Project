@@ -554,6 +554,7 @@ export const en: Strings = {
       lede: 'Read-only tracking of work commissioned through an agreement. The professional manages the work itself.',
       loading: 'Loading commissioned work…',
       failure: 'The commissioned work could not be loaded.',
+      empty: 'No work has been commissioned by agreement yet.',
       performer: 'Performer: {name}',
     },
 
@@ -1185,6 +1186,13 @@ export const en: Strings = {
       status: 'Status',
       nameMissing: 'No name',
       positionMissing: 'No position',
+    },
+    permissions: {
+      title: 'Company permissions',
+      'project.create': 'Open projects',
+      'task.create': 'Open work and commission work by agreement',
+      'company.manage': 'Manage company details',
+      'company.invite_employees': 'Invite and approve employees',
     },
 
     status: {

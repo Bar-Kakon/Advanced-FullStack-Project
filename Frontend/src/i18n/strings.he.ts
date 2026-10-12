@@ -601,6 +601,7 @@ export const he = {
       lede: 'מעקב קריאה בלבד אחר עבודה שהוזמנה בהסכם. הביצוע מנוהל אצל בעל המקצוע.',
       loading: 'טעינת העבודות שהוזמנו…',
       failure: 'לא ניתן לטעון את העבודות שהוזמנו.',
+      empty: 'עדיין לא הוזמנה עבודה בהסכם.',
       performer: 'מבצע העבודה: {name}',
     },
 
@@ -1240,6 +1241,13 @@ export const he = {
       /** The invitation carries a name and the position carries a code, so neither can be empty. */
       nameMissing: 'ללא שם',
       positionMissing: 'ללא תפקיד',
+    },
+    permissions: {
+      title: 'הרשאות חברה',
+      'project.create': 'פתיחת פרויקטים',
+      'task.create': 'פתיחת עבודות והזמנת עבודה בהסכם',
+      'company.manage': 'ניהול פרטי החברה',
+      'company.invite_employees': 'הזמנת עובדים ואישורם',
     },
 
     /**

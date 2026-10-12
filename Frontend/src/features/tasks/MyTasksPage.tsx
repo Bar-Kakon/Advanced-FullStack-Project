@@ -9,7 +9,7 @@ import { useDocumentTitle } from '../../routes/useDocumentTitle';
 import { useScreenStylesheet } from '../../styles/useScreenStylesheet';
 import { initialsOf } from '../profile/profileModel';
 import { fetchCommissionedWork } from '../../api/tasks.api';
-import type { CommissionedWork } from '../../api/tasks.types';
+import type { CommissionedWorkPage } from '../../api/tasks.types';
 import { TaskRow } from './components/TaskRow';
 import { useMyTasks } from './useMyTasks';
 import {
@@ -40,13 +40,13 @@ export const MyTasksPage = () => {
 
   // Read-only tracking of work this viewer commissioned. It lives beside the queue and feeds no
   // group, count or filter of it.
-  const [commissioned, setCommissioned] = useState<readonly CommissionedWork[] | null>(null);
+  const [commissionedPage, setCommissionedPage] = useState<CommissionedWorkPage | null>(null);
   const [commissionedFailed, setCommissionedFailed] = useState(false);
   useEffect(() => {
     let current = true;
     fetchCommissionedWork()
-      .then((rows) => {
-        if (current) setCommissioned(rows);
+      .then((page) => {
+        if (current) setCommissionedPage(page);
       })
       .catch(() => {
         if (current) setCommissionedFailed(true);
@@ -55,6 +55,13 @@ export const MyTasksPage = () => {
       current = false;
     };
   }, []);
+
+  // Scenarios A–D: a current commissioner always sees the section (empty state included); a
+  // former one only while rows still require tracking; everybody else never sees it at all.
+  const commissioned = commissionedPage?.commissioned ?? null;
+  const showCommissioned =
+    commissionedPage !== null &&
+    (commissionedPage.canCommission || commissionedPage.commissioned.length > 0);
 
   useScreenStylesheet(
     { id: 'profile.css', css: profileCss },
@@ -231,15 +238,15 @@ export const MyTasksPage = () => {
           </section>
         ) : null}
 
-        {commissioned !== null && commissioned.length === 0 && !commissionedFailed ? null : (
+        {!showCommissioned || commissioned === null ? null : (
           <section className="panel" aria-labelledby="commissioned-title">
             <h2 id="commissioned-title" className="panel__title">{t.tasks.commissioned.title}</h2>
             <p className="panel__lede">{t.tasks.commissioned.lede}</p>
 
             {commissionedFailed ? (
               <p className="panel__lede">{t.tasks.commissioned.failure}</p>
-            ) : commissioned === null ? (
-              <p className="panel__lede">{t.tasks.commissioned.loading}</p>
+            ) : commissioned.length === 0 ? (
+              <p className="panel__lede">{t.tasks.commissioned.empty}</p>
             ) : (
               <ul className="task-list">
                 {commissioned.map((row) => (

@@ -52,6 +52,8 @@ export interface HistoryPage {
   readonly nextCursor: string | null;
   /** Whether the viewer holds the unified Project-Room moderation authority here. */
   readonly canModerate: boolean;
+  /** Whether the viewer may commission work — the company capability, read live. */
+  readonly canProposeAgreement: boolean;
 }
 
 export type StartDirectFailure = 'SELF' | 'NO_CONTACT' | 'AWAITING' | 'NOT_FOUND' | 'NETWORK' | 'UNKNOWN';

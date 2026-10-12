@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import {
+  setEmployeePermissions as setEmployeePermissionsCall,
   approveAllPendingEmployees,
   approveEmployee,
   cancelInvitation,
@@ -9,7 +10,8 @@ import {
   listEmployees,
   type EmployeeFailure,
 } from '../../api/employees.api';
-import type { CompanyPosition, EmployeeMembership } from '../../api/types';
+import type {
+  CompanyPermission, CompanyPosition, EmployeeMembership } from '../../api/types';
 
 export interface InviteInput {
   readonly fullName: string;
@@ -22,6 +24,8 @@ export interface InviteInput {
  */
 export const useEmployeeManagement = () => {
   const [rows, setRows] = useState<readonly EmployeeMembership[] | null>(null);
+  const [canManagePermissions, setCanManagePermissions] = useState(false);
+  const [savingPermissionsId, setSavingPermissionsId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [listFailure, setListFailure] = useState<EmployeeFailure | null>(null);
 
@@ -47,9 +51,10 @@ export const useEmployeeManagement = () => {
   const load = useCallback(async (quiet = false): Promise<void> => {
     if (!quiet) setLoading(true);
     try {
-      const memberships = await listEmployees();
+      const { memberships, viewer } = await listEmployees();
       if (!mounted.current) return;
       setRows(memberships);
+      setCanManagePermissions(viewer.canManagePermissions);
       setListFailure(null);
     } catch (error) {
       if (!mounted.current) return;
@@ -169,9 +174,30 @@ export const useEmployeeManagement = () => {
     [employees],
   );
 
+  /** One write carrying the whole set, then a re-read so the checkboxes show the server's truth. */
+  const setPermissions = useCallback(
+    async (membershipId: string, permissions: readonly CompanyPermission[]): Promise<void> => {
+      if (savingPermissionsId !== null) return;
+      setSavingPermissionsId(membershipId);
+      setActionFailure(null);
+      try {
+        await setEmployeePermissionsCall(membershipId, permissions);
+      } catch (error) {
+        if (mounted.current) setActionFailure(classifyEmployeeError(error));
+      } finally {
+        if (mounted.current) setSavingPermissionsId(null);
+      }
+      await load(true);
+    },
+    [savingPermissionsId, load],
+  );
+
   return {
     employees,
     pendingCount,
+    canManagePermissions,
+    savingPermissionsId,
+    setPermissions,
     loaded: rows !== null,
     loading,
     listFailure,

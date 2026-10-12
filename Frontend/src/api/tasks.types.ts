@@ -71,6 +71,12 @@ export const emptyTaskFilters: MyTasksFilters = {
 /** The project control's "no project" option, kept apart from a real project id. */
 export const NO_PROJECT = 'none';
 
+/** The tracking page: the caller's live commissioning authority and the visible rows. */
+export interface CommissionedWorkPage {
+  readonly canCommission: boolean;
+  readonly commissioned: readonly CommissionedWork[];
+}
+
 /** The commissioning party's read-only view of work they commissioned through agreements. */
 export interface CommissionedWork {
   readonly id: string;

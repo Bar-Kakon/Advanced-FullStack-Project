@@ -389,13 +389,15 @@ export const MessagesPage = () => {
                     </button>
                   )}
 
-                  <button
-                    type="button"
-                    className="msg-thread__action"
-                    onClick={() => setProposing(true)}
-                  >
-                    {t.messaging.proposeAgreement}
-                  </button>
+                  {thread.canProposeAgreement ? (
+                    <button
+                      type="button"
+                      className="msg-thread__action"
+                      onClick={() => setProposing(true)}
+                    >
+                      {t.messaging.proposeAgreement}
+                    </button>
+                  ) : null}
 
                   <button
                     type="button"

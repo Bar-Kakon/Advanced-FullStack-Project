@@ -4,7 +4,7 @@ import { api } from './client';
 import type { ApiErrorBody } from './types';
 import {
   NO_PROJECT,
-  type CommissionedWork,
+  type CommissionedWorkPage,
   type MyTask,
   type MyTasksFilters,
   type MyTasksPage,
@@ -36,9 +36,9 @@ export const listMyTasks = async (
   return data;
 };
 
-export const fetchCommissionedWork = async (): Promise<readonly CommissionedWork[]> => {
-  const { data } = await api.get<{ commissioned: CommissionedWork[] }>('/tasks/commissioned');
-  return data.commissioned;
+export const fetchCommissionedWork = async (): Promise<CommissionedWorkPage> => {
+  const { data } = await api.get<CommissionedWorkPage>('/tasks/commissioned');
+  return data;
 };
 
 export const startTask = async (taskId: string): Promise<MyTask> => {

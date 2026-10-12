@@ -19,6 +19,7 @@ export interface ConversationState {
   readonly hasOlder: boolean;
   readonly sending: boolean;
   readonly canModerate: boolean;
+  readonly canProposeAgreement: boolean;
   send(input: { body?: string; attachments?: readonly string[] }): Promise<void>;
   loadOlder(): void;
   answerAgreement(messageId: string, accept: boolean): Promise<void>;
@@ -40,6 +41,7 @@ export const useConversation = (conversationId: string | undefined): Conversatio
   const [failure, setFailure] = useState(false);
   const [sending, setSending] = useState(false);
   const [canModerate, setCanModerate] = useState(false);
+  const [canProposeAgreement, setCanProposeAgreement] = useState(false);
 
   useEffect(() => {
     if (conversationId === undefined) return;
@@ -54,6 +56,7 @@ export const useConversation = (conversationId: string | undefined): Conversatio
         setMessages(page.messages);
         setCursor(page.nextCursor);
         setCanModerate(page.canModerate);
+        setCanProposeAgreement(page.canProposeAgreement);
       })
       .catch(() => {
         if (current) setFailure(true);
@@ -154,6 +157,7 @@ export const useConversation = (conversationId: string | undefined): Conversatio
     hasOlder: cursor !== null,
     sending,
     canModerate,
+    canProposeAgreement,
     send,
     loadOlder,
     answerAgreement,

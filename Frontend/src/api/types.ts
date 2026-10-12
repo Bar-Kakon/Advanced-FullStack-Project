@@ -278,11 +278,14 @@ export interface EmployeeMembership {
   readonly invitedFullName: string | null;
   readonly companyPosition: CompanyPosition | null;
   readonly userId: string | null;
+  readonly permissions: readonly CompanyPermission[];
 }
 
 /** Every relationship in the caller's company, oldest first. The owner's own row is among them. */
 export interface EmployeeListResponse {
   readonly memberships: readonly EmployeeMembership[];
+  /** Permission management is the owner's alone; the server computes this, the UI only renders. */
+  readonly viewer: { readonly canManagePermissions: boolean };
 }
 
 /**
