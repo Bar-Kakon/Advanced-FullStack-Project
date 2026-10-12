@@ -31,3 +31,11 @@ export const notPermittedToManagePermissions = (): AppError =>
 /** The membership named is not an active employee seat of this company. */
 export const permissionsTargetNotFound = (): AppError =>
   new AppError('No active employee matched', 404, 'ACTIVE_EMPLOYEE_NOT_FOUND');
+
+/** The business needs an owner; leaving is the employee flow and ownership transfer is not built. */
+export const ownerCannotLeave = (): AppError =>
+  new AppError('A company owner cannot leave through this flow', 403, 'OWNER_CANNOT_LEAVE');
+
+/** The rejoining safeguard: no new membership period before the attribution backfill completes. */
+export const claimBlockedByMigration = (): AppError =>
+  new AppError('Joining is briefly unavailable until a data migration completes', 409, 'CLAIM_BLOCKED_BY_MIGRATION');
