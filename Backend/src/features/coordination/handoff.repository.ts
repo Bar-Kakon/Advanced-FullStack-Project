@@ -112,7 +112,7 @@ export const handoffRepository: HandoffRepository = {
     return WorkHandoffModel.findOneAndUpdate(
       { _id: id, state: 'proposed' },
       { $set: { state: 'awaiting_membership', membership } },
-      { new: true },
+      { returnDocument: 'after' },
     )
       .lean<HandoffRecord>()
       .exec();
@@ -122,7 +122,7 @@ export const handoffRepository: HandoffRepository = {
     return WorkHandoffModel.findOneAndUpdate(
       { _id: id, state: { $in: [...from] } },
       { $set: { state: 'accepted', decidedBy: by, decidedAt: at } },
-      { new: true, ...(session ? { session } : {}) },
+      { returnDocument: 'after', ...(session ? { session } : {}) },
     )
       .lean<HandoffRecord>()
       .exec();
@@ -132,7 +132,7 @@ export const handoffRepository: HandoffRepository = {
     return WorkHandoffModel.findOneAndUpdate(
       { _id: id, state: { $in: [...from] } },
       { $set: { state, decidedBy: by, decidedAt: at } },
-      { new: true },
+      { returnDocument: 'after' },
     )
       .lean<HandoffRecord>()
       .exec();

@@ -1,5 +1,6 @@
 import type { ModerationSubject } from '../users/user.repository.js';
 import type { ReportRecord, ReportSubjectType } from '../reports/report.model.js';
+import type { ReportedMessageView } from './reportedMessage.port.js';
 
 /**
  * A person as moderation sees them. `name` is `null` when the account is gone or anonymised under
@@ -38,6 +39,18 @@ export interface ModerationReportDto extends ModerationQueueItemDto {
   readonly noteRedacted: boolean;
   readonly source: string | null;
   readonly subjectAccount: ModerationSubjectDto;
+  /** The reported message itself, for message reports: content access survives deletion. */
+  readonly subjectMessage: {
+    readonly body: string | null;
+    readonly sender: ModerationPersonDto;
+    readonly sentAt: string;
+    readonly conversationId: string;
+    readonly conversationKind: string | null;
+    readonly projectId: string | null;
+    readonly removed: boolean;
+    readonly deleted: boolean;
+    readonly kept: boolean;
+  } | null;
   /** How many reports this subject carries in total. A signal, never a verdict. */
   readonly subjectReportCount: number;
   readonly history: readonly ModerationHistoryEntryDto[];
@@ -68,6 +81,8 @@ export const toReportDetail = (
   account: ModerationSubject | null,
   subjectReportCount: number,
   names: NameLookup,
+  message: ReportedMessageView | null = null,
+  senderName: string | null = null,
 ): ModerationReportDto => ({
   ...toQueueItem(report, names),
   note: report.note ?? null,
@@ -79,6 +94,20 @@ export const toReportDetail = (
     email: account?.email ?? null,
     status: account?.status ?? null,
   },
+  subjectMessage:
+    message === null
+      ? null
+      : {
+          body: message.body,
+          sender: { id: message.sender.toString(), name: senderName },
+          sentAt: message.sentAt.toISOString(),
+          conversationId: message.conversationId.toString(),
+          conversationKind: message.conversationKind,
+          projectId: message.projectId?.toString() ?? null,
+          removed: message.removed,
+          deleted: message.deleted,
+          kept: message.kept,
+        },
   subjectReportCount,
   history: report.history.map((entry) => ({
     action: entry.action,

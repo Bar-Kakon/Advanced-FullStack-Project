@@ -9,6 +9,7 @@ import { permissionTemplateRepository } from '../projectaccess/permissionTemplat
 import { projectAccessRepository } from '../projectaccess/projectAccess.repository.js';
 import { projectGrantRepository } from '../projectaccess/projectGrant.repository.js';
 import { projectRepository } from '../projects/project.repository.js';
+import { createRoomHistoryAdapter } from '../messaging/roomHistory.adapter.js';
 import type { MembershipOutcomeListener } from './membershipOutcome.port.js';
 import { buildNotificationDispatchService } from '../notifications/notifications.module.js';
 import { participantRepository } from './participant.repository.js';
@@ -24,6 +25,7 @@ import {
   memberRoleBodySchema,
   membershipParamsSchema,
   projectScopeParamsSchema,
+  removeMemberQuerySchema,
 } from './projectMembers.validation.js';
 
 /**
@@ -49,6 +51,7 @@ export const createProjectMembersModule = (
       participants: participantRepository,
       blocks,
       notifications: buildNotificationDispatchService(),
+      roomHistory: createRoomHistoryAdapter(),
     }),
   );
 
@@ -69,7 +72,7 @@ export const createProjectMembersModule = (
   );
   router.delete(
     '/:membershipId',
-    validateRequest({ params: membershipParamsSchema }),
+    validateRequest({ params: membershipParamsSchema, query: removeMemberQuerySchema }),
     controller.handleRemove,
   );
 

@@ -20,6 +20,7 @@ import {
   contractorParamsSchema,
   workImageParamsSchema,
 } from './browse.validation.js';
+import { createWorkCommitmentAdapter } from '../messaging/workCommitment.adapter.js';
 import { createPhoneVisibilityService } from './phoneVisibility.service.js';
 import { createCoordinationOutcomeAdapter } from '../coordination/coordinationOutcome.adapter.js';
 import { handoffRepository } from '../coordination/handoff.repository.js';
@@ -62,6 +63,7 @@ export const createBrowseModule = ({
       phones: createPhoneVisibilityService({
         access: projectAccessRepository,
         memberships: companyMembershipRepository,
+        commitments: createWorkCommitmentAdapter(),
       }),
       files: createFileAssetService(fileAssetRepository),
     }),

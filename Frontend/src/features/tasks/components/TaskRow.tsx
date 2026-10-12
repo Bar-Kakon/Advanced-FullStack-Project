@@ -29,7 +29,9 @@ export const TaskRow = ({ task, busy, busyId, onStart, onComplete }: TaskRowProp
       <div className="task-row__head">
         <h3 className="task-row__title" dir="auto">{task.title}</h3>
         <span className="task-row__badges">
-          <span className={`task-chip task-chip--${task.kind}`}>{t.tasks.kind[task.kind]}</span>
+          <span className={`task-chip task-chip--${task.kind}`}>
+            {task.fromAgreement ? t.tasks.kind.agreement : t.tasks.kind[task.kind]}
+          </span>
           <span className={`task-chip task-chip--${task.state}`}>{t.tasks.state[task.state]}</span>
           {task.overdue ? <span className="task-chip task-chip--overdue">{t.tasks.overdue}</span> : null}
           {task.pendingProposal === true ? (
@@ -55,11 +57,18 @@ export const TaskRow = ({ task, busy, busyId, onStart, onComplete }: TaskRowProp
 
       {/* The counterparty is resolved per viewer. `null` means nobody, and the row says so. */}
       <p className="task-row__meta">
-        <span dir="auto">
-          {task.counterparty === null
-            ? t.tasks.row.selfOpened
-            : t.tasks.row.from.replace('{name}', task.counterparty.name)}
-        </span>
+        {task.fromAgreement && task.counterparty !== null ? (
+          <>
+            <span dir="auto">{t.tasks.row.workOwner.replace('{name}', task.counterparty.name)}</span>
+            <span>{t.tasks.row.performerSelf}</span>
+          </>
+        ) : (
+          <span dir="auto">
+            {task.counterparty === null
+              ? t.tasks.row.selfOpened
+              : t.tasks.row.from.replace('{name}', task.counterparty.name)}
+          </span>
+        )}
         {task.viewerIsDelegate ? (
           <span className="task-row__note">{t.tasks.row.performing}</span>
         ) : task.delegated ? (

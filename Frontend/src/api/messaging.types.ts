@@ -9,6 +9,13 @@ export interface ConversationSummary {
   readonly lastMessageAt: string | null;
 }
 
+export interface MessageAttachment {
+  readonly id: string;
+  readonly filename: string;
+  readonly mimeType: string;
+  readonly sizeBytes: number;
+}
+
 export interface ConversationMessage {
   readonly id: string;
   readonly senderId: string;
@@ -17,6 +24,11 @@ export interface ConversationMessage {
   readonly kind: 'text' | 'agreement';
   readonly body: string | null;
   readonly removed: boolean;
+  /** The remover's project role at removal time, for the attribution placeholder. */
+  readonly removedByRole: string | null;
+  readonly deleted: boolean;
+  readonly kept: boolean;
+  readonly attachments: readonly MessageAttachment[];
   readonly agreement: {
     readonly title: string;
     readonly description: string | null;
@@ -38,4 +50,10 @@ export interface InboxPage {
 export interface HistoryPage {
   readonly messages: readonly ConversationMessage[];
   readonly nextCursor: string | null;
+  /** Whether the viewer holds the unified Project-Room moderation authority here. */
+  readonly canModerate: boolean;
+  /** Whether the viewer may commission work — the company capability, read live. */
+  readonly canProposeAgreement: boolean;
 }
+
+export type StartDirectFailure = 'SELF' | 'NO_CONTACT' | 'AWAITING' | 'NOT_FOUND' | 'NETWORK' | 'UNKNOWN';

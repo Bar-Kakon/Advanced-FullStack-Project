@@ -32,6 +32,10 @@ export const inviteBodySchema = Joi.object({
   .oxor('permissions', 'templateId')
   .oxor('permissions', 'copyFromGrantId');
 
+export const removeMemberQuerySchema = Joi.object({
+  roomMessages: Joi.string().valid('keep', 'delete').optional(),
+});
+
 export const memberRoleBodySchema = Joi.object({
   projectRole: Joi.string()
     .valid(...PROJECT_ROLES)

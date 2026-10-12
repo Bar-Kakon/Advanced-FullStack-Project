@@ -75,6 +75,7 @@ export type PhoneVisibilityReason =
   | 'self'
   | 'visible_shared_project_role'
   | 'visible_work_commitment'
+  | 'visible_contact_setting'
   | 'hidden_no_approved_case';
 
 export type RateabilityReason = 'self' | 'no_shared_completed_work' | 'eligible';

@@ -1,5 +1,20 @@
 import Joi from 'joi';
 
+import { COMPANY_PERMISSIONS } from './companyMembership.model.js';
+
+export interface SetPermissionsBody {
+  readonly permissions: readonly (typeof COMPANY_PERMISSIONS)[number][];
+}
+
+/** The closed vocabulary and nothing else: an unknown code is a 400, never a silent escalation. */
+export const setPermissionsBodySchema = Joi.object<SetPermissionsBody>({
+  permissions: Joi.array()
+    .items(Joi.string().valid(...COMPANY_PERMISSIONS))
+    .unique()
+    .max(COMPANY_PERMISSIONS.length)
+    .required(),
+});
+
 import { COMPANY_POSITIONS, type CompanyPosition } from './companyMembership.model.js';
 
 const MAX_FULL_NAME_LENGTH = 200;

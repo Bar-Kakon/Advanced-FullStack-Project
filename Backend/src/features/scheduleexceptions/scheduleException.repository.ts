@@ -113,7 +113,7 @@ export const scheduleExceptionRepository: ScheduleExceptionRepository = {
     return ScheduleExceptionModel.findOneAndUpdate(
       { _id: id },
       { $set: patch, $push: { history: entry } },
-      { new: true },
+      { returnDocument: 'after' },
     )
       .lean<ScheduleExceptionRecord>()
       .exec();

@@ -22,6 +22,7 @@ export interface MyTasksQuery {
 
 export interface TaskRepository {
   listMine(query: MyTasksQuery): Promise<TaskRecord[]>;
+  listByIds(ids: readonly Types.ObjectId[]): Promise<TaskRecord[]>;
   findById(id: string): Promise<TaskRecord | null>;
   setStarted(id: Types.ObjectId, at: Date): Promise<TaskRecord | null>;
   setCompleted(id: Types.ObjectId, at: Date): Promise<TaskRecord | null>;
@@ -41,6 +42,11 @@ const statePredicate = (state: TaskState): Record<string, unknown> => {
 };
 
 export const taskRepository: TaskRepository = {
+  async listByIds(ids) {
+    if (ids.length === 0) return [];
+    return TaskModel.find({ _id: { $in: ids } }).lean<TaskRecord[]>().exec();
+  },
+
   async listMine(query) {
     const conditions: Record<string, unknown>[] = [minePredicate(query.userId)];
 
@@ -78,7 +84,7 @@ export const taskRepository: TaskRepository = {
     return TaskModel.findOneAndUpdate(
       { _id: id, startedAt: null },
       { $set: { startedAt: at } },
-      { new: true },
+      { returnDocument: 'after' },
     )
       .lean<TaskRecord>()
       .exec();
@@ -88,7 +94,7 @@ export const taskRepository: TaskRepository = {
     return TaskModel.findOneAndUpdate(
       { _id: id, completedAt: null, startedAt: { $ne: null } },
       { $set: { completedAt: at } },
-      { new: true },
+      { returnDocument: 'after' },
     )
       .lean<TaskRecord>()
       .exec();

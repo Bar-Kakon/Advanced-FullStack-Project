@@ -241,7 +241,7 @@ export const createTaskEditService = ({
           ...(Object.keys($set).length === 0 ? {} : { $set }),
           ...(Object.keys($unset).length === 0 ? {} : { $unset }),
         },
-        { new: true },
+        { returnDocument: 'after' },
       )
         .lean<TaskRecord>()
         .exec();

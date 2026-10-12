@@ -156,7 +156,7 @@ export const projectRepository: ProjectRepository = {
     };
     if (clearOverrides) operation['$unset'] = { calendarOverrides: '' };
 
-    return ProjectModel.findByIdAndUpdate(id, operation, { new: true }).lean<ProjectRecord>().exec();
+    return ProjectModel.findByIdAndUpdate(id, operation, { returnDocument: 'after' }).lean<ProjectRecord>().exec();
   },
 
   async listByCompany(company, cursor, limit) {
@@ -194,7 +194,7 @@ export const projectRepository: ProjectRepository = {
       return ProjectModel.findById(id).lean<ProjectRecord>().exec();
     }
 
-    return ProjectModel.findByIdAndUpdate(id, operation, { new: true }).lean<ProjectRecord>().exec();
+    return ProjectModel.findByIdAndUpdate(id, operation, { returnDocument: 'after' }).lean<ProjectRecord>().exec();
   },
 
   /** D24: a pre-start cancellation leaves no record, so the row goes rather than gaining a flag. */

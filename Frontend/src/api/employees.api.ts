@@ -4,16 +4,24 @@ import { api } from './client';
 import type {
   ApiErrorBody,
   ApprovalResponse,
+  CompanyPermission,
   CreateInvitationPayload,
   CreateInvitationResponse,
   EmployeeListResponse,
-  EmployeeMembership,
 } from './types';
 
 /** Mirrored from `companies.module.ts`. Nothing here loops one endpoint to imitate another. */
-export const listEmployees = async (): Promise<readonly EmployeeMembership[]> => {
+export const listEmployees = async (): Promise<EmployeeListResponse> => {
   const { data } = await api.get<EmployeeListResponse>('/companies/employees');
-  return data.memberships;
+  return data;
+};
+
+/** The whole set in one write: whatever is sent is the employee's permissions afterwards. */
+export const setEmployeePermissions = async (
+  membershipId: string,
+  permissions: readonly CompanyPermission[],
+): Promise<void> => {
+  await api.patch(`/companies/employees/${membershipId}/permissions`, { permissions });
 };
 
 /** Opens a seat. The 201 names the row, and the caller re-reads the list rather than trusting it. */
