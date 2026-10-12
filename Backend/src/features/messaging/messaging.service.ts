@@ -118,13 +118,11 @@ export interface AgreementInput {
 /** Creates the canonical Task from an accepted agreement. The task domain owns the schema. */
 export interface AgreementTaskPort {
   create(input: {
-    creatorId: string;
     assigneeId: string;
     title: string;
     description?: string;
     startDate: string;
     dueDate: string;
-    projectId?: string;
   }): Promise<Types.ObjectId>;
 }
 
@@ -623,9 +621,9 @@ export const createMessagingService = ({
 
       let task: Types.ObjectId | undefined;
       if (accept) {
+        // The accepter becomes the responsible performer. The commissioning party is not written
+        // onto the task: the agreement message itself stays the record of both parties.
         task = await tasks.create({
-          // The proposer commits the work; the party accepting performs it.
-          creatorId: message.sender.toString(),
           assigneeId: userId,
           title: message.agreement.title,
           ...(message.agreement.description === undefined
@@ -633,9 +631,6 @@ export const createMessagingService = ({
             : { description: message.agreement.description }),
           startDate: message.agreement.startDate,
           dueDate: message.agreement.dueDate,
-          ...(message.agreement.project === undefined
-            ? {}
-            : { projectId: message.agreement.project.toString() }),
         });
       }
 

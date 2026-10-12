@@ -11,6 +11,7 @@ import { participantRepository } from '../projectmembers/participant.repository.
 import { projectAccessRepository } from '../projectaccess/projectAccess.repository.js';
 import { projectRepository } from '../projects/project.repository.js';
 import { parseCalendarDate } from '../projects/projectDates.js';
+import { createAgreementOriginAdapter } from '../messaging/agreementOrigin.adapter.js';
 import { createMyTasksService, type MyTasksFilters } from './myTasks.service.js';
 import { createTaskCreationService, type CreateTaskInput } from './taskCreation.service.js';
 import { invalidCalendarDate } from './taskCreation.errors.js';
@@ -76,11 +77,14 @@ export const createTasksModule = (requireAccessToken: RequestHandler): Router =>
     memberships: companyMembershipRepository,
   });
 
+  const origins = createAgreementOriginAdapter();
+
   const myTasks = createMyTasksService({
     tasks: taskRepository,
     projects: projectRepository,
     participants: participantRepository,
     proposals: createProposalMarkerAdapter(coordination),
+    origins,
   });
 
   const detail = createTaskDetailService({
@@ -90,6 +94,7 @@ export const createTasksModule = (requireAccessToken: RequestHandler): Router =>
     participants: participantRepository,
     reschedule: createReschedulePortAdapter(coordination),
     eligibility: contractorEligibility,
+    origins,
   });
 
   const creation = createTaskCreationService({
@@ -127,6 +132,11 @@ export const createTasksModule = (requireAccessToken: RequestHandler): Router =>
   });
 
   // Registered ahead of `/:taskId`, or the literal path would be read as an id.
+  // The commissioning party's read-only tracking. Before '/:taskId', or that route would eat it.
+  router.get('/commissioned', async (_req, res) => {
+    res.json({ commissioned: await myTasks.commissioned(getAuthenticatedUserId(res)) });
+  });
+
   router.get('/create-options', async (req, res) => {
     res.json(await creation.options(me(res)));
   });

@@ -3,7 +3,8 @@ import { Types } from 'mongoose';
 import type { ParticipantRepository } from '../projectmembers/participant.repository.js';
 import type { ProjectRepository } from '../projects/project.repository.js';
 import { formatCalendarDate } from '../projects/projectDates.js';
-import type { MyTaskDto, MyTasksPageDto } from './task.dto.js';
+import type { AgreementOrigin, AgreementOriginPort } from './agreementOrigin.port.js';
+import type { CommissionedWorkDto, MyTaskDto, MyTasksPageDto } from './task.dto.js';
 import type { TaskKind, TaskRecord } from './task.model.js';
 import type { ProposalMarkerPort } from './proposals.port.js';
 import {
@@ -38,6 +39,8 @@ export interface MyTasksService {
   list(userId: string, filters: MyTasksFilters): Promise<MyTasksPageDto>;
   start(userId: string, taskId: string): Promise<MyTaskDto>;
   complete(userId: string, taskId: string): Promise<MyTaskDto>;
+  /** The commissioning party's read-only view of work they commissioned through agreements. */
+  commissioned(userId: string): Promise<CommissionedWorkDto[]>;
 }
 
 export interface MyTasksDependencies {
@@ -45,6 +48,7 @@ export interface MyTasksDependencies {
   readonly projects: ProjectRepository;
   readonly participants: ParticipantRepository;
   readonly proposals: ProposalMarkerPort;
+  readonly origins: AgreementOriginPort;
 }
 
 const encodeCursor = ({ dueDate, id }: MyTasksCursor): string =>
@@ -68,6 +72,7 @@ export const createMyTasksService = ({
   projects,
   participants,
   proposals,
+  origins,
 }: MyTasksDependencies): MyTasksService => {
   /**
    * Turns one stored task into what THIS viewer is allowed to read. Every field that could cross
@@ -80,12 +85,17 @@ export const createMyTasksService = ({
     names: ReadonlyMap<string, string>,
     projectNames: ReadonlyMap<string, string>,
     pending: ReadonlyMap<string, boolean>,
+    agreementOrigins: ReadonlyMap<string, AgreementOrigin>,
     now: Date,
   ): MyTaskDto => {
     const isDelegate = viewpoint === 'delegate';
     const delegateView = isDelegate ? projectForDelegate(task) : null;
 
-    const counterpartyId = counterpartyIdFor(task, viewpoint, viewerId);
+    // Agreement-born work names the commissioning party as the counterparty — read from the
+    // agreement message, and never shown to a delegate, who sees only their delegator.
+    const origin = viewpoint === 'assignee' ? agreementOrigins.get(task._id.toString()) : undefined;
+    const counterpartyId =
+      origin !== undefined ? origin.proposer : counterpartyIdFor(task, viewpoint, viewerId);
     const counterpartyName =
       counterpartyId === null ? null : names.get(counterpartyId.toString()) ?? null;
 
@@ -114,6 +124,8 @@ export const createMyTasksService = ({
           ? null
           : { userId: counterpartyId.toString(), name: counterpartyName },
 
+      fromAgreement: origin !== undefined,
+
       delegated: maySeeDelegation(viewpoint) && task.delegation !== undefined,
       viewerIsDelegate: isDelegate,
       orphaned: task.orphanedAt !== undefined,
@@ -140,7 +152,26 @@ export const createMyTasksService = ({
     const now = new Date();
     const viewpoints = new Map(rows.map((row) => [row._id.toString(), viewpointOf(row, { userId, reachesProject: false })]));
 
+    // Standalone rows the viewer performs may have arrived through an agreement; one batched
+    // reverse lookup names their commissioning party.
+    const originCandidates = rows.flatMap((row) =>
+      row.kind === 'standalone' && viewpoints.get(row._id.toString()) === 'assignee'
+        ? [row._id]
+        : [],
+    );
+    const agreementOrigins = new Map(
+      (await origins.findByTaskIds(originCandidates)).map((origin) => [
+        origin.task.toString(),
+        origin,
+      ]),
+    );
+
     const counterpartyIds = rows.flatMap((row) => {
+      const origin =
+        viewpoints.get(row._id.toString()) === 'assignee'
+          ? agreementOrigins.get(row._id.toString())
+          : undefined;
+      if (origin !== undefined) return [origin.proposer];
       const id = counterpartyIdFor(row, viewpoints.get(row._id.toString()) ?? 'none', userId);
       return id === null ? [] : [id];
     });
@@ -159,7 +190,16 @@ export const createMyTasksService = ({
     const pending = await proposals.pendingFor(userId, rows.map((row) => row._id.toString()));
 
     return rows.map((row) =>
-      toDto(row, viewpoints.get(row._id.toString()) ?? 'none', userId, names, projectNames, pending, now),
+      toDto(
+        row,
+        viewpoints.get(row._id.toString()) ?? 'none',
+        userId,
+        names,
+        projectNames,
+        pending,
+        agreementOrigins,
+        now,
+      ),
     );
   };
 
@@ -226,6 +266,49 @@ export const createMyTasksService = ({
       const updated = await tasks.setCompleted(task._id, new Date());
       if (updated === null) throw alreadyCompleted();
       return single(updated, userId);
+    },
+
+    /**
+     * Strictly read-only, and structurally scoped: only task ids taken from the caller's own
+     * accepted agreements are ever read, so nothing else of a performer's world can appear here.
+     * It feeds no group, count or filter of the performer's My Tasks.
+     */
+    async commissioned(userId) {
+      const commissions = await origins.listByProposer(new Types.ObjectId(userId));
+      if (commissions.length === 0) return [];
+
+      const rows = await tasks.listByIds(commissions.map((origin) => origin.task));
+      const performers = await participants.findByIds(commissions.map((origin) => origin.accepter));
+      const names = new Map(
+        performers.map((person) => [
+          person._id.toString(),
+          `${person.firstName} ${person.lastName}`.trim(),
+        ]),
+      );
+      const accepterByTask = new Map(
+        commissions.map((origin) => [origin.task.toString(), origin.accepter]),
+      );
+
+      const now = new Date();
+      return rows
+        .slice()
+        .sort((a, b) => a.dueDate.getTime() - b.dueDate.getTime())
+        .map((task) => {
+          const accepter = accepterByTask.get(task._id.toString());
+          const name = accepter === undefined ? null : names.get(accepter.toString()) ?? null;
+          return {
+            id: task._id.toString(),
+            title: task.title,
+            startDate: formatCalendarDate(task.startDate),
+            dueDate: formatCalendarDate(task.dueDate),
+            state: deriveTaskState(task),
+            overdue: isOverdue(task, now),
+            performer:
+              accepter === undefined || name === null
+                ? null
+                : { userId: accepter.toString(), name },
+          };
+        });
     },
   };
 };

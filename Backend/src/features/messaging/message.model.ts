@@ -99,4 +99,11 @@ messageSchema.index(
   { partialFilterExpression: { 'agreement.state': 'accepted' } },
 );
 
+// The task→agreement reverse lookup: My Tasks attribution and Commissioned Work both resolve a
+// task back to the agreement that commissioned it. Partial — only task-creating agreements.
+messageSchema.index(
+  { 'agreement.task': 1 },
+  { partialFilterExpression: { 'agreement.task': { $exists: true } } },
+);
+
 export const MessageModel = model('Message', messageSchema);

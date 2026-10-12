@@ -31,6 +31,13 @@ const parseCursor = (cursor?: string): { at: Date; id: Types.ObjectId } | null =
 export const encodeCursor = (at: Date, id: Types.ObjectId): string =>
   `${at.toISOString()}|${id.toString()}`;
 
+/** One accepted, task-creating agreement: the commitment's two parties and the task it became. */
+export interface AgreementTaskOrigin {
+  readonly task: Types.ObjectId;
+  readonly proposer: Types.ObjectId;
+  readonly accepter: Types.ObjectId;
+}
+
 export interface MessagingRepository {
   findById(id: string): Promise<ConversationRecord | null>;
   findDirectByPair(a: Types.ObjectId, b: Types.ObjectId): Promise<ConversationRecord | null>;
@@ -79,6 +86,8 @@ export interface MessagingRepository {
   /** Whether an accepted, task-creating agreement ever bound these two people — in either
    *  direction, and regardless of what later happened to the work (D15: history persists). */
   hasAcceptedAgreementBetween(a: Types.ObjectId, b: Types.ObjectId): Promise<boolean>;
+  listAgreementOriginsByTask(tasks: readonly Types.ObjectId[]): Promise<AgreementTaskOrigin[]>;
+  listAgreementOriginsByProposer(proposer: Types.ObjectId): Promise<AgreementTaskOrigin[]>;
   findMessageWithAttachment(
     conversation: Types.ObjectId,
     attachment: Types.ObjectId,
@@ -297,6 +306,43 @@ export const messagingRepository: MessagingRepository = {
       ],
     }).exec();
     return found !== null;
+  },
+
+  async listAgreementOriginsByTask(taskIds) {
+    if (taskIds.length === 0) return [];
+
+    const rows = await MessageModel.find({
+      kind: 'agreement',
+      'agreement.state': 'accepted',
+      'agreement.task': { $in: taskIds },
+    })
+      .select('sender agreement.task agreement.respondedBy')
+      .lean<Pick<MessageRecord, 'sender' | 'agreement'>[]>()
+      .exec();
+
+    return rows.flatMap((row) =>
+      row.agreement?.task === undefined || row.agreement.respondedBy === undefined
+        ? []
+        : [{ task: row.agreement.task, proposer: row.sender, accepter: row.agreement.respondedBy }],
+    );
+  },
+
+  async listAgreementOriginsByProposer(proposer) {
+    const rows = await MessageModel.find({
+      kind: 'agreement',
+      sender: proposer,
+      'agreement.state': 'accepted',
+      'agreement.task': { $exists: true },
+    })
+      .select('sender agreement.task agreement.respondedBy')
+      .lean<Pick<MessageRecord, 'sender' | 'agreement'>[]>()
+      .exec();
+
+    return rows.flatMap((row) =>
+      row.agreement?.task === undefined || row.agreement.respondedBy === undefined
+        ? []
+        : [{ task: row.agreement.task, proposer: row.sender, accepter: row.agreement.respondedBy }],
+    );
   },
 
   async findMessageWithAttachment(conversation, attachment) {
