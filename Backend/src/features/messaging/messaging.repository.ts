@@ -58,7 +58,22 @@ export interface MessagingRepository {
     kind: 'text' | 'agreement';
     body?: string;
     agreement?: MessageRecord['agreement'];
+    attachments?: readonly Types.ObjectId[];
   }): Promise<MessageRecord>;
+  /** Author deletion, conditional in the query: a kept or already-deleted row is never matched. */
+  setAuthorDeleted(messageId: Types.ObjectId, sender: Types.ObjectId): Promise<MessageRecord | null>;
+  /** Moderation removal, refused by the filter itself on a kept or already-removed row. */
+  setRemoved(messageId: Types.ObjectId, moderator: Types.ObjectId): Promise<MessageRecord | null>;
+  setKept(messageId: Types.ObjectId, moderator: Types.ObjectId): Promise<MessageRecord | null>;
+  removeAllFromSender(
+    conversation: Types.ObjectId,
+    sender: Types.ObjectId,
+    moderator: Types.ObjectId,
+  ): Promise<number>;
+  findMessageWithAttachment(
+    conversation: Types.ObjectId,
+    attachment: Types.ObjectId,
+  ): Promise<MessageRecord | null>;
   history(conversation: Types.ObjectId, page: CursorPage): Promise<MessageRecord[]>;
   findMessage(id: string): Promise<MessageRecord | null>;
   answerAgreement(
@@ -210,6 +225,50 @@ export const messagingRepository: MessagingRepository = {
     if (created === undefined) throw new Error('Message insert returned no document.');
 
     return created.toObject() as unknown as MessageRecord;
+  },
+
+  async setAuthorDeleted(messageId, sender) {
+    return MessageModel.findOneAndUpdate(
+      { _id: messageId, sender, keptAt: { $exists: false }, deletedAt: { $exists: false } },
+      { $set: { deletedAt: new Date(), deletedBy: sender } },
+      { new: true },
+    )
+      .lean<MessageRecord>()
+      .exec();
+  },
+
+  async setRemoved(messageId, moderator) {
+    return MessageModel.findOneAndUpdate(
+      { _id: messageId, keptAt: { $exists: false }, removedAt: { $exists: false } },
+      { $set: { removedAt: new Date(), removedBy: moderator } },
+      { new: true },
+    )
+      .lean<MessageRecord>()
+      .exec();
+  },
+
+  async setKept(messageId, moderator) {
+    return MessageModel.findOneAndUpdate(
+      { _id: messageId, keptAt: { $exists: false } },
+      { $set: { keptAt: new Date(), keptBy: moderator } },
+      { new: true },
+    )
+      .lean<MessageRecord>()
+      .exec();
+  },
+
+  async removeAllFromSender(conversation, sender, moderator) {
+    const result = await MessageModel.updateMany(
+      { conversation, sender, keptAt: { $exists: false }, removedAt: { $exists: false } },
+      { $set: { removedAt: new Date(), removedBy: moderator } },
+    ).exec();
+    return result.modifiedCount;
+  },
+
+  async findMessageWithAttachment(conversation, attachment) {
+    return MessageModel.findOne({ conversation, attachments: attachment })
+      .lean<MessageRecord>()
+      .exec();
   },
 
   async history(conversation, { limit, cursor }) {

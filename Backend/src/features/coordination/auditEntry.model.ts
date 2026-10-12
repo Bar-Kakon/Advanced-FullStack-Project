@@ -25,6 +25,9 @@ export const AUDIT_ACTIONS = [
   'schedule.partial_release',
   'work.replacement_recorded',
   'stage.early_completion',
+  'room.message_removed',
+  'room.message_kept',
+  'room.messages_removal_decision',
 ] as const;
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
 

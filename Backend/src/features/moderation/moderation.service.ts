@@ -9,6 +9,7 @@ import {
   reportAlreadyResolved,
 } from './moderation.errors.js';
 import type { PlatformAuditService } from './platformAudit.service.js';
+import type { ReportedMessagePort } from './reportedMessage.port.js';
 import {
   toQueueItem,
   toReportDetail,
@@ -48,6 +49,7 @@ export interface ModerationDependencies {
   readonly reports: ReportRepository;
   readonly users: UserRepository;
   readonly audit: PlatformAuditService;
+  readonly reportedMessages: ReportedMessagePort;
 }
 
 const SUBJECT_HISTORY_LIMIT = 50;
@@ -56,6 +58,7 @@ export const createModerationService = ({
   reports,
   users,
   audit,
+  reportedMessages,
 }: ModerationDependencies): ModerationService => {
   /** One batched name query per response, so a queue page is two reads rather than 2N. */
   const namesFor = async (rows: readonly ReportRecord[]): Promise<NameLookup> => {
@@ -78,7 +81,16 @@ export const createModerationService = ({
       namesFor([report]),
     ]);
 
-    return toReportDetail(report, account, siblings.length, names);
+    const message =
+      report.subject.type === 'message'
+        ? await reportedMessages.findForModeration(report.subject.id)
+        : null;
+    const senderName =
+      message === null
+        ? null
+        : (await users.findDisplayNames([message.sender])).get(message.sender.toString()) ?? null;
+
+    return toReportDetail(report, account, siblings.length, names, message, senderName);
   };
 
   const loadReport = async (reportId: string): Promise<ReportRecord> => {

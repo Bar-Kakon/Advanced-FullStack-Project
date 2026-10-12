@@ -52,6 +52,12 @@ export const PROJECT_PERMISSIONS = [
    */
   'workplan.manage',
   'schedule.change.manage',
+  /**
+   * Project-Room message authority. One capability, never split: moderation removal, marking a
+   * message kept, and the removal-time keep-or-delete execution. The `main_contractor` project
+   * role holds it without a grant. Owner decision 2026-10-12.
+   */
+  'room.moderate',
 ] as const;
 export type ProjectPermission = (typeof PROJECT_PERMISSIONS)[number];
 

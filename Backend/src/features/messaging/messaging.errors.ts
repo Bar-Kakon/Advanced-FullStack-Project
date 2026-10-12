@@ -39,3 +39,16 @@ export const agreementAlreadyBecameTask = (): AppError =>
 
 export const projectRoomForbidden = (): AppError =>
   new AppError('Conversation not found.', 404, 'CONVERSATION_NOT_FOUND');
+
+export const notMessageSender = (): AppError =>
+  new AppError('Only the sender may delete this message.', 403, 'NOT_MESSAGE_SENDER');
+
+/** A kept message outranks every deletion path, the author's and the moderator's alike. */
+export const messageKept = (): AppError =>
+  new AppError('This message is preserved and cannot be removed.', 409, 'MESSAGE_KEPT');
+
+export const roomModerationForbidden = (): AppError =>
+  new AppError('You may not moderate this conversation.', 403, 'ROOM_MODERATION_FORBIDDEN');
+
+export const attachmentNotFound = (): AppError =>
+  new AppError('Attachment not found.', 404, 'ATTACHMENT_NOT_FOUND');

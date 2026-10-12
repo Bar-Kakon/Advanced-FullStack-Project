@@ -1,8 +1,15 @@
 import { Router, type RequestHandler } from 'express';
 import { Types } from 'mongoose';
 
+import { createReportRateLimiter } from '../../middleware/rateLimit.js';
 import { getValidated, validateRequest } from '../../middleware/validateRequest.js';
 import { getAuthenticatedUserId } from '../auth/requireAccessToken.middleware.js';
+import { auditRepository } from '../coordination/audit.repository.js';
+import { fileNotAvailable, fileTooLarge } from '../files/file.errors.js';
+import { fileAssetRepository } from '../files/fileAsset.repository.js';
+import { createFileAssetService } from '../files/fileAsset.service.js';
+import { openGridFsDownloadStream } from '../files/gridFs.service.js';
+import { MAX_IMAGE_BYTES, uploadSingleAttachment } from '../files/upload.middleware.js';
 import { blockRepository } from '../blocks/block.repository.js';
 import { companyRepository } from '../companies/company.repository.js';
 import { companyMembershipRepository } from '../companies/companyMembership.repository.js';
@@ -24,6 +31,7 @@ import { messageNotFound } from './messaging.errors.js';
 import {
   agreementBodySchema,
   conversationIdParamsSchema,
+  fileParamsSchema,
   historyQuerySchema,
   inboxQuerySchema,
   messageIdParamsSchema,
@@ -69,7 +77,11 @@ export const createMessagingModule = (requireAccessToken: RequestHandler): Route
     projects: projectRepository,
     notifications,
     tasks: createAgreementTaskAdapter(creation),
+    files: fileAssetRepository,
+    audit: auditRepository,
   });
+
+  const fileAssets = createFileAssetService(fileAssetRepository);
 
   const router = Router();
   router.use(requireAccessToken);
@@ -117,8 +129,8 @@ export const createMessagingModule = (requireAccessToken: RequestHandler): Route
     validateRequest({ params: conversationIdParamsSchema, body: sendMessageBodySchema }),
     async (_req, res) => {
       const { conversationId } = getValidated<{ conversationId: string }>(res, 'params');
-      const { body } = getValidated<SendMessageBody>(res, 'body');
-      res.status(201).json({ message: await service.send(me(res), conversationId, body) });
+      const input = getValidated<SendMessageBody>(res, 'body');
+      res.status(201).json({ message: await service.send(me(res), conversationId, input) });
     },
   );
 
@@ -139,6 +151,45 @@ export const createMessagingModule = (requireAccessToken: RequestHandler): Route
       const { conversationId } = getValidated<{ conversationId: string }>(res, 'params');
       await service.answerRequest(me(res), conversationId, false);
       res.status(204).end();
+    },
+  );
+
+  // Delete-for-everyone of the caller's OWN message. The row survives behind the placeholder.
+  router.delete(
+    '/:conversationId/messages/:messageId',
+    validateRequest({ params: messageIdParamsSchema }),
+    async (_req, res) => {
+      const { conversationId, messageId } = getValidated<{
+        conversationId: string;
+        messageId: string;
+      }>(res, 'params');
+      res.json({ message: await service.deleteOwnMessage(me(res), conversationId, messageId) });
+    },
+  );
+
+  // Moderation removal, Project Rooms only: the GC's role or an explicit `room.moderate` grant.
+  router.post(
+    '/:conversationId/messages/:messageId/remove',
+    validateRequest({ params: messageIdParamsSchema }),
+    async (_req, res) => {
+      const { conversationId, messageId } = getValidated<{
+        conversationId: string;
+        messageId: string;
+      }>(res, 'params');
+      res.json({ message: await service.removeMessage(me(res), conversationId, messageId) });
+    },
+  );
+
+  // An explicit keep. It outranks both deletion paths and is deliberately irreversible.
+  router.post(
+    '/:conversationId/messages/:messageId/keep',
+    validateRequest({ params: messageIdParamsSchema }),
+    async (_req, res) => {
+      const { conversationId, messageId } = getValidated<{
+        conversationId: string;
+        messageId: string;
+      }>(res, 'params');
+      res.json({ message: await service.keepMessage(me(res), conversationId, messageId) });
     },
   );
 
@@ -208,6 +259,7 @@ export const createMessagingModule = (requireAccessToken: RequestHandler): Route
    */
   router.post(
     '/:conversationId/messages/:messageId/report',
+    createReportRateLimiter(),
     validateRequest({ params: messageIdParamsSchema, body: reportMessageBodySchema }),
     async (_req, res) => {
       const { conversationId, messageId } = getValidated<{
@@ -234,6 +286,80 @@ export const createMessagingModule = (requireAccessToken: RequestHandler): Route
       });
 
       res.status(201).json({ reportId: report?._id.toString() ?? null });
+    },
+  );
+
+  // One attachment per request, stored before it is sent: the send names the returned id.
+  router.post(
+    '/:conversationId/attachments',
+    uploadSingleAttachment('file'),
+    validateRequest({ params: conversationIdParamsSchema }),
+    async (req, res) => {
+      const { conversationId } = getValidated<{ conversationId: string }>(res, 'params');
+
+      const file = req.file;
+      const gridFsFileId = req.gridFsFileId;
+      if (file === undefined || gridFsFileId === undefined) throw fileNotAvailable();
+
+      try {
+        const conversation = await service.reachable(me(res), conversationId);
+
+        // Multer holds one byte ceiling for both kinds, so the image ceiling is enforced here.
+        if (file.mimetype !== 'application/pdf' && file.size > MAX_IMAGE_BYTES) throw fileTooLarge();
+
+        const asset = await fileAssets.record(new Types.ObjectId(me(res)), 'message', {
+          gridFsFileId,
+          filename: file.originalname,
+          mimeType: file.mimetype,
+          sizeBytes: file.size,
+        });
+        await fileAssetRepository.attachToScopeId(asset._id, conversation._id);
+
+        res.status(201).json({
+          attachment: {
+            id: asset._id.toString(),
+            filename: asset.filename,
+            mimeType: asset.mimeType,
+            sizeBytes: asset.sizeBytes,
+          },
+        });
+      } catch (error) {
+        await fileAssets.discardOrphan(gridFsFileId);
+        throw error;
+      }
+    },
+  );
+
+  // Reading an attachment is conversation membership, not ownership — with one exception: an
+  // upload not yet sent is visible to its uploader alone.
+  router.get(
+    '/:conversationId/files/:fileId',
+    validateRequest({ params: fileParamsSchema }),
+    async (_req, res) => {
+      const { conversationId, fileId } = getValidated<{
+        conversationId: string;
+        fileId: string;
+      }>(res, 'params');
+      const conversation = await service.reachable(me(res), conversationId);
+
+      const asset = await fileAssetRepository.findMessageScoped(fileId, conversation._id);
+      if (asset === null) throw messageNotFound();
+
+      const carrier = await messagingRepository.findMessageWithAttachment(
+        conversation._id,
+        asset._id,
+      );
+      if (carrier === null && asset.owner.toString() !== me(res)) throw messageNotFound();
+      if (carrier !== null && (carrier.removedAt !== undefined || carrier.deletedAt !== undefined)) {
+        throw messageNotFound();
+      }
+
+      res.type(asset.mimeType);
+      res.setHeader('Content-Length', String(asset.sizeBytes));
+      res.setHeader('Cache-Control', 'private, max-age=300');
+      const stream = openGridFsDownloadStream(asset.storage.fileId);
+      stream.on('error', () => res.destroy());
+      stream.pipe(res);
     },
   );
 

@@ -39,6 +39,12 @@ export interface MessageRecord {
   /** Moderation removal. The row stays; ordinary readers see the neutral placeholder. */
   readonly removedAt?: Date;
   readonly removedBy?: Types.ObjectId;
+  /** Author delete-for-everyone. The row and its body stay; readers see the deletion placeholder. */
+  readonly deletedAt?: Date;
+  readonly deletedBy?: Types.ObjectId;
+  /** An explicit keep. It overrides author deletion and moderation removal, and is never reversed. */
+  readonly keptAt?: Date;
+  readonly keptBy?: Types.ObjectId;
   /** The persisted send time. Every timestamp and date separator is derived from this, never
    *  from when a client happened to receive it. */
   readonly createdAt: Date;
@@ -70,6 +76,10 @@ const messageSchema = new Schema(
     attachments: [{ type: Schema.Types.ObjectId, ref: 'FileAsset' }],
     removedAt: { type: Date },
     removedBy: { type: Schema.Types.ObjectId, ref: 'User' },
+    deletedAt: { type: Date },
+    deletedBy: { type: Schema.Types.ObjectId, ref: 'User' },
+    keptAt: { type: Date },
+    keptBy: { type: Schema.Types.ObjectId, ref: 'User' },
   },
   { timestamps: true },
 );

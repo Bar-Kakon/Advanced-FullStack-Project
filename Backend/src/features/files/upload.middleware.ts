@@ -96,3 +96,14 @@ export const uploadSingleImage = (fieldName: string): RequestHandler =>
 
 export const uploadSingleDocument = (fieldName: string): RequestHandler =>
   singleUpload(fieldName, ALLOWED_DOCUMENT_MIME_TYPES, MAX_DOCUMENT_BYTES);
+
+/**
+ * One message attachment: any approved image type or a PDF. Multer can hold only one byte limit,
+ * so it carries the document ceiling and the stricter image ceiling is enforced after storage.
+ */
+export const uploadSingleAttachment = (fieldName: string): RequestHandler =>
+  singleUpload(
+    fieldName,
+    [...ALLOWED_IMAGE_MIME_TYPES, ...ALLOWED_DOCUMENT_MIME_TYPES],
+    MAX_DOCUMENT_BYTES,
+  );
