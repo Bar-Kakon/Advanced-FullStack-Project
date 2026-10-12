@@ -6,6 +6,7 @@ import {
   type ConversationRecord,
   type RequestState,
 } from './conversation.model.js';
+import type { ProjectRole } from '../projectaccess/projectMembership.model.js';
 import { MessageModel, type MessageRecord } from './message.model.js';
 
 export interface CursorPage {
@@ -63,13 +64,21 @@ export interface MessagingRepository {
   /** Author deletion, conditional in the query: a kept or already-deleted row is never matched. */
   setAuthorDeleted(messageId: Types.ObjectId, sender: Types.ObjectId): Promise<MessageRecord | null>;
   /** Moderation removal, refused by the filter itself on a kept or already-removed row. */
-  setRemoved(messageId: Types.ObjectId, moderator: Types.ObjectId): Promise<MessageRecord | null>;
+  setRemoved(
+    messageId: Types.ObjectId,
+    moderator: Types.ObjectId,
+    moderatorRole?: ProjectRole,
+  ): Promise<MessageRecord | null>;
   setKept(messageId: Types.ObjectId, moderator: Types.ObjectId): Promise<MessageRecord | null>;
   removeAllFromSender(
     conversation: Types.ObjectId,
     sender: Types.ObjectId,
     moderator: Types.ObjectId,
+    moderatorRole?: ProjectRole,
   ): Promise<number>;
+  /** Whether an accepted, task-creating agreement ever bound these two people — in either
+   *  direction, and regardless of what later happened to the work (D15: history persists). */
+  hasAcceptedAgreementBetween(a: Types.ObjectId, b: Types.ObjectId): Promise<boolean>;
   findMessageWithAttachment(
     conversation: Types.ObjectId,
     attachment: Types.ObjectId,
@@ -113,7 +122,7 @@ export const messagingRepository: MessagingRepository = {
           participantStates: [{ user: from }, { user: to }],
         },
       },
-      { upsert: true, new: true },
+      { upsert: true, returnDocument: 'after' },
     )
       .lean<ConversationRecord>()
       .exec();
@@ -126,7 +135,7 @@ export const messagingRepository: MessagingRepository = {
     const created = await ConversationModel.findOneAndUpdate(
       { project },
       { $setOnInsert: { kind: 'project_room', project, participants: [], participantStates: [] } },
-      { upsert: true, new: true },
+      { upsert: true, returnDocument: 'after' },
     )
       .lean<ConversationRecord>()
       .exec();
@@ -231,17 +240,23 @@ export const messagingRepository: MessagingRepository = {
     return MessageModel.findOneAndUpdate(
       { _id: messageId, sender, keptAt: { $exists: false }, deletedAt: { $exists: false } },
       { $set: { deletedAt: new Date(), deletedBy: sender } },
-      { new: true },
+      { returnDocument: 'after' },
     )
       .lean<MessageRecord>()
       .exec();
   },
 
-  async setRemoved(messageId, moderator) {
+  async setRemoved(messageId, moderator, moderatorRole) {
     return MessageModel.findOneAndUpdate(
       { _id: messageId, keptAt: { $exists: false }, removedAt: { $exists: false } },
-      { $set: { removedAt: new Date(), removedBy: moderator } },
-      { new: true },
+      {
+        $set: {
+          removedAt: new Date(),
+          removedBy: moderator,
+          ...(moderatorRole === undefined ? {} : { removedByRole: moderatorRole }),
+        },
+      },
+      { returnDocument: 'after' },
     )
       .lean<MessageRecord>()
       .exec();
@@ -251,18 +266,37 @@ export const messagingRepository: MessagingRepository = {
     return MessageModel.findOneAndUpdate(
       { _id: messageId, keptAt: { $exists: false } },
       { $set: { keptAt: new Date(), keptBy: moderator } },
-      { new: true },
+      { returnDocument: 'after' },
     )
       .lean<MessageRecord>()
       .exec();
   },
 
-  async removeAllFromSender(conversation, sender, moderator) {
+  async removeAllFromSender(conversation, sender, moderator, moderatorRole) {
     const result = await MessageModel.updateMany(
       { conversation, sender, keptAt: { $exists: false }, removedAt: { $exists: false } },
-      { $set: { removedAt: new Date(), removedBy: moderator } },
+      {
+        $set: {
+          removedAt: new Date(),
+          removedBy: moderator,
+          ...(moderatorRole === undefined ? {} : { removedByRole: moderatorRole }),
+        },
+      },
     ).exec();
     return result.modifiedCount;
+  },
+
+  async hasAcceptedAgreementBetween(a, b) {
+    const found = await MessageModel.exists({
+      kind: 'agreement',
+      'agreement.state': 'accepted',
+      'agreement.task': { $exists: true },
+      $or: [
+        { sender: a, 'agreement.respondedBy': b },
+        { sender: b, 'agreement.respondedBy': a },
+      ],
+    }).exec();
+    return found !== null;
   },
 
   async findMessageWithAttachment(conversation, attachment) {
@@ -313,7 +347,7 @@ export const messagingRepository: MessagingRepository = {
           ...(task === undefined ? {} : { 'agreement.task': task }),
         },
       },
-      { new: true },
+      { returnDocument: 'after' },
     )
       .lean<MessageRecord>()
       .exec();

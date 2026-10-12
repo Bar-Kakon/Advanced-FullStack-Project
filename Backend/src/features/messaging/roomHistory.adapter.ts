@@ -1,4 +1,5 @@
 import { auditRepository } from '../coordination/audit.repository.js';
+import { projectAccessRepository } from '../projectaccess/projectAccess.repository.js';
 import type { RoomHistoryPort } from '../projectmembers/roomHistory.port.js';
 import { userRepository } from '../users/user.repository.js';
 import { messagingRepository } from './messaging.repository.js';
@@ -12,9 +13,17 @@ export const createRoomHistoryAdapter = (): RoomHistoryPort => ({
   async applyRemovalDecision(actor, project, removedUser, decision) {
     const room = await messagingRepository.findProjectRoom(project);
 
+    const actorMembership =
+      decision === 'delete' ? await projectAccessRepository.findActiveMembership(project, actor) : null;
+
     const removedCount =
       decision === 'delete' && room !== null
-        ? await messagingRepository.removeAllFromSender(room._id, removedUser, actor)
+        ? await messagingRepository.removeAllFromSender(
+            room._id,
+            removedUser,
+            actor,
+            actorMembership?.projectRole,
+          )
         : 0;
 
     const names = await userRepository.findDisplayNames([actor]);

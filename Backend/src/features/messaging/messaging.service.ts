@@ -55,6 +55,8 @@ export interface MessageDto {
   readonly kind: 'text' | 'agreement';
   readonly body: string | null;
   readonly removed: boolean;
+  /** The remover's project role at removal time, for the attribution placeholder. */
+  readonly removedByRole: string | null;
   readonly deleted: boolean;
   readonly kept: boolean;
   readonly attachments: readonly MessageAttachmentDto[];
@@ -247,6 +249,7 @@ export const createMessagingService = ({
       kind: message.kind,
       body: gone ? null : message.body ?? null,
       removed,
+      removedByRole: message.removedByRole ?? null,
       deleted,
       kept: message.keptAt !== undefined,
       attachments: gone
@@ -679,9 +682,8 @@ export const createMessagingService = ({
 
     async removeMessage(userId, conversationId, messageId) {
       const conversation = await reachable(userId, conversationId);
-      if ((await moderatorMembership(userId, conversation)) === null) {
-        throw roomModerationForbidden();
-      }
+      const membership = await moderatorMembership(userId, conversation);
+      if (membership === null) throw roomModerationForbidden();
 
       const message = await conversations.findMessage(messageId);
       if (message === null || message.conversation.toString() !== conversation._id.toString()) {
@@ -692,7 +694,11 @@ export const createMessagingService = ({
         return toMessageDto(message, userId, await namesFor([message.sender]), new Map());
       }
 
-      const updated = await conversations.setRemoved(message._id, new Types.ObjectId(userId));
+      const updated = await conversations.setRemoved(
+        message._id,
+        new Types.ObjectId(userId),
+        membership.projectRole,
+      );
       if (updated === null) throw messageKept();
 
       await recordRoomAudit(conversation, userId, 'room.message_removed', updated);
