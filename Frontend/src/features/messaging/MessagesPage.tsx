@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 
 import { AppNav } from '../../components/AppNav';
 import { ButtonSpinner } from '../../components/ButtonSpinner';
@@ -14,24 +15,38 @@ import {
   reportMessage,
   setContractorMute,
   setConversationMute,
+  uploadAttachment,
 } from '../../api/messaging.api';
+import type { ConversationMessage, MessageAttachment } from '../../api/messaging.types';
 import { toConversationRows } from './messageGrouping';
 import { useConversation } from './useConversation';
 import { useInbox } from './useInbox';
+import { AgreementProposalDialog } from './components/AgreementProposalDialog';
+import { MessageAttachmentItem } from './components/MessageAttachmentItem';
+import { NewMessageDialog } from './components/NewMessageDialog';
 import profileCss from '../profile/profile.css?inline';
 import messagingCss from './messaging.css?inline';
+
+/** The types and ceilings the server enforces, checked here only to fail before the upload. */
+const IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+const MAX_PDF_BYTES = 30 * 1024 * 1024;
 
 /**
  * Inbox and thread on one screen.
  *
  * The date is rendered once per calendar day and every message keeps its own time, both derived
  * from the persisted `sentAt` — never from when this client received anything.
+ *
+ * The open conversation lives in the URL (`?c=`), so a profile, a network row or a project
+ * dashboard can land directly inside a specific thread.
  */
 export const MessagesPage = () => {
   const { t, lang } = useLanguage();
   const { user } = useAuth();
   const inbox = useInbox();
-  const [openId, setOpenId] = useState<string | undefined>(undefined);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const openId = searchParams.get('c') ?? undefined;
   const thread = useConversation(openId);
   const [draft, setDraft] = useState('');
   // Which message the reporter is confirming, and which have already been filed on this screen.
@@ -39,9 +54,34 @@ export const MessagesPage = () => {
   const [reported, setReported] = useState<readonly string[]>([]);
   const [conversationMuted, setConversationMuted] = useState(false);
   const [contractorMuted, setContractorMuted] = useState(false);
+  const [composing, setComposing] = useState(false);
+  const [proposing, setProposing] = useState(false);
+  const [confirmingDelete, setConfirmingDelete] = useState<string | null>(null);
+  const [actionFailed, setActionFailed] = useState(false);
+  const [pendingAttachments, setPendingAttachments] = useState<readonly MessageAttachment[]>([]);
+  const [attachFailure, setAttachFailure] = useState<'size' | 'type' | 'upload' | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const fileInput = useRef<HTMLInputElement | null>(null);
 
   useScreenStylesheet({ id: 'profile.css', css: profileCss }, { id: 'messaging.css', css: messagingCss });
   useDocumentTitle(t.messaging.documentTitle);
+
+  const setOpenId = useCallback(
+    (id: string | undefined): void => {
+      setSearchParams(id === undefined ? {} : { c: id }, { replace: false });
+    },
+    [setSearchParams],
+  );
+
+  // A different thread starts clean: no stale draft, upload, dialog or confirmation crosses over.
+  useEffect(() => {
+    setDraft('');
+    setPendingAttachments([]);
+    setAttachFailure(null);
+    setProposing(false);
+    setConfirmingDelete(null);
+    setActionFailed(false);
+  }, [openId]);
 
   const locale = localeOf(lang);
   const dayLabel = (at: Date): string =>
@@ -89,11 +129,47 @@ export const MessagesPage = () => {
 
   const submit = useCallback(async (): Promise<void> => {
     const body = draft.trim();
-    if (body.length === 0) return;
+    if (body.length === 0 && pendingAttachments.length === 0) return;
 
-    await thread.send(body);
+    await thread.send({
+      ...(body.length === 0 ? {} : { body }),
+      ...(pendingAttachments.length === 0
+        ? {}
+        : { attachments: pendingAttachments.map((attachment) => attachment.id) }),
+    });
     setDraft('');
-  }, [draft, thread]);
+    setPendingAttachments([]);
+    setAttachFailure(null);
+  }, [draft, pendingAttachments, thread]);
+
+  const attach = useCallback(
+    async (file: File): Promise<void> => {
+      if (openId === undefined) return;
+
+      const isImage = IMAGE_TYPES.includes(file.type);
+      const isPdf = file.type === 'application/pdf';
+      if (!isImage && !isPdf) {
+        setAttachFailure('type');
+        return;
+      }
+      if (file.size > (isImage ? MAX_IMAGE_BYTES : MAX_PDF_BYTES)) {
+        setAttachFailure('size');
+        return;
+      }
+
+      setUploading(true);
+      setAttachFailure(null);
+      try {
+        const attachment = await uploadAttachment(openId, file);
+        setPendingAttachments((previous) => [...previous, attachment]);
+      } catch {
+        setAttachFailure('upload');
+      } finally {
+        setUploading(false);
+      }
+    },
+    [openId],
+  );
 
   const report = useCallback(
     async (messageId: string, reason: string): Promise<void> => {
@@ -107,8 +183,79 @@ export const MessagesPage = () => {
     [openId],
   );
 
+  const act = useCallback(async (action: Promise<void>): Promise<void> => {
+    setActionFailed(false);
+    try {
+      await action;
+    } catch {
+      setActionFailed(true);
+    }
+  }, []);
+
   const firstName = user?.firstName ?? '';
   const lastName = user?.lastName ?? '';
+
+  const bubbleActions = (message: ConversationMessage) => {
+    const gone = message.removed || message.deleted;
+    if (gone) return null;
+
+    return (
+      <span className="msg-report">
+        {message.mine && !message.kept ? (
+          confirmingDelete === message.id ? (
+            <>
+              <span className="msg-bubble__time">{t.messaging.deleteForEveryone}</span>
+              <button
+                type="button"
+                className="msg-report__reason"
+                onClick={() => {
+                  setConfirmingDelete(null);
+                  void act(thread.deleteOwn(message.id));
+                }}
+              >
+                {t.messaging.confirmDelete}
+              </button>
+              <button
+                type="button"
+                className="msg-report__reason"
+                onClick={() => setConfirmingDelete(null)}
+              >
+                {t.messaging.cancel}
+              </button>
+            </>
+          ) : (
+            <button
+              type="button"
+              className="msg-bubble__report"
+              onClick={() => setConfirmingDelete(message.id)}
+            >
+              {t.messaging.deleteMessage}
+            </button>
+          )
+        ) : null}
+
+        {thread.canModerate && !message.mine && !message.kept ? (
+          <button
+            type="button"
+            className="msg-bubble__report"
+            onClick={() => void act(thread.removeForAll(message.id))}
+          >
+            {t.messaging.removeMessage}
+          </button>
+        ) : null}
+
+        {thread.canModerate && !message.kept ? (
+          <button
+            type="button"
+            className="msg-bubble__report"
+            onClick={() => void act(thread.keep(message.id))}
+          >
+            {t.messaging.keepMessage}
+          </button>
+        ) : null}
+      </span>
+    );
+  };
 
   return (
     <div className="app">
@@ -116,9 +263,31 @@ export const MessagesPage = () => {
 
       <main className="profile">
         <header className="profile__head">
-          <h1 className="profile__title">{t.messaging.title}</h1>
-          <p className="profile__sub">{t.messaging.lede}</p>
+          <div className="profile__head-text">
+            <h1 className="profile__title">{t.messaging.title}</h1>
+            <p className="profile__sub">{t.messaging.lede}</p>
+          </div>
+          <div className="profile__head-actions">
+            <button
+              type="button"
+              className="btn btn--primary btn--sm"
+              onClick={() => setComposing(true)}
+            >
+              {t.messaging.newMessage}
+            </button>
+          </div>
         </header>
+
+        {composing ? (
+          <NewMessageDialog
+            onClose={() => setComposing(false)}
+            onOpened={(conversationId) => {
+              setComposing(false);
+              inbox.reload();
+              setOpenId(conversationId);
+            }}
+          />
+        ) : null}
 
         <div className="msg-layout">
           <section>
@@ -223,11 +392,31 @@ export const MessagesPage = () => {
                   <button
                     type="button"
                     className="msg-thread__action"
+                    onClick={() => setProposing(true)}
+                  >
+                    {t.messaging.proposeAgreement}
+                  </button>
+
+                  <button
+                    type="button"
+                    className="msg-thread__action"
                     onClick={() => void inbox.hide(openId).then(() => setOpenId(undefined))}
                   >
                     {t.messaging.deleteChat}
                   </button>
                 </div>
+
+                {proposing ? (
+                  <AgreementProposalDialog
+                    busyExternally={thread.sending}
+                    onClose={() => setProposing(false)}
+                    onPropose={thread.propose}
+                  />
+                ) : null}
+
+                {actionFailed ? (
+                  <p className="msg-dialog__error" role="alert">{t.messaging.actionFailed}</p>
+                ) : null}
 
                 <div className="msg-thread__scroll">
                   {thread.hasOlder ? (
@@ -250,7 +439,11 @@ export const MessagesPage = () => {
                           <span className="msg-bubble__sender">{row.message.senderName}</span>
                         )}
 
-                        {row.message.removed ? (
+                        {row.message.deleted ? (
+                          <span className="msg-bubble__body msg-bubble__removed">
+                            {t.messaging.deletedMessage}
+                          </span>
+                        ) : row.message.removed ? (
                           <span className="msg-bubble__body msg-bubble__removed">
                             {t.messaging.removedMessage}
                           </span>
@@ -290,16 +483,33 @@ export const MessagesPage = () => {
                             )}
                           </div>
                         ) : (
-                          <span className="msg-bubble__body">{row.message.body}</span>
+                          <>
+                            {row.message.body === null ? null : (
+                              <span className="msg-bubble__body">{row.message.body}</span>
+                            )}
+                            {row.message.attachments.map((attachment) => (
+                              <MessageAttachmentItem
+                                key={attachment.id}
+                                conversationId={openId}
+                                attachment={attachment}
+                              />
+                            ))}
+                          </>
                         )}
+
+                        {row.message.kept ? (
+                          <span className="msg-bubble__kept">{t.messaging.keptBadge}</span>
+                        ) : null}
 
                         <time className="msg-bubble__time" dateTime={row.message.sentAt}>
                           {timeLabel(row.message.sentAt)}
                         </time>
 
-                        {row.message.mine || row.message.removed ? null : reported.includes(
-                            row.message.id,
-                          ) ? (
+                        {bubbleActions(row.message)}
+
+                        {row.message.mine ||
+                        row.message.removed ||
+                        row.message.deleted ? null : reported.includes(row.message.id) ? (
                           <span className="msg-bubble__time">{t.messaging.reported}</span>
                         ) : reporting === row.message.id ? (
                           <span className="msg-report">
@@ -337,7 +547,58 @@ export const MessagesPage = () => {
                   )}
                 </div>
 
+                {attachFailure !== null ? (
+                  <p className="msg-dialog__error msg-composer__notice" role="alert">
+                    {attachFailure === 'size'
+                      ? t.messaging.attachTooLarge
+                      : attachFailure === 'type'
+                        ? t.messaging.attachUnsupported
+                        : t.messaging.attachFailed}
+                  </p>
+                ) : null}
+
+                {pendingAttachments.length > 0 ? (
+                  <div className="msg-composer__pending">
+                    {pendingAttachments.map((attachment) => (
+                      <span key={attachment.id} className="msg-attachment__file">
+                        <span className="msg-attachment__name" dir="ltr">{attachment.filename}</span>
+                        <button
+                          type="button"
+                          className="msg-bubble__report"
+                          onClick={() =>
+                            setPendingAttachments((previous) =>
+                              previous.filter((pending) => pending.id !== attachment.id),
+                            )
+                          }
+                        >
+                          {t.messaging.attachRemove}
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                ) : null}
+
                 <div className="msg-composer">
+                  <input
+                    ref={fileInput}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,application/pdf"
+                    hidden
+                    onChange={(event) => {
+                      const file = event.target.files?.[0];
+                      event.target.value = '';
+                      if (file !== undefined) void attach(file);
+                    }}
+                  />
+                  <button
+                    type="button"
+                    className="btn btn--ghost"
+                    onClick={() => fileInput.current?.click()}
+                    disabled={uploading}
+                  >
+                    {t.messaging.attach}
+                    {uploading ? <ButtonSpinner /> : null}
+                  </button>
                   <textarea
                     className="msg-composer__input"
                     rows={2}
@@ -351,7 +612,11 @@ export const MessagesPage = () => {
                     type="button"
                     className="btn btn--primary"
                     onClick={() => void submit()}
-                    disabled={thread.sending || draft.trim().length === 0}
+                    disabled={
+                      thread.sending ||
+                      uploading ||
+                      (draft.trim().length === 0 && pendingAttachments.length === 0)
+                    }
                   >
                     {t.messaging.send}
                     {thread.sending ? <ButtonSpinner /> : null}

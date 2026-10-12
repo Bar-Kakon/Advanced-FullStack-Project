@@ -264,6 +264,7 @@ export const en: Strings = {
       ratings: 'Rating',
       noRatings: 'No ratings yet.',
       rate: 'Rate this professional',
+      message: 'Send message',
       cannotRateSelf: 'A profile cannot be self-rated.',
       cannotRateYet: 'Rating opens after shared work is completed on the platform.',
       loading: 'Loading profile…',
@@ -501,6 +502,7 @@ export const en: Strings = {
       'task.assign': 'Assign tasks',
       'schedule.exception.approve': 'Approve calendar exceptions',
       'schedule.partial_release.manage': 'Release work partially to the next trade',
+      'room.moderate': 'Moderate the project conversation (remove and preserve messages)',
     },
 
     roles: {
@@ -791,6 +793,8 @@ export const en: Strings = {
       members: 'Manage members',
       permissions: 'Manage permissions',
       calendar: 'Working calendar',
+      conversation: 'Project conversation',
+      conversationFailed: 'The project conversation could not be opened.',
       none: 'No management actions are available on this project.',
     },
 
@@ -847,6 +851,14 @@ export const en: Strings = {
     backToProjects: 'Back to projects',
 
     active: { title: 'Members', none: 'Nobody is taking part in this project yet.' },
+
+    removeDialog: {
+      title: 'Remove a participant',
+      question: 'What happens to this participant\u2019s messages in the project conversation?',
+      keepMessages: 'Keep the messages',
+      deleteMessages: 'Delete the messages',
+      cancel: 'Cancel',
+    },
     pending: { title: 'Invitations awaiting an answer', none: 'There are no open invitations.' },
 
     row: {
@@ -1045,6 +1057,7 @@ export const en: Strings = {
 
     actions: {
       viewProfile: 'View profile',
+      message: 'Message',
       accept: 'Accept',
       decline: 'Decline',
       withdraw: 'Withdraw request',
@@ -1768,6 +1781,9 @@ export const en: Strings = {
       'work.handoff_initiated': 'A responsibility handover was offered',
       'work.handoff_accepted': 'Responsibility was handed over',
       'work.handoff_declined': 'The handover was declined',
+      'room.message_removed': 'A message was removed from the project conversation',
+      'room.message_kept': 'A message was marked as preserved',
+      'room.messages_removal_decision': 'A decision was recorded for the messages of a removed participant',
     },
   },
 
@@ -2313,6 +2329,42 @@ export const en: Strings = {
     muteContractor: 'Mute this contact',
     unmuteContractor: 'Unmute this contact',
     deleteChat: 'Delete chat',
+    newMessage: 'New message',
+    chooseRecipient: 'Pick a recipient from your approved connections',
+    noConnections: 'No approved connections yet. A conversation can also be opened from a public profile.',
+    recipientsFailure: 'The connections list could not be loaded.',
+    startErrors: {
+      self: 'You cannot message yourself.',
+      noContact: 'A conversation cannot be opened with this user.',
+      awaiting: 'A message request is already awaiting their answer.',
+      notFound: 'This user is not available.',
+      network: 'We could not reach the server. Check the connection and try again.',
+      unknown: 'The message was not sent. Please try again.',
+    },
+    deletedMessage: 'This message was deleted',
+    deleteMessage: 'Delete message',
+    deleteForEveryone: 'The message will be deleted for all participants.',
+    confirmDelete: 'Delete',
+    removeMessage: 'Remove message',
+    keepMessage: 'Keep message',
+    keptBadge: 'Preserved message',
+    actionFailed: 'The action could not be completed. Please try again.',
+    attach: 'Attach file',
+    attachRemove: 'Remove attachment',
+    attachTooLarge: 'The file is too large. Images up to 5MB, PDF up to 30MB.',
+    attachUnsupported: 'Only an image (JPG, PNG, WebP) or a PDF can be attached.',
+    attachFailed: 'The file could not be uploaded. Please try again.',
+    download: 'Download',
+    proposeAgreement: 'Propose work agreement',
+    agreementForm: {
+      title: 'Propose a work agreement',
+      titleLabel: 'Agreement title',
+      descriptionLabel: 'Description (optional)',
+      startLabel: 'Start date',
+      dueLabel: 'Due date',
+      submit: 'Send the proposal',
+      failed: 'The proposal was not sent. Check the details and try again.',
+    },
     acceptAgreement: 'Accept agreement',
     declineAgreement: 'Decline agreement',
     agreementStates: {

@@ -292,6 +292,7 @@ export const he = {
       ratings: 'דירוג',
       noRatings: 'אין עדיין דירוג.',
       rate: 'דירוג בעל המקצוע',
+      message: 'שליחת הודעה',
       cannotRateSelf: 'אי אפשר לדרג פרופיל עצמי.',
       cannotRateYet: 'דירוג אפשרי רק לאחר עבודה משותפת שהושלמה במערכת.',
       loading: 'טוען פרופיל…',
@@ -547,6 +548,7 @@ export const he = {
       'task.assign': 'שיוך משימות',
       'schedule.exception.approve': 'אישור חריגים בלוח',
       'schedule.partial_release.manage': 'שחרור חלקי של עבודה להמשך',
+      'room.moderate': 'ניהול שיחת הפרויקט (הסרה ושימור הודעות)',
     },
 
     roles: {
@@ -839,6 +841,8 @@ export const he = {
       members: 'ניהול המשתתפים',
       permissions: 'ניהול ההרשאות',
       calendar: 'לוח ימי העבודה',
+      conversation: 'שיחת הפרויקט',
+      conversationFailed: 'לא ניתן לפתוח את שיחת הפרויקט.',
       none: 'אין פעולות ניהול זמינות בפרויקט הזה.',
     },
 
@@ -895,6 +899,14 @@ export const he = {
     backToProjects: 'חזרה לפרויקטים',
 
     active: { title: 'משתתפים', none: 'אין עדיין משתתפים בפרויקט הזה.' },
+
+    removeDialog: {
+      title: 'הסרת משתתף מהפרויקט',
+      question: 'מה ייעשה בהודעות של המשתתף בשיחת הפרויקט?',
+      keepMessages: 'שמירת ההודעות',
+      deleteMessages: 'מחיקת ההודעות',
+      cancel: 'ביטול',
+    },
     pending: { title: 'הזמנות שממתינות לתשובה', none: 'אין הזמנות פתוחות.' },
 
     row: {
@@ -1093,6 +1105,7 @@ export const he = {
 
     actions: {
       viewProfile: 'צפייה בפרופיל',
+      message: 'הודעה',
       accept: 'אישור',
       decline: 'דחייה',
       withdraw: 'ביטול הבקשה',
@@ -1832,6 +1845,9 @@ export const he = {
       'work.handoff_initiated': 'הוצעה העברת אחריות',
       'work.handoff_accepted': 'האחריות הועברה',
       'work.handoff_declined': 'העברת האחריות נדחתה',
+      'room.message_removed': 'הודעה הוסרה משיחת הפרויקט',
+      'room.message_kept': 'הודעה סומנה לשמירה',
+      'room.messages_removal_decision': 'נרשמה החלטה על הודעות של משתתף שהוסר',
     },
   },
 
@@ -2389,6 +2405,42 @@ export const he = {
     muteContractor: 'השתקת איש הקשר',
     unmuteContractor: 'ביטול השתקת איש הקשר',
     deleteChat: 'מחיקת שיחה',
+    newMessage: 'הודעה חדשה',
+    chooseRecipient: 'בחירת נמען מתוך החיבורים המאושרים',
+    noConnections: 'אין עדיין חיבורים מאושרים. אפשר לפתוח שיחה גם מפרופיל ציבורי.',
+    recipientsFailure: 'לא ניתן לטעון את רשימת החיבורים.',
+    startErrors: {
+      self: 'אי אפשר לשלוח הודעה לעצמך.',
+      noContact: 'אי אפשר לפתוח שיחה עם המשתמש הזה.',
+      awaiting: 'כבר נשלחה בקשת הודעה שממתינה לתשובה.',
+      notFound: 'המשתמש אינו זמין.',
+      network: 'לא הצלחנו להגיע לשרת. כדאי לבדוק את החיבור ולנסות שוב.',
+      unknown: 'ההודעה לא נשלחה. כדאי לנסות שוב.',
+    },
+    deletedMessage: 'הודעה זו נמחקה',
+    deleteMessage: 'מחיקת הודעה',
+    deleteForEveryone: 'ההודעה תימחק אצל כל המשתתפים.',
+    confirmDelete: 'מחיקה',
+    removeMessage: 'הסרת הודעה',
+    keepMessage: 'שמירת הודעה',
+    keptBadge: 'הודעה שמורה',
+    actionFailed: 'הפעולה לא הושלמה. כדאי לנסות שוב.',
+    attach: 'צירוף קובץ',
+    attachRemove: 'הסרת הצירוף',
+    attachTooLarge: 'הקובץ גדול מדי. תמונה עד 5MB וקובץ PDF עד 30MB.',
+    attachUnsupported: 'אפשר לצרף תמונה (JPG, PNG, WebP) או קובץ PDF בלבד.',
+    attachFailed: 'העלאת הקובץ נכשלה. כדאי לנסות שוב.',
+    download: 'הורדה',
+    proposeAgreement: 'הצעת הסכם עבודה',
+    agreementForm: {
+      title: 'הצעת הסכם עבודה',
+      titleLabel: 'כותרת ההסכם',
+      descriptionLabel: 'תיאור (לא חובה)',
+      startLabel: 'תאריך התחלה',
+      dueLabel: 'תאריך יעד',
+      submit: 'שליחת ההצעה',
+      failed: 'ההצעה לא נשלחה. כדאי לבדוק את הפרטים ולנסות שוב.',
+    },
     acceptAgreement: 'אישור הסיכום',
     declineAgreement: 'דחיית הסיכום',
     agreementStates: {

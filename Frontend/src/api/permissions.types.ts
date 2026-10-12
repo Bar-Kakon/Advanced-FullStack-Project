@@ -11,6 +11,7 @@ export const PROJECT_PERMISSIONS = [
   'task.assign',
   'schedule.exception.approve',
   'schedule.partial_release.manage',
+  'room.moderate',
 ] as const;
 export type ProjectPermission = (typeof PROJECT_PERMISSIONS)[number];
 
