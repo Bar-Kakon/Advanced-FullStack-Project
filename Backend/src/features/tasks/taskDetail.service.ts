@@ -316,7 +316,7 @@ export const createTaskDetailService = ({
       const updated = await PrivateWorkItemModel.findOneAndUpdate(
         { _id: new Types.ObjectId(itemId), task: task._id, owner: new Types.ObjectId(userId) },
         { $set: { done } },
-        { new: true },
+        { returnDocument: 'after' },
       )
         .lean<PrivateWorkItemRecord>()
         .exec();

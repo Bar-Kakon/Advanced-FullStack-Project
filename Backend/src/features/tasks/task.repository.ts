@@ -78,7 +78,7 @@ export const taskRepository: TaskRepository = {
     return TaskModel.findOneAndUpdate(
       { _id: id, startedAt: null },
       { $set: { startedAt: at } },
-      { new: true },
+      { returnDocument: 'after' },
     )
       .lean<TaskRecord>()
       .exec();
@@ -88,7 +88,7 @@ export const taskRepository: TaskRepository = {
     return TaskModel.findOneAndUpdate(
       { _id: id, completedAt: null, startedAt: { $ne: null } },
       { $set: { completedAt: at } },
-      { new: true },
+      { returnDocument: 'after' },
     )
       .lean<TaskRecord>()
       .exec();

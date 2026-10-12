@@ -61,7 +61,7 @@ export const projectGrantRepository: ProjectGrantRepository = {
           ...(grant.company ? { company: grant.company } : {}),
         },
       },
-      { new: true, upsert: true },
+      { returnDocument: 'after', upsert: true },
     )
       .lean<ProjectMembershipRecord>()
       .exec();
@@ -85,7 +85,7 @@ export const projectGrantRepository: ProjectGrantRepository = {
         },
         $unset: { respondedAt: '' },
       },
-      { new: true, upsert: true },
+      { returnDocument: 'after', upsert: true },
     )
       .lean<ProjectMembershipRecord>()
       .exec();
@@ -98,7 +98,7 @@ export const projectGrantRepository: ProjectGrantRepository = {
     return ProjectMembershipModel.findOneAndUpdate(
       { _id: id, status: 'invited' },
       { $set: { status, respondedAt: new Date() } },
-      { new: true, ...(session ? { session } : {}) },
+      { returnDocument: 'after', ...(session ? { session } : {}) },
     )
       .lean<ProjectMembershipRecord>()
       .exec();
@@ -117,7 +117,7 @@ export const projectGrantRepository: ProjectGrantRepository = {
     if (update.permissions !== undefined) set['permissions'] = [...update.permissions];
     if (update.fullAuthority !== undefined) set['fullAuthority'] = update.fullAuthority;
 
-    return ProjectMembershipModel.findByIdAndUpdate(id, { $set: set }, { new: true })
+    return ProjectMembershipModel.findByIdAndUpdate(id, { $set: set }, { returnDocument: 'after' })
       .lean<ProjectMembershipRecord>()
       .exec();
   },
