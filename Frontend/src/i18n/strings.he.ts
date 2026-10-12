@@ -593,6 +593,15 @@ export const he = {
     kind: {
       project: 'משימה בפרויקט',
       standalone: 'עבודה עצמאית',
+      agreement: 'עבודה מתוך הסכם',
+    },
+
+    commissioned: {
+      title: 'עבודות שהזמנתי',
+      lede: 'מעקב קריאה בלבד אחר עבודה שהוזמנה בהסכם. הביצוע מנוהל אצל בעל המקצוע.',
+      loading: 'טעינת העבודות שהוזמנו…',
+      failure: 'לא ניתן לטעון את העבודות שהוזמנו.',
+      performer: 'מבצע העבודה: {name}',
     },
 
     groups: {
@@ -606,6 +615,9 @@ export const he = {
       from: 'מאת {name}',
       /** Owner-approved 2026-08-30 for the rows with no counterparty at all. */
       selfOpened: 'עבודה שפתחתי',
+      workOwner: 'בעל העבודה: {name}',
+      workOwnerLabel: 'בעל העבודה',
+      performerSelf: 'מבצע העבודה: אני',
       delegated: 'העבודה הועברה לביצוע',
       performing: 'העבודה התקבלה לביצוע',
       pendingProposal: 'ממתין לתגובה שלי על שינוי תאריך',

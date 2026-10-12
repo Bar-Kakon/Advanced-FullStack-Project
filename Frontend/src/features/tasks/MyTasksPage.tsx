@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 
 import { AppNav } from '../../components/AppNav';
@@ -7,6 +8,8 @@ import { useLanguage } from '../../i18n/useLanguage';
 import { useDocumentTitle } from '../../routes/useDocumentTitle';
 import { useScreenStylesheet } from '../../styles/useScreenStylesheet';
 import { initialsOf } from '../profile/profileModel';
+import { fetchCommissionedWork } from '../../api/tasks.api';
+import type { CommissionedWork } from '../../api/tasks.types';
 import { TaskRow } from './components/TaskRow';
 import { useMyTasks } from './useMyTasks';
 import {
@@ -34,6 +37,24 @@ export const MyTasksPage = () => {
     tasks, filters, setFilters, loading, loadingMore, busyId, failure,
     hasMore, reload, loadMore, start, complete,
   } = useMyTasks();
+
+  // Read-only tracking of work this viewer commissioned. It lives beside the queue and feeds no
+  // group, count or filter of it.
+  const [commissioned, setCommissioned] = useState<readonly CommissionedWork[] | null>(null);
+  const [commissionedFailed, setCommissionedFailed] = useState(false);
+  useEffect(() => {
+    let current = true;
+    fetchCommissionedWork()
+      .then((rows) => {
+        if (current) setCommissioned(rows);
+      })
+      .catch(() => {
+        if (current) setCommissionedFailed(true);
+      });
+    return () => {
+      current = false;
+    };
+  }, []);
 
   useScreenStylesheet(
     { id: 'profile.css', css: profileCss },
@@ -209,6 +230,45 @@ export const MyTasksPage = () => {
             </button>
           </section>
         ) : null}
+
+        {commissioned !== null && commissioned.length === 0 && !commissionedFailed ? null : (
+          <section className="panel" aria-labelledby="commissioned-title">
+            <h2 id="commissioned-title" className="panel__title">{t.tasks.commissioned.title}</h2>
+            <p className="panel__lede">{t.tasks.commissioned.lede}</p>
+
+            {commissionedFailed ? (
+              <p className="panel__lede">{t.tasks.commissioned.failure}</p>
+            ) : commissioned === null ? (
+              <p className="panel__lede">{t.tasks.commissioned.loading}</p>
+            ) : (
+              <ul className="task-list">
+                {commissioned.map((row) => (
+                  <li key={row.id} className={`task-row${row.overdue ? ' task-row--overdue' : ''}`}>
+                    <div className="task-row__head">
+                      <h3 className="task-row__title" dir="auto">{row.title}</h3>
+                      <span className="task-row__badges">
+                        <span className={`task-chip task-chip--${row.state}`}>
+                          {t.tasks.state[row.state]}
+                        </span>
+                        {row.overdue ? (
+                          <span className="task-chip task-chip--overdue">{t.tasks.overdue}</span>
+                        ) : null}
+                      </span>
+                    </div>
+                    <p className="task-row__meta">
+                      {row.performer === null ? null : (
+                        <span dir="auto">
+                          {t.tasks.commissioned.performer.replace('{name}', row.performer.name)}
+                        </span>
+                      )}
+                      <span>{t.tasks.row.due.replace('{date}', row.dueDate)}</span>
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+        )}
       </main>
     </div>
   );

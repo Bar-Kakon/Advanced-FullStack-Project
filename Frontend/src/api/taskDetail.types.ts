@@ -26,6 +26,8 @@ export interface TaskDetail {
   readonly overdue: boolean;
   readonly overdueDays: number;
   readonly counterparty: { readonly userId: string; readonly name: string } | null;
+  /** Work that arrived through an accepted agreement; the counterparty is then its owner. */
+  readonly fromAgreement: boolean;
 
   /** Only the two parties to a delegation ever receive this. */
   readonly delegation: {

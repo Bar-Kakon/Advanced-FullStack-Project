@@ -546,6 +546,15 @@ export const en: Strings = {
     kind: {
       project: 'Project task',
       standalone: 'Standalone work',
+      agreement: 'Work from an agreement',
+    },
+
+    commissioned: {
+      title: 'Commissioned work',
+      lede: 'Read-only tracking of work commissioned through an agreement. The professional manages the work itself.',
+      loading: 'Loading commissioned work…',
+      failure: 'The commissioned work could not be loaded.',
+      performer: 'Performer: {name}',
     },
 
     groups: {
@@ -558,6 +567,9 @@ export const en: Strings = {
       due: 'Target {date}',
       from: 'From {name}',
       selfOpened: 'Opened by me',
+      workOwner: 'Work owner: {name}',
+      workOwnerLabel: 'Work owner',
+      performerSelf: 'Performer: me',
       delegated: 'Handed to someone else to perform',
       performing: 'Received to perform',
       pendingProposal: 'A date change is waiting on my answer',

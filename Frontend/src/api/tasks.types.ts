@@ -35,6 +35,8 @@ export interface MyTask {
 
   /** Resolved per viewer. `null` means nobody — the row says so in its own words. */
   readonly counterparty: CounterpartyRef | null;
+  /** Work that arrived through an accepted agreement; the counterparty is then its owner. */
+  readonly fromAgreement: boolean;
 
   readonly delegated: boolean;
   readonly viewerIsDelegate: boolean;
@@ -68,3 +70,14 @@ export const emptyTaskFilters: MyTasksFilters = {
 
 /** The project control's "no project" option, kept apart from a real project id. */
 export const NO_PROJECT = 'none';
+
+/** The commissioning party's read-only view of work they commissioned through agreements. */
+export interface CommissionedWork {
+  readonly id: string;
+  readonly title: string;
+  readonly startDate: string;
+  readonly dueDate: string;
+  readonly state: TaskState;
+  readonly overdue: boolean;
+  readonly performer: CounterpartyRef | null;
+}
