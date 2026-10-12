@@ -10,9 +10,14 @@ export interface AgreementOrigin {
   readonly proposer: Types.ObjectId;
   /** The responsible performer, who is also the task's assignee. */
   readonly accepter: Types.ObjectId;
+  /** The immutable company stamp; `null` only on a legacy row the backfill reported and skipped. */
+  readonly company: Types.ObjectId | null;
 }
 
 export interface AgreementOriginPort {
   findByTaskIds(taskIds: readonly Types.ObjectId[]): Promise<AgreementOrigin[]>;
   listByProposer(proposer: Types.ObjectId): Promise<AgreementOrigin[]>;
+  listByCompany(company: Types.ObjectId): Promise<AgreementOrigin[]>;
+  /** The migration safeguard's question: how many accepted agreements still carry no stamp. */
+  countUnstamped(): Promise<number>;
 }
