@@ -48,6 +48,15 @@ export interface CompanyMembershipRepository {
   cancelInvitation(company: Types.ObjectId, membershipId: string): Promise<number>;
   /** Whoever holds the Main Contractor job, counting the owner and an unclaimed seat. */
   findMainContractorSeat(company: Types.ObjectId): Promise<CompanyMembershipRecord | null>;
+  /**
+   * Replaces an ACTIVE EMPLOYEE's company permissions. The filter is the authorization's second
+   * half: an owner seat, a foreign company's row and an unapproved seat all match nothing.
+   */
+  setEmployeePermissions(
+    company: Types.ObjectId,
+    membershipId: string,
+    permissions: readonly CompanyPermission[],
+  ): Promise<number>;
 }
 
 /** The only module that reads or writes `companymemberships`. */
@@ -147,6 +156,21 @@ export const companyMembershipRepository: CompanyMembershipRepository = {
     ).exec();
 
     return result.modifiedCount;
+  },
+
+  async setEmployeePermissions(company, membershipId, permissions) {
+    if (!Types.ObjectId.isValid(membershipId)) return 0;
+
+    const result = await CompanyMembershipModel.updateOne(
+      {
+        _id: new Types.ObjectId(membershipId),
+        company,
+        standing: 'employee',
+        status: 'active',
+      },
+      { $set: { permissions: [...permissions] } },
+    ).exec();
+    return result.matchedCount;
   },
 
   async findMainContractorSeat(company) {

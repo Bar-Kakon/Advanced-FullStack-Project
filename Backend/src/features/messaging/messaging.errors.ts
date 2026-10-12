@@ -52,3 +52,7 @@ export const roomModerationForbidden = (): AppError =>
 
 export const attachmentNotFound = (): AppError =>
   new AppError('Attachment not found.', 404, 'ATTACHMENT_NOT_FOUND');
+
+/** Commissioning work is the company capability `task.create`; receiving work never needs it. */
+export const notPermittedToCommission = (): AppError =>
+  new AppError('This account may not commission work for its company.', 403, 'COMPANY_PERMISSION_DENIED');

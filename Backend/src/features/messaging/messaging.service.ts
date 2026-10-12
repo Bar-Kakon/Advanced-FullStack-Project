@@ -22,6 +22,7 @@ import {
   messageNotFound,
   noContactWithUser,
   notMessageSender,
+  notPermittedToCommission,
   requestAwaitingResponse,
   requestNotPending,
   requestNotYours,
@@ -78,6 +79,8 @@ export interface HistoryPageDto {
   readonly nextCursor: string | null;
   /** Whether the viewer holds the unified Project-Room moderation authority here. */
   readonly canModerate: boolean;
+  /** Whether the viewer may commission work — the company `task.create` capability, read live. */
+  readonly canProposeAgreement: boolean;
 }
 
 export interface InboxPageDto {
@@ -115,6 +118,11 @@ export interface AgreementInput {
   readonly projectId?: string;
 }
 
+/** Whether this account may commission new work for its company. Read live on every ask. */
+export interface CommissioningPort {
+  mayCommissionWork(userId: string): Promise<boolean>;
+}
+
 /** Creates the canonical Task from an accepted agreement. The task domain owns the schema. */
 export interface AgreementTaskPort {
   create(input: {
@@ -136,6 +144,7 @@ export interface MessagingDependencies {
   readonly tasks: AgreementTaskPort;
   readonly files: FileAssetRepository;
   readonly audit: AuditRepository;
+  readonly commissioning: CommissioningPort;
 }
 
 export const createMessagingService = ({
@@ -148,6 +157,7 @@ export const createMessagingService = ({
   tasks,
   files,
   audit,
+  commissioning,
 }: MessagingDependencies): MessagingService => {
   const nameOf = async (id: Types.ObjectId): Promise<string> =>
     (await users.findDisplayNames([id])).get(id.toString()) ?? '';
@@ -532,6 +542,7 @@ export const createMessagingService = ({
         nextCursor:
           last !== undefined && rows.length === limit ? encodeCursor(last.createdAt, last._id) : null,
         canModerate: (await moderatorMembership(userId, conversation)) !== null,
+        canProposeAgreement: await commissioning.mayCommissionWork(userId),
       };
     },
 
@@ -575,6 +586,9 @@ export const createMessagingService = ({
 
     async proposeAgreement(userId, conversationId, input) {
       const conversation = await reachable(userId, conversationId);
+
+      // Proposing commissions new work on the company's behalf; accepting never asks this.
+      if (!(await commissioning.mayCommissionWork(userId))) throw notPermittedToCommission();
 
       const sentAt = new Date();
       const message = await conversations.appendMessage({

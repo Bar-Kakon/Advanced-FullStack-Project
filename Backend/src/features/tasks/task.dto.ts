@@ -58,6 +58,13 @@ export interface MyTasksPageDto {
   readonly nextCursor: string | null;
 }
 
+/** The tracking page: the caller's live authority, and the rows the visibility rules allow. */
+export interface CommissionedWorkPageDto {
+  /** Whether the caller may commission NEW work right now — the company `task.create`, read live. */
+  readonly canCommission: boolean;
+  readonly commissioned: readonly CommissionedWorkDto[];
+}
+
 /**
  * One row of the commissioning party's read-only tracking: the status of work they commissioned
  * through an agreement. Nothing else of the performer's world is in this shape, and no route

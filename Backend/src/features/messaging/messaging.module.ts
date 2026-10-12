@@ -25,6 +25,7 @@ import { createTaskCreationService } from '../tasks/taskCreation.service.js';
 import { taskRepository } from '../tasks/task.repository.js';
 import { userRepository } from '../users/user.repository.js';
 import { createAgreementTaskAdapter } from './agreementTask.adapter.js';
+import { createCommissioningAdapter } from './commissioning.adapter.js';
 import { createMessagingService, type AgreementInput } from './messaging.service.js';
 import { messagingRepository } from './messaging.repository.js';
 import { messageNotFound } from './messaging.errors.js';
@@ -56,16 +57,18 @@ import {
 export const createMessagingModule = (requireAccessToken: RequestHandler): Router => {
   const notifications = buildNotificationDispatchService();
 
+  const companyContext = createCompanyContextService({
+    memberships: companyMembershipRepository,
+    companies: companyRepository,
+  });
+
   const creation = createTaskCreationService({
     tasks: taskRepository,
     projects: projectRepository,
     access: projectAccessRepository,
     participants: participantRepository,
     calendars: companyCalendarRepository,
-    companyContext: createCompanyContextService({
-      memberships: companyMembershipRepository,
-      companies: companyRepository,
-    }),
+    companyContext,
     notifications,
   });
 
@@ -79,6 +82,7 @@ export const createMessagingModule = (requireAccessToken: RequestHandler): Route
     tasks: createAgreementTaskAdapter(creation),
     files: fileAssetRepository,
     audit: auditRepository,
+    commissioning: createCommissioningAdapter(companyContext),
   });
 
   const fileAssets = createFileAssetService(fileAssetRepository);

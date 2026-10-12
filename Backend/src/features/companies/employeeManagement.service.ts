@@ -4,6 +4,7 @@ import {
   EMPLOYEE_DEFAULT_PERMISSIONS,
   OWNER_COMPANY_POSITION,
   type CompanyMembershipRecord,
+  type CompanyPermission,
 } from './companyMembership.model.js';
 import type { CompanyMembershipRepository } from './companyMembership.repository.js';
 import type { CompanyRepository } from './company.repository.js';
@@ -11,17 +12,31 @@ import {
   mainContractorSeatTaken,
   noActiveCompany,
   notPermittedToManageEmployees,
+  notPermittedToManagePermissions,
   nothingToApprove,
   nothingToCancel,
+  permissionsTargetNotFound,
 } from './company.errors.js';
 import type { CreateInvitationBody } from './employeeManagement.validation.js';
 
 /** The capability that names this whole surface: add and invite employees. */
 const REQUIRED_PERMISSION = 'company.invite_employees';
 
+export interface EmployeeListResult {
+  readonly memberships: CompanyMembershipRecord[];
+  /** Whether THIS caller may grant and revoke employee permissions — ownership, never a title. */
+  readonly canManagePermissions: boolean;
+}
+
 export interface EmployeeManagementService {
   invite(actorId: string, input: CreateInvitationBody): Promise<Types.ObjectId>;
-  list(actorId: string): Promise<CompanyMembershipRecord[]>;
+  list(actorId: string): Promise<EmployeeListResult>;
+  /** The owner's grant-and-revoke in one write: the array sent is the whole truth afterwards. */
+  setEmployeePermissions(
+    actorId: string,
+    membershipId: string,
+    permissions: readonly CompanyPermission[],
+  ): Promise<void>;
   approve(actorId: string, membershipId: string): Promise<number>;
   approveAllPending(actorId: string): Promise<number>;
   /** Withdraws a seat nobody has claimed. Never touches a membership someone already holds. */
@@ -74,7 +89,33 @@ export const createEmployeeManagementService = ({
     },
 
     async list(actorId) {
-      return memberships.listByCompany(await requireManager(actorId));
+      const actor = await memberships.findActiveByUser(actorId);
+      if (actor === null) throw noActiveCompany();
+      if (!actor.permissions.includes(REQUIRED_PERMISSION)) throw notPermittedToManageEmployees();
+
+      return {
+        memberships: await memberships.listByCompany(actor.company),
+        canManagePermissions: actor.standing === 'owner',
+      };
+    },
+
+    /**
+     * Permission management is the OWNER's alone — deliberately not `company.manage`, which names
+     * company information, and not `company.invite_employees`, which names the seats. Handing out
+     * authority is a second right, the same separation the project model keeps.
+     */
+    async setEmployeePermissions(actorId, membershipId, permissions) {
+      const actor = await memberships.findActiveByUser(actorId);
+      if (actor === null) throw noActiveCompany();
+      if (actor.standing !== 'owner') throw notPermittedToManagePermissions();
+      if (actor._id.toString() === membershipId) throw permissionsTargetNotFound();
+
+      const matched = await memberships.setEmployeePermissions(
+        actor.company,
+        membershipId,
+        permissions,
+      );
+      if (matched === 0) throw permissionsTargetNotFound();
     },
 
     async approve(actorId, membershipId) {

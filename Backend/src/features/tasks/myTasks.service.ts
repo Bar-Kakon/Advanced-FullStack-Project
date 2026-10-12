@@ -3,8 +3,9 @@ import { Types } from 'mongoose';
 import type { ParticipantRepository } from '../projectmembers/participant.repository.js';
 import type { ProjectRepository } from '../projects/project.repository.js';
 import { formatCalendarDate } from '../projects/projectDates.js';
+import type { CompanyContextService } from '../companies/companyContext.service.js';
 import type { AgreementOrigin, AgreementOriginPort } from './agreementOrigin.port.js';
-import type { CommissionedWorkDto, MyTaskDto, MyTasksPageDto } from './task.dto.js';
+import type { CommissionedWorkPageDto, MyTaskDto, MyTasksPageDto } from './task.dto.js';
 import type { TaskKind, TaskRecord } from './task.model.js';
 import type { ProposalMarkerPort } from './proposals.port.js';
 import {
@@ -40,7 +41,7 @@ export interface MyTasksService {
   start(userId: string, taskId: string): Promise<MyTaskDto>;
   complete(userId: string, taskId: string): Promise<MyTaskDto>;
   /** The commissioning party's read-only view of work they commissioned through agreements. */
-  commissioned(userId: string): Promise<CommissionedWorkDto[]>;
+  commissioned(userId: string): Promise<CommissionedWorkPageDto>;
 }
 
 export interface MyTasksDependencies {
@@ -49,6 +50,7 @@ export interface MyTasksDependencies {
   readonly participants: ParticipantRepository;
   readonly proposals: ProposalMarkerPort;
   readonly origins: AgreementOriginPort;
+  readonly companyContext: CompanyContextService;
 }
 
 const encodeCursor = ({ dueDate, id }: MyTasksCursor): string =>
@@ -73,6 +75,7 @@ export const createMyTasksService = ({
   participants,
   proposals,
   origins,
+  companyContext,
 }: MyTasksDependencies): MyTasksService => {
   /**
    * Turns one stored task into what THIS viewer is allowed to read. Every field that could cross
@@ -274,8 +277,16 @@ export const createMyTasksService = ({
      * It feeds no group, count or filter of the performer's My Tasks.
      */
     async commissioned(userId) {
+      // Authority and membership are read live. No active company membership means no
+      // commissioned-work data at all — historical standing is never a current capability
+      // (§3.6 rule 6); post-offboarding tracking access is an unresolved product decision.
+      const context = await companyContext.forUser(userId);
+      const activeMember = context !== null && context.membershipStatus === 'active';
+      const canCommission = activeMember && context.permissions.includes('task.create');
+      if (!activeMember) return { canCommission: false, commissioned: [] };
+
       const commissions = await origins.listByProposer(new Types.ObjectId(userId));
-      if (commissions.length === 0) return [];
+      if (commissions.length === 0) return { canCommission, commissioned: [] };
 
       const rows = await tasks.listByIds(commissions.map((origin) => origin.task));
       const performers = await participants.findByIds(commissions.map((origin) => origin.accepter));
@@ -290,7 +301,10 @@ export const createMyTasksService = ({
       );
 
       const now = new Date();
-      return rows
+      // A revoked commissioner keeps the rows still requiring tracking, and only those. The
+      // lifecycle's terminal state is `completed` — no later closure or sign-off exists.
+      const visible = canCommission ? rows : rows.filter((task) => task.completedAt === undefined);
+      const commissioned = visible
         .slice()
         .sort((a, b) => a.dueDate.getTime() - b.dueDate.getTime())
         .map((task) => {
@@ -309,6 +323,8 @@ export const createMyTasksService = ({
                 : { userId: accepter.toString(), name },
           };
         });
+
+      return { canCommission, commissioned };
     },
   };
 };

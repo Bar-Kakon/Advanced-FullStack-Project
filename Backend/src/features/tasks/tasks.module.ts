@@ -85,6 +85,10 @@ export const createTasksModule = (requireAccessToken: RequestHandler): Router =>
     participants: participantRepository,
     proposals: createProposalMarkerAdapter(coordination),
     origins,
+    companyContext: createCompanyContextService({
+      memberships: companyMembershipRepository,
+      companies: companyRepository,
+    }),
   });
 
   const detail = createTaskDetailService({
@@ -134,7 +138,7 @@ export const createTasksModule = (requireAccessToken: RequestHandler): Router =>
   // Registered ahead of `/:taskId`, or the literal path would be read as an id.
   // The commissioning party's read-only tracking. Before '/:taskId', or that route would eat it.
   router.get('/commissioned', async (_req, res) => {
-    res.json({ commissioned: await myTasks.commissioned(getAuthenticatedUserId(res)) });
+    res.json(await myTasks.commissioned(getAuthenticatedUserId(res)));
   });
 
   router.get('/create-options', async (req, res) => {
