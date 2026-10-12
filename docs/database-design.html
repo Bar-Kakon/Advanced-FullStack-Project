@@ -2059,7 +2059,8 @@ module.exports = mongoose.model('Thread', threadSchema);`
   ],
   indexes: [
     { def: '{ thread: 1, createdAt: -1 }', serves: 'Paged thread view', why: 'The canonical paging index: equality on the container, descending on time. Infinite scroll reads straight out of it.' },
-    { def: "{ 'agreementForm.status': 1 }", opts: 'sparse', serves: 'Outstanding agreement forms', why: 'Sparse — almost no message carries a form, so the index only stores the ones that do.' }
+    { def: "{ 'agreementForm.status': 1 }", opts: 'sparse', serves: 'Outstanding agreement forms', why: 'Sparse — almost no message carries a form, so the index only stores the ones that do.' },
+    { def: "{ 'agreement.task': 1 }", opts: "partial: { 'agreement.task': { $exists: true } }", serves: 'Task → agreement reverse lookup (built 2026-10-12)', why: 'My Tasks attribution and Commissioned Work resolve a task back to the agreement that commissioned it; only task-creating rows are indexed. The built pair index { sender, agreement.respondedBy } (accepted only) serves the D15 Work-Commitment check the same way.' }
   ],
   why: [
     '**This is the canonical "never embed" case.** Unbounded growth, a hard 16 MB document ceiling, and a read pattern that always wants a page rather than the whole set. All three independently rule out embedding messages in the thread.',
