@@ -6,10 +6,13 @@ export interface NotificationTimingRule {
   readonly quietToMinute: number;
 }
 
+/** `default` lets the approved relationship cases decide; the explicit choices beat them. */
+export type ContactVisibilityChoice = 'default' | 'always' | 'hidden';
+
 export interface ContactVisibility {
   readonly email: boolean;
-  readonly businessPhone: boolean;
-  readonly officePhone: boolean;
+  readonly businessPhone: ContactVisibilityChoice;
+  readonly officePhone: ContactVisibilityChoice;
 }
 
 /**

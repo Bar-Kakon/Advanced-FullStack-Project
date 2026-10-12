@@ -8,9 +8,12 @@ export const PROJECT_PERMISSIONS = [
   'project.member.manage',
   'project.permission.grant',
   'task.create',
+  'task.edit',
   'task.assign',
   'schedule.exception.approve',
   'schedule.partial_release.manage',
+  'workplan.manage',
+  'schedule.change.manage',
   'room.moderate',
 ] as const;
 export type ProjectPermission = (typeof PROJECT_PERMISSIONS)[number];

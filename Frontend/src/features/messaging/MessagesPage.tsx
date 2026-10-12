@@ -441,11 +441,21 @@ export const MessagesPage = () => {
 
                         {row.message.deleted ? (
                           <span className="msg-bubble__body msg-bubble__removed">
-                            {t.messaging.deletedMessage}
+                            {row.message.senderName.trim().length > 0
+                              ? t.messaging.deletedByMessage.replace('{name}', row.message.senderName)
+                              : t.messaging.deletedMessage}
                           </span>
                         ) : row.message.removed ? (
                           <span className="msg-bubble__body msg-bubble__removed">
-                            {t.messaging.removedMessage}
+                            {row.message.removedByRole !== null &&
+                            row.message.removedByRole in t.messaging.removedByRoles
+                              ? t.messaging.removedByRoleMessage.replace(
+                                  '{role}',
+                                  t.messaging.removedByRoles[
+                                    row.message.removedByRole as keyof typeof t.messaging.removedByRoles
+                                  ],
+                                )
+                              : t.messaging.removedMessage}
                           </span>
                         ) : row.message.agreement !== null ? (
                           <div className="msg-agreement">

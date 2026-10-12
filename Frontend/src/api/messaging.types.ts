@@ -24,6 +24,8 @@ export interface ConversationMessage {
   readonly kind: 'text' | 'agreement';
   readonly body: string | null;
   readonly removed: boolean;
+  /** The remover's project role at removal time, for the attribution placeholder. */
+  readonly removedByRole: string | null;
   readonly deleted: boolean;
   readonly kept: boolean;
   readonly attachments: readonly MessageAttachment[];
