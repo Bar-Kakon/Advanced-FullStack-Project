@@ -74,13 +74,16 @@ export const MessagesPage = () => {
   );
 
   // A different thread starts clean: no stale draft, upload, dialog or confirmation crosses over.
+  const openIdRef = useRef<string | undefined>(openId);
   useEffect(() => {
+    openIdRef.current = openId;
     setDraft('');
     setPendingAttachments([]);
     setAttachFailure(null);
     setProposing(false);
     setConfirmingDelete(null);
     setActionFailed(false);
+    setSendFailure(null);
   }, [openId]);
 
   const locale = localeOf(lang);
@@ -127,24 +130,38 @@ export const MessagesPage = () => {
     };
   }, [openId, inbox.conversations]);
 
+  const [sendFailure, setSendFailure] = useState<'awaiting' | 'generic' | null>(null);
+
   const submit = useCallback(async (): Promise<void> => {
     const body = draft.trim();
     if (body.length === 0 && pendingAttachments.length === 0) return;
 
-    await thread.send({
-      ...(body.length === 0 ? {} : { body }),
-      ...(pendingAttachments.length === 0
-        ? {}
-        : { attachments: pendingAttachments.map((attachment) => attachment.id) }),
-    });
-    setDraft('');
-    setPendingAttachments([]);
-    setAttachFailure(null);
+    setSendFailure(null);
+    try {
+      await thread.send({
+        ...(body.length === 0 ? {} : { body }),
+        ...(pendingAttachments.length === 0
+          ? {}
+          : { attachments: pendingAttachments.map((attachment) => attachment.id) }),
+      });
+      setDraft('');
+      setPendingAttachments([]);
+      setAttachFailure(null);
+    } catch (error) {
+      // A refused send must say so: silence here is what made attachments look unsendable.
+      const code = (error as { response?: { data?: { code?: string } } })?.response?.data?.code;
+      setSendFailure(
+        code === 'MESSAGE_REQUEST_AWAITING_RESPONSE' || code === 'MESSAGE_REQUEST_NOT_PENDING'
+          ? 'awaiting'
+          : 'generic',
+      );
+    }
   }, [draft, pendingAttachments, thread]);
 
   const attach = useCallback(
     async (file: File): Promise<void> => {
       if (openId === undefined) return;
+      const uploadedFor = openId;
 
       const isImage = IMAGE_TYPES.includes(file.type);
       const isPdf = file.type === 'application/pdf';
@@ -160,8 +177,12 @@ export const MessagesPage = () => {
       setUploading(true);
       setAttachFailure(null);
       try {
-        const attachment = await uploadAttachment(openId, file);
-        setPendingAttachments((previous) => [...previous, attachment]);
+        const attachment = await uploadAttachment(uploadedFor, file);
+        // A thread switch mid-upload: the result belongs to the OLD conversation and is dropped,
+        // or it would ride into the new thread's send and fail as a foreign attachment.
+        setPendingAttachments((previous) =>
+          openIdRef.current === uploadedFor ? [...previous, attachment] : previous,
+        );
       } catch {
         setAttachFailure('upload');
       } finally {
@@ -559,6 +580,14 @@ export const MessagesPage = () => {
                   )}
                 </div>
 
+                {sendFailure !== null ? (
+                  <p className="msg-dialog__error msg-composer__notice" role="alert">
+                    {sendFailure === 'awaiting'
+                      ? t.messaging.sendAwaitingRequest
+                      : t.messaging.sendFailed}
+                  </p>
+                ) : null}
+
                 {attachFailure !== null ? (
                   <p className="msg-dialog__error msg-composer__notice" role="alert">
                     {attachFailure === 'size'
@@ -588,6 +617,14 @@ export const MessagesPage = () => {
                       </span>
                     ))}
                   </div>
+                ) : null}
+
+                {open?.requestState === 'pending' ? (
+                  <p className="msg-empty">
+                    {open.awaitingMyAnswer
+                      ? t.messaging.requestAnswerFirst
+                      : t.messaging.requestPendingNotice}
+                  </p>
                 ) : null}
 
                 <div className="msg-composer">

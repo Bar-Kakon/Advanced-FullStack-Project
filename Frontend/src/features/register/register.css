@@ -883,7 +883,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 .input-warn {
   position: absolute;
   top: 0;
-  inset-inline-end: 12px;
+  right: 12px;
   height: 54px;
   display: none;
   align-items: center;

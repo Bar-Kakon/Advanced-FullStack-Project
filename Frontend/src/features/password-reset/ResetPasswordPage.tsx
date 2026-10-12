@@ -56,6 +56,7 @@ export const ResetPasswordPage = () => {
   const [done, setDone] = useState(false);
   const [sentTo, setSentTo] = useState<string | null>(null);
   const [resending, setResending] = useState(false);
+  const [resendResult, setResendResult] = useState<'sent' | 'failed' | null>(null);
 
   const errors = useMemo(
     () => ({
@@ -88,7 +89,11 @@ export const ResetPasswordPage = () => {
   const resend = useCallback((): void => {
     if (sentTo === null || resending) return;
     setResending(true);
-    void requestPasswordReset({ email: sentTo }).finally(() => setResending(false));
+    setResendResult(null);
+    void requestPasswordReset({ email: sentTo })
+      .then(() => setResendResult('sent'))
+      .catch(() => setResendResult('failed'))
+      .finally(() => setResending(false));
   }, [sentTo, resending]);
 
   const alertMessage =
@@ -141,7 +146,7 @@ export const ResetPasswordPage = () => {
   if (sentTo !== null) {
     return (
       <AuthShell brand={t.resetPassword.brand}>
-        <ResetLinkSent onResend={resend} resending={resending} />
+        <ResetLinkSent onResend={resend} resending={resending} resendResult={resendResult} />
       </AuthShell>
     );
   }

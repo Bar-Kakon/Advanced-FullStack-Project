@@ -446,19 +446,20 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 }
 .input-action:hover { color: var(--primary); }
 
-/* Hard-hat warning inside an invalid field; sits left of the eye toggle */
-/* Logical, so the hard-hat sits on the trailing edge in both directions. */
+/* Hard-hat warning inside an invalid field; sits left of the eye toggle. */
+/* Physical, deliberately: the fields are always LTR and reserve physical padding-right, while
+   the page direction flips — a logical inset put the hat over the content in Hebrew. */
 .input-warn {
   position: absolute;
   top: 0;
-  inset-inline-end: 12px;
-  height: 48px;
+  right: 12px;
+  height: 54px;
   display: none;
   align-items: center;
   color: var(--error);
   pointer-events: none;
 }
-.input-wrapper:has(.input-action) .input-warn { inset-inline-end: 46px; }
+.input-wrapper:has(.input-action) .input-warn { right: 46px; }
 
 /* Eye / eye-off state swap driven by JS class */
 .icon-eye-off                          { display: none; }
