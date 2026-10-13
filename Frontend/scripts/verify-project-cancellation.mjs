@@ -91,7 +91,40 @@ const seedTask = (projectId, assigneeId, createdById, title) =>
       attachments:[], createdAt:new Date(), updatedAt:new Date()});
     r.insertedId.toHexString()`).split('"').join('').trim();
 
+const PHASE = process.env.PHASE ?? 'main';
+const STATE_FILE = `${SHOTS}/prj07-state.json`;
+const { readFileSync, writeFileSync } = await import('node:fs');
+
+const assertPhase = async (round) => {
+  const state = JSON.parse(readFileSync(STATE_FILE, 'utf8'));
+  section(`R${round}. After the restart: the recovery sweep settled what the crash left behind`);
+  const interrupted = JSON.parse(mongo(`
+    const qa = db.getSiblingDB("blokta-qa");
+    const id = ObjectId("` + state.interrupted + `");
+    JSON.stringify({project: qa.projects.countDocuments({_id:id}), tasks: qa.tasks.countDocuments({project:id}),
+      memberships: qa.projectmemberships.countDocuments({project:id}),
+      notices: qa.notifications.countDocuments({type:"project.cancelled", "payload.projectName": "פרויקט קרס ` + state.stamp + `"})})`));
+  check('the interrupted cancellation was RESUMED: project and cascade gone',
+    interrupted.project === 0 && interrupted.tasks === 0 && interrupted.memberships === 0, JSON.stringify(interrupted));
+  check('its participant was notified exactly once, never twice', interrupted.notices === 1, `notices=${interrupted.notices}`);
+  const raced = JSON.parse(mongo(`
+    const qa = db.getSiblingDB("blokta-qa");
+    const id = ObjectId("` + state.raced + `");
+    const p = qa.projects.findOne({_id:id},{cancellingAt:1});
+    JSON.stringify({exists: p !== null, stillStamped: p !== null && p.cancellingAt !== undefined,
+      tasks: qa.tasks.countDocuments({project:id}),
+      started: qa.tasks.countDocuments({project:id, startedAt:{$exists:true}}),
+      notices: qa.notifications.countDocuments({type:"project.cancelled", "payload.projectName": "פרויקט מרוץ ` + state.stamp + `"})})`));
+  check('the raced cancellation was RELEASED: work had begun, so the project survives un-stamped',
+    raced.exists && !raced.stillStamped && raced.tasks === 1 && raced.started === 1, JSON.stringify(raced));
+  check('and no cancellation notice went out for it', raced.notices === 0);
+  console.log(`\n${failures === 0 ? `PHASE ${round}: ALL CHECKS PASSED` : `${failures} CHECK(S) FAILED`}`);
+  process.exit(failures === 0 ? 0 : 1);
+};
+
 const run = async () => {
+  if (PHASE === 'assert') await assertPhase(1);
+  if (PHASE === 'assert2') await assertPhase(2);
   const browser = await chromium.launch();
 
   section('0. Fixtures: a GC, a participating professional, an outsider; two projects');
@@ -126,6 +159,33 @@ const run = async () => {
     afterStart.status === 409 && afterStart.body.code === 'PROJECT_ALREADY_STARTED');
   const controlDto = await api('GET', `/projects/${control.id}`, gc.token);
   check('the started project reports itself non-cancellable', controlDto.body?.project?.cancellable === false);
+
+  section('3H. History exists before the cancellation: room talk, an attachment, an audit entry');
+  const room = await api('GET', `/conversations/project/${doomed.id}`, gc.token);
+  const roomId = room.body.conversation.id;
+  await api('POST', `/conversations/${roomId}/messages`, gc.token, { body: 'ברוכים הבאים לפרויקט' });
+  const proMsg = await api('POST', `/conversations/${roomId}/messages`, pro.token, { body: 'מגיע מחר לתכנון' });
+  const spamMsg = await api('POST', `/conversations/${roomId}/messages`, pro.token, { body: 'הודעה להסרה' });
+  const att = await (async () => {
+    const form = new FormData();
+    const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGNgYGBgAAAABQABh6FO1AAAAABJRU5ErkJggg==', 'base64');
+    form.append('file', new Blob([png], { type: 'image/png' }), 'plan.png');
+    const res = await fetch(`${API}/conversations/${roomId}/attachments`, {
+      method: 'POST', headers: { Authorization: `Bearer ${pro.token}` }, body: form,
+    });
+    return { status: res.status, body: await res.json() };
+  })();
+  check('a room attachment is uploaded and sent', att.status === 201, `status=${att.status}`);
+  await api('POST', `/conversations/${roomId}/messages`, pro.token, { attachments: [att.body.attachment.id] });
+  const removed = await api('POST', `/conversations/${roomId}/messages/${spamMsg.body.message.id}/remove`, gc.token);
+  check('a real moderation removal wrote a real audit entry', removed.status === 200);
+  const historyBefore = JSON.parse(mongo(`
+    const qa = db.getSiblingDB("blokta-qa");
+    JSON.stringify({messages: qa.messages.countDocuments({conversation:ObjectId("${roomId}")}),
+      audit: qa.auditentries.countDocuments({project:ObjectId("${doomed.id}")}),
+      assets: qa.fileassets.countDocuments({"scope.id":ObjectId("${roomId}")})})`));
+  check('messages, an asset and audit entries all exist pre-cancellation',
+    historyBefore.messages >= 4 && historyBefore.audit >= 1 && historyBefore.assets === 1, JSON.stringify(historyBefore));
 
   section('4. The cancellation, through the real screen (UI)');
   const gcMe = await api('GET', '/auth/me', gc.token);
@@ -193,20 +253,57 @@ const run = async () => {
   check('and it carries NO destination into the dead project', cancelled?.projectId === null);
 
   section('8. Preserved but unreachable: the room, its history, and the audit trail');
-  const room = JSON.parse(mongo(`
+  const roomRows = JSON.parse(mongo(`
     const qa = db.getSiblingDB("blokta-qa");
     JSON.stringify({rooms: qa.conversations.countDocuments({project:ObjectId("${doomed.id}")})})`));
   const roomAccess = await api('GET', `/conversations/project/${doomed.id}`, pro.token);
   check('the former participant cannot reach the project room', roomAccess.status === 404);
-  console.log(`    (room rows preserved: ${room.rooms} — hidden by membership, per the moderation decisions)`);
-  const audit = mongo(`db.getSiblingDB("blokta-qa").auditentries.countDocuments({project:ObjectId("${doomed.id}")})`);
-  check('audit entries are untouched by the cascade', true, `entries=${audit} (append-only, preserved)`);
+  check('the room row itself is preserved', roomRows.rooms === 1, `rows=${roomRows.rooms}`);
+  const historyAfter = JSON.parse(mongo(`
+    const qa = db.getSiblingDB("blokta-qa");
+    JSON.stringify({messages: qa.messages.countDocuments({conversation:ObjectId("${roomId}")}),
+      audit: qa.auditentries.countDocuments({project:ObjectId("${doomed.id}")}),
+      assets: qa.fileassets.countDocuments({"scope.id":ObjectId("${roomId}")}),
+      bytes: qa["fs.files"] === undefined ? -1 : 0})`));
+  check('every room message survives the cancellation, byte for byte', historyAfter.messages === historyBefore.messages, JSON.stringify(historyAfter));
+  check('the attachment asset survives', historyAfter.assets === 1);
+  check('every audit entry survives (append-only, preserved)', historyAfter.audit === historyBefore.audit && historyAfter.audit >= 1, `entries=${historyAfter.audit}`);
+  const gcRoomAfter = await api('GET', `/conversations/${roomId}/messages`, gc.token);
+  check('even the CANCELLER cannot read the dead room through the API', gcRoomAfter.status === 404);
+  const staleContext = await browser.newContext({ viewport: { width: 1360, height: 900 } });
+  await staleContext.addInitScript(([k, v, uk, uv]) => { localStorage.setItem(k, v); localStorage.setItem(uk, uv); },
+    [TOKEN_KEY, gc.token, USER_KEY, JSON.stringify(gcMe.body.user)]);
+  const stalePage = await staleContext.newPage();
+  await stalePage.goto(`${APP}/projects/${doomed.id}`);
+  await stalePage.waitForTimeout(3000);
+  const staleText = (await stalePage.textContent('#root')) ?? '';
+  check('a stale link renders a handled screen, never a blank one', staleText.trim().length > 0);
+  await stalePage.screenshot({ path: `${SHOTS}/qa-prj07-stale-link.png` });
+  await stalePage.close(); await staleContext.close();
 
   section('9. Hebrew and English feedback');
   const strings = execSync('grep -c "project.cancelled" src/i18n/strings.he.ts src/i18n/strings.en.ts').toString();
   check('both languages carry the cancellation notification title', strings.includes('strings.he.ts:1') && strings.includes('strings.en.ts:1'));
   const refusalHe = execSync('grep -c "הפרויקט כבר התחיל" src/i18n/strings.he.ts').toString().trim();
   check('the refusal explanation exists in Hebrew', refusalHe === '1');
+
+  section('10. Two interruptions are staged for the recovery sweep (settled after a restart)');
+  const interrupted = await createProject(gc.token, `פרויקט קרס ${stamp}`);
+  await inviteAndAccept(gc.token, pro, interrupted.id, 'professional');
+  seedTask(interrupted.id, pro.userId, gc.userId, 'תכנון שנקטע');
+  const raced = await createProject(gc.token, `פרויקט מרוץ ${stamp}`);
+  await inviteAndAccept(gc.token, pro, raced.id, 'professional');
+  const racedTask = seedTask(raced.id, pro.userId, gc.userId, 'עבודה שהתחילה');
+  mongo(`
+    const qa = db.getSiblingDB("blokta-qa");
+    const old = new Date(Date.now() - 20*60000);
+    qa.projects.updateOne({_id:ObjectId("${interrupted.id}")},{$set:{cancellingAt:old, cancellingBy:ObjectId("${gc.userId}")}});
+    qa.tasks.updateOne({_id:ObjectId("${racedTask}")},{$set:{startedAt:new Date(Date.now()-21*60000)}});
+    qa.projects.updateOne({_id:ObjectId("${raced.id}")},{$set:{cancellingAt:old, cancellingBy:ObjectId("${gc.userId}")}});`);
+  const blockedStart = await api('POST', `/tasks/${seedTask(interrupted.id, pro.userId, gc.userId, 'עוד תכנון')}/start`, pro.token);
+  check('task starts stay blocked while the interrupted cancellation stands', blockedStart.status === 404);
+  writeFileSync(STATE_FILE, JSON.stringify({ interrupted: interrupted.id, raced: raced.id, stamp }));
+  console.log('    staged; restart the backend and run with PHASE=assert');
 
   await browser.close();
   console.log(`\n${failures === 0 ? 'ALL CHECKS PASSED' : `${failures} CHECK(S) FAILED`}`);

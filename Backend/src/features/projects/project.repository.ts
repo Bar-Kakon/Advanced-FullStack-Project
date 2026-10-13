@@ -52,8 +52,10 @@ export interface ProjectRepository {
   findOwnedById(id: string, company: Types.ObjectId): Promise<ProjectRecord | null>;
   findById(id: string): Promise<ProjectRecord | null>;
   /** Phase one of a cancellation. Answers true when the stamp stands, fresh or from a retry. */
-  markCancelling(id: string, company: Types.ObjectId): Promise<boolean>;
+  markCancelling(id: string, company: Types.ObjectId, by: Types.ObjectId): Promise<boolean>;
   clearCancelling(id: string): Promise<void>;
+  /** Stamps older than the threshold: cancellations a crash interrupted, for the recovery sweep. */
+  listStaleCancelling(before: Date, limit: number): Promise<ProjectRecord[]>;
   /** Reachable means owned by the caller's company OR one they participate in. */
   findAccessibleById(id: string, company: Types.ObjectId, memberOf: readonly Types.ObjectId[]): Promise<ProjectRecord | null>;
   listAccessible(
@@ -220,13 +222,13 @@ export const projectRepository: ProjectRepository = {
     return ProjectModel.findById(projectId).lean<ProjectRecord>().exec();
   },
 
-  async markCancelling(id, company) {
+  async markCancelling(id, company, by) {
     const projectId = toObjectId(id);
     if (projectId === null) return false;
 
     const result = await ProjectModel.updateOne(
       { _id: projectId, company, completedAt: { $exists: false }, cancellingAt: { $exists: false } },
-      { $set: { cancellingAt: new Date() } },
+      { $set: { cancellingAt: new Date(), cancellingBy: by } },
     ).exec();
     if (result.modifiedCount === 1) return true;
 
@@ -241,6 +243,16 @@ export const projectRepository: ProjectRepository = {
   async clearCancelling(id) {
     const projectId = toObjectId(id);
     if (projectId === null) return;
-    await ProjectModel.updateOne({ _id: projectId }, { $unset: { cancellingAt: '' } }).exec();
+    await ProjectModel.updateOne(
+      { _id: projectId },
+      { $unset: { cancellingAt: '', cancellingBy: '' } },
+    ).exec();
+  },
+
+  async listStaleCancelling(before, limit) {
+    return ProjectModel.find({ cancellingAt: { $lte: before } })
+      .limit(limit)
+      .lean<ProjectRecord[]>()
+      .exec();
   },
 };

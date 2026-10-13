@@ -21,6 +21,7 @@ import { proposalRepository } from '../coordination/proposal.repository.js';
 import { scheduleExceptionRepository } from '../scheduleexceptions/scheduleException.repository.js';
 import { taskRepository } from '../tasks/task.repository.js';
 import { userRepository } from '../users/user.repository.js';
+import { createProjectCancellationService } from './projectCancellation.service.js';
 import {
   adoptCalendarBodySchema,
   calendarOverridesSchema,
@@ -32,6 +33,20 @@ import {
 
 export const createProjectsModule = (requireAccessToken: RequestHandler): Router => {
   const coordination = buildCoordinationService();
+
+  const cancellation = createProjectCancellationService({
+    projects: projectRepository,
+    access: projectAccessRepository,
+    grants: projectGrantRepository,
+    tasks: taskRepository,
+    proposals: proposalRepository,
+    exceptions: scheduleExceptionRepository,
+    notificationRows: notificationRepository,
+    notifications: buildNotificationDispatchService(),
+    execution: taskExecutionAdapter,
+    users: userRepository,
+    transactions: { run: runInTransaction },
+  });
 
   const controller = createProjectsController(
     createProjectsService({
@@ -46,13 +61,7 @@ export const createProjectsModule = (requireAccessToken: RequestHandler): Router
       grants: projectGrantRepository,
       pendingActions: { forUser: (userId) => coordination.pendingActionsFor(userId) },
       planCapacity: planCapacityAdapter,
-      tasks: taskRepository,
-      proposals: proposalRepository,
-      exceptions: scheduleExceptionRepository,
-      notificationRows: notificationRepository,
-      notifications: buildNotificationDispatchService(),
-      users: userRepository,
-      transactions: { run: runInTransaction },
+      cancellation,
     }),
   );
 

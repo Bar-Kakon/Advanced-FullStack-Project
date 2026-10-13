@@ -6,8 +6,7 @@ import { configOrDefault } from '../calendar/companyCalendar.repository.js';
 import { resolveEffectiveCalendar, type WorkingCalendarConfig } from '../calendar/workingCalendar.types.js';
 import type { ProjectAccessRepository } from '../projectaccess/projectAccess.repository.js';
 import type { ProjectGrantRepository } from '../projectaccess/projectGrant.repository.js';
-import type { NotificationDispatchService } from '../notifications/notificationDispatch.service.js';
-import type { DbSession } from '../../db/mongoose.js';
+import type { ProjectCancellationService } from './projectCancellation.service.js';
 import {
   mayManage,
   requireActiveCompany,
@@ -65,18 +64,7 @@ export interface ProjectsDependencies {
   readonly grants: ProjectGrantRepository;
   readonly pendingActions: PendingActionsPort;
   readonly planCapacity: PlanCapacityPort;
-  readonly tasks: ProjectCascadePort;
-  readonly proposals: ProjectCascadePort;
-  readonly exceptions: ProjectCascadePort;
-  readonly notificationRows: ProjectCascadePort;
-  readonly notifications: NotificationDispatchService;
-  readonly users: { findDisplayNames(ids: readonly Types.ObjectId[]): Promise<Map<string, string>> };
-  readonly transactions: { run<T>(work: (session: DbSession) => Promise<T>): Promise<T> };
-}
-
-/** What a cancellation needs from each neighbouring domain: take the project's rows, nothing else. */
-export interface ProjectCascadePort {
-  deleteByProject(project: Types.ObjectId, session?: DbSession): Promise<number>;
+  readonly cancellation: Pick<ProjectCancellationService, 'complete'>;
 }
 
 const encodeCursor = ({ createdAt, id }: ProjectCursor): string =>
@@ -104,13 +92,7 @@ export const createProjectsService = ({
   grants,
   pendingActions,
   planCapacity,
-  tasks,
-  proposals,
-  exceptions,
-  notificationRows,
-  notifications,
-  users,
-  transactions,
+  cancellation,
 }: ProjectsDependencies): ProjectsService => {
   /** The caller's company is read from their session, never from the request body. */
   const contextFor = async (userId: string) => {
@@ -359,41 +341,16 @@ export const createProjectsService = ({
         if (project.cancellingAt === undefined) throw projectAlreadyStarted();
       }
 
-      if (!(await projects.markCancelling(projectId, project.company))) throw projectNotFound();
+      if (!(await projects.markCancelling(projectId, project.company, new Types.ObjectId(userId)))) {
+        throw projectNotFound();
+      }
 
       if (await execution.hasFirstTaskStarted(projectId)) {
         await projects.clearCancelling(projectId);
         throw projectAlreadyStarted();
       }
 
-      const members = (await access.listMembers(project._id)).filter(
-        (member) => member.status === 'active' && member.user.toString() !== userId,
-      );
-
-      await transactions.run(async (session) => {
-        if (!(await projects.deleteOwnedById(projectId, project.company, session))) {
-          throw projectNotFound();
-        }
-        await access.deleteByProject(project._id, session);
-        await grants.deleteByProject(project._id, session);
-        await tasks.deleteByProject(project._id, session);
-        await proposals.deleteByProject(project._id, session);
-        await exceptions.deleteByProject(project._id, session);
-        await notificationRows.deleteByProject(project._id, session);
-      });
-
-      // The GC's duty to inform the expected participants, carried by the platform. No projectId
-      // rides along: there is no project left to navigate into, only the fact and the names.
-      const actorName =
-        (await users.findDisplayNames([new Types.ObjectId(userId)])).get(userId) ?? '';
-      await notifications.emitMany(
-        members.map((member) => ({
-          userId: member.user,
-          type: 'project.cancelled' as const,
-          payload: { projectName: project.name, actorName },
-          dedupeKey: `project-cancelled:${project._id.toString()}:${member.user.toString()}`,
-        })),
-      );
+      await cancellation.complete({ ...project, cancellingBy: new Types.ObjectId(userId) });
     },
   };
 };
