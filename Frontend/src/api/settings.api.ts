@@ -49,12 +49,7 @@ export const setProjectMute = async (projectId: string, muted: boolean): Promise
   await api.put(`/mutes/projects/${projectId}`, { muted });
 };
 
-export type AccountClosureFailure =
-  | 'OWNS_COMPANY'
-  | 'IN_COMPANY'
-  | 'ACTIVE_WORK'
-  | 'NETWORK'
-  | 'UNKNOWN';
+export type AccountClosureFailure = 'OWNS_COMPANY' | 'IN_COMPANY' | 'NETWORK' | 'UNKNOWN';
 
 /** The D8 closure request: a recoverable deactivation, refused while obligations stay open. */
 export const requestAccountClosure = async (): Promise<void> => {
@@ -71,8 +66,6 @@ export const classifyAccountClosureError = (error: unknown): AccountClosureFailu
       return 'OWNS_COMPANY';
     case 'ACCOUNT_IN_COMPANY':
       return 'IN_COMPANY';
-    case 'ACCOUNT_HAS_ACTIVE_WORK':
-      return 'ACTIVE_WORK';
     default:
       return 'UNKNOWN';
   }

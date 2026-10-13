@@ -25,8 +25,6 @@ export interface MyTasksQuery {
 export interface TaskRepository {
   listMine(query: MyTasksQuery): Promise<TaskRecord[]>;
   listByIds(ids: readonly Types.ObjectId[]): Promise<TaskRecord[]>;
-  /** Every unfinished responsibility this person holds, as assignee or hidden performer. */
-  countUnfinishedResponsibilities(userId: Types.ObjectId): Promise<number>;
   /** The departing member's unfinished responsibilities inside the company's own projects. */
   listUnfinishedAssignedInCompany(
     assignee: Types.ObjectId,
@@ -68,13 +66,6 @@ const statePredicate = (state: TaskState): Record<string, unknown> => {
 };
 
 export const taskRepository: TaskRepository = {
-  async countUnfinishedResponsibilities(userId) {
-    return TaskModel.countDocuments({
-      ...minePredicate(userId),
-      completedAt: { $exists: false },
-    }).exec();
-  },
-
   async listUnfinishedAssignedInCompany(assignee, company, session) {
     return TaskModel.find({
       assignee,

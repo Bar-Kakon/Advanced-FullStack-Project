@@ -82,7 +82,6 @@ export const SettingsPage = () => {
   const closureMessage =
     closureFailure === 'OWNS_COMPANY' ? t.settings.account.blockedOwnsCompany
     : closureFailure === 'IN_COMPANY' ? t.settings.account.blockedInCompany
-    : closureFailure === 'ACTIVE_WORK' ? t.settings.account.blockedActiveWork
     : closureFailure !== null ? t.settings.account.closureFailed
     : null;
 
@@ -303,6 +302,7 @@ export const SettingsPage = () => {
               </h2>
               <h3 className="settings-section__title">{t.settings.account.deactivationTitle}</h3>
               <p className="settings-section__note">{t.settings.account.deactivationNote}</p>
+              <p className="settings-section__note">{t.settings.account.deactivationObligations}</p>
 
               {closureMessage === null ? null : <FormAlert message={closureMessage} />}
 

@@ -8,7 +8,6 @@ import { createFileAssetService } from '../files/fileAsset.service.js';
 import { workEntryRepository } from '../workentries/workEntry.repository.js';
 import { platformAuditService } from '../moderation/platformAudit.instance.js';
 import { refreshTokenRepository } from '../auth/refreshToken.repository.js';
-import { taskRepository } from '../tasks/task.repository.js';
 import { createAccountLifecycleService } from './accountLifecycle.service.js';
 import { createProfileController } from './profile.controller.js';
 import { createCoordinationOutcomeAdapter } from '../coordination/coordinationOutcome.adapter.js';
@@ -45,7 +44,6 @@ export const createUsersModule = (requireAccessToken: RequestHandler): UsersModu
     users: userRepository,
     audit: platformAuditService,
     memberships: companyMembershipRepository,
-    tasks: taskRepository,
     refreshTokens: refreshTokenRepository,
   });
 
