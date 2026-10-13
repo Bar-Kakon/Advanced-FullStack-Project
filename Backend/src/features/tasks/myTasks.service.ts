@@ -5,6 +5,7 @@ import type { ProjectRepository } from '../projects/project.repository.js';
 import { formatCalendarDate } from '../projects/projectDates.js';
 import type { CompanyContextService } from '../companies/companyContext.service.js';
 import type { AgreementOrigin, AgreementOriginPort } from './agreementOrigin.port.js';
+import type { CommissionTrackingRepository } from './commissionTracking.repository.js';
 import type { CommissionedWorkPageDto, MyTaskDto, MyTasksPageDto } from './task.dto.js';
 import type { TaskKind, TaskRecord } from './task.model.js';
 import type { ProposalMarkerPort } from './proposals.port.js';
@@ -51,6 +52,7 @@ export interface MyTasksDependencies {
   readonly proposals: ProposalMarkerPort;
   readonly origins: AgreementOriginPort;
   readonly companyContext: CompanyContextService;
+  readonly trackings: CommissionTrackingRepository;
 }
 
 const encodeCursor = ({ dueDate, id }: MyTasksCursor): string =>
@@ -76,6 +78,7 @@ export const createMyTasksService = ({
   proposals,
   origins,
   companyContext,
+  trackings,
 }: MyTasksDependencies): MyTasksService => {
   /**
    * Turns one stored task into what THIS viewer is allowed to read. Every field that could cross
@@ -278,50 +281,102 @@ export const createMyTasksService = ({
      */
     async commissioned(userId) {
       // Authority and membership are read live. No active company membership means no
-      // commissioned-work data at all — historical standing is never a current capability
-      // (§3.6 rule 6); post-offboarding tracking access is an unresolved product decision.
+      // commissioned-work data at all — stored history is never a current capability (§3.6 rule 6).
       const context = await companyContext.forUser(userId);
       const activeMember = context !== null && context.membershipStatus === 'active';
       const canCommission = activeMember && context.permissions.includes('task.create');
-      if (!activeMember) return { canCommission: false, commissioned: [] };
+      if (!activeMember || context === null) return { canCommission: false, commissioned: [] };
 
-      const commissions = await origins.listByProposer(new Types.ObjectId(userId));
-      if (commissions.length === 0) return { canCommission, commissioned: [] };
+      const me = new Types.ObjectId(userId);
+      const company = new Types.ObjectId(context.id);
 
-      const rows = await tasks.listByIds(commissions.map((origin) => origin.task));
-      const performers = await participants.findByIds(commissions.map((origin) => origin.accepter));
+      // Attribution reads the immutable company stamp, never a membership: the viewer's own
+      // commissions only inside their CURRENT company, so nothing follows anybody between firms.
+      const own = (await origins.listByProposer(me)).filter(
+        (origin) => origin.company !== null && origin.company.equals(company),
+      );
+      // Company-wide read-only owner oversight, by the same stamp.
+      const oversight =
+        context.standing === 'owner'
+          ? (await origins.listByCompany(company)).filter(
+              (origin) => !origin.proposer.equals(me),
+            )
+          : [];
+      // Appointed tracking: rows explicitly transferred or shared onto this viewer.
+      const trackeeRows = (await trackings.listByTrackee(me)).filter((row) =>
+        row.company.equals(company),
+      );
+
+      type Entry = { origin: AgreementOrigin; role: 'commissioner' | 'owner_oversight' | 'trackee' };
+      const entries = new Map<string, Entry>();
+      for (const origin of oversight) {
+        entries.set(origin.task.toString(), { origin, role: 'owner_oversight' });
+      }
+      const trackedTasks = new Set(trackeeRows.map((row) => row.task.toString()));
+      const trackedOrigins = await origins.findByTaskIds(trackeeRows.map((row) => row.task));
+      for (const origin of trackedOrigins) {
+        if (trackedTasks.has(origin.task.toString())) {
+          entries.set(origin.task.toString(), { origin, role: 'trackee' });
+        }
+      }
+      for (const origin of own) {
+        entries.set(origin.task.toString(), { origin, role: 'commissioner' });
+      }
+      if (entries.size === 0) return { canCommission, commissioned: [] };
+
+      const rows = await tasks.listByIds([...entries.values()].map((entry) => entry.origin.task));
+      const trackingRows = await trackings.listByTasks(rows.map((task) => task._id));
+      const trackingByTask = new Map(trackingRows.map((row) => [row.task.toString(), row]));
+
+      const nameIds = [
+        ...[...entries.values()].flatMap((entry) => [entry.origin.accepter, entry.origin.proposer]),
+        ...trackingRows.flatMap((row) => (row.trackee === undefined ? [] : [row.trackee])),
+      ];
+      const people = await participants.findByIds([
+        ...new Set(nameIds.map((id) => id.toString())),
+      ].map((id) => new Types.ObjectId(id)));
       const names = new Map(
-        performers.map((person) => [
+        people.map((person) => [
           person._id.toString(),
           `${person.firstName} ${person.lastName}`.trim(),
         ]),
       );
-      const accepterByTask = new Map(
-        commissions.map((origin) => [origin.task.toString(), origin.accepter]),
-      );
+      const ref = (id: Types.ObjectId | undefined) =>
+        id === undefined ? null : { userId: id.toString(), name: names.get(id.toString()) ?? '' };
 
       const now = new Date();
-      // A revoked commissioner keeps the rows still requiring tracking, and only those. The
-      // lifecycle's terminal state is `completed` — no later closure or sign-off exists.
-      const visible = canCommission ? rows : rows.filter((task) => task.completedAt === undefined);
-      const commissioned = visible
+      const commissioned = rows
         .slice()
         .sort((a, b) => a.dueDate.getTime() - b.dueDate.getTime())
-        .map((task) => {
-          const accepter = accepterByTask.get(task._id.toString());
-          const name = accepter === undefined ? null : names.get(accepter.toString()) ?? null;
-          return {
-            id: task._id.toString(),
-            title: task.title,
-            startDate: formatCalendarDate(task.startDate),
-            dueDate: formatCalendarDate(task.dueDate),
-            state: deriveTaskState(task),
-            overdue: isOverdue(task, now),
-            performer:
-              accepter === undefined || name === null
+        .flatMap((task) => {
+          const entry = entries.get(task._id.toString());
+          if (entry === undefined) return [];
+          // The viewer's own full history only while they hold the authority; everything that is
+          // not their own commission tracks ACTIVE work alone, and never permanently.
+          const unfinished = task.completedAt === undefined;
+          if (entry.role === 'commissioner' && !canCommission && !unfinished) return [];
+          if (entry.role !== 'commissioner' && !unfinished) return [];
+
+          const tracking = trackingByTask.get(task._id.toString());
+          return [
+            {
+              id: task._id.toString(),
+              title: task.title,
+              startDate: formatCalendarDate(task.startDate),
+              dueDate: formatCalendarDate(task.dueDate),
+              state: deriveTaskState(task),
+              overdue: isOverdue(task, now),
+              performer: ref(entry.origin.accepter),
+              role: entry.role,
+              commissionedBy: entry.origin.proposer.equals(me)
                 ? null
-                : { userId: accepter.toString(), name },
-          };
+                : ref(entry.origin.proposer),
+              tracking:
+                tracking === undefined
+                  ? null
+                  : { arrangement: tracking.arrangement, trackee: ref(tracking.trackee) },
+            },
+          ];
         });
 
       return { canCommission, commissioned };

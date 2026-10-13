@@ -2,6 +2,9 @@ import { isAxiosError } from 'axios';
 
 import { api } from './client';
 import type {
+  DepartureArrangements,
+  DepartureDefaultsPayload,
+  DepartureWork,
   ApiErrorBody,
   ApprovalResponse,
   CompanyPermission,
@@ -95,4 +98,42 @@ export const classifyEmployeeError = (error: unknown): EmployeeFailure => {
     default:
       return 'UNKNOWN';
   }
+};
+
+export const fetchDepartureWork = async (memberUserId: string): Promise<DepartureWork> => {
+  const { data } = await api.get<DepartureWork>(`/companies/departures/${memberUserId}/work`);
+  return data;
+};
+
+/** All-or-nothing on the server: a refused item applies none of the batch. */
+export const applyDepartureArrangements = async (
+  memberUserId: string,
+  arrangements: DepartureArrangements,
+): Promise<void> => {
+  await api.post(`/companies/departures/${memberUserId}/arrangements`, arrangements);
+};
+
+export const offboardEmployee = async (
+  membershipId: string,
+  arrangements: DepartureArrangements | undefined,
+): Promise<void> => {
+  await api.post(
+    `/companies/employees/${membershipId}/offboard`,
+    arrangements === undefined ? {} : { arrangements },
+  );
+};
+
+export const leaveCompany = async (): Promise<void> => {
+  await api.post('/companies/employees/me/leave');
+};
+
+export const claimCompanySeat = async (payload: {
+  companyName: string;
+  companyPosition: string;
+}): Promise<void> => {
+  await api.post('/companies/employees/claim', payload);
+};
+
+export const saveDepartureDefaults = async (payload: DepartureDefaultsPayload): Promise<void> => {
+  await api.put('/companies/departure-defaults', payload);
 };

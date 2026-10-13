@@ -32,6 +32,10 @@ export interface CompanyRepository {
   update(id: Types.ObjectId, update: CompanyUpdate): Promise<void>;
   /** Stamps employee setup as done. Idempotent, and the first stamp is the one that survives. */
   markEmployeeSetupComplete(id: Types.ObjectId, at: Date): Promise<void>;
+  setDepartureDefaults(
+    id: Types.ObjectId,
+    defaults: NonNullable<CompanyRecord['departureDefaults']>,
+  ): Promise<void>;
 }
 
 /**
@@ -89,5 +93,9 @@ export const companyRepository: CompanyRepository = {
       { _id: id, employeeSetupCompletedAt: { $exists: false } },
       { $set: { employeeSetupCompletedAt: at } },
     ).exec();
+  },
+
+  async setDepartureDefaults(id, defaults) {
+    await CompanyModel.updateOne({ _id: id }, { $set: { departureDefaults: defaults } }).exec();
   },
 };

@@ -28,6 +28,7 @@ export const AUDIT_ACTIONS = [
   'room.message_removed',
   'room.message_kept',
   'room.messages_removal_decision',
+  'work.orphaned',
 ] as const;
 export type AuditAction = (typeof AUDIT_ACTIONS)[number];
 

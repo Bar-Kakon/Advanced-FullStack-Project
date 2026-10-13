@@ -120,7 +120,8 @@ export interface AgreementInput {
 
 /** Whether this account may commission new work for its company. Read live on every ask. */
 export interface CommissioningPort {
-  mayCommissionWork(userId: string): Promise<boolean>;
+  /** The commissioning company when the account may commission right now; `null` otherwise. */
+  commissioningCompanyFor(userId: string): Promise<Types.ObjectId | null>;
 }
 
 /** Creates the canonical Task from an accepted agreement. The task domain owns the schema. */
@@ -542,7 +543,7 @@ export const createMessagingService = ({
         nextCursor:
           last !== undefined && rows.length === limit ? encodeCursor(last.createdAt, last._id) : null,
         canModerate: (await moderatorMembership(userId, conversation)) !== null,
-        canProposeAgreement: await commissioning.mayCommissionWork(userId),
+        canProposeAgreement: (await commissioning.commissioningCompanyFor(userId)) !== null,
       };
     },
 
@@ -587,8 +588,10 @@ export const createMessagingService = ({
     async proposeAgreement(userId, conversationId, input) {
       const conversation = await reachable(userId, conversationId);
 
-      // Proposing commissions new work on the company's behalf; accepting never asks this.
-      if (!(await commissioning.mayCommissionWork(userId))) throw notPermittedToCommission();
+      // Proposing commissions new work on the company's behalf; accepting never asks this. The
+      // company is stamped here, immutably — attribution never reads a membership again.
+      const commissioningCompany = await commissioning.commissioningCompanyFor(userId);
+      if (commissioningCompany === null) throw notPermittedToCommission();
 
       const sentAt = new Date();
       const message = await conversations.appendMessage({
@@ -601,6 +604,7 @@ export const createMessagingService = ({
           startDate: input.startDate,
           dueDate: input.dueDate,
           ...(input.projectId === undefined ? {} : { project: new Types.ObjectId(input.projectId) }),
+          commissioningCompany,
           state: 'proposed',
         },
       });

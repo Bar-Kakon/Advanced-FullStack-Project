@@ -78,6 +78,15 @@ export interface CommissionedWorkDto {
   readonly state: TaskState;
   readonly overdue: boolean;
   readonly performer: CounterpartyRef | null;
+  /** Why this viewer sees the row: their own commission, owner oversight, or appointed tracking. */
+  readonly role: 'commissioner' | 'owner_oversight' | 'trackee';
+  /** The original commissioner — `null` when that is the viewer themselves. */
+  readonly commissionedBy: CounterpartyRef | null;
+  /** The explicit arrangement, when one was saved. Absence means the precedence defaults. */
+  readonly tracking: {
+    readonly arrangement: 'owner_only' | 'transferred' | 'shared';
+    readonly trackee: CounterpartyRef | null;
+  } | null;
 }
 
 /**

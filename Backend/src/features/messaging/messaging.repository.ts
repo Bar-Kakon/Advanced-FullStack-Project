@@ -36,6 +36,8 @@ export interface AgreementTaskOrigin {
   readonly task: Types.ObjectId;
   readonly proposer: Types.ObjectId;
   readonly accepter: Types.ObjectId;
+  /** The immutable company stamp; `null` only on a legacy row the backfill reported and skipped. */
+  readonly company: Types.ObjectId | null;
 }
 
 export interface MessagingRepository {
@@ -88,6 +90,10 @@ export interface MessagingRepository {
   hasAcceptedAgreementBetween(a: Types.ObjectId, b: Types.ObjectId): Promise<boolean>;
   listAgreementOriginsByTask(tasks: readonly Types.ObjectId[]): Promise<AgreementTaskOrigin[]>;
   listAgreementOriginsByProposer(proposer: Types.ObjectId): Promise<AgreementTaskOrigin[]>;
+  /** Everything ever commissioned on this company's behalf, by the stamp alone. */
+  listAgreementOriginsByCompany(company: Types.ObjectId): Promise<AgreementTaskOrigin[]>;
+  /** The migration safeguard's question: accepted, task-creating agreements with no stamp. */
+  countUnstampedAcceptedAgreements(): Promise<number>;
   findMessageWithAttachment(
     conversation: Types.ObjectId,
     attachment: Types.ObjectId,
@@ -102,6 +108,22 @@ export interface MessagingRepository {
   ): Promise<MessageRecord | null>;
   unreadCountFor(user: Types.ObjectId, conversationIds: readonly Types.ObjectId[]): Promise<number>;
 }
+
+const toOrigins = (
+  rows: readonly Pick<MessageRecord, 'sender' | 'agreement'>[],
+): AgreementTaskOrigin[] =>
+  rows.flatMap((row) =>
+    row.agreement?.task === undefined || row.agreement.respondedBy === undefined
+      ? []
+      : [
+          {
+            task: row.agreement.task,
+            proposer: row.sender,
+            accepter: row.agreement.respondedBy,
+            company: row.agreement.commissioningCompany ?? null,
+          },
+        ],
+  );
 
 export const messagingRepository: MessagingRepository = {
   async findById(id) {
@@ -316,15 +338,11 @@ export const messagingRepository: MessagingRepository = {
       'agreement.state': 'accepted',
       'agreement.task': { $in: taskIds },
     })
-      .select('sender agreement.task agreement.respondedBy')
+      .select('sender agreement.task agreement.respondedBy agreement.commissioningCompany')
       .lean<Pick<MessageRecord, 'sender' | 'agreement'>[]>()
       .exec();
 
-    return rows.flatMap((row) =>
-      row.agreement?.task === undefined || row.agreement.respondedBy === undefined
-        ? []
-        : [{ task: row.agreement.task, proposer: row.sender, accepter: row.agreement.respondedBy }],
-    );
+    return toOrigins(rows);
   },
 
   async listAgreementOriginsByProposer(proposer) {
@@ -334,15 +352,34 @@ export const messagingRepository: MessagingRepository = {
       'agreement.state': 'accepted',
       'agreement.task': { $exists: true },
     })
-      .select('sender agreement.task agreement.respondedBy')
+      .select('sender agreement.task agreement.respondedBy agreement.commissioningCompany')
       .lean<Pick<MessageRecord, 'sender' | 'agreement'>[]>()
       .exec();
 
-    return rows.flatMap((row) =>
-      row.agreement?.task === undefined || row.agreement.respondedBy === undefined
-        ? []
-        : [{ task: row.agreement.task, proposer: row.sender, accepter: row.agreement.respondedBy }],
-    );
+    return toOrigins(rows);
+  },
+
+  async listAgreementOriginsByCompany(company) {
+    const rows = await MessageModel.find({
+      kind: 'agreement',
+      'agreement.commissioningCompany': company,
+      'agreement.state': 'accepted',
+      'agreement.task': { $exists: true },
+    })
+      .select('sender agreement.task agreement.respondedBy agreement.commissioningCompany')
+      .lean<Pick<MessageRecord, 'sender' | 'agreement'>[]>()
+      .exec();
+
+    return toOrigins(rows);
+  },
+
+  async countUnstampedAcceptedAgreements() {
+    return MessageModel.countDocuments({
+      kind: 'agreement',
+      'agreement.state': 'accepted',
+      'agreement.task': { $exists: true },
+      'agreement.commissioningCompany': { $exists: false },
+    }).exec();
   },
 
   async findMessageWithAttachment(conversation, attachment) {

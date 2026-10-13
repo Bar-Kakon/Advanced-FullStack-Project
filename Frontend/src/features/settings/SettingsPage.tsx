@@ -9,6 +9,7 @@ import { useLanguage } from '../../i18n/useLanguage';
 import { useDocumentTitle } from '../../routes/useDocumentTitle';
 import { useScreenStylesheet } from '../../styles/useScreenStylesheet';
 import { initialsOf } from '../profile/profileModel';
+import { CompanyMembershipSection } from './CompanyMembershipSection';
 import { useSettings } from './useSettings';
 import type { SettingsLanguage } from '../../api/settings.types';
 import profileCss from '../profile/profile.css?inline';
@@ -262,6 +263,8 @@ export const SettingsPage = () => {
                 </Link>
               </div>
             </section>
+
+            <CompanyMembershipSection />
 
             <section className="settings-section" aria-labelledby="settings-account">
               <h2 className="settings-section__title" id="settings-account">

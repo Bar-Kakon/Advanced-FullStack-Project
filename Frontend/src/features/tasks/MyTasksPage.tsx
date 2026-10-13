@@ -60,8 +60,9 @@ export const MyTasksPage = () => {
   // former one only while rows still require tracking; everybody else never sees it at all.
   const commissioned = commissionedPage?.commissioned ?? null;
   const showCommissioned =
-    commissionedPage !== null &&
-    (commissionedPage.canCommission || commissionedPage.commissioned.length > 0);
+    commissionedFailed ||
+    (commissionedPage !== null &&
+      (commissionedPage.canCommission || commissionedPage.commissioned.length > 0));
 
   useScreenStylesheet(
     { id: 'profile.css', css: profileCss },
@@ -238,12 +239,12 @@ export const MyTasksPage = () => {
           </section>
         ) : null}
 
-        {!showCommissioned || commissioned === null ? null : (
+        {!showCommissioned ? null : (
           <section className="panel" aria-labelledby="commissioned-title">
             <h2 id="commissioned-title" className="panel__title">{t.tasks.commissioned.title}</h2>
             <p className="panel__lede">{t.tasks.commissioned.lede}</p>
 
-            {commissionedFailed ? (
+            {commissionedFailed || commissioned === null ? (
               <p className="panel__lede">{t.tasks.commissioned.failure}</p>
             ) : commissioned.length === 0 ? (
               <p className="panel__lede">{t.tasks.commissioned.empty}</p>
@@ -269,6 +270,27 @@ export const MyTasksPage = () => {
                         </span>
                       )}
                       <span>{t.tasks.row.due.replace('{date}', row.dueDate)}</span>
+                    </p>
+                    <p className="task-row__meta">
+                      {row.role === 'owner_oversight' && row.commissionedBy !== null ? (
+                        <span dir="auto">
+                          {t.tasks.commissioned.roleOversight.replace('{name}', row.commissionedBy.name)}
+                        </span>
+                      ) : row.role === 'trackee' && row.commissionedBy !== null ? (
+                        <span dir="auto">
+                          {t.tasks.commissioned.roleTrackee.replace('{name}', row.commissionedBy.name)}
+                        </span>
+                      ) : null}
+                      {row.tracking === null ? null : (
+                        <span dir="auto">
+                          {row.tracking.arrangement === 'owner_only'
+                            ? t.tasks.commissioned.arrangementOwnerOnly
+                            : (row.tracking.arrangement === 'transferred'
+                                ? t.tasks.commissioned.arrangementTransferred
+                                : t.tasks.commissioned.arrangementShared
+                              ).replace('{name}', row.tracking.trackee?.name ?? '')}
+                        </span>
+                      )}
                     </p>
                   </li>
                 ))}

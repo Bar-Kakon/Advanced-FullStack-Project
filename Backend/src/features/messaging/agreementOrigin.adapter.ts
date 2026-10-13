@@ -9,4 +9,12 @@ export const createAgreementOriginAdapter = (): AgreementOriginPort => ({
   async listByProposer(proposer) {
     return messagingRepository.listAgreementOriginsByProposer(proposer);
   },
+
+  async listByCompany(company) {
+    return messagingRepository.listAgreementOriginsByCompany(company);
+  },
+
+  async countUnstamped() {
+    return messagingRepository.countUnstampedAcceptedAgreements();
+  },
 });
