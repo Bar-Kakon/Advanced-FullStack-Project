@@ -451,6 +451,8 @@ export const he = {
     backButton: 'חזרה להתחברות',
     noMail: 'לא הגיע כלום?',
     resend: 'שליחה מחדש',
+    resent: 'הקישור נשלח שוב.',
+    resendFailed: 'השליחה החוזרת נכשלה. כדאי לנסות שוב מעט מאוחר יותר.',
     /** The honest build state, in the same voice the other screens use for an absent endpoint. */
     errors: {
       network: 'לא ניתן להתחבר לשרת. יש לבדוק את החיבור לאינטרנט ולנסות שוב.',
@@ -603,6 +605,11 @@ export const he = {
       failure: 'לא ניתן לטעון את העבודות שהוזמנו.',
       empty: 'עדיין לא הוזמנה עבודה בהסכם.',
       performer: 'מבצע העבודה: {name}',
+      roleOversight: 'פיקוח · הוזמן על ידי {name}',
+      roleTrackee: 'במעקב שלי · הוזמן על ידי {name}',
+      arrangementOwnerOnly: 'מעקב אצל הבעלים',
+      arrangementTransferred: 'מעקב הועבר אל {name}',
+      arrangementShared: 'מעקב משותף עם {name}',
     },
 
     groups: {
@@ -1254,6 +1261,47 @@ export const he = {
      * One label per lifecycle code, and this is the only place they are written. The wording says
      * what has happened to the relationship, never what the code is called.
      */
+    departure: {
+      titleOffboard: 'סיום העסקה: {name}',
+      titleManage: 'ניהול העבודה של {name}',
+      lede: 'העבודה הפתוחה שבאחריות העובד. לכל פריט נקבע הסדר, והאישור מחיל את הכול יחד.',
+      loading: 'טעינת העבודה הפתוחה…',
+      failed: 'הפעולה לא הושלמה, ואף הסדר לא הוחל.',
+      empty: 'אין עבודה פתוחה שדורשת הסדר.',
+      commissionsTitle: 'עבודות שהוזמנו בהסכם',
+      assignedTitle: 'משימות בביצוע העובד',
+      selectAll: 'בחירת הכול',
+      selectNone: 'ביטול הבחירה',
+      selectedCount: 'נבחרו {count}',
+      pickEmployee: 'בחירת עובד',
+      actionOwnerOnly: 'מעקב אצל הבעלים',
+      actionTransfer: 'העברת מעקב',
+      actionShare: 'מעקב משותף',
+      actionMove: 'העברת ביצוע',
+      actionAwait: 'ממתין לשיבוץ',
+      choiceOwnerOnly: 'מעקב אצל הבעלים',
+      choiceTransferred: 'מעקב הועבר',
+      choiceShared: 'מעקב משותף',
+      choiceMoved: 'ביצוע הועבר',
+      choiceAwaiting: 'ממתין לשיבוץ מחדש',
+      awaitingBadge: 'ממתין לשיבוץ מחדש',
+      performer: 'מבצע: {name}',
+      summary: 'סיכום: {ownerOnly} אצל הבעלים · {transferred} הועברו למעקב · {shared} במעקב משותף · {moved} הועבר ביצועם · {awaiting} ממתינים לשיבוץ · {unset} לפי ברירת המחדל',
+      confirmOffboard: 'אישור וסיום ההעסקה',
+      confirmManage: 'החלת ההסדרים',
+    },
+
+    departureDefaults: {
+      title: 'ברירת מחדל לעזיבת עובד',
+      lede: 'ההסדר שיוחל אוטומטית על עבודה שלא נקבע לה הסדר מפורש כשעובד עוזב.',
+      commissionedLabel: 'עבודות שהוזמנו בהסכם',
+      assignedLabel: 'משימות בביצוע',
+      assignedNone: 'ללא ברירת מחדל (ממתין לשיבוץ)',
+      save: 'שמירת ברירת המחדל',
+      saved: 'ברירת המחדל נשמרה.',
+      failed: 'השמירה נכשלה.',
+    },
+
     status: {
       invited: 'הזמנה פתוחה — טרם בוצעה הרשמה',
       pending_company_approval: 'ההרשמה בוצעה — ההצטרפות ממתינה לאישור החברה',
@@ -1264,6 +1312,8 @@ export const he = {
     actions: {
       approve: 'אישור ההצטרפות',
       cancelInvitation: 'ביטול ההזמנה',
+      offboard: 'סיום העסקה',
+      manageDeparture: 'ניהול עבודה שנותרה',
       approveAll: 'אישור כל הממתינים ({count})',
       refresh: 'רענון הרשימה',
     },
@@ -2233,6 +2283,7 @@ export const he = {
     },
     types: {
       'project.invitation': 'הזמנה לפרויקט',
+      'company.employee_left': 'עובד עזב את החברה',
       'task.assigned': 'משימה חדשה באחריותך',
       'task.updated': 'עודכנו פרטים במשימה',
       'task.early_completion': 'עבודה בפרויקט הסתיימה מוקדם',
@@ -2295,6 +2346,23 @@ export const he = {
       },
       save: 'שמירת נראות',
     },
+    companyMembership: {
+      title: 'שייכות לחברה',
+      leaveNote: 'סיום היחסים עם החברה. הגישה לעבודת החברה נפסקת מידית.',
+      leave: 'עזיבת החברה',
+      leaveConsequences: 'לאחר העזיבה: הגישה לחברה נפסקת מידית, המעקב אחר עבודות שהוזמנו עובר לבעל החברה, והחשבון האישי נשאר פעיל. את העזיבה אין אפשרות לבטל מכאן.',
+      leaveConfirm: 'אישור העזיבה',
+      cancel: 'ביטול',
+      leftNote: 'העזיבה הושלמה. החשבון פעיל וללא שייכות לחברה.',
+      claimNote: 'הצטרפות למושב פתוח שנפתח על שם המשתמש בחברה. ההצטרפות ממתינה לאישור בעל החברה.',
+      claimCompanyLabel: 'שם החברה',
+      claimPositionLabel: 'תפקיד',
+      claim: 'הצטרפות לחברה',
+      claimedNote: 'הבקשה נשלחה וממתינה לאישור בעל החברה.',
+      claimBlocked: 'ההצטרפות אינה זמינה זמנית עד להשלמת עדכון נתונים.',
+      failed: 'הפעולה לא הושלמה.',
+    },
+
     mutes: {
       title: 'פרויקטים מושתקים',
       note: 'השתקה מפחיתה משלוח בדוא״ל בלבד. היא אינה משנה הרשאות, גישה או מה שקורה בפרויקט.',
@@ -2468,6 +2536,10 @@ export const he = {
     attachFailed: 'העלאת הקובץ נכשלה. כדאי לנסות שוב.',
     download: 'הורדה',
     proposeAgreement: 'הצעת הסכם עבודה',
+    sendFailed: 'ההודעה לא נשלחה. כדאי לנסות שוב.',
+    sendAwaitingRequest: 'השיחה ממתינה לאישור בקשת ההודעה, ועד אז אי אפשר לשלוח בה.',
+    requestPendingNotice: 'בקשת ההודעה נשלחה. המשך השיחה יתאפשר לאחר אישור הנמען.',
+    requestAnswerFirst: 'בקשת הודעה ממתינה לאישור. אפשר לאשר או לדחות אותה ברשימת הבקשות.',
     agreementForm: {
       title: 'הצעת הסכם עבודה',
       titleLabel: 'כותרת ההסכם',

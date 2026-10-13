@@ -12,6 +12,7 @@ import { projectAccessRepository } from '../projectaccess/projectAccess.reposito
 import { projectRepository } from '../projects/project.repository.js';
 import { parseCalendarDate } from '../projects/projectDates.js';
 import { createAgreementOriginAdapter } from '../messaging/agreementOrigin.adapter.js';
+import { commissionTrackingRepository } from './commissionTracking.repository.js';
 import { createMyTasksService, type MyTasksFilters } from './myTasks.service.js';
 import { createTaskCreationService, type CreateTaskInput } from './taskCreation.service.js';
 import { invalidCalendarDate } from './taskCreation.errors.js';
@@ -89,6 +90,7 @@ export const createTasksModule = (requireAccessToken: RequestHandler): Router =>
       memberships: companyMembershipRepository,
       companies: companyRepository,
     }),
+    trackings: commissionTrackingRepository,
   });
 
   const detail = createTaskDetailService({

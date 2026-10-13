@@ -38,17 +38,22 @@ export const ForgotPasswordPage = () => {
 
   const [sentTo, setSentTo] = useState<string | null>(null);
   const [resending, setResending] = useState(false);
+  const [resendResult, setResendResult] = useState<'sent' | 'failed' | null>(null);
 
   const resend = useCallback((): void => {
     if (sentTo === null || resending) return;
     setResending(true);
-    void requestPasswordReset({ email: sentTo }).finally(() => setResending(false));
+    setResendResult(null);
+    void requestPasswordReset({ email: sentTo })
+      .then(() => setResendResult('sent'))
+      .catch(() => setResendResult('failed'))
+      .finally(() => setResending(false));
   }, [sentTo, resending]);
 
   return (
     <AuthShell brand={t.forgotPassword.brand}>
       {sentTo !== null ? (
-        <ResetLinkSent onResend={resend} resending={resending} />
+        <ResetLinkSent onResend={resend} resending={resending} resendResult={resendResult} />
       ) : (
         <section className="auth-step auth-step--current" aria-label={t.forgotPassword.title}>
           <BackLink label={t.forgotPassword.backToSignIn} />

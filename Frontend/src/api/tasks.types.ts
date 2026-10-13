@@ -86,4 +86,10 @@ export interface CommissionedWork {
   readonly state: TaskState;
   readonly overdue: boolean;
   readonly performer: CounterpartyRef | null;
+  readonly role: 'commissioner' | 'owner_oversight' | 'trackee';
+  readonly commissionedBy: CounterpartyRef | null;
+  readonly tracking: {
+    readonly arrangement: 'owner_only' | 'transferred' | 'shared';
+    readonly trackee: CounterpartyRef | null;
+  } | null;
 }

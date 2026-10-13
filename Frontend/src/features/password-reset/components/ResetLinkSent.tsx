@@ -11,9 +11,11 @@ import { useLanguage } from '../../../i18n/useLanguage';
 export const ResetLinkSent = ({
   onResend,
   resending,
+  resendResult,
 }: {
   onResend: () => void;
   resending: boolean;
+  resendResult?: 'sent' | 'failed' | null;
 }) => {
   const { t } = useLanguage();
 
@@ -35,6 +37,11 @@ export const ResetLinkSent = ({
       <Link to="/login" className="btn btn--primary btn--full">{t.forgotPassword.backButton}</Link>
 
       <p className="form-footer">
+        {resendResult === 'sent' ? (
+          <span role="status" className="resend-note resend-note--ok">{t.forgotPassword.resent}</span>
+        ) : resendResult === 'failed' ? (
+          <span role="alert" className="resend-note resend-note--error">{t.forgotPassword.resendFailed}</span>
+        ) : null}{' '}
         {t.forgotPassword.noMail}{' '}
         {/* A real second request, which retires the first link server-side. */}
         <button

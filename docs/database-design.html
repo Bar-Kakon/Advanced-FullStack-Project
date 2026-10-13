@@ -360,7 +360,7 @@ footer.foot { margin-top: 56px; padding-top: 22px; border-top: 1px solid var(--p
       <span class="meta-chip">Collections <b id="stat-collections">—</b></span>
       <span class="meta-chip">Relations <b id="stat-relations">—</b></span>
       <span class="meta-chip">Source of truth <b>PROJECT_DECISIONS.md</b></span>
-      <span class="meta-chip">Updated <b id="stat-updated">2026-10-12</b></span>
+      <span class="meta-chip">Updated <b id="stat-updated">2026-10-13</b></span>
     </div>
   </div>
 </header>
@@ -2053,6 +2053,7 @@ module.exports = mongoose.model('Thread', threadSchema);`
 
     { group: 'Built 2026-10-12', groupNote: 'the deletion layer, exactly as the 2026-08-29 owner decisions named it: four concepts, four names. Every field below leaves the row and its body in place — nothing in this collection is ever erased' },
     { name: 'removedAt / removedBy', type: 'Date / ObjectId', ref: 'users', note: 'Moderation removal by the Project-Room authority — the GC role, or an explicit `room.moderate` grant (the one unified authority: removal, preservation and the removal-time decision travel together). Readers see the attribution placeholder; the body stays in the document.' },
+    { name: 'agreement.commissioningCompany', type: 'ObjectId', ref: 'companies', note: '**Built 2026-10-13.** The company on whose behalf the work was commissioned, stamped server-side at proposal time and immutable forever — attribution never reads a membership, so moving between companies moves nothing. Legacy rows were stamped by the one-time migrate:agreement-company backfill; the claim (rejoin) endpoint refuses while any accepted agreement is unstamped.' },
     { name: 'removedByRole', type: 'String (project role)', note: '**Built 2026-10-12.** The remover\u2019s project role, captured at the moment of the act so a later role change cannot rewrite the attribution placeholder — a delegated moderator shows their own role, never the GC\u2019s. Rows removed before this field exists render the neutral wording instead.' },
     { name: 'deletedAt / deletedBy', type: 'Date / ObjectId', ref: 'users', note: 'Author delete-for-everyone (deletion rule b). Readers see the deletion placeholder; the stored body survives, which is what keeps the internal moderation copy for reported content (rule 3) without a snapshot.' },
     { name: 'keptAt / keptBy', type: 'Date / ObjectId', ref: 'users', note: 'An explicit keep (rule e). It outranks the author deletion AND moderation removal, survives the removal-time delete choice (rule f), and is deliberately irreversible — no route clears it.' }

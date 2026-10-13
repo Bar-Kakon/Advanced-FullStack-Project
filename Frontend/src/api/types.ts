@@ -288,6 +288,50 @@ export interface EmployeeListResponse {
   readonly viewer: { readonly canManagePermissions: boolean };
 }
 
+/** One unsettled work item of a departing (or departed) member, as the owner's workbench shows it. */
+export interface DepartureWorkItem {
+  readonly id: string;
+  readonly title: string;
+  readonly startDate: string;
+  readonly dueDate: string;
+  readonly state: string;
+  readonly overdue: boolean;
+  readonly awaitingReassignment: boolean;
+  readonly performer: { readonly userId: string; readonly name: string } | null;
+  readonly projectName: string | null;
+  readonly arrangement: { readonly kind: string; readonly trackeeName: string | null } | null;
+}
+
+export interface DepartureWork {
+  readonly commissions: readonly DepartureWorkItem[];
+  readonly assigned: readonly DepartureWorkItem[];
+}
+
+export interface CommissionArrangement {
+  readonly taskId: string;
+  readonly arrangement: 'owner_only' | 'transferred' | 'shared';
+  readonly trackeeUserId?: string;
+}
+
+export interface AssignedArrangement {
+  readonly taskId: string;
+  readonly action: 'transfer' | 'await_reassignment';
+  readonly assigneeUserId?: string;
+}
+
+export interface DepartureArrangements {
+  readonly commissions: readonly CommissionArrangement[];
+  readonly assigned: readonly AssignedArrangement[];
+}
+
+export interface DepartureDefaultsPayload {
+  readonly commissioned?: {
+    readonly arrangement: 'owner_only' | 'transferred' | 'shared';
+    readonly trackeeUserId?: string;
+  };
+  readonly assigned?: { readonly assigneeUserId?: string };
+}
+
 /**
  * `POST /companies/employees/invitations`. Two fields only: the person supplies their own account
  * details when they register, and the company comes from the caller's session.

@@ -22,3 +22,7 @@ export const alreadyCompleted = (): AppError =>
 /** Frozen dates: nothing moves on an orphaned task until the GC resolves it. */
 export const taskOrphaned = (): AppError =>
   new AppError('That work has no responsible party right now.', 409, 'TASK_ORPHANED');
+
+/** A departure arrangement named a task or target the rules refuse. Nothing was applied. */
+export const departureArrangementInvalid = (): AppError =>
+  new AppError('That arrangement is not valid for this departure.', 400, 'DEPARTURE_ARRANGEMENT_INVALID');

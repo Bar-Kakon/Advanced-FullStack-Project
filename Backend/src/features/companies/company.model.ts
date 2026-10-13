@@ -28,6 +28,18 @@ export interface CompanyRecord {
   readonly employeeSetupCompletedAt?: Date;
   /** Absent means unclassified, which every eligibility check reads as not eligible. */
   readonly contractorCategory?: ContractorCategory;
+  /**
+   * The owner-defined default departure arrangement — step 3 of the responsibility precedence.
+   * Applied at departure time with full validation; an ineligible target simply falls through to
+   * owner responsibility.
+   */
+  readonly departureDefaults?: {
+    readonly commissioned?: {
+      readonly arrangement: 'owner_only' | 'transferred' | 'shared';
+      readonly trackee?: Types.ObjectId;
+    };
+    readonly assigned?: { readonly assignee?: Types.ObjectId };
+  };
 }
 
 const companySchema = new Schema(
@@ -47,6 +59,16 @@ const companySchema = new Schema(
 
     // No default on purpose. An unclassified business must not be read as a subcontractor.
     contractorCategory: { type: String, enum: CONTRACTOR_CATEGORIES, index: true },
+
+    departureDefaults: {
+      commissioned: {
+        arrangement: { type: String, enum: ['owner_only', 'transferred', 'shared'] },
+        trackee: { type: Schema.Types.ObjectId, ref: 'User' },
+      },
+      assigned: {
+        assignee: { type: Schema.Types.ObjectId, ref: 'User' },
+      },
+    },
   },
   { timestamps: true },
 );

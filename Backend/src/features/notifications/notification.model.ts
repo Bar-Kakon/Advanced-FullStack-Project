@@ -27,6 +27,7 @@ export const NOTIFICATION_TYPES = [
   'message.request_received',
   'agreement.received',
   'agreement.answered',
+  'company.employee_left',
 ] as const;
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
 
@@ -39,6 +40,8 @@ export type NotificationClass = (typeof NOTIFICATION_CLASSES)[number];
  */
 export const CLASS_OF: Readonly<Record<NotificationType, NotificationClass>> = {
   'project.invitation': 'blocking',
+  // A departure is organizational news, not stalled work: it digests rather than interrupts.
+  'company.employee_left': 'nonblocking',
   'task.assigned': 'blocking',
   'task.updated': 'nonblocking',
   // Closed rule: early upstream completion reaches the GC on every tier, free. A digest-only

@@ -48,6 +48,14 @@ export interface CompanyMembershipRepository {
   cancelInvitation(company: Types.ObjectId, membershipId: string): Promise<number>;
   /** Whoever holds the Main Contractor job, counting the owner and an unclaimed seat. */
   findMainContractorSeat(company: Types.ObjectId): Promise<CompanyMembershipRecord | null>;
+  /** Ends an ACTIVE EMPLOYEE relationship: status + leftAt, nothing else. Owner seats never match. */
+  deactivateEmployee(
+    company: Types.ObjectId,
+    membershipId: string,
+    session?: DbSession,
+  ): Promise<number>;
+  /** The self-departure write: the caller's own active employee row, by user id. */
+  deactivateSelfEmployee(userId: string, session?: DbSession): Promise<number>;
   /**
    * Replaces an ACTIVE EMPLOYEE's company permissions. The filter is the authorization's second
    * half: an owner seat, a foreign company's row and an unapproved seat all match nothing.
@@ -155,6 +163,33 @@ export const companyMembershipRepository: CompanyMembershipRepository = {
       { $set: { status: 'inactive' } },
     ).exec();
 
+    return result.modifiedCount;
+  },
+
+  async deactivateEmployee(company, membershipId, session) {
+    if (!Types.ObjectId.isValid(membershipId)) return 0;
+
+    const result = await CompanyMembershipModel.updateOne(
+      {
+        _id: new Types.ObjectId(membershipId),
+        company,
+        standing: 'employee',
+        status: 'active',
+      },
+      { $set: { status: 'inactive', leftAt: new Date() } },
+      session ? { session } : {},
+    ).exec();
+    return result.modifiedCount;
+  },
+
+  async deactivateSelfEmployee(userId, session) {
+    if (!Types.ObjectId.isValid(userId)) return 0;
+
+    const result = await CompanyMembershipModel.updateOne(
+      { user: new Types.ObjectId(userId), standing: 'employee', status: 'active' },
+      { $set: { status: 'inactive', leftAt: new Date() } },
+      session ? { session } : {},
+    ).exec();
     return result.modifiedCount;
   },
 

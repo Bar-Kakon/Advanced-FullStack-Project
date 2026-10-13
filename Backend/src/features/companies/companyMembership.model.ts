@@ -94,6 +94,8 @@ export interface CompanyMembershipRecord {
   readonly status: CompanyMembershipStatus;
   readonly companyPosition?: CompanyPosition;
   readonly permissions: readonly CompanyPermission[];
+  /** When the relationship ended — display and audit history, never attribution logic. */
+  readonly leftAt?: Date;
 }
 
 const companyMembershipSchema = new Schema(
@@ -108,6 +110,7 @@ const companyMembershipSchema = new Schema(
     status: { type: String, enum: COMPANY_MEMBERSHIP_STATUSES, required: true },
     companyPosition: { type: String, enum: COMPANY_POSITIONS },
     permissions: [{ type: String, enum: COMPANY_PERMISSIONS }],
+    leftAt: { type: Date },
   },
   { timestamps: true },
 );

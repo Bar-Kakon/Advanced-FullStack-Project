@@ -23,6 +23,11 @@ export interface AgreementRecord {
   readonly startDate: string;
   readonly dueDate: string;
   readonly project?: Types.ObjectId;
+  /**
+   * The company on whose behalf the work was commissioned, stamped at proposal time and immutable
+   * forever. Attribution never reads the proposer's current membership, which can change.
+   */
+  readonly commissioningCompany?: Types.ObjectId;
   readonly state: AgreementState;
   readonly respondedBy?: Types.ObjectId;
   readonly respondedAt?: Date;
@@ -62,6 +67,7 @@ const agreementSchema = new Schema(
     startDate: { type: String, required: true, trim: true, maxlength: 10 },
     dueDate: { type: String, required: true, trim: true, maxlength: 10 },
     project: { type: Schema.Types.ObjectId, ref: 'Project' },
+    commissioningCompany: { type: Schema.Types.ObjectId, ref: 'Company' },
     state: { type: String, enum: AGREEMENT_STATES, required: true, default: 'proposed' },
     respondedBy: { type: Schema.Types.ObjectId, ref: 'User' },
     respondedAt: { type: Date },
@@ -91,6 +97,12 @@ const messageSchema = new Schema(
 
 // The history read, newest first, and the exact shape the cursor walks.
 messageSchema.index({ conversation: 1, createdAt: -1, _id: -1 });
+
+// Company attribution reads: a company's commissioned work, by the immutable stamp.
+messageSchema.index(
+  { 'agreement.commissioningCompany': 1 },
+  { partialFilterExpression: { 'agreement.commissioningCompany': { $exists: true } } },
+);
 
 // The Work Commitment lookup (D15): accepted agreements between a pair. Partial, so the index
 // holds only the few rows that ever became commitments.

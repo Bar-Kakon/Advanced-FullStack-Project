@@ -42,6 +42,7 @@ const WORDING: Record<UserLanguage, Wording> = {
     noActionNote: 'ההודעה הזו נועדה ליידע בלבד. כל פעולה מתבצעת במערכת.',
     titles: {
       'project.invitation': 'הזמנה לפרויקט',
+      'company.employee_left': 'עובד עזב את החברה',
       'task.assigned': 'משימה חדשה באחריותך',
       'task.updated': 'עודכנו פרטים במשימה',
       'task.early_completion': 'עבודה בפרויקט הסתיימה מוקדם',
@@ -75,6 +76,7 @@ const WORDING: Record<UserLanguage, Wording> = {
     noActionNote: 'This message is for information only. Every action happens in the platform.',
     titles: {
       'project.invitation': 'Project invitation',
+      'company.employee_left': 'An employee left the company',
       'task.assigned': 'A task is now your responsibility',
       'task.updated': 'A task’s details were updated',
       'task.early_completion': 'Work on the project finished early',
