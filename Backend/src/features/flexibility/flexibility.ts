@@ -6,9 +6,11 @@
  * that will feed it is still unbuilt.
  */
 
-/** גמישות בזמנים and גמישות בסדר גודל של העבודה. They are scored separately, never merged. */
-export const FLEXIBILITY_DIMENSIONS = ['schedule', 'scope'] as const;
-export type FlexibilityDimension = (typeof FLEXIBILITY_DIMENSIONS)[number];
+/**
+ * The score measures flexibility in WORK SCHEDULING alone (owner decision 2026-10-13, superseding
+ * the two-dimension reading): accepting, declining, referring or delegating ADDITIONAL work never
+ * moves it, so no scope dimension exists here at all.
+ */
 
 /**
  * How one coordination event actually ended. Only resolved outcomes exist here — a proposal still
@@ -48,7 +50,6 @@ export const isScoreRelevant = (outcome: CoordinationOutcome): boolean =>
   outcome !== 'declined_justified';
 
 export interface CoordinationEvent {
-  readonly dimension: FlexibilityDimension;
   readonly outcome: CoordinationOutcome;
   /** Context only. It never changes the arithmetic. */
   readonly requestedByCounterparty: boolean;
@@ -81,9 +82,15 @@ export interface FlexibilityDimensionScore {
 export interface FlexibilityScore {
   /** `null` when no resolved score-relevant event exists. Never zero, which would be a claim. */
   readonly schedule: FlexibilityDimensionScore | null;
-  /** `null` while no scope-change evidence exists in the model at all. */
-  readonly scope: FlexibilityDimensionScore | null;
 }
+
+/** The three approved verbal categories, inclusive ranges fixed by the owner: 75–100, 40–74, 0–39. */
+export const FLEXIBILITY_CATEGORIES = ['high', 'medium', 'low'] as const;
+export type FlexibilityCategory = (typeof FLEXIBILITY_CATEGORIES)[number];
+
+/** Classifies the FINAL rounded integer score, never an intermediate value. */
+export const classifyFlexibility = (score: number): FlexibilityCategory =>
+  score >= 75 ? 'high' : score >= 40 ? 'medium' : 'low';
 
 const SCORE_SCALE = 100;
 
@@ -125,6 +132,5 @@ const scoreFor = (events: readonly CoordinationEvent[]): FlexibilityDimensionSco
 };
 
 export const computeFlexibility = (events: readonly CoordinationEvent[]): FlexibilityScore => ({
-  schedule: scoreFor(events.filter((event) => event.dimension === 'schedule')),
-  scope: scoreFor(events.filter((event) => event.dimension === 'scope')),
+  schedule: scoreFor(events),
 });

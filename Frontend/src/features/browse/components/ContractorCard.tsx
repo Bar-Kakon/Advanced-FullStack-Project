@@ -79,7 +79,9 @@ export const ContractorCard = ({
         </span>
         <span>
           {contractor.flexibility?.schedule
-            ? t.browse.card.flexibilityScore.replace('{score}', String(contractor.flexibility.schedule.score))
+            ? t.browse.card.flexibilityScore
+                .replace('{score}', String(contractor.flexibility.schedule.score))
+                .replace('{category}', t.profile.flexibility.category[contractor.flexibility.schedule.category])
             : t.browse.card.noFlexibility}
         </span>
       </p>

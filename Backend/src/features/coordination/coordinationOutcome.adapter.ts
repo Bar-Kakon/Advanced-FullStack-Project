@@ -75,7 +75,6 @@ export const createCoordinationOutcomeAdapter = (
         if (outcome === null) continue;
 
         events.push({
-          dimension: 'schedule',
           outcome,
           requestedByCounterparty: proposal.requestedBy.toString() !== userId,
           noticeDays: noticeDaysFor(proposal, item),

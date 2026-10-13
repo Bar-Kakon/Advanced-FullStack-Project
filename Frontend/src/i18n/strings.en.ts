@@ -288,8 +288,8 @@ export const en: Strings = {
       noRating: 'No ratings yet',
       ratingCount: '{count} ratings',
       drivingDistance: '{km} km by road',
-      flexibilityScore: 'Flexibility {score}/100',
-      noFlexibility: 'No flexibility score yet',
+      flexibilityScore: '{score}/100 — {category}',
+      noFlexibility: 'No relevant data yet',
     },
 
     profile: {
@@ -1402,8 +1402,9 @@ export const en: Strings = {
     },
     flexibility: {
       label: 'Your flexibility score',
+      category: { high: 'High Flexibility', medium: 'Medium Flexibility', low: 'Low Flexibility' },
       foot: 'Based on {count} resolved coordination events',
-      empty: 'No flexibility score yet',
+      empty: 'No relevant data yet',
       context: {
         workable: 'A workable solution was reached in {workable} of {events} coordination events.',
         alternatives: 'An alternative date or another solution was offered and agreed {count} times.',

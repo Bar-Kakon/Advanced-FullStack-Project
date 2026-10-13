@@ -315,8 +315,8 @@ export const he = {
       noRating: 'אין עדיין דירוג',
       ratingCount: '{count} דירוגים',
       drivingDistance: '{km} ק״מ נסיעה',
-      flexibilityScore: 'גמישות {score}/100',
-      noFlexibility: 'אין עדיין ציון גמישות',
+      flexibilityScore: '{score}/100 — {category}',
+      noFlexibility: 'אין עדיין נתונים רלוונטיים',
     },
 
     profile: {
@@ -1464,8 +1464,9 @@ export const he = {
     },
     flexibility: {
       label: 'ציון הגמישות',
+      category: { high: 'גמישות גבוהה', medium: 'גמישות בינונית', low: 'גמישות נמוכה' },
       foot: 'מבוסס על {count} אירועי תיאום שהסתיימו',
-      empty: 'אין עדיין ציון גמישות',
+      empty: 'אין עדיין נתונים רלוונטיים',
       // Aggregate counts only — לא שמות, לא פרויקטים, לא תאריכים ולא צד שני.
       context: {
         workable: 'ב-{workable} מתוך {events} אירועי תיאום נמצא פתרון שאיפשר להמשיך בעבודה.',

@@ -116,10 +116,43 @@ export const PublicProfilePanel = ({
             </span>
             <span className="pp-signals__rating">
               {profile.flexibility?.schedule
-                ? `${t.browse.card.flexibilityScore.replace('{score}', String(profile.flexibility.schedule.score))} · ${t.profile.flexibility.foot.replace('{count}', String(profile.flexibility.schedule.context.events))}`
+                ? t.browse.card.flexibilityScore
+                    .replace('{score}', String(profile.flexibility.schedule.score))
+                    .replace('{category}', t.profile.flexibility.category[profile.flexibility.schedule.category])
                 : t.browse.card.noFlexibility}
             </span>
           </div>
+
+          {profile.flexibility?.schedule ? (
+            <details className="pp-block">
+              <summary className="pp-block__title">{t.profile.explain.question}</summary>
+              <ul className="pp-block__text">
+                <li>
+                  {t.profile.flexibility.context.workable
+                    .replace('{workable}', String(profile.flexibility.schedule.context.workableResolutions))
+                    .replace('{events}', String(profile.flexibility.schedule.context.events))}
+                </li>
+                {profile.flexibility.schedule.context.alternativesAgreed > 0 ? (
+                  <li>
+                    {t.profile.flexibility.context.alternatives
+                      .replace('{count}', String(profile.flexibility.schedule.context.alternativesAgreed))}
+                  </li>
+                ) : null}
+                {profile.flexibility.schedule.context.withAdvanceNotice > 0 ? (
+                  <li>
+                    {t.profile.flexibility.context.notice
+                      .replace('{count}', String(profile.flexibility.schedule.context.withAdvanceNotice))}
+                  </li>
+                ) : null}
+                {profile.flexibility.schedule.context.justifiedDeclines > 0 ? (
+                  <li>
+                    {t.profile.flexibility.context.justified
+                      .replace('{count}', String(profile.flexibility.schedule.context.justifiedDeclines))}
+                  </li>
+                ) : null}
+              </ul>
+            </details>
+          ) : null}
 
           {profile.specialties.length > 0 ? (
             <ul className="tags">

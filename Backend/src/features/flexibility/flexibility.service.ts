@@ -1,19 +1,24 @@
 import type { CoordinationOutcomePort } from './coordinationOutcome.port.js';
-import { computeFlexibility, type FlexibilityContextCounts } from './flexibility.js';
+import {
+  classifyFlexibility,
+  computeFlexibility,
+  type FlexibilityCategory,
+  type FlexibilityContextCounts,
+} from './flexibility.js';
 
 /**
- * What a surface renders. `score` is 0–100; `context` carries only this contractor's own aggregate
- * counts, so nothing identifying can reach a viewer through it.
+ * What a surface renders. `score` is 0–100, `category` is its one canonical verbal classification,
+ * and `context` carries only this contractor's own aggregate counts, so nothing identifying can
+ * reach a viewer through it.
  */
 export interface FlexibilityDto {
   readonly score: number;
+  readonly category: FlexibilityCategory;
   readonly context: FlexibilityContextCounts;
 }
 
 export interface FlexibilityView {
   readonly schedule: FlexibilityDto | null;
-  /** `null` while the model holds no resolved scope-change evidence. Never rendered as zero. */
-  readonly scope: FlexibilityDto | null;
 }
 
 export interface FlexibilityService {
@@ -31,7 +36,9 @@ export const createFlexibilityService = (
     const events = await outcomes.eventsFor(userId);
     const computed = computeFlexibility(events);
 
-    if (computed.schedule === null && computed.scope === null) return null;
-    return { schedule: computed.schedule, scope: computed.scope };
+    if (computed.schedule === null) return null;
+    return {
+      schedule: { ...computed.schedule, category: classifyFlexibility(computed.schedule.score) },
+    };
   },
 });
