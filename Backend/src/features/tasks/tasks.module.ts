@@ -15,6 +15,7 @@ import { parseCalendarDate } from '../projects/projectDates.js';
 import { createAgreementOriginAdapter } from '../messaging/agreementOrigin.adapter.js';
 import { fileAssetRepository } from '../files/fileAsset.repository.js';
 import { taskNotFound } from './task.errors.js';
+import { createDocumentAccessService } from './documentAccess.service.js';
 import { openGridFsDownloadStream } from '../files/gridFs.service.js';
 import { commissionTrackingRepository } from './commissionTracking.repository.js';
 import { createMyTasksService, type MyTasksFilters } from './myTasks.service.js';
@@ -105,6 +106,13 @@ export const createTasksModule = (requireAccessToken: RequestHandler): Router =>
     reschedule: createReschedulePortAdapter(coordination),
     eligibility: contractorEligibility,
     origins,
+    files: fileAssetRepository,
+  });
+
+  const documentAccess = createDocumentAccessService({
+    origins,
+    access: projectAccessRepository,
+    participants: participantRepository,
     files: fileAssetRepository,
   });
 
@@ -208,19 +216,32 @@ export const createTasksModule = (requireAccessToken: RequestHandler): Router =>
     res.json({ task: await detail.get(me(res), taskId) });
   });
 
+  router.get('/:taskId/agreement-documents', params, async (req, res) => {
+    const { taskId } = getValidated<{ taskId: string }>(res, 'params');
+    res.json(await documentAccess.list(me(res), taskId));
+  });
+
+  router.put('/:taskId/agreement-documents/grants/:userId', params, async (req, res) => {
+    const { taskId } = getValidated<{ taskId: string }>(res, 'params');
+    await documentAccess.grant(me(res), taskId, String(req.params.userId));
+    res.status(204).end();
+  });
+
+  router.delete('/:taskId/agreement-documents/grants/:userId', params, async (req, res) => {
+    const { taskId } = getValidated<{ taskId: string }>(res, 'params');
+    await documentAccess.revoke(me(res), taskId, String(req.params.userId));
+    res.status(204).end();
+  });
+
   router.get('/:taskId/agreement-files/:fileId', params, async (req, res) => {
     const { taskId } = getValidated<{ taskId: string }>(res, 'params');
     const fileId = String(req.params.fileId);
     if (!Types.ObjectId.isValid(taskId) || !Types.ObjectId.isValid(fileId)) throw taskNotFound();
 
-    const documents = await origins.findDocumentsByTask(new Types.ObjectId(taskId));
-    if (documents === null) throw taskNotFound();
+    const standing = await documentAccess.standingFor(me(res), taskId);
+    if (standing === null) throw taskNotFound();
 
-    const viewer = me(res);
-    const isParty = documents.accepter.toString() === viewer || documents.proposer.toString() === viewer;
-    if (!isParty) throw taskNotFound();
-
-    const named = documents.attachments.find((id) => id.toString() === fileId);
+    const named = standing.attachments.find((id) => id.toString() === fileId);
     if (named === undefined) throw taskNotFound();
 
     const [asset] = await fileAssetRepository.listByIds([named]);

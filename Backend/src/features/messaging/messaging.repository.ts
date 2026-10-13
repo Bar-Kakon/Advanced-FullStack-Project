@@ -100,6 +100,7 @@ export interface MessagingRepository {
   ): Promise<{
     proposer: Types.ObjectId;
     accepter: Types.ObjectId;
+    project: Types.ObjectId | null;
     attachments: readonly Types.ObjectId[];
   } | null>;
   listAgreementOriginsByTask(tasks: readonly Types.ObjectId[]): Promise<AgreementTaskOrigin[]>;
@@ -385,7 +386,7 @@ export const messagingRepository: MessagingRepository = {
       removedAt: { $exists: false },
       deletedAt: { $exists: false },
     })
-      .select('sender agreement.respondedBy attachments')
+      .select('sender agreement.respondedBy agreement.project attachments')
       .lean<Pick<MessageRecord, 'sender' | 'agreement' | 'attachments'>>()
       .exec();
 
@@ -393,6 +394,7 @@ export const messagingRepository: MessagingRepository = {
     return {
       proposer: row.sender,
       accepter: row.agreement.respondedBy,
+      project: row.agreement.project ?? null,
       attachments: row.attachments ?? [],
     };
   },

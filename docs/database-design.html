@@ -1484,6 +1484,42 @@ const deriveState = (t) => t.completedAt ? 'completed' : t.startedAt ? 'in_progr
 projectStageSchema.index({ project: 1, order: 1 });`
 },
 
+/* ─────────── agreementdocumentgrants ─────────── */
+{
+  id: 'agreementdocumentgrants', model: 'AgreementDocumentGrant', domain: 'work', stage: 6,
+  tag: 'an explicit, revocable window onto one agreement\'s documents',
+  pos: { x: 320, y: 530 },
+  purpose: 'One person explicitly allowed to READ the documents of one accepted work agreement, scoped to the task that agreement created. <strong>Built 2026-10-13</strong>, closing the owner\'s final document-access rule: the agreement\'s two parties, the project initiator and the project\'s full-authority principal hold access by relationship; everyone else needs a row here.',
+  fields: [
+    { name: '_id', type: 'ObjectId', note: '' },
+    { name: 'task', type: 'ObjectId', ref: 'tasks', req: true, idx: true, note: 'The agreement-born task whose documents are opened. The documents themselves stay on the agreement message — nothing is copied here.' },
+    { name: 'grantedTo', type: 'ObjectId', ref: 'users', req: true, note: 'The viewer. The grant gives metadata and bytes of the agreement\'s own files, and nothing else: no conversation history, no task authority, no scheduling or project permission.' },
+    { name: 'grantedBy', type: 'ObjectId', ref: 'users', req: true, note: 'Who issued it — always a relationship-holder (party, initiator or principal). A grantee cannot pass access on.' },
+    { name: 'revokedAt', type: 'Date', note: 'Soft revocation. The row stays as the audit line of the grant\'s life; re-granting revives the same row.' },
+    { name: 'revokedBy', type: 'ObjectId', ref: 'users', note: '' },
+    { name: 'createdAt / updatedAt', type: 'Date', note: '' }
+  ],
+  indexes: [
+    { def: '{ task: 1, grantedTo: 1 }', opts: 'unique', serves: 'One grant row per viewer per task', why: 'Grant, revoke and re-grant are one row\'s lifecycle, so the history cannot fork into contradictory rows.' }
+  ],
+  why: [
+    '**Tracking work and viewing agreement documents are distinct permissions (owner, 2026-10-13).** A commissioned-work trackee or a company employee sees rows about the work; neither relationship reaches the agreement\'s evidence. This collection is the one way in for anyone outside the four contextual roles.',
+    '**A separate collection, not a field on the task or message**, because a grant has its own lifecycle (issued, revoked, re-issued, audited) and belongs to neither document\'s immutable history.',
+    '**Authorization is re-derived on every read**: the byte route asks the standing question each time, so a revocation takes effect on the next request with no cache to invalidate.'
+  ],
+  relations: [
+    { to: 'tasks', via: 'task', store: 'ref', card: 'N:1', why: 'The scope of the grant.' },
+    { to: 'users', via: 'grantedTo / grantedBy', store: 'junction', card: 'N:M', why: 'Who may look, and who answered for letting them.' }
+  ],
+  sample: `{
+  _id: ObjectId("68ec1a00c2b9e30012af9001"),
+  task: ObjectId("68eb77f1c2b9e30012af8b10"),      // the agreement-born task
+  grantedTo: ObjectId("6650a9d2c2b9e30012af0b44"), // the explicit viewer
+  grantedBy: ObjectId("6650a0b0c2b9e30012af0b10"), // the commissioning party
+  createdAt: ISODate("2026-10-13T16:40:00Z")
+}`
+},
+
 /* ─────────── privateworkitems ─────────── */
 {
   id: 'privateworkitems', model: 'PrivateWorkItem', domain: 'work', stage: 3,

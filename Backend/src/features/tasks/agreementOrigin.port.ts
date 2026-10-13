@@ -18,6 +18,8 @@ export interface AgreementOrigin {
 export interface AgreementDocuments {
   readonly proposer: Types.ObjectId;
   readonly accepter: Types.ObjectId;
+  /** The project the agreement was made inside, when it named one. */
+  readonly project: Types.ObjectId | null;
   readonly attachments: readonly Types.ObjectId[];
 }
 
