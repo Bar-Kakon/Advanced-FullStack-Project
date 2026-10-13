@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useNavigate } from 'react-router-dom';
 
 import { AppNav } from '../../components/AppNav';
@@ -22,7 +23,11 @@ import networkCss from './network.css?inline';
 export const MyNetworkPage = () => {
   const { t } = useLanguage();
   const { user } = useAuth();
-  const [tab, setTab] = useState<NetworkTab>('connected');
+  const [searchParams] = useSearchParams();
+  const requestedTab = searchParams.get('tab');
+  const [tab, setTab] = useState<NetworkTab>(
+    NETWORK_TABS.includes(requestedTab as NetworkTab) ? (requestedTab as NetworkTab) : 'connected',
+  );
 
   const navigate = useNavigate();
   const [profile, setProfile] = useState<PublicProfile | null>(null);

@@ -54,6 +54,10 @@ export interface HistoryPage {
   readonly canModerate: boolean;
   /** Whether the viewer may commission work — the company capability, read live. */
   readonly canProposeAgreement: boolean;
+  /** The direct thread's request state, carried by the thread itself. */
+  readonly requestState: 'pending' | 'accepted' | 'declined' | null;
+  /** Whether this viewer is the one a pending request waits on. */
+  readonly awaitingMyAnswer: boolean;
 }
 
 export type StartDirectFailure = 'SELF' | 'NO_CONTACT' | 'AWAITING' | 'NOT_FOUND' | 'NETWORK' | 'UNKNOWN';

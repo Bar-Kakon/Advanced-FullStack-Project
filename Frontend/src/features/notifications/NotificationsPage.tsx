@@ -22,6 +22,10 @@ import notificationsCss from './notifications.css?inline';
  * display toggle.
  */
 const destinationOf = (row: AppNotification): string | null => {
+  if (row.conversationId !== null) return `/messages?c=${row.conversationId}`;
+  if (row.type.startsWith('connection.')) {
+    return row.type === 'connection.request_received' ? '/network?tab=incoming' : '/network';
+  }
   if (row.proposalId !== null) return `/proposals/${row.proposalId}`;
   if (row.taskId !== null) return `/tasks/${row.taskId}`;
   if (row.scheduleExceptionId !== null && row.projectId !== null) {
@@ -52,7 +56,7 @@ export const NotificationsPage = () => {
   });
 
   const contextOf = (row: AppNotification): string => {
-    const parts = [row.payload.projectName, row.payload.taskTitle].filter(
+    const parts = [row.payload.actorName, row.payload.projectName, row.payload.taskTitle].filter(
       (value): value is string => value !== undefined && value.length > 0,
     );
     if (row.payload.fromDate !== undefined) {

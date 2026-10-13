@@ -1,4 +1,7 @@
+import { isAxiosError } from 'axios';
+
 import { api } from './client';
+import type { ApiErrorBody } from './types';
 import type {
   AccountSettings,
   ContactVisibility,
@@ -44,4 +47,33 @@ export const saveContactVisibility = async (
 
 export const setProjectMute = async (projectId: string, muted: boolean): Promise<void> => {
   await api.put(`/mutes/projects/${projectId}`, { muted });
+};
+
+export type AccountClosureFailure =
+  | 'OWNS_COMPANY'
+  | 'IN_COMPANY'
+  | 'ACTIVE_WORK'
+  | 'NETWORK'
+  | 'UNKNOWN';
+
+/** The D8 closure request: a recoverable deactivation, refused while obligations stay open. */
+export const requestAccountClosure = async (): Promise<void> => {
+  await api.delete('/users/me');
+};
+
+export const classifyAccountClosureError = (error: unknown): AccountClosureFailure => {
+  if (!isAxiosError(error)) return 'UNKNOWN';
+  if (!error.response) return 'NETWORK';
+
+  const body = error.response.data as ApiErrorBody | undefined;
+  switch (body?.code) {
+    case 'ACCOUNT_OWNS_COMPANY':
+      return 'OWNS_COMPANY';
+    case 'ACCOUNT_IN_COMPANY':
+      return 'IN_COMPANY';
+    case 'ACCOUNT_HAS_ACTIVE_WORK':
+      return 'ACTIVE_WORK';
+    default:
+      return 'UNKNOWN';
+  }
 };

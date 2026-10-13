@@ -2,6 +2,7 @@ import { Suspense, lazy } from 'react';
 import { BrowserRouter, Route, Routes } from 'react-router-dom';
 
 import { AuthProvider } from './auth/AuthContext';
+import { AppErrorBoundary } from './components/AppErrorBoundary';
 import { LanguageProvider } from './i18n/LanguageContext';
 import { RouteFallback } from './components/RouteFallback';
 import { PrivateRoute } from './routes/PrivateRoute';
@@ -98,6 +99,7 @@ export const App = () => (
   <LanguageProvider>
     <AuthProvider>
       <BrowserRouter>
+        <AppErrorBoundary>
         <Suspense fallback={<RouteFallback />}>
           <Routes>
             {/* The public face of the platform, and the only address reachable with no session at
@@ -166,6 +168,7 @@ export const App = () => (
             <Route path="*" element={<NotFoundPage />} />
           </Routes>
         </Suspense>
+        </AppErrorBoundary>
       </BrowserRouter>
     </AuthProvider>
   </LanguageProvider>

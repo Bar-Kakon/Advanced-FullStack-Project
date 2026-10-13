@@ -4,6 +4,7 @@ import {
   answerAgreement as answerAgreementCall,
   deleteMessage as deleteMessageCall,
   fetchHistory,
+  hideMessageForMe,
   keepMessage as keepMessageCall,
   proposeAgreement as proposeAgreementCall,
   removeMessageForAll,
@@ -20,6 +21,10 @@ export interface ConversationState {
   readonly sending: boolean;
   readonly canModerate: boolean;
   readonly canProposeAgreement: boolean;
+  readonly requestState: 'pending' | 'accepted' | 'declined' | null;
+  readonly awaitingMyAnswer: boolean;
+  reload(): void;
+  hideForMe(messageId: string): Promise<void>;
   send(input: { body?: string; attachments?: readonly string[] }): Promise<void>;
   loadOlder(): void;
   answerAgreement(messageId: string, accept: boolean): Promise<void>;
@@ -42,6 +47,9 @@ export const useConversation = (conversationId: string | undefined): Conversatio
   const [sending, setSending] = useState(false);
   const [canModerate, setCanModerate] = useState(false);
   const [canProposeAgreement, setCanProposeAgreement] = useState(false);
+  const [requestState, setRequestState] = useState<'pending' | 'accepted' | 'declined' | null>(null);
+  const [awaitingMyAnswer, setAwaitingMyAnswer] = useState(false);
+  const [revision, setRevision] = useState(0);
 
   useEffect(() => {
     if (conversationId === undefined) return;
@@ -57,6 +65,8 @@ export const useConversation = (conversationId: string | undefined): Conversatio
         setCursor(page.nextCursor);
         setCanModerate(page.canModerate);
         setCanProposeAgreement(page.canProposeAgreement);
+        setRequestState(page.requestState);
+        setAwaitingMyAnswer(page.awaitingMyAnswer);
       })
       .catch(() => {
         if (current) setFailure(true);
@@ -68,7 +78,7 @@ export const useConversation = (conversationId: string | undefined): Conversatio
     return () => {
       current = false;
     };
-  }, [conversationId]);
+  }, [conversationId, revision]);
 
   const loadOlder = useCallback(() => {
     if (conversationId === undefined || cursor === null) return;
@@ -140,6 +150,17 @@ export const useConversation = (conversationId: string | undefined): Conversatio
     [conversationId, applyUpdated],
   );
 
+  const reload = useCallback((): void => setRevision((current) => current + 1), []);
+
+  const hideForMe = useCallback(
+    async (messageId: string): Promise<void> => {
+      if (conversationId === undefined) return;
+      await hideMessageForMe(conversationId, messageId);
+      setMessages((previous) => previous.filter((row) => row.id !== messageId));
+    },
+    [conversationId],
+  );
+
   const answerAgreement = useCallback(
     async (messageId: string, accept: boolean): Promise<void> => {
       if (conversationId === undefined) return;
@@ -158,6 +179,10 @@ export const useConversation = (conversationId: string | undefined): Conversatio
     sending,
     canModerate,
     canProposeAgreement,
+    requestState,
+    awaitingMyAnswer,
+    reload,
+    hideForMe,
     send,
     loadOlder,
     answerAgreement,
