@@ -7,6 +7,7 @@ import { companyRepository } from '../companies/company.repository.js';
 import { companyMembershipRepository } from '../companies/companyMembership.repository.js';
 import { createCompanyContextService } from '../companies/companyContext.service.js';
 import { projectAccessRepository } from '../projectaccess/projectAccess.repository.js';
+import { taskRepository } from './task.repository.js';
 import { projectRepository } from '../projects/project.repository.js';
 import { projectNotFound } from '../projects/project.errors.js';
 import {
@@ -63,6 +64,45 @@ export const createStagesModule = (requireAccessToken: RequestHandler): Router =
 
   const router = Router({ mergeParams: true });
   router.use(requireAccessToken);
+
+  /**
+   * PRJ-10: the read-only timeline. The same reachability every stage read already demands, the
+   * dependencies exactly as stored between STAGES (the owner's rule — never between tasks), task
+   * titles and dates with no person named on any bar, and nothing here can edit anything.
+   */
+  router.get('/timeline', validateRequest({ params: projectScopeParamsSchema }), async (req, res) => {
+    const { projectId } = getValidated<{ projectId: string }>(res, 'params');
+    const { project } = await reachProject(getAuthenticatedUserId(res), projectId);
+
+    const [stageRows, taskRows] = await Promise.all([
+      stages.list(project._id),
+      taskRepository.listForTimeline(project._id),
+    ]);
+
+    res.json({
+      project: {
+        name: project.name,
+        startDate: project.startDate.toISOString().slice(0, 10),
+        targetEndDate: project.targetEndDate.toISOString().slice(0, 10),
+      },
+      stages: stageRows.map((row) => ({
+        id: row._id.toString(),
+        name: row.name,
+        order: row.order,
+        isGate: row.isGate,
+        dependsOn: row.dependsOn.map((id) => id.toString()),
+      })),
+      tasks: taskRows.map((row) => ({
+        id: row._id.toString(),
+        title: row.title,
+        startDate: row.startDate instanceof Date ? row.startDate.toISOString().slice(0, 10) : row.startDate,
+        dueDate: row.dueDate instanceof Date ? row.dueDate.toISOString().slice(0, 10) : row.dueDate,
+        started: row.startedAt !== undefined,
+        completed: row.completedAt !== undefined,
+        stageId: row.stage?.toString() ?? null,
+      })),
+    });
+  });
 
   router.get('/', validateRequest({ params: projectScopeParamsSchema }), async (req, res) => {
     const { projectId } = getValidated<{ projectId: string }>(res, 'params');

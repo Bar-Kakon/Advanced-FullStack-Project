@@ -27,6 +27,10 @@ export interface TaskRepository {
   deleteByProject(project: Types.ObjectId, session?: DbSession): Promise<number>;
   listMine(query: MyTasksQuery): Promise<TaskRecord[]>;
   listByIds(ids: readonly Types.ObjectId[]): Promise<TaskRecord[]>;
+  /** PRJ-10's read: every project task's dates and progress, titles only — no names at all. */
+  listForTimeline(project: Types.ObjectId): Promise<
+    readonly Pick<TaskRecord, '_id' | 'title' | 'startDate' | 'dueDate' | 'startedAt' | 'completedAt' | 'stage'>[]
+  >;
   /** The departing member's unfinished responsibilities inside the company's own projects. */
   listUnfinishedAssignedInCompany(
     assignee: Types.ObjectId,
@@ -73,6 +77,14 @@ export const taskRepository: TaskRepository = {
     if (session) query.session(session);
     const result = await query.exec();
     return result.deletedCount;
+  },
+
+  async listForTimeline(project) {
+    return TaskModel.find({ project })
+      .select('title startDate dueDate startedAt completedAt stage')
+      .sort({ startDate: 1, _id: 1 })
+      .lean<Pick<TaskRecord, '_id' | 'title' | 'startDate' | 'dueDate' | 'startedAt' | 'completedAt' | 'stage'>[]>()
+      .exec();
   },
 
   async listUnfinishedAssignedInCompany(assignee, company, session) {
