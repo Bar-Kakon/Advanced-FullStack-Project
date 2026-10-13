@@ -55,6 +55,10 @@ export interface MessagingRepository {
     folder: 'inbox' | 'requests',
     page: CursorPage,
   ): Promise<ConversationRecord[]>;
+  /** Re-opens a declined request as a fresh pending one from `requestedBy`. */
+  reopenRequest(id: Types.ObjectId, requestedBy: Types.ObjectId): Promise<ConversationRecord | null>;
+  /** Hides one message for one viewer. A kept message is never matched. */
+  hideMessageFor(messageId: Types.ObjectId, user: Types.ObjectId): Promise<boolean>;
   listProjectRooms(projects: readonly Types.ObjectId[]): Promise<ConversationRecord[]>;
   setRequestState(id: Types.ObjectId, state: RequestState): Promise<boolean>;
   hideFor(id: Types.ObjectId, user: Types.ObjectId): Promise<void>;
@@ -98,7 +102,11 @@ export interface MessagingRepository {
     conversation: Types.ObjectId,
     attachment: Types.ObjectId,
   ): Promise<MessageRecord | null>;
-  history(conversation: Types.ObjectId, page: CursorPage): Promise<MessageRecord[]>;
+  history(
+    conversation: Types.ObjectId,
+    page: CursorPage,
+    viewer?: Types.ObjectId,
+  ): Promise<MessageRecord[]>;
   findMessage(id: string): Promise<MessageRecord | null>;
   answerAgreement(
     messageId: Types.ObjectId,
@@ -178,17 +186,13 @@ export const messagingRepository: MessagingRepository = {
   async listForUser(user, folder, { limit, cursor }) {
     const after = parseCursor(cursor);
 
-    // A pending request the person RECEIVED belongs in Requests; one they sent stays in their
-    // Inbox, because it is their own outgoing thread.
+    // Pending requests, whichever side sent them, live in Requests alone; the Inbox holds only
+    // accepted conversations, and a declined thread is listed nowhere until it is re-asked.
     const requestFilter =
       folder === 'requests'
-        ? { 'request.state': 'pending', 'request.requestedBy': { $ne: user } }
+        ? { 'request.state': 'pending' }
         : {
-            $or: [
-              { request: { $exists: false } },
-              { 'request.state': { $ne: 'pending' } },
-              { 'request.requestedBy': user },
-            ],
+            $or: [{ request: { $exists: false } }, { 'request.state': 'accepted' }],
           };
 
     const filter: Record<string, unknown> = {
@@ -223,6 +227,24 @@ export const messagingRepository: MessagingRepository = {
       .sort({ lastMessageAt: -1, _id: -1 })
       .lean<ConversationRecord[]>()
       .exec();
+  },
+
+  async reopenRequest(id, requestedBy) {
+    return ConversationModel.findOneAndUpdate(
+      { _id: id, 'request.state': 'declined' },
+      { $set: { 'request.state': 'pending', 'request.requestedBy': requestedBy } },
+      { returnDocument: 'after' },
+    )
+      .lean<ConversationRecord>()
+      .exec();
+  },
+
+  async hideMessageFor(messageId, user) {
+    const result = await MessageModel.updateOne(
+      { _id: messageId, keptAt: { $exists: false } },
+      { $addToSet: { hiddenFor: user } },
+    ).exec();
+    return result.matchedCount === 1;
   },
 
   async setRequestState(id, state) {
@@ -388,11 +410,12 @@ export const messagingRepository: MessagingRepository = {
       .exec();
   },
 
-  async history(conversation, { limit, cursor }) {
+  async history(conversation, { limit, cursor }, viewer) {
     const after = parseCursor(cursor);
 
     const filter: Record<string, unknown> = {
       conversation,
+      ...(viewer === undefined ? {} : { hiddenFor: { $ne: viewer } }),
       ...(after === null
         ? {}
         : {

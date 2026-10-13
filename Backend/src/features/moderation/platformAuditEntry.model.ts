@@ -19,6 +19,7 @@ export const PLATFORM_AUDIT_ACTIONS = [
   'account.unrestricted',
   'account.deleted',
   'account.restored',
+  'account.anonymized',
 ] as const;
 export type PlatformAuditAction = (typeof PLATFORM_AUDIT_ACTIONS)[number];
 

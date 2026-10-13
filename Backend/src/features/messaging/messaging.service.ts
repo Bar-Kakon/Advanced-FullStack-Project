@@ -22,6 +22,7 @@ import {
   messageNotFound,
   noContactWithUser,
   notMessageSender,
+  ownMessageNotHideable,
   notPermittedToCommission,
   requestAwaitingResponse,
   requestNotPending,
@@ -77,6 +78,10 @@ export interface MessageDto {
 export interface HistoryPageDto {
   readonly messages: readonly MessageDto[];
   readonly nextCursor: string | null;
+  /** The direct thread's request state, so the open thread can carry its own gate. */
+  readonly requestState: string | null;
+  /** Whether this viewer is the one a pending request is waiting on. */
+  readonly awaitingMyAnswer: boolean;
   /** Whether the viewer holds the unified Project-Room moderation authority here. */
   readonly canModerate: boolean;
   /** Whether the viewer may commission work — the company `task.create` capability, read live. */
@@ -93,6 +98,7 @@ export interface MessagingService {
   startDirect(userId: string, otherUserId: string, body: string): Promise<ConversationSummaryDto>;
   send(userId: string, conversationId: string, input: SendInput): Promise<MessageDto>;
   deleteOwnMessage(userId: string, conversationId: string, messageId: string): Promise<MessageDto>;
+  hideMessage(userId: string, conversationId: string, messageId: string): Promise<void>;
   removeMessage(userId: string, conversationId: string, messageId: string): Promise<MessageDto>;
   keepMessage(userId: string, conversationId: string, messageId: string): Promise<MessageDto>;
   history(userId: string, conversationId: string, limit: number, cursor?: string): Promise<HistoryPageDto>;
@@ -372,6 +378,7 @@ export const createMessagingService = ({
           userId: recipient,
           type,
           ...(conversation.project === undefined ? {} : { projectId: conversation.project }),
+          conversationId: conversation._id,
           payload: { actorName },
           dedupeKey: `${dedupeKey}:${recipient.toString()}`,
         })),
@@ -430,10 +437,17 @@ export const createMessagingService = ({
 
       const existing = await conversations.findDirectByPair(me, them);
       // The same pair never gets a second conversation, whatever either side hid.
-      const conversation = existing ?? (await conversations.createDirect(me, them, 'pending'));
+      let conversation = existing ?? (await conversations.createDirect(me, them, 'pending'));
 
-      if (conversation.request?.state === 'pending' && conversation.request.requestedBy.toString() !== userId) {
-        throw requestAwaitingResponse();
+      if (conversation.request?.state === 'pending') {
+        if (conversation.request.requestedBy.toString() !== userId) throw requestAwaitingResponse();
+        const already = await conversations.history(conversation._id, { limit: 1 });
+        if (already.length > 0) throw requestAwaitingResponse();
+      }
+
+      // A declined request is historical, not permanent: writing again re-asks, from this sender.
+      if (conversation.request?.state === 'declined') {
+        conversation = (await conversations.reopenRequest(conversation._id, me)) ?? conversation;
       }
 
       const sentAt = new Date();
@@ -467,6 +481,8 @@ export const createMessagingService = ({
             throw noContactWithUser();
           }
         }
+
+        if (conversation.request?.state === 'declined') throw requestNotPending();
 
         // The requester may not keep writing while the request is unanswered.
         if (
@@ -524,10 +540,11 @@ export const createMessagingService = ({
     async history(userId, conversationId, limit, cursor) {
       const conversation = await reachable(userId, conversationId);
 
-      const rows = await conversations.history(conversation._id, {
-        limit,
-        ...(cursor === undefined ? {} : { cursor }),
-      });
+      const rows = await conversations.history(
+        conversation._id,
+        { limit, ...(cursor === undefined ? {} : { cursor }) },
+        new Types.ObjectId(userId),
+      );
       await conversations.markRead(conversation._id, new Types.ObjectId(userId));
 
       const names = await namesFor(rows.map((row) => row.sender));
@@ -544,6 +561,10 @@ export const createMessagingService = ({
           last !== undefined && rows.length === limit ? encodeCursor(last.createdAt, last._id) : null,
         canModerate: (await moderatorMembership(userId, conversation)) !== null,
         canProposeAgreement: (await commissioning.commissioningCompanyFor(userId)) !== null,
+        requestState: conversation.request?.state ?? null,
+        awaitingMyAnswer:
+          conversation.request?.state === 'pending' &&
+          conversation.request.requestedBy.toString() !== userId,
       };
     },
 
@@ -691,6 +712,21 @@ export const createMessagingService = ({
       if (updated === null) throw messageKept();
 
       return toMessageDto(updated, userId, await namesFor([updated.sender]), new Map());
+    },
+
+    async hideMessage(userId, conversationId, messageId) {
+      const conversation = await reachable(userId, conversationId);
+
+      const message = await conversations.findMessage(messageId);
+      if (message === null || message.conversation.toString() !== conversation._id.toString()) {
+        throw messageNotFound();
+      }
+      if (message.sender.toString() === userId) throw ownMessageNotHideable();
+      if (message.keptAt !== undefined) throw messageKept();
+
+      if (!(await conversations.hideMessageFor(message._id, new Types.ObjectId(userId)))) {
+        throw messageKept();
+      }
     },
 
     async removeMessage(userId, conversationId, messageId) {

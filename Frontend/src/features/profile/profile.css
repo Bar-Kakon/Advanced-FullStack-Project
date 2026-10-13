@@ -230,6 +230,24 @@ fieldset { border: 0; }
   border: 1.5px solid rgba(35, 56, 77, 0.92);
 }
 
+.nav-icon-btn__badge {
+  position: absolute;
+  top: -7px;
+  inset-inline-end: -7px;
+  display: inline-grid;
+  place-items: center;
+  min-width: 19px;
+  height: 19px;
+  padding-inline: 5px;
+  border-radius: 999px;
+  background: var(--secondary);
+  color: #23384d;
+  border: 1.5px solid rgba(35, 56, 77, 0.92);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+}
+
 .nav-profile {
   display: inline-flex;
   align-items: center;

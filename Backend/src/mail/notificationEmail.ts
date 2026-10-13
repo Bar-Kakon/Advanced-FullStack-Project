@@ -61,6 +61,9 @@ const WORDING: Record<UserLanguage, Wording> = {
       'message.request_received': 'בקשת התכתבות חדשה',
       'agreement.received': 'הצעת סיכום עבודה חדשה',
       'agreement.answered': 'התקבלה תשובה להצעת סיכום עבודה',
+      'connection.request_received': 'בקשת קשר חדשה ברשת המקצועית',
+      'connection.accepted': 'בקשת הקשר שלך אושרה',
+      'connection.declined': 'בקשת הקשר שלך נדחתה',
     },
   },
   en: {
@@ -95,6 +98,9 @@ const WORDING: Record<UserLanguage, Wording> = {
       'message.request_received': 'A new message request',
       'agreement.received': 'A work agreement was proposed',
       'agreement.answered': 'A work agreement was answered',
+      'connection.request_received': 'A new connection request',
+      'connection.accepted': 'Your connection request was accepted',
+      'connection.declined': 'Your connection request was declined',
     },
   },
 };

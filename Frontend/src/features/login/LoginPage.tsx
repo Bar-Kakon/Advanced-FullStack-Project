@@ -73,6 +73,10 @@ export const LoginPage = () => {
         <Link to="/register" className="form-link form-link--strong">{t.login.createOne}</Link>
       </p>
 
+      <p className="form-footer">
+        <Link to="/recover-account" className="form-link">{t.accountRecovery.entry}</Link>
+      </p>
+
       <p className="secure-note" aria-hidden="true">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <rect x="4" y="11" width="16" height="9" rx="2" />

@@ -31,6 +31,7 @@ export const toNotificationDto = (row: NotificationRecord): NotificationDto => (
   taskId: row.task?.toString() ?? null,
   proposalId: row.proposal?.toString() ?? null,
   scheduleExceptionId: row.scheduleException?.toString() ?? null,
+  conversationId: row.conversation?.toString() ?? null,
   payload: row.payload,
   muted: row.mutedAtCreation,
   seenAt: row.seenAt?.toISOString() ?? null,

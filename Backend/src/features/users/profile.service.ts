@@ -8,6 +8,8 @@ import type { FileAssetService, StoredUpload } from '../files/fileAsset.service.
 import type { FlexibilityService } from '../flexibility/flexibility.service.js';
 import type { WorkEntryRecord } from '../workentries/workEntry.model.js';
 import type { WorkEntryRepository } from '../workentries/workEntry.repository.js';
+import { companyOwnerInactive } from '../companies/company.errors.js';
+import { companyOwnerStateFor } from '../companies/companyContext.service.js';
 import type { ProfileDto, WorkEntryDto } from './profile.dto.js';
 import {
   noActiveCompany,
@@ -185,6 +187,9 @@ export const createProfileService = ({
     const membership = await activeMembership(userId);
     if (membership === null) throw noActiveCompany();
     if (!membership.permissions.includes(COMPANY_EDIT_PERMISSION)) throw notPermittedToEditCompany();
+    if (membership.standing !== 'owner' && (await companyOwnerStateFor(membership.company)) !== 'active') {
+      throw companyOwnerInactive();
+    }
 
     return membership.company;
   };

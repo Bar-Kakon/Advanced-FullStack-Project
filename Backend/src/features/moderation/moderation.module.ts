@@ -3,6 +3,8 @@ import { Router, type RequestHandler } from 'express';
 import { validateRequest } from '../../middleware/validateRequest.js';
 import { reportRepository } from '../reports/report.repository.js';
 import { userRepository } from '../users/user.repository.js';
+import { companyMembershipRepository } from '../companies/companyMembership.repository.js';
+import { refreshTokenRepository } from '../auth/refreshToken.repository.js';
 import { createAccountLifecycleService } from '../users/accountLifecycle.service.js';
 import { createModerationController } from './moderation.controller.js';
 import { platformAuditService } from './platformAudit.instance.js';
@@ -33,6 +35,8 @@ export const createModerationModule = (requireAccessToken: RequestHandler): Rout
   const lifecycle = createAccountLifecycleService({
     users: userRepository,
     audit: platformAuditService,
+    memberships: companyMembershipRepository,
+    refreshTokens: refreshTokenRepository,
   });
   const controller = createModerationController(service, platformAuditService, lifecycle);
 

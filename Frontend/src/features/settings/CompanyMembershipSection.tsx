@@ -72,11 +72,24 @@ export const CompanyMembershipSection = () => {
 
   const isEmployee = user?.company?.standing === 'employee';
   const hasNoCompany = user !== null && user.company === null;
+  const ownerState = user?.company?.ownerState ?? 'active';
   if (!isEmployee && !hasNoCompany && done === null) return null;
 
   return (
     <section className="settings-section" aria-labelledby="settings-company">
       <h2 className="settings-section__title" id="settings-company">{copy.title}</h2>
+
+      {isEmployee && ownerState !== 'active' ? (
+        <div className="notice notice--warn" role="status">
+          <p className="settings-section__note settings-section__note--strong">
+            {copy.ownerInactiveTitle}
+          </p>
+          <p className="settings-section__note">{copy.ownerInactiveNote}</p>
+          {ownerState === 'recovery' ? (
+            <p className="settings-section__note">{copy.ownerRecoveryNote}</p>
+          ) : null}
+        </div>
+      ) : null}
 
       {failure === 'blocked' ? (
         <p className="notice notice--error" role="alert">{copy.claimBlocked}</p>
