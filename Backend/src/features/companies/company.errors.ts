@@ -39,3 +39,7 @@ export const ownerCannotLeave = (): AppError =>
 /** The rejoining safeguard: no new membership period before the attribution backfill completes. */
 export const claimBlockedByMigration = (): AppError =>
   new AppError('Joining is briefly unavailable until a data migration completes', 409, 'CLAIM_BLOCKED_BY_MIGRATION');
+
+/** Company writes wait while the company has no active owner; reads and departures do not. */
+export const companyOwnerInactive = (): AppError =>
+  new AppError('This company has no active owner right now.', 409, 'COMPANY_OWNER_INACTIVE');
