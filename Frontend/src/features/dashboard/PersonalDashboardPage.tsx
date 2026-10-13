@@ -29,7 +29,7 @@ export const PersonalDashboardPage = () => {
 
   const firstName = dashboard?.identity.firstName ?? user?.firstName ?? '';
   const lastName = dashboard?.identity.lastName ?? user?.lastName ?? '';
-  const showManagement = user?.company?.standing !== 'employee' && canManageEmployees(user);
+  const showManagement = canManageEmployees(user);
 
   const rating = dashboard?.reputation.rating ?? null;
 
@@ -108,6 +108,23 @@ export const PersonalDashboardPage = () => {
               )}
             </section>
 
+            {showManagement ? (
+              <section className="panel" aria-labelledby="management-title">
+                <h2 id="management-title" className="panel__title">{t.dashboard.management.title}</h2>
+
+                <ul className="tool-list">
+                  <li className="tool-list__item">
+                    <div className="tool-list__text">
+                      <Link to="/employees" className="tool-list__name">
+                        {t.dashboard.management.employees.name}
+                      </Link>
+                      <p className="tool-list__lede">{t.dashboard.management.employees.lede}</p>
+                    </div>
+                  </li>
+                </ul>
+              </section>
+            ) : null}
+
             <section className="panel" aria-labelledby="dashboard-network-title">
               <h2 id="dashboard-network-title" className="panel__title">{t.dashboard.network.title}</h2>
               <p className="panel__lede">{t.dashboard.network.lede}</p>
@@ -175,22 +192,6 @@ export const PersonalDashboardPage = () => {
               <Link to="/profile" className="btn btn--ghost btn--sm">{t.dashboard.reputation.viewProfile}</Link>
             </section>
 
-            {showManagement ? (
-              <section className="panel" aria-labelledby="management-title">
-                <h2 id="management-title" className="panel__title">{t.dashboard.management.title}</h2>
-
-                <ul className="tool-list">
-                  <li className="tool-list__item">
-                    <div className="tool-list__text">
-                      <Link to="/employees" className="tool-list__name">
-                        {t.dashboard.management.employees.name}
-                      </Link>
-                      <p className="tool-list__lede">{t.dashboard.management.employees.lede}</p>
-                    </div>
-                  </li>
-                </ul>
-              </section>
-            ) : null}
           </>
         ) : null}
       </main>
