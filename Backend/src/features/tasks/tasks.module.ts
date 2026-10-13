@@ -43,6 +43,7 @@ import {
   editTaskBodySchema,
   myTasksQuerySchema,
   privateItemBodySchema,
+  privateItemEditSchema,
   privateItemParamsSchema,
   privateToggleBodySchema,
   projectOptionsParamsSchema,
@@ -329,6 +330,16 @@ export const createTasksModule = (requireAccessToken: RequestHandler): Router =>
       const { taskId, itemId } = getValidated<{ taskId: string; itemId: string }>(res, 'params');
       const { done } = getValidated<{ done: boolean }>(res, 'body');
       res.json({ item: await detail.togglePrivate(me(res), taskId, itemId, done) });
+    },
+  );
+
+  router.patch(
+    '/:taskId/private/:itemId/body',
+    validateRequest({ params: privateItemParamsSchema, body: privateItemEditSchema }),
+    async (req, res) => {
+      const { taskId, itemId } = getValidated<{ taskId: string; itemId: string }>(res, 'params');
+      const { body } = getValidated<{ body: string }>(res, 'body');
+      res.json({ item: await detail.updatePrivate(me(res), taskId, itemId, body) });
     },
   );
 

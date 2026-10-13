@@ -21,6 +21,7 @@ import projectsCss from '../projects/projects.css?inline';
 import permissionsCss from '../permissions/permissions.css?inline';
 import dashboardCss from '../projectdashboard/project-dashboard.css?inline';
 import tasksCss from './tasks.css?inline';
+import coordinationCss from '../coordination/coordination.css?inline';
 
 
 /**
@@ -48,7 +49,7 @@ export const TaskDetailPage = () => {
   const { taskId = '' } = useParams<{ taskId: string }>();
   const {
     task, privateItems, loading, busy, failure, reload,
-    delegate, endDelegation, addPrivate, togglePrivate, removePrivate,
+    delegate, endDelegation, addPrivate, togglePrivate, updatePrivate, removePrivate,
   } = useTaskDetail(taskId);
 
   useScreenStylesheet(
@@ -57,6 +58,7 @@ export const TaskDetailPage = () => {
     { id: 'permissions.css', css: permissionsCss },
     { id: 'project-dashboard.css', css: dashboardCss },
     { id: 'tasks.css', css: tasksCss },
+    { id: 'coordination.css', css: coordinationCss },
   );
   useDocumentTitle('פרטי העבודה / Work detail — Blokta');
 
@@ -223,15 +225,23 @@ export const TaskDetailPage = () => {
                 busy={busy}
                 onAdd={(kind, body) => void addPrivate(kind, body)}
                 onToggle={(id, done) => void togglePrivate(id, done)}
+                onEdit={(id, body) => void updatePrivate(id, body)}
                 onRemove={(id) => void removePrivate(id)}
               />
             ) : null}
 
-            <DateChangePanel
-              taskId={task.id}
-              available={task.rescheduleAvailable && task.viewer.canRequestDateChange}
-              impact={task.rescheduleImpact}
-            />
+            {task.project === null && !task.viewerIsDelegate ? (
+              <section className="panel" aria-labelledby="date-change-title">
+                <h2 id="date-change-title" className="panel__title">{t.tasks.detail.dateChange.title}</h2>
+                <p className="panel__lede">{t.tasks.detail.dateChange.standaloneOnly}</p>
+              </section>
+            ) : (
+              <DateChangePanel
+                taskId={task.id}
+                available={task.rescheduleAvailable && task.viewer.canRequestDateChange}
+                impact={task.rescheduleImpact}
+              />
+            )}
 
             <HandoffPanel
               taskId={task.id}

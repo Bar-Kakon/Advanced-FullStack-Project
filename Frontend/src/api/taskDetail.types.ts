@@ -66,4 +66,5 @@ export interface PrivateWorkItem {
   readonly body: string;
   readonly done: boolean;
   readonly order: number;
+  readonly createdAt: string;
 }

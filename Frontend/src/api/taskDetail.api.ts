@@ -56,6 +56,18 @@ export const togglePrivateItem = async (
   return data.item;
 };
 
+export const updatePrivateItem = async (
+  taskId: string,
+  itemId: string,
+  body: string,
+): Promise<PrivateWorkItem> => {
+  const { data } = await api.patch<{ item: PrivateWorkItem }>(
+    `/tasks/${taskId}/private/${itemId}/body`,
+    { body },
+  );
+  return data.item;
+};
+
 export const removePrivateItem = async (taskId: string, itemId: string): Promise<void> => {
   await api.delete(`/tasks/${taskId}/private/${itemId}`);
 };

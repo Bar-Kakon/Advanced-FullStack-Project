@@ -728,6 +728,13 @@ export const en: Strings = {
         remove: 'Delete',
         none: 'Nothing in my own organisation yet.',
         noEffect: 'Ticking a sub-task does not change how the work appears to anybody else.',
+        openDetail: 'Open',
+        closeDetail: 'Close',
+        createdAt: 'Created on {date}',
+        stateDone: 'Done',
+        stateOpen: 'Not done yet',
+        editLabel: 'Edit the item',
+        saveEdit: 'Save the change',
       },
 
       dateChange: {
@@ -744,6 +751,7 @@ export const en: Strings = {
         beyondCeiling: 'The request would pass the project overrun ceiling, so it cannot be sent as it stands.',
         sent: 'The request was sent and is waiting on the project authority.',
         failed: 'The request could not be sent right now.',
+        standaloneOnly: 'A date-change request operates on a project schedule. This work is not part of a project, so its dates are coordinated directly with the other party, in the work conversation where the agreement was made.',
         emptyChange: 'Ask for at least one change — extra days or an alternative date.',
         openRequest: 'Open the request',
         request: 'Request a date change',
