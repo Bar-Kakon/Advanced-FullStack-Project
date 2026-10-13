@@ -1,5 +1,7 @@
 import { Types } from 'mongoose';
 
+import type { DbSession } from '../../db/mongoose.js';
+
 import {
   NotificationModel,
   type NotificationClass,
@@ -30,6 +32,8 @@ export interface NotificationPage {
 }
 
 export interface NotificationRepository {
+  /** PRJ-07: rows pointing into a cancelled project would navigate nowhere, so they go. */
+  deleteByProject(project: Types.ObjectId, session?: DbSession): Promise<number>;
   /** `null` when the same event already reached this person — a no-op, never a second row. */
   create(input: NewNotification): Promise<NotificationRecord | null>;
   findById(id: string): Promise<NotificationRecord | null>;
@@ -63,6 +67,13 @@ const decodeCursor = (cursor: string): { at: Date; id: Types.ObjectId } | null =
 };
 
 export const notificationRepository: NotificationRepository = {
+  async deleteByProject(project, session) {
+    const query = NotificationModel.deleteMany({ project });
+    if (session) query.session(session);
+    const result = await query.exec();
+    return result.deletedCount;
+  },
+
   async create(input) {
     try {
       const created = new NotificationModel(input);

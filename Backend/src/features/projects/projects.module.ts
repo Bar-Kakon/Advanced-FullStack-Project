@@ -14,6 +14,13 @@ import { createProjectsService } from './projects.service.js';
 import { planCapacityAdapter } from '../billing/planCapacity.adapter.js';
 import { taskExecutionAdapter } from '../tasks/taskExecution.adapter.js';
 import { buildCoordinationService } from '../coordination/coordination.module.js';
+import { runInTransaction } from '../../db/mongoose.js';
+import { buildNotificationDispatchService } from '../notifications/notifications.module.js';
+import { notificationRepository } from '../notifications/notification.repository.js';
+import { proposalRepository } from '../coordination/proposal.repository.js';
+import { scheduleExceptionRepository } from '../scheduleexceptions/scheduleException.repository.js';
+import { taskRepository } from '../tasks/task.repository.js';
+import { userRepository } from '../users/user.repository.js';
 import {
   adoptCalendarBodySchema,
   calendarOverridesSchema,
@@ -39,6 +46,13 @@ export const createProjectsModule = (requireAccessToken: RequestHandler): Router
       grants: projectGrantRepository,
       pendingActions: { forUser: (userId) => coordination.pendingActionsFor(userId) },
       planCapacity: planCapacityAdapter,
+      tasks: taskRepository,
+      proposals: proposalRepository,
+      exceptions: scheduleExceptionRepository,
+      notificationRows: notificationRepository,
+      notifications: buildNotificationDispatchService(),
+      users: userRepository,
+      transactions: { run: runInTransaction },
     }),
   );
 

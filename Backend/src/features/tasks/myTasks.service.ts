@@ -259,6 +259,14 @@ export const createMyTasksService = ({
       const task = await loadPerformable(userId, taskId);
       if (task.startedAt !== undefined) throw alreadyStarted();
 
+      // PRJ-07's race guard: a project mid-cancellation (or already gone) takes no first start.
+      // Every start after the stamp is refused here; every start before it is caught by the
+      // cancellation's own re-check behind the same stamp.
+      if (task.project !== undefined) {
+        const project = await projects.findById(task.project.toString());
+        if (project === null || project.cancellingAt !== undefined) throw taskNotFound();
+      }
+
       const updated = await tasks.setStarted(task._id, new Date());
       if (updated === null) throw alreadyStarted();
       return single(updated, userId);
