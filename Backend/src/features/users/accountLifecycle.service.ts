@@ -1,7 +1,11 @@
 import { Types } from 'mongoose';
 
 import { AppError } from '../../shared/errors.js';
+import type { RefreshTokenRepository } from '../auth/refreshToken.repository.js';
+import { CURRENT_MEMBERSHIP_STATUSES } from '../companies/companyMembership.model.js';
+import type { CompanyMembershipRepository } from '../companies/companyMembership.repository.js';
 import type { PlatformAuditService } from '../moderation/platformAudit.service.js';
+import type { TaskRepository } from '../tasks/task.repository.js';
 import type { UserRepository } from './user.repository.js';
 
 export const accountAlreadyDeleted = (): AppError =>
@@ -13,6 +17,15 @@ export const accountNotDeleted = (): AppError =>
 export const accountRestoreNotApplicable = (): AppError =>
   new AppError('That account cannot be restored.', 404, 'ACCOUNT_RESTORE_NOT_APPLICABLE');
 
+export const accountOwnsCompany = (): AppError =>
+  new AppError('A company owner closes the company side first.', 409, 'ACCOUNT_OWNS_COMPANY');
+
+export const accountInCompany = (): AppError =>
+  new AppError('Leave the company before closing the account.', 409, 'ACCOUNT_IN_COMPANY');
+
+export const accountHasActiveWork = (): AppError =>
+  new AppError('Close the open work commitments first.', 409, 'ACCOUNT_HAS_ACTIVE_WORK');
+
 export interface AccountLifecycleService {
   /** The account's own holder, closing it. Recoverable, and it destroys nothing. */
   deleteOwn(userId: string): Promise<void>;
@@ -23,6 +36,9 @@ export interface AccountLifecycleService {
 export interface AccountLifecycleDependencies {
   readonly users: UserRepository;
   readonly audit: PlatformAuditService;
+  readonly memberships: CompanyMembershipRepository;
+  readonly tasks: TaskRepository;
+  readonly refreshTokens: RefreshTokenRepository;
 }
 
 /**
@@ -38,14 +54,36 @@ export interface AccountLifecycleDependencies {
 export const createAccountLifecycleService = ({
   users,
   audit,
+  memberships,
+  tasks,
+  refreshTokens,
 }: AccountLifecycleDependencies): AccountLifecycleService => ({
   async deleteOwn(userId) {
     if (!Types.ObjectId.isValid(userId)) throw accountRestoreNotApplicable();
 
     const id = new Types.ObjectId(userId);
 
+    // The open D8 question — what happens to active commitments — is preserved by refusing the
+    // request while any exist, never by choosing an answer here.
+    const membership = await memberships.findCurrentByUser(userId);
+    if (membership !== null && membership.standing === 'employee') throw accountInCompany();
+    if (membership !== null && membership.standing === 'owner') {
+      // A sole owner strands nobody; an owner whose company still holds other current members does.
+      const members = await memberships.listByCompany(membership.company);
+      const others = members.filter(
+        (row) =>
+          row.user !== null &&
+          row.user.toString() !== userId &&
+          (CURRENT_MEMBERSHIP_STATUSES as readonly string[]).includes(row.status),
+      );
+      if (others.length > 0) throw accountOwnsCompany();
+    }
+    if ((await tasks.countUnfinishedResponsibilities(id)) > 0) throw accountHasActiveWork();
+
     // Filtered on the state being left, so a second submission is refused rather than re-applied.
     if (!(await users.transitionStatus(id, 'active', 'deleted'))) throw accountAlreadyDeleted();
+
+    await refreshTokens.revokeAllForUser(id);
 
     await audit.record({
       actorId: userId,
