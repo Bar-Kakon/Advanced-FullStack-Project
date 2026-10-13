@@ -122,6 +122,7 @@ export interface AgreementInput {
   readonly startDate: string;
   readonly dueDate: string;
   readonly projectId?: string;
+  readonly attachments?: readonly string[];
 }
 
 /** Whether this account may commission new work for its company. Read live on every ask. */
@@ -141,6 +142,11 @@ export interface AgreementTaskPort {
   }): Promise<Types.ObjectId>;
 }
 
+/** The one question messaging asks the network layer: is this pair mutually approved? */
+export interface ConnectionsPort {
+  isAccepted(a: string, b: string): Promise<boolean>;
+}
+
 /** The one question messaging asks the mute domain, per recipient. */
 export interface MutesPort {
   isMuted(user: Types.ObjectId, scope: 'contractor' | 'conversation', target: Types.ObjectId): Promise<boolean>;
@@ -158,6 +164,7 @@ export interface MessagingDependencies {
   readonly audit: AuditRepository;
   readonly commissioning: CommissioningPort;
   readonly mutes: MutesPort;
+  readonly connections: ConnectionsPort;
 }
 
 export const createMessagingService = ({
@@ -172,6 +179,7 @@ export const createMessagingService = ({
   audit,
   commissioning,
   mutes,
+  connections: network,
 }: MessagingDependencies): MessagingService => {
   const nameOf = async (id: Types.ObjectId): Promise<string> =>
     (await users.findDisplayNames([id])).get(id.toString()) ?? '';
@@ -377,9 +385,7 @@ export const createMessagingService = ({
             .map((member) => member.user)
         : conversation.participants;
 
-    // A recipient who muted this contact or this conversation gets no notification row at all —
-    // no in-app line, no counter, no email — while the message itself lands untouched (owner
-    // decision 2026-10-13: a mute silences the noise and is never a block).
+    // A muted contact or conversation produces no notification row while the message lands untouched.
     const candidates = recipients.filter((recipient) => recipient.toString() !== senderId);
     const silenced = await Promise.all(
       candidates.map(
@@ -438,11 +444,7 @@ export const createMessagingService = ({
       };
     },
 
-    /**
-     * First contact. A connection is NOT consulted: whether these two are connected has no bearing
-     * on whether a first message may be sent, only on nothing at all. What decides is whether a
-     * conversation already exists — if not, the message opens a REQUEST.
-     */
+    /** First contact. An approved connection opens the thread accepted; anyone else opens a request. */
     async startDirect(userId, otherUserId, body) {
       if (userId === otherUserId) throw cannotMessageSelf();
       if (!Types.ObjectId.isValid(otherUserId)) throw conversationNotFound();
@@ -454,18 +456,26 @@ export const createMessagingService = ({
       const me = new Types.ObjectId(userId);
       const them = new Types.ObjectId(otherUserId);
 
+      const connected = await network.isAccepted(userId, otherUserId);
+
       const existing = await conversations.findDirectByPair(me, them);
       // The same pair never gets a second conversation, whatever either side hid.
-      let conversation = existing ?? (await conversations.createDirect(me, them, 'pending'));
+      let conversation =
+        existing ?? (await conversations.createDirect(me, them, connected ? 'accepted' : 'pending'));
 
-      if (conversation.request?.state === 'pending') {
+      if (connected && (conversation.request?.state === 'pending' || conversation.request?.state === 'declined')) {
+        conversation =
+          (await conversations.upgradeRequestToAccepted(conversation._id)) ?? conversation;
+      }
+
+      if (!connected && conversation.request?.state === 'pending') {
         if (conversation.request.requestedBy.toString() !== userId) throw requestAwaitingResponse();
         const already = await conversations.history(conversation._id, { limit: 1 });
         if (already.length > 0) throw requestAwaitingResponse();
       }
 
       // A declined request is historical, not permanent: writing again re-asks, from this sender.
-      if (conversation.request?.state === 'declined') {
+      if (!connected && conversation.request?.state === 'declined') {
         conversation = (await conversations.reopenRequest(conversation._id, me)) ?? conversation;
       }
 
@@ -490,7 +500,7 @@ export const createMessagingService = ({
     },
 
     async send(userId, conversationId, input) {
-      const conversation = await reachable(userId, conversationId);
+      let conversation = await reachable(userId, conversationId);
 
       if (conversation.kind === 'direct') {
         const counterparty = counterpartyOf(conversation, userId);
@@ -501,22 +511,23 @@ export const createMessagingService = ({
           }
         }
 
-        if (conversation.request?.state === 'declined') throw requestNotPending();
+        const gateState = conversation.request?.state;
+        if (gateState === 'pending' || gateState === 'declined') {
+          const other = counterparty?.toString();
+          if (other !== undefined && (await network.isAccepted(userId, other))) {
+            conversation =
+              (await conversations.upgradeRequestToAccepted(conversation._id)) ?? conversation;
+          } else {
+            if (gateState === 'declined') throw requestNotPending();
 
-        // The requester may not keep writing while the request is unanswered.
-        if (
-          conversation.request?.state === 'pending' &&
-          conversation.request.requestedBy.toString() === userId
-        ) {
-          const already = await conversations.history(conversation._id, { limit: 1 });
-          if (already.length > 0) throw requestAwaitingResponse();
-        }
-
-        if (
-          conversation.request?.state === 'pending' &&
-          conversation.request.requestedBy.toString() !== userId
-        ) {
-          throw requestNotPending();
+            // The requester may not keep writing while the request is unanswered.
+            if (conversation.request?.requestedBy.toString() === userId) {
+              const already = await conversations.history(conversation._id, { limit: 1 });
+              if (already.length > 0) throw requestAwaitingResponse();
+            } else {
+              throw requestNotPending();
+            }
+          }
         }
       }
 
@@ -633,11 +644,22 @@ export const createMessagingService = ({
       const commissioningCompany = await commissioning.commissioningCompanyFor(userId);
       if (commissioningCompany === null) throw notPermittedToCommission();
 
+      // FIL-04: the same rule every message obeys — the sender's own uploads, bound to THIS thread.
+      const requested = [...new Set(input.attachments ?? [])];
+      const found = await Promise.all(
+        requested.map((id) => files.findMessageScoped(id, conversation._id)),
+      );
+      const attached = found.flatMap((asset) =>
+        asset === null || asset.owner.toString() !== userId ? [] : [asset],
+      );
+      if (attached.length !== requested.length) throw attachmentNotFound();
+
       const sentAt = new Date();
       const message = await conversations.appendMessage({
         conversation: conversation._id,
         sender: new Types.ObjectId(userId),
         kind: 'agreement',
+        ...(attached.length === 0 ? {} : { attachments: attached.map((asset) => asset._id) }),
         agreement: {
           title: input.title,
           ...(input.description === undefined ? {} : { description: input.description }),
@@ -652,7 +674,12 @@ export const createMessagingService = ({
       await conversations.touchAndReveal(conversation._id, sentAt);
       await announce(conversation, userId, 'agreement.received', `agreement:${message._id.toString()}`);
 
-      return toMessageDto(message, userId, await namesFor([message.sender]), new Map());
+      return toMessageDto(
+        message,
+        userId,
+        await namesFor([message.sender]),
+        new Map(attached.map((asset) => [asset._id.toString(), toAttachmentDto(asset)])),
+      );
     },
 
     /**

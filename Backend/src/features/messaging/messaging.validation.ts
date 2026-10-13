@@ -69,6 +69,7 @@ export interface AgreementBody {
   readonly startDate: string;
   readonly dueDate: string;
   readonly projectId?: string;
+  readonly attachments?: readonly string[];
 }
 
 /**
@@ -81,6 +82,8 @@ export const agreementBodySchema = Joi.object({
   startDate: Joi.string().trim().pattern(CALENDAR_DATE).required(),
   dueDate: Joi.string().trim().pattern(CALENDAR_DATE).required(),
   projectId: OBJECT_ID.optional(),
+  // FIL-04: the work message may carry files, under the same upload rules as any message.
+  attachments: Joi.array().items(OBJECT_ID).max(10).optional(),
 });
 
 export interface ReportMessageBody {

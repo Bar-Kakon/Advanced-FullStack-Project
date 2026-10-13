@@ -57,6 +57,8 @@ export interface MessagingRepository {
   ): Promise<ConversationRecord[]>;
   /** Re-opens a declined request as a fresh pending one from `requestedBy`. */
   reopenRequest(id: Types.ObjectId, requestedBy: Types.ObjectId): Promise<ConversationRecord | null>;
+  /** An approved connection retires the gate: pending or declined becomes accepted, in place. */
+  upgradeRequestToAccepted(id: Types.ObjectId): Promise<ConversationRecord | null>;
   /** Hides one message for one viewer. A kept message is never matched. */
   hideMessageFor(messageId: Types.ObjectId, user: Types.ObjectId): Promise<boolean>;
   listProjectRooms(projects: readonly Types.ObjectId[]): Promise<ConversationRecord[]>;
@@ -231,6 +233,16 @@ export const messagingRepository: MessagingRepository = {
     return ConversationModel.find({ project: { $in: projects } })
       .sort({ lastMessageAt: -1, _id: -1 })
       .lean<ConversationRecord[]>()
+      .exec();
+  },
+
+  async upgradeRequestToAccepted(id) {
+    return ConversationModel.findOneAndUpdate(
+      { _id: id, 'request.state': { $in: ['pending', 'declined'] } },
+      { $set: { 'request.state': 'accepted' } },
+      { returnDocument: 'after' },
+    )
+      .lean<ConversationRecord>()
       .exec();
   },
 
