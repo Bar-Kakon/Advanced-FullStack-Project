@@ -8,7 +8,9 @@ import {
   googleCredentialBodySchema,
   loginBodySchema,
   registerBodySchema,
+  recoverAccountBodySchema,
   resetPasswordBodySchema,
+  restoreAccountBodySchema,
 } from './auth.validation.js';
 
 /**
@@ -81,6 +83,20 @@ export const createAuthRouter = (
     createAuthRateLimiter('resetPassword'),
     validateRequest({ body: resetPasswordBodySchema }),
     controller.handleResetPassword,
+  );
+
+  // Self-service D8 recovery: both unauthenticated, both enumeration-safe, both rate-limited.
+  router.post(
+    '/recover-account',
+    createAuthRateLimiter('recoverAccount'),
+    validateRequest({ body: recoverAccountBodySchema }),
+    controller.handleRecoverAccount,
+  );
+  router.post(
+    '/restore-account',
+    createAuthRateLimiter('restoreAccount'),
+    validateRequest({ body: restoreAccountBodySchema }),
+    controller.handleRestoreAccount,
   );
 
   return router;

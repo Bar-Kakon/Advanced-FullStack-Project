@@ -33,6 +33,9 @@ export const invitationAmbiguous = (): AppError =>
 export const invalidResetToken = (): AppError =>
   new AppError('Reset link is not usable', 401, 'INVALID_RESET_TOKEN');
 
+export const invalidRecoveryToken = (): AppError =>
+  new AppError('Recovery link is not usable', 401, 'INVALID_RECOVERY_TOKEN');
+
 /**
  * Register only. A signup form has to say which field to correct, and it is already an enumeration
  * surface by nature. Login and password reset keep their unified answers unchanged.

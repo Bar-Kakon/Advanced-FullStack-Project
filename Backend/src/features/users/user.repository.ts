@@ -24,7 +24,7 @@ import {
   type UserWithPasswordHash,
 } from './user.model.js';
 
-const IDENTITY_FIELDS = 'email status isAdmin firstName lastName language profileComplete identities security.passwordChangedAt security.tokenVersion';
+const IDENTITY_FIELDS = 'email status deletedAt anonymizedAt isAdmin firstName lastName language profileComplete identities security.passwordChangedAt security.tokenVersion';
 
 /**
  * Everything the profile screens read, and nothing else. `passwordHash` is `select: false` and is
@@ -153,9 +153,15 @@ export interface UserRepository {
   /** The deletion request: one write moves the status and stamps the window's start. */
   markDeleted(id: Types.ObjectId): Promise<boolean>;
   /** Restoration, refused by the filter itself outside the window or after anonymization. */
-  restoreWithinWindow(id: Types.ObjectId, deletedNoEarlierThan: Date): Promise<boolean>;
+  restoreWithinWindow(
+    id: Types.ObjectId,
+    deletedNoEarlierThan: Date,
+    session?: DbSession,
+  ): Promise<boolean>;
   /** Accounts whose recovery window has passed and whose PII still stands. */
   listAnonymizationEligible(deletedBefore: Date, limit: number): Promise<Types.ObjectId[]>;
+  /** Already-anonymized accounts, for the avatar-file cleanup pass to re-check. */
+  listAnonymizedIds(limit: number): Promise<Types.ObjectId[]>;
   /**
    * The irreversible step, guarded inside the update filter: only a still-deleted, still-stamped,
    * not-yet-anonymized row is matched, so a restore or a second sweep can never be caught by it.
@@ -280,8 +286,8 @@ export const userRepository: UserRepository = {
     return result.modifiedCount === 1;
   },
 
-  async restoreWithinWindow(id, deletedNoEarlierThan) {
-    const result = await UserModel.updateOne(
+  async restoreWithinWindow(id, deletedNoEarlierThan, session) {
+    const query = UserModel.updateOne(
       {
         _id: id,
         status: 'deleted',
@@ -289,7 +295,9 @@ export const userRepository: UserRepository = {
         deletedAt: { $gte: deletedNoEarlierThan },
       },
       { $set: { status: 'active' }, $unset: { deletedAt: '' } },
-    ).exec();
+    );
+    if (session) query.session(session);
+    const result = await query.exec();
     return result.modifiedCount === 1;
   },
 
@@ -299,6 +307,15 @@ export const userRepository: UserRepository = {
       anonymizedAt: { $exists: false },
       deletedAt: { $lte: deletedBefore },
     })
+      .select('_id')
+      .limit(limit)
+      .lean<{ _id: Types.ObjectId }[]>()
+      .exec();
+    return rows.map((row) => row._id);
+  },
+
+  async listAnonymizedIds(limit) {
+    const rows = await UserModel.find({ anonymizedAt: { $exists: true } })
       .select('_id')
       .limit(limit)
       .lean<{ _id: Types.ObjectId }[]>()
@@ -318,8 +335,10 @@ export const userRepository: UserRepository = {
         $set: {
           anonymizedAt: new Date(),
           email: tombstoneEmail,
-          specialties: [],
         },
+        // The name AND the profession stay, by owner decision: historical business records keep
+        // identifying who performed the work and in which field. `specialtyOther` stays with them,
+        // because without it the `other` specialty names nothing.
         $unset: {
           passwordHash: '',
           identities: '',
@@ -332,7 +351,6 @@ export const userRepository: UserRepository = {
           schedulingPrefs: '',
           avatar: '',
           notificationPreferences: '',
-          specialtyOther: '',
           heavyEquipment: '',
           drillingTypes: '',
         },

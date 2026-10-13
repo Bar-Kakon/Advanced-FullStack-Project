@@ -22,6 +22,8 @@ export const AUTH_RATE_LIMITS = {
   register: { windowMs: 60 * MINUTE, limit: 10 },
   forgotPassword: { windowMs: 15 * MINUTE, limit: 5 },
   resetPassword: { windowMs: 15 * MINUTE, limit: 10 },
+  recoverAccount: { windowMs: 15 * MINUTE, limit: 5 },
+  restoreAccount: { windowMs: 15 * MINUTE, limit: 10 },
 } as const;
 
 export type AuthRateLimitName = keyof typeof AUTH_RATE_LIMITS;

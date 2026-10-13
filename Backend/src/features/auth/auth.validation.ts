@@ -113,6 +113,20 @@ export const loginBodySchema = Joi.object<LoginBody>({
 
 export const forgotPasswordBodySchema = Joi.object<ForgotPasswordBody>({ email });
 
+export interface RecoverAccountBody {
+  readonly email: string;
+}
+
+export const recoverAccountBodySchema = Joi.object<RecoverAccountBody>({ email });
+
+export interface RestoreAccountBody {
+  readonly token: string;
+}
+
+export const restoreAccountBodySchema = Joi.object<RestoreAccountBody>({
+  token: Joi.string().trim().min(1).max(MAX_RESET_TOKEN_LENGTH).required(),
+});
+
 /**
  * Bounded but not shape-checked, for the reason the reset token is not: a malformed credential and
  * a forged one are the same event to the person holding it, and both take the same 401.
