@@ -434,6 +434,32 @@ export const he = {
    * point of the screen: the same answer is shown whether or not an account exists, so the form
    * cannot be used to discover who is registered.
    */
+  accountRecovery: {
+    entry: 'שחזור חשבון שנמחק',
+    title: 'שחזור חשבון שנמחק',
+    subtitle: 'חשבון שנמחק ניתן לשחזור בתוך 60 יום. הזנת האימייל המשויך לחשבון תשלח קישור שחזור.',
+    email: { label: 'כתובת אימייל', placeholder: 'you@example.com', error: 'יש להזין כתובת אימייל תקינה' },
+    submit: 'שליחת קישור שחזור',
+    backToSignIn: 'חזרה להתחברות',
+    sentTitle: 'אם קיים חשבון מתאים — נשלח קישור',
+    sentSubtitle: 'אם הכתובת שייכת לחשבון שנמחק בתוך תקופת השחזור, קישור שחזור חד-פעמי ממתין באימייל. תוקפו 60 דקות.',
+    privacyNote: 'מטעמי פרטיות מוצגת אותה הודעה בכל מקרה.',
+    confirmTitle: 'השלמת שחזור החשבון',
+    confirmSubtitle: 'אישור הקישור משחזר את החשבון ומאפשר התחברות רגילה.',
+    confirmAction: 'שחזור החשבון',
+    restoring: 'משחזר…',
+    successTitle: 'החשבון שוחזר',
+    successSubtitle: 'החשבון חזר לפעילות. ההתחברות מתבצעת עם פרטי ההתחברות הקיימים.',
+    toLogin: 'מעבר להתחברות',
+    missingToken: 'הקישור חסר או שבור. אפשר לבקש קישור שחזור חדש.',
+    errors: {
+      invalid: 'הקישור אינו תקף עוד. אפשר לבקש קישור שחזור חדש.',
+      expired: 'תקופת השחזור של 60 יום הסתיימה, ולא ניתן עוד לשחזר את החשבון.',
+      network: 'לא הצלחנו להגיע לשרת. כדאי לבדוק את החיבור ולנסות שוב.',
+      generic: 'הפעולה לא הושלמה. כדאי לנסות שוב.',
+    },
+  },
+
   forgotPassword: {
     brand: {
         headline: 'הפרויקטים ממתינים — הגישה תחזור.',

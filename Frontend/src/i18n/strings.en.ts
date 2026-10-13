@@ -391,6 +391,32 @@ export const en: Strings = {
     },
   },
 
+  accountRecovery: {
+    entry: 'Restore deleted account',
+    title: 'Restore a deleted account',
+    subtitle: 'A deleted account is recoverable for 60 days. Entering the account email sends a restoration link.',
+    email: { label: 'Email address', placeholder: 'you@example.com', error: 'A valid email address is required' },
+    submit: 'Send a restoration link',
+    backToSignIn: 'Back to sign in',
+    sentTitle: 'If a matching account exists — a link was sent',
+    sentSubtitle: 'If the address belongs to an account deleted within the recovery window, a one-time restoration link is waiting in the inbox. It is valid for 60 minutes.',
+    privacyNote: 'For privacy, the same message is shown either way.',
+    confirmTitle: 'Complete the restoration',
+    confirmSubtitle: 'Confirming the link restores the account and normal sign-in.',
+    confirmAction: 'Restore the account',
+    restoring: 'Restoring…',
+    successTitle: 'The account is restored',
+    successSubtitle: 'The account is active again. Sign in with the existing credentials.',
+    toLogin: 'Go to sign in',
+    missingToken: 'The link is missing or broken. A new restoration link can be requested.',
+    errors: {
+      invalid: 'The link is no longer usable. A new restoration link can be requested.',
+      expired: 'The 60-day recovery window has ended, and the account can no longer be restored.',
+      network: 'We could not reach the server. Check the connection and try again.',
+      generic: 'The request did not complete. Try again.',
+    },
+  },
+
   forgotPassword: {
     brand: {
         headline: "Your projects are waiting — let's get you back in.",

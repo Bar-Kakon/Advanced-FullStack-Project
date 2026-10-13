@@ -29,6 +29,36 @@ const check = (label, passed, detail = '') => {
 };
 const section = (t) => console.log(`\n${t}`);
 const mongo = (js) => execSync(`mongosh --port ${MONGO} --quiet --eval '${js}'`).toString().trim();
+const BACKEND_LOG = process.env.BACKEND_LOG ?? '';
+
+const lastLogLink = (marker) => {
+  const lines = execSync(`cat '${BACKEND_LOG}'`).toString().split('\n').filter((l) => l.includes(marker));
+  const line = lines.at(-1);
+  if (!line) return null;
+  const match = line.match(/"(?:restoreUrl|resetUrl)":"(http[^"]+)"/);
+  return match?.[1] ?? null;
+};
+
+const tokenFrom = (url) => (url === null ? null : new URL(url).searchParams.get('token'));
+
+/** A real 1x1 PNG, for the avatar upload. */
+const PNG_BYTES = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGNgYGBgAAAABQABh6FO1AAAAABJRU5ErkJggg==',
+  'base64',
+);
+
+const upload = async (path, token, field, filename) => {
+  const form = new FormData();
+  form.append(field, new Blob([PNG_BYTES], { type: 'image/png' }), filename);
+  const res = await fetch(`${API}${path}`, {
+    method: path.includes('/avatar') ? 'PUT' : 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+    body: form,
+  });
+  let body = null;
+  try { body = await res.json(); } catch { /* none */ }
+  return { status: res.status, body };
+};
 
 const api = async (method, path, token, json) => {
   const res = await fetch(`${API}${path}`, {
@@ -128,11 +158,79 @@ const run = async () => {
   const deadLogin = await api('POST', '/auth/login', undefined, { email: dana.email, password: PASSWORD });
   check('a fresh login is refused like a wrong password', deadLogin.status === 401 && deadLogin.body.code === 'INVALID_CREDENTIALS');
 
+  section('3R. Self-service recovery: the request is enumeration-safe and mints one real token');
+  const tokensBefore = Number(mongo('db.getSiblingDB("blokta-qa").accountrecoverytokens.countDocuments({})'));
+  const req1 = await api('POST', '/auth/recover-account', undefined, { email: dana.email });
+  const req2 = await api('POST', '/auth/recover-account', undefined, { email: `no.such.${stamp}@example.com` });
+  const req3 = await api('POST', '/auth/recover-account', undefined, { email: noa.email });
+  check('eligible, nonexistent and active addresses all answer identically',
+    req1.status === 200 && req2.status === 200 && req3.status === 200 &&
+    JSON.stringify(req1.body) === JSON.stringify(req2.body) && JSON.stringify(req2.body) === JSON.stringify(req3.body));
+  const tokensAfter = Number(mongo('db.getSiblingDB("blokta-qa").accountrecoverytokens.countDocuments({})'));
+  check('exactly ONE token was minted — for the eligible deleted account alone', tokensAfter - tokensBefore === 1);
+  const danaRestoreUrl = lastLogLink('Account recovery link');
+  check('the recovery link was dispatched (log mode)', danaRestoreUrl !== null && danaRestoreUrl.includes('/restore-account?token='));
+
+  section('3S. The restoration link, walked through the real screen (UI)');
+  let recoveryPage = await browser.newContext({ viewport: { width: 1360, height: 900 } }).then((c) => c.newPage());
+  await recoveryPage.goto(`${APP}/login`);
+  await recoveryPage.waitForSelector('text=שחזור חשבון שנמחק', { timeout: 15000 });
+  check('UI: the login screen carries the recovery entry point (HE)', true);
+  await recoveryPage.screenshot({ path: `${SHOTS}/qa-recovery-entry.png` });
+  await recoveryPage.click('text=שחזור חשבון שנמחק');
+  await recoveryPage.waitForSelector('#email', { timeout: 15000 });
+  check('UI: the entry point opens the recovery request screen', recoveryPage.url().includes('/recover-account'));
+  const langToggle = await recoveryPage.$('.lang-switch button:not([aria-pressed="true"])');
+  if (langToggle) {
+    await langToggle.click();
+    await recoveryPage.waitForTimeout(400);
+    const enText = (await recoveryPage.textContent('#root')) ?? '';
+    check('UI: the recovery screen localizes to English LTR', enText.includes('Restore a deleted account'));
+    await recoveryPage.screenshot({ path: `${SHOTS}/qa-recovery-en.png` });
+    const backToHe = await recoveryPage.$('.lang-switch button:not([aria-pressed="true"])');
+    if (backToHe) { await backToHe.click(); await recoveryPage.waitForTimeout(400); }
+  } else {
+    check('UI: the recovery screen localizes to English LTR', false, 'language toggle not found');
+  }
+  await recoveryPage.goto(danaRestoreUrl.replace('http://localhost:5411', APP));
+  await recoveryPage.waitForSelector('text=שחזור החשבון', { timeout: 15000 });
+  await recoveryPage.click('button:has-text("שחזור החשבון")');
+  await recoveryPage.waitForSelector('text=החשבון שוחזר', { timeout: 15000 });
+  check('UI: confirming the link restores the account and says so', true);
+  await recoveryPage.screenshot({ path: `${SHOTS}/qa-recovery-success.png` });
+  await recoveryPage.context().close();
+  const danaToken = tokenFrom(danaRestoreUrl);
+  const replay = await api('POST', '/auth/restore-account', undefined, { token: danaToken });
+  check('the spent token is refused on replay (single use)', replay.status === 401 && replay.body.code === 'INVALID_RECOVERY_TOKEN');
+  const danaBack2 = await relogin(dana);
+  check('the restored account signs in afresh', danaBack2.status === 200);
+  const familiesAfterRestore = JSON.parse(mongo(`
+    const qa = db.getSiblingDB("blokta-qa");
+    const u = qa.users.findOne({email:"${dana.email}"});
+    JSON.stringify({revokedStay: qa.refreshtokens.countDocuments({user:u._id, revokedAt:{$ne:null}})})`));
+  check('the pre-deletion refresh families stay revoked — nothing is resurrected', familiesAfterRestore.revokedStay > 0);
+
+  section('3T. Token hygiene: purposes never cross, expiry is enforced');
+  await api('POST', '/auth/forgot-password', undefined, { email: noa.email });
+  const resetUrl = lastLogLink('Password reset link');
+  check('the password-reset link was dispatched (log mode)', resetUrl !== null && resetUrl.includes('/reset-password?token='));
+  const crossRestore = await api('POST', '/auth/restore-account', undefined, { token: tokenFrom(resetUrl) });
+  check('a password-reset token can NEVER restore an account', crossRestore.status === 401 && crossRestore.body.code === 'INVALID_RECOVERY_TOKEN');
+
   section('4. A hidden performer (D7) deletes too, and the delegation record is untouched');
   mongo(`db.getSiblingDB("blokta-qa").tasks.updateOne({_id:ObjectId("${taskId}")},{$set:{delegation:{delegate:ObjectId("${hila.userId}"), delegatedAt:new Date()}}})`);
   check('the hidden performer may close their account', (await api('DELETE', '/users/me', hila.token)).status === 204);
   const delegationAfter = JSON.parse(mongo(`JSON.stringify(db.getSiblingDB("blokta-qa").tasks.findOne({_id:ObjectId("${taskId}")},{delegation:1,completedAt:1}))`));
   check('the delegation record and the task are exactly as they were', delegationAfter.delegation?.delegate !== undefined && delegationAfter.completedAt === undefined);
+
+  await api('POST', '/auth/recover-account', undefined, { email: hila.email });
+  const hilaRestoreUrl = lastLogLink('Account recovery link');
+  const hilaToken = tokenFrom(hilaRestoreUrl);
+  const crossReset = await api('POST', '/auth/reset-password', undefined, { token: hilaToken, password: 'EvenBetter43!' });
+  check('a recovery token can NEVER reset a password', crossReset.status === 401 && crossReset.body.code === 'INVALID_RESET_TOKEN');
+  mongo('db.getSiblingDB("blokta-qa").accountrecoverytokens.updateMany({usedAt:null,invalidatedAt:null},{$set:{expiresAt:new Date(Date.now()-60000)}})');
+  const expiredToken = await api('POST', '/auth/restore-account', undefined, { token: hilaToken });
+  check('an expired recovery token is refused', expiredToken.status === 401 && expiredToken.body.code === 'INVALID_RECOVERY_TOKEN');
 
   section('5. The employee gate stands: a current employee leaves the company first');
   const eliBlocked = await api('DELETE', '/users/me', eli.token);
@@ -231,22 +329,46 @@ const run = async () => {
     JSON.stringify(qa.companymemberships.findOne({user:u._id, company:g},{status:1}))`));
   check('the departed membership was NOT resurrected', eliStill.status === 'inactive');
 
-  section('11. Past the window: restoration refused, then anonymization — name kept, PII gone');
+  section('11. Past the window: every door shuts at the deadline, then anonymization');
+  const avatarUp = await upload('/users/me/avatar', gadi.token, 'avatar', 'portrait.png');
+  check('the owner uploads a personal avatar before leaving', avatarUp.status === 200 || avatarUp.status === 201, `status=${avatarUp.status}`);
+  const controlUp = await upload(`/conversations/${eliConv.body.conversation.id}/attachments`, noa.token, 'file', 'evidence.png');
+  check('a control attachment exists for another person', controlUp.status === 201);
+  const controlAssetId = controlUp.body?.attachment?.id ?? null;
   await api('DELETE', '/users/me', gadi.token);
+  await api('POST', '/auth/recover-account', undefined, { email: gadi.email });
+  const gadiPreDeadlineUrl = lastLogLink('Account recovery link');
+  const gadiPreDeadlineToken = tokenFrom(gadiPreDeadlineUrl);
   mongo(`db.getSiblingDB("blokta-qa").users.updateOne({email:"${gadi.email}"},{$set:{deletedAt:new Date(Date.now() - 61*86400000)}})`);
   const expired = await api('POST', `/moderation/accounts/${gadi.userId}/restore`, admin.token, { reason: 'verification: past the deadline' });
-  check('restoration past 60 days is refused (ACCOUNT_RESTORE_EXPIRED)', expired.status === 409 && expired.body.code === 'ACCOUNT_RESTORE_EXPIRED');
+  check('ADMIN restoration past 60 days is refused (ACCOUNT_RESTORE_EXPIRED)', expired.status === 409 && expired.body.code === 'ACCOUNT_RESTORE_EXPIRED');
+  const tokensBeforeLate = Number(mongo('db.getSiblingDB("blokta-qa").accountrecoverytokens.countDocuments({})'));
+  await api('POST', '/auth/recover-account', undefined, { email: gadi.email });
+  const tokensAfterLate = Number(mongo('db.getSiblingDB("blokta-qa").accountrecoverytokens.countDocuments({})'));
+  check('a recovery REQUEST past the deadline mints nothing (same generic answer)', tokensAfterLate === tokensBeforeLate);
+  const lateToken = await api('POST', '/auth/restore-account', undefined, { token: gadiPreDeadlineToken });
+  check('a token minted inside the window dies AT the deadline (ACCOUNT_RESTORE_EXPIRED)', lateToken.status === 409 && lateToken.body.code === 'ACCOUNT_RESTORE_EXPIRED');
   const sweep1 = execSync(
     `env -i PATH="$PATH" HOME="$HOME" NODE_ENV=development PORT=4546 MONGODB_URI='${QA_URI}' CORS_ORIGINS='${APP}' FRONTEND_URL='${APP}' API_PUBLIC_URL='${API}' TERMS_VERSION='qa' ACCESS_TOKEN_TTL_SECONDS='900' REFRESH_TOKEN_TTL_SECONDS='1209600' ACCESS_TOKEN_SECRET='qa-access-secret-0123456789abcdef0123456789abcdef0123456789' REFRESH_TOKEN_SECRET='qa-refresh-secret-0123456789abcdef0123456789abcdef0123456789' npx --prefix "${BACKEND_DIR}" tsx "${BACKEND_DIR}/scripts/anonymize-accounts.ts"`,
     { cwd: BACKEND_DIR },
   ).toString();
   console.log(sweep1.split('\n').map((l) => `    ${l}`).join('\n'));
   check('the sweep anonymized exactly the eligible account', sweep1.includes('Anonymized this sweep: 1'));
-  const gadiAfter = JSON.parse(mongo(`JSON.stringify(db.getSiblingDB("blokta-qa").users.findOne({_id:ObjectId("${gadi.userId}")},{firstName:1,lastName:1,email:1,bio:1,businessPhone:1,location:1,anonymizedAt:1,identities:1,avatar:1}))`));
+  const gadiAfter = JSON.parse(mongo(`JSON.stringify(db.getSiblingDB("blokta-qa").users.findOne({_id:ObjectId("${gadi.userId}")},{firstName:1,lastName:1,email:1,bio:1,businessPhone:1,location:1,anonymizedAt:1,identities:1,avatar:1,specialties:1}))`));
   check('PII is gone: tombstone email, no phone, no location, no identities, no avatar',
     gadiAfter.email.endsWith('@anonymized.blokta.invalid') && gadiAfter.businessPhone === undefined &&
     gadiAfter.location === undefined && gadiAfter.identities === undefined && gadiAfter.avatar === undefined);
   check('the NAME survives as business attribution', gadiAfter.firstName === 'gadi' && gadiAfter.anonymizedAt !== undefined);
+  check('the PROFESSION survives as business attribution', Array.isArray(gadiAfter.specialties) && gadiAfter.specialties.includes('drilling'));
+  check('the avatar FILE was physically removed', sweep1.includes('Avatar files removed: 1'));
+  const gadiAssets = mongo(`
+    const qa = db.getSiblingDB("blokta-qa");
+    const files = qa.fileassets.countDocuments({owner:ObjectId("${gadi.userId}"), "scope.type":"avatar"});
+    const chunks = qa["fs.files"] ? 0 : 0;
+    files`);
+  check('no avatar asset row remains for the anonymized owner', Number(gadiAssets) === 0);
+  const controlStill = mongo(`db.getSiblingDB("blokta-qa").fileassets.countDocuments({_id:ObjectId("${controlAssetId}")})`);
+  check('the unrelated message attachment was NOT touched', Number(controlStill) === 1);
   const danaUntouched = JSON.parse(mongo(`JSON.stringify(db.getSiblingDB("blokta-qa").users.findOne({email:"${hila.email}"},{anonymizedAt:1,email:1}))`));
   check('a deletion still inside its window was NOT touched', danaUntouched.anonymizedAt === undefined && danaUntouched.email === hila.email);
   const sweep2 = execSync(
@@ -260,8 +382,6 @@ const run = async () => {
   check('the anonymization is audited', Number(anonAudit) === 1, `entries=${anonAudit}`);
 
   section('12. Attribution after anonymization: business history names the person, surfaces close');
-  const danaBack = await api('POST', `/moderation/accounts/${dana.userId}/restore`, admin.token, { reason: 'verification: reader for the thread' });
-  check('the counterpart account is restored to read the thread', danaBack.status === 204 || danaBack.status === 200);
   await relogin(dana);
   const danaHistory = await api('GET', `/conversations/${convId}/messages`, dana.token);
   const gadiMessage = danaHistory.body?.messages?.find?.((m) => m.senderId === gadi.userId && m.senderName.trim().length > 0);
@@ -290,9 +410,9 @@ const run = async () => {
 
   await browser.close();
   console.log(`\n${failures === 0 ? 'ALL CHECKS PASSED' : `${failures} CHECK(S) FAILED`}`);
-  console.log('UNVERIFIED, with reasons: cross-restart worker continuity is proven by design (eligibility');
-  console.log('lives in persisted timestamps; the sweep ran as its own fresh process twice), not by a');
-  console.log('long-running soak; and avatar FILE bytes are orphaned rather than purged (reference removed).');
+  console.log('Two steps complete this procedure outside this process: the backend is restarted with an');
+  console.log('overdue account present (the BOOT sweep must anonymize it — items 16-18), and the Brevo');
+  console.log('transport is exercised on port 2525 (item 30). Both are recorded in the procedure log.');
   process.exit(failures === 0 ? 0 : 1);
 };
 
