@@ -11,6 +11,7 @@ import { createFileAssetService } from '../files/fileAsset.service.js';
 import { openGridFsDownloadStream } from '../files/gridFs.service.js';
 import { MAX_IMAGE_BYTES, uploadSingleAttachment } from '../files/upload.middleware.js';
 import { blockRepository } from '../blocks/block.repository.js';
+import { muteRepository } from '../mutes/mute.repository.js';
 import { companyRepository } from '../companies/company.repository.js';
 import { companyMembershipRepository } from '../companies/companyMembership.repository.js';
 import { createCompanyContextService } from '../companies/companyContext.service.js';
@@ -83,6 +84,7 @@ export const createMessagingModule = (requireAccessToken: RequestHandler): Route
     files: fileAssetRepository,
     audit: auditRepository,
     commissioning: createCommissioningAdapter(companyContext),
+    mutes: muteRepository,
   });
 
   const fileAssets = createFileAssetService(fileAssetRepository);

@@ -94,7 +94,7 @@ export interface InboxPageDto {
 }
 
 export interface MessagingService {
-  inbox(userId: string, folder: 'inbox' | 'requests', limit: number, cursor?: string): Promise<InboxPageDto>;
+  inbox(userId: string, folder: 'inbox' | 'requests' | 'sent', limit: number, cursor?: string): Promise<InboxPageDto>;
   startDirect(userId: string, otherUserId: string, body: string): Promise<ConversationSummaryDto>;
   send(userId: string, conversationId: string, input: SendInput): Promise<MessageDto>;
   deleteOwnMessage(userId: string, conversationId: string, messageId: string): Promise<MessageDto>;
@@ -141,6 +141,11 @@ export interface AgreementTaskPort {
   }): Promise<Types.ObjectId>;
 }
 
+/** The one question messaging asks the mute domain, per recipient. */
+export interface MutesPort {
+  isMuted(user: Types.ObjectId, scope: 'contractor' | 'conversation', target: Types.ObjectId): Promise<boolean>;
+}
+
 export interface MessagingDependencies {
   readonly conversations: MessagingRepository;
   readonly users: UserRepository;
@@ -152,6 +157,7 @@ export interface MessagingDependencies {
   readonly files: FileAssetRepository;
   readonly audit: AuditRepository;
   readonly commissioning: CommissioningPort;
+  readonly mutes: MutesPort;
 }
 
 export const createMessagingService = ({
@@ -165,6 +171,7 @@ export const createMessagingService = ({
   files,
   audit,
   commissioning,
+  mutes,
 }: MessagingDependencies): MessagingService => {
   const nameOf = async (id: Types.ObjectId): Promise<string> =>
     (await users.findDisplayNames([id])).get(id.toString()) ?? '';
@@ -370,10 +377,22 @@ export const createMessagingService = ({
             .map((member) => member.user)
         : conversation.participants;
 
+    // A recipient who muted this contact or this conversation gets no notification row at all —
+    // no in-app line, no counter, no email — while the message itself lands untouched (owner
+    // decision 2026-10-13: a mute silences the noise and is never a block).
+    const candidates = recipients.filter((recipient) => recipient.toString() !== senderId);
+    const silenced = await Promise.all(
+      candidates.map(
+        async (recipient) =>
+          (await mutes.isMuted(recipient, 'contractor', new Types.ObjectId(senderId))) ||
+          (await mutes.isMuted(recipient, 'conversation', conversation._id)),
+      ),
+    );
+
     // No message body reaches a notification: the payload has no free-text field at all.
     await notifications.emitMany(
-      recipients
-        .filter((recipient) => recipient.toString() !== senderId)
+      candidates
+        .filter((_recipient, index) => !silenced[index])
         .map((recipient) => ({
           userId: recipient,
           type,

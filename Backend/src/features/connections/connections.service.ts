@@ -50,6 +50,7 @@ export const createConnectionsService = ({
     await notifications.emit({
       userId: recipient,
       type,
+      actorId: new Types.ObjectId(actorId),
       payload: { actorName: await nameOf(actorId) },
       dedupeKey: `${type}:${edgeId.toString()}:${Date.now()}`,
     });

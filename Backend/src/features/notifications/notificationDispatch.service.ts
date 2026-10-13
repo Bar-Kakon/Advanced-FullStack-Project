@@ -24,6 +24,7 @@ export interface NotificationEvent {
   readonly proposalId?: Types.ObjectId;
   readonly scheduleExceptionId?: Types.ObjectId;
   readonly conversationId?: Types.ObjectId;
+  readonly actorId?: Types.ObjectId;
   readonly payload?: NotificationPayload;
   /** Identifies the product event, so the same event twice is one row and not two. */
   readonly dedupeKey: string;
@@ -116,6 +117,7 @@ export const createNotificationDispatchService = ({
         ? {}
         : { scheduleException: event.scheduleExceptionId }),
       ...(event.conversationId === undefined ? {} : { conversation: event.conversationId }),
+      ...(event.actorId === undefined ? {} : { actor: event.actorId }),
       payload: event.payload ?? {},
       mutedAtCreation: muted,
       dedupeKey: event.dedupeKey,
