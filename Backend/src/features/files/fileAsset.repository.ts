@@ -16,6 +16,8 @@ export interface FileAssetRepository {
   /** Scoped by owner in the query itself, so a wrong id and a wrong owner fail the same way. */
   findOwnedById(id: string, owner: Types.ObjectId): Promise<FileAssetRecord | null>;
   deleteById(id: Types.ObjectId): Promise<void>;
+  /** Every current asset this owner holds under one scope type — the avatar cleanup's question. */
+  listByOwnerAndScopeType(owner: Types.ObjectId, scopeType: FileScope): Promise<FileAssetRecord[]>;
   attachToScopeId(id: Types.ObjectId, scopeId: Types.ObjectId): Promise<void>;
   /** A message attachment, found only inside the conversation it was uploaded for. */
   findMessageScoped(id: string, conversation: Types.ObjectId): Promise<FileAssetRecord | null>;
@@ -41,6 +43,12 @@ export const fileAssetRepository: FileAssetRepository = {
 
   async deleteById(id) {
     await FileAssetModel.deleteOne({ _id: id, ...UNVERSIONED }).exec();
+  },
+
+  async listByOwnerAndScopeType(owner, scopeType) {
+    return FileAssetModel.find({ owner, 'scope.type': scopeType })
+      .lean<FileAssetRecord[]>()
+      .exec();
   },
 
   async attachToScopeId(id, scopeId) {

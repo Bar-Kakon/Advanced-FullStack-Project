@@ -9,6 +9,8 @@ import { config as loadEnvFile } from 'dotenv';
 
 import { connectToDatabase, disconnectFromDatabase } from '../src/db/mongoose.js';
 import { loadConfig } from '../src/config/env.js';
+import { fileAssetRepository } from '../src/features/files/fileAsset.repository.js';
+import { createFileAssetService } from '../src/features/files/fileAsset.service.js';
 import { platformAuditService } from '../src/features/moderation/platformAudit.instance.js';
 import { createAccountAnonymizationService } from '../src/features/users/accountAnonymization.service.js';
 import { userRepository } from '../src/features/users/user.repository.js';
@@ -20,11 +22,14 @@ const run = async (): Promise<void> => {
   const service = createAccountAnonymizationService({
     users: userRepository,
     audit: platformAuditService,
+    assets: fileAssetRepository,
+    files: createFileAssetService(fileAssetRepository),
   });
   const result = await service.sweep();
 
   console.log(`Eligible past the window: ${result.eligible}`);
   console.log(`Anonymized this sweep: ${result.anonymized}`);
+  console.log(`Avatar files removed: ${result.avatarFilesRemoved}`);
 
   await disconnectFromDatabase();
 };

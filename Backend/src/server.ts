@@ -12,6 +12,8 @@ import { createDigestWorker } from './features/notifications/digest.worker.js';
 import { createAccountAnonymizationService } from './features/users/accountAnonymization.service.js';
 import { createAccountAnonymizationWorker } from './features/users/accountAnonymization.worker.js';
 import { platformAuditService } from './features/moderation/platformAudit.instance.js';
+import { fileAssetRepository } from './features/files/fileAsset.repository.js';
+import { createFileAssetService } from './features/files/fileAsset.service.js';
 import { userRepository } from './features/users/user.repository.js';
 import { notificationRepository } from './features/notifications/notification.repository.js';
 import { createNotificationEmailWorker } from './features/notifications/notificationEmail.worker.js';
@@ -94,7 +96,12 @@ const startServer = async (): Promise<void> => {
       frontendUrl: config.frontendUrl,
     }),
     createAccountAnonymizationWorker(
-      createAccountAnonymizationService({ users: userRepository, audit: platformAuditService }),
+      createAccountAnonymizationService({
+        users: userRepository,
+        audit: platformAuditService,
+        assets: fileAssetRepository,
+        files: createFileAssetService(fileAssetRepository),
+      }),
     ),
   ];
   for (const worker of workers) worker.start();
