@@ -35,6 +35,8 @@ export interface ItemDecision {
 }
 
 export interface ProposalRepository {
+  /** PRJ-07: negotiation artifacts of a cancelled project go with it. */
+  deleteByProject(project: Types.ObjectId, session?: DbSession): Promise<number>;
   create(proposal: NewProposal): Promise<ProposalRecord>;
   findById(id: string): Promise<ProposalRecord | null>;
   listOpenForRespondent(respondent: Types.ObjectId): Promise<ProposalRecord[]>;
@@ -82,6 +84,13 @@ const CANCELLABLE: readonly ProposalStatus[] = ['requested', 'open', 'expired'];
 const ADJUSTABLE: readonly ProposalStatus[] = ['requested', 'open', 'expired'];
 
 export const proposalRepository: ProposalRepository = {
+  async deleteByProject(project, session) {
+    const query = RescheduleProposalModel.deleteMany({ project });
+    if (session) query.session(session);
+    const result = await query.exec();
+    return result.deletedCount;
+  },
+
   async create(proposal) {
     const created = new RescheduleProposalModel({
       ...proposal,

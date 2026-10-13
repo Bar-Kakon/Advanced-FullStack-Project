@@ -90,9 +90,12 @@ export const deriveStatus = (
   return 'planned';
 };
 
-/** Cancellation is available only while the project has not started (D24). */
-export const isCancellable = (
-  project: ProjectRecord,
-  firstTaskStarted: boolean,
-  now: Date = new Date(),
-): boolean => !hasStarted(project, firstTaskStarted, now) && project.completedAt === undefined;
+/**
+ * Cancellation is available only before work begins (D24, PRJ-07): «אחרי תחילת עבודה לא».
+ *
+ * Deliberately NOT `!hasStarted`: the status rule has a calendar half, and a first task started
+ * ahead of the scheduled date is still work that began — the scheduled date neither allows nor
+ * forbids anything here. Actual work alone decides.
+ */
+export const isCancellable = (project: ProjectRecord, firstTaskStarted: boolean): boolean =>
+  !firstTaskStarted && project.completedAt === undefined && project.cancellingAt === undefined;

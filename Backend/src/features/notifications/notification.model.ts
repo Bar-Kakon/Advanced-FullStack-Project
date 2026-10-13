@@ -9,6 +9,7 @@ import { Schema, model, type Types } from 'mongoose';
  */
 export const NOTIFICATION_TYPES = [
   'project.invitation',
+  'project.cancelled',
   'task.assigned',
   'task.updated',
   'task.early_completion',
@@ -43,6 +44,8 @@ export type NotificationClass = (typeof NOTIFICATION_CLASSES)[number];
  */
 export const CLASS_OF: Readonly<Record<NotificationType, NotificationClass>> = {
   'project.invitation': 'blocking',
+  // People were going to show up for this work; the news must not wait for a digest.
+  'project.cancelled': 'blocking',
   // A departure is organizational news, not stalled work: it digests rather than interrupts.
   'company.employee_left': 'nonblocking',
   'task.assigned': 'blocking',
