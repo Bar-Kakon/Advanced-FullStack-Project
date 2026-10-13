@@ -38,7 +38,7 @@ export interface ProjectGrantRepository {
   ): Promise<ProjectMembershipRecord | null>;
   revoke(id: Types.ObjectId): Promise<boolean>;
   /** A cancelled project takes its memberships and open invitations with it. */
-  deleteByProject(project: Types.ObjectId): Promise<number>;
+  deleteByProject(project: Types.ObjectId, session?: DbSession): Promise<number>;
   listForProjects(projects: readonly Types.ObjectId[]): Promise<ProjectMembershipRecord[]>;
 }
 
@@ -131,8 +131,10 @@ export const projectGrantRepository: ProjectGrantRepository = {
     return result.matchedCount === 1;
   },
 
-  async deleteByProject(project) {
-    const result = await ProjectMembershipModel.deleteMany({ project }).exec();
+  async deleteByProject(project, session) {
+    const query = ProjectMembershipModel.deleteMany({ project });
+    if (session) query.session(session);
+    const result = await query.exec();
     return result.deletedCount;
   },
 

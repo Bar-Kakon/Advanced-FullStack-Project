@@ -1,5 +1,7 @@
 import { Types } from 'mongoose';
 
+import type { DbSession } from '../../db/mongoose.js';
+
 import { ProjectMembershipModel, type ProjectMembershipRecord } from './projectMembership.model.js';
 
 export interface ProjectAccessRepository {
@@ -8,6 +10,8 @@ export interface ProjectAccessRepository {
   /** One read for a whole page, so a row never costs a query of its own. */
   listActiveMembershipsForUser(user: Types.ObjectId): Promise<ProjectMembershipRecord[]>;
   listMembers(project: Types.ObjectId): Promise<ProjectMembershipRecord[]>;
+  /** PRJ-07: a cancelled project takes every membership and open invitation with it. */
+  deleteByProject(project: Types.ObjectId, session?: DbSession): Promise<number>;
   /** Any status, so a declined or removed row is found rather than duplicated. */
   findMembership(project: Types.ObjectId, user: Types.ObjectId): Promise<ProjectMembershipRecord | null>;
   listInvitationsForUser(user: Types.ObjectId): Promise<ProjectMembershipRecord[]>;
@@ -39,6 +43,13 @@ export const projectAccessRepository: ProjectAccessRepository = {
       .sort({ createdAt: 1 })
       .lean<ProjectMembershipRecord[]>()
       .exec();
+  },
+
+  async deleteByProject(project, session) {
+    const query = ProjectMembershipModel.deleteMany({ project });
+    if (session) query.session(session);
+    const result = await query.exec();
+    return result.deletedCount;
   },
 
   async findMembership(project, user) {

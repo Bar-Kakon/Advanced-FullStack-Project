@@ -23,6 +23,8 @@ export interface MyTasksQuery {
 }
 
 export interface TaskRepository {
+  /** PRJ-07: a cancelled project takes its planned tasks with it — nothing had started. */
+  deleteByProject(project: Types.ObjectId, session?: DbSession): Promise<number>;
   listMine(query: MyTasksQuery): Promise<TaskRecord[]>;
   listByIds(ids: readonly Types.ObjectId[]): Promise<TaskRecord[]>;
   /** The departing member's unfinished responsibilities inside the company's own projects. */
@@ -66,6 +68,13 @@ const statePredicate = (state: TaskState): Record<string, unknown> => {
 };
 
 export const taskRepository: TaskRepository = {
+  async deleteByProject(project, session) {
+    const query = TaskModel.deleteMany({ project });
+    if (session) query.session(session);
+    const result = await query.exec();
+    return result.deletedCount;
+  },
+
   async listUnfinishedAssignedInCompany(assignee, company, session) {
     return TaskModel.find({
       assignee,

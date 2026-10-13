@@ -2240,6 +2240,7 @@ export const en: Strings = {
     },
     types: {
       'project.invitation': 'Project invitation',
+      'project.cancelled': 'A project was cancelled before work began',
       'company.employee_left': 'An employee left the company',
       'task.assigned': 'A task is now your responsibility',
       'task.updated': 'A task’s details were updated',

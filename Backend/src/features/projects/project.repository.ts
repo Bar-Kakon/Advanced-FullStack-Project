@@ -1,5 +1,7 @@
 import { Types } from 'mongoose';
 
+import type { DbSession } from '../../db/mongoose.js';
+
 import { ProjectModel, type ProjectRecord, type TargetChangeRecord } from './project.model.js';
 
 export interface NewProject {
@@ -48,6 +50,12 @@ export interface ProjectRepository {
   create(project: NewProject): Promise<ProjectRecord>;
   /** Company is part of the filter, so another company's project is simply not found. */
   findOwnedById(id: string, company: Types.ObjectId): Promise<ProjectRecord | null>;
+  findById(id: string): Promise<ProjectRecord | null>;
+  /** Phase one of a cancellation. Answers true when the stamp stands, fresh or from a retry. */
+  markCancelling(id: string, company: Types.ObjectId, by: Types.ObjectId): Promise<boolean>;
+  clearCancelling(id: string): Promise<void>;
+  /** Stamps older than the threshold: cancellations a crash interrupted, for the recovery sweep. */
+  listStaleCancelling(before: Date, limit: number): Promise<ProjectRecord[]>;
   /** Reachable means owned by the caller's company OR one they participate in. */
   findAccessibleById(id: string, company: Types.ObjectId, memberOf: readonly Types.ObjectId[]): Promise<ProjectRecord | null>;
   listAccessible(
@@ -73,7 +81,7 @@ export interface ProjectRepository {
     targetChange: TargetChangeRecord | null,
     options?: ProjectUpdateOptions,
   ): Promise<ProjectRecord | null>;
-  deleteOwnedById(id: string, company: Types.ObjectId): Promise<boolean>;
+  deleteOwnedById(id: string, company: Types.ObjectId, session?: DbSession): Promise<boolean>;
   /** Unfiltered by design — the caller already holds the rows that named these projects. */
   listByIds(ids: readonly Types.ObjectId[]): Promise<ProjectRecord[]>;
 }
@@ -198,11 +206,53 @@ export const projectRepository: ProjectRepository = {
   },
 
   /** D24: a pre-start cancellation leaves no record, so the row goes rather than gaining a flag. */
-  async deleteOwnedById(id, company) {
+  async deleteOwnedById(id, company, session) {
     const projectId = toObjectId(id);
     if (projectId === null) return false;
 
-    const result = await ProjectModel.deleteOne({ _id: projectId, company }).exec();
+    const query = ProjectModel.deleteOne({ _id: projectId, company });
+    if (session) query.session(session);
+    const result = await query.exec();
     return result.deletedCount === 1;
+  },
+
+  async findById(id) {
+    const projectId = toObjectId(id);
+    if (projectId === null) return null;
+    return ProjectModel.findById(projectId).lean<ProjectRecord>().exec();
+  },
+
+  async markCancelling(id, company, by) {
+    const projectId = toObjectId(id);
+    if (projectId === null) return false;
+
+    const result = await ProjectModel.updateOne(
+      { _id: projectId, company, completedAt: { $exists: false }, cancellingAt: { $exists: false } },
+      { $set: { cancellingAt: new Date(), cancellingBy: by } },
+    ).exec();
+    if (result.modifiedCount === 1) return true;
+
+    // A retry after a crash between stamp and delete finds its own stamp and may proceed.
+    const existing = await ProjectModel.findOne({ _id: projectId, company })
+      .select('cancellingAt')
+      .lean<{ cancellingAt?: Date }>()
+      .exec();
+    return existing?.cancellingAt !== undefined;
+  },
+
+  async clearCancelling(id) {
+    const projectId = toObjectId(id);
+    if (projectId === null) return;
+    await ProjectModel.updateOne(
+      { _id: projectId },
+      { $unset: { cancellingAt: '', cancellingBy: '' } },
+    ).exec();
+  },
+
+  async listStaleCancelling(before, limit) {
+    return ProjectModel.find({ cancellingAt: { $lte: before } })
+      .limit(limit)
+      .lean<ProjectRecord[]>()
+      .exec();
   },
 };

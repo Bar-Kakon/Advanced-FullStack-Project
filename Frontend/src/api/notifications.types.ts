@@ -6,6 +6,7 @@
  */
 export const NOTIFICATION_TYPES = [
   'project.invitation',
+  'project.cancelled',
   'task.assigned',
   'task.updated',
   'task.early_completion',
