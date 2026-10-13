@@ -177,3 +177,14 @@
   gap: 10px;
   margin-block-start: 16px;
 }
+
+.notice {
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--line, #d8dde4);
+  margin-block: 10px;
+}
+.notice--warn { background: #fdf6e8; border-color: #e3cf9a; }
+.notice--error { background: var(--error-bg, #fbeeee); border-color: var(--error-border, #e3b9b9); color: var(--error, #a63232); }
+
+.settings-section__note--strong { font-weight: 700; color: var(--text, #2a3442); }

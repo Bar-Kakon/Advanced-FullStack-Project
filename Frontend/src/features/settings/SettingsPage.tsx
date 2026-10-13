@@ -80,8 +80,7 @@ export const SettingsPage = () => {
   };
 
   const closureMessage =
-    closureFailure === 'OWNS_COMPANY' ? t.settings.account.blockedOwnsCompany
-    : closureFailure === 'IN_COMPANY' ? t.settings.account.blockedInCompany
+    closureFailure === 'IN_COMPANY' ? t.settings.account.blockedInCompany
     : closureFailure !== null ? t.settings.account.closureFailed
     : null;
 
@@ -326,6 +325,10 @@ export const SettingsPage = () => {
                       {t.settings.account.confirmTitle}
                     </h4>
                     <p className="settings-section__note">{t.settings.account.confirmBody}</p>
+                    <p className="settings-section__note">{t.settings.account.confirmAnonymization}</p>
+                    {user?.company?.standing === 'owner' ? (
+                      <p className="settings-section__note">{t.settings.account.confirmOwnerCompany}</p>
+                    ) : null}
                     <div className="settings-confirm__actions">
                       <button
                         type="button"
