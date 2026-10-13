@@ -7,12 +7,15 @@ import type {
   ForgotPasswordBody,
   GoogleCredentialBody,
   LoginBody,
+  RecoverAccountBody,
   RegisterBody,
   ResetPasswordBody,
+  RestoreAccountBody,
 } from './auth.validation.js';
 import { googleAuthNotConfigured } from './auth.errors.js';
 import type { GoogleAuthService } from './googleAuth.service.js';
 import type { PasswordResetService } from './passwordReset.service.js';
+import type { AccountRecoveryService } from './accountRecovery.service.js';
 import type { RegistrationService } from './registration.service.js';
 import { REFRESH_TOKEN_COOKIE, type RefreshTokenCookie } from './refreshTokenCookie.js';
 
@@ -24,6 +27,8 @@ export interface AuthController {
   readonly handleMe: RequestHandler;
   readonly handleForgotPassword: RequestHandler;
   readonly handleResetPassword: RequestHandler;
+  readonly handleRecoverAccount: RequestHandler;
+  readonly handleRestoreAccount: RequestHandler;
   readonly handleGoogleSignIn: RequestHandler;
   readonly handleGoogleLink: RequestHandler;
 }
@@ -32,6 +37,7 @@ export interface AuthControllerDependencies {
   readonly authService: AuthService;
   readonly registrationService: RegistrationService;
   readonly passwordResetService: PasswordResetService;
+  readonly accountRecoveryService: AccountRecoveryService;
   readonly cookie: RefreshTokenCookie;
   /** `null` when no OAuth client is configured. Both Google routes then answer 503 and write nothing. */
   readonly googleAuthService: GoogleAuthService | null;
@@ -48,6 +54,7 @@ export const createAuthController = ({
   authService,
   registrationService,
   passwordResetService,
+  accountRecoveryService,
   cookie,
   googleAuthService,
 }: AuthControllerDependencies): AuthController => {
@@ -106,6 +113,22 @@ export const createAuthController = ({
     handleForgotPassword: async (req: Request, res: Response) => {
       const input = getValidated<ForgotPasswordBody>(res, 'body');
       await passwordResetService.requestReset(input);
+
+      res.json({ status: 'ok' });
+    },
+
+    /** Answers identically for every input: nothing here can confirm an account exists. */
+    handleRecoverAccount: async (req: Request, res: Response) => {
+      const input = getValidated<RecoverAccountBody>(res, 'body');
+      await accountRecoveryService.requestRecovery(input);
+
+      res.json({ status: 'ok' });
+    },
+
+    /** 200 on success. Nothing is issued — the person signs in afresh on the restored account. */
+    handleRestoreAccount: async (req: Request, res: Response) => {
+      const input = getValidated<RestoreAccountBody>(res, 'body');
+      await accountRecoveryService.restoreAccount(input);
 
       res.json({ status: 'ok' });
     },

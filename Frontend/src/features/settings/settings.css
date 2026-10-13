@@ -147,3 +147,44 @@
 
 .settings-choice--stack { flex-direction: column; align-items: stretch; gap: 6px; }
 .settings-choice--stack select { max-width: 420px; }
+
+.settings-closure__open { margin-block-start: 10px; }
+
+.settings-confirm__overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(20, 30, 45, 0.45);
+}
+
+.settings-confirm {
+  width: min(440px, 100%);
+  padding: 22px;
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: 0 18px 48px rgba(10, 20, 35, 0.3);
+}
+
+.settings-confirm__title { font-size: 18px; font-weight: 700; margin-block-end: 8px; }
+
+.settings-confirm__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-block-start: 16px;
+}
+
+.notice {
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid var(--line, #d8dde4);
+  margin-block: 10px;
+}
+.notice--warn { background: #fdf6e8; border-color: #e3cf9a; }
+.notice--error { background: var(--error-bg, #fbeeee); border-color: var(--error-border, #e3b9b9); color: var(--error, #a63232); }
+
+.settings-section__note--strong { font-weight: 700; color: var(--text, #2a3442); }

@@ -54,6 +54,8 @@ export interface MessageRecord {
   /** An explicit keep. It overrides author deletion and moderation removal, and is never reversed. */
   readonly keptAt?: Date;
   readonly keptBy?: Types.ObjectId;
+  /** Viewers who hid this one message for themselves. The row and every other view are untouched. */
+  readonly hiddenFor?: readonly Types.ObjectId[];
   /** The persisted send time. Every timestamp and date separator is derived from this, never
    *  from when a client happened to receive it. */
   readonly createdAt: Date;
@@ -91,6 +93,7 @@ const messageSchema = new Schema(
     deletedBy: { type: Schema.Types.ObjectId, ref: 'User' },
     keptAt: { type: Date },
     keptBy: { type: Schema.Types.ObjectId, ref: 'User' },
+    hiddenFor: [{ type: Schema.Types.ObjectId, ref: 'User' }],
   },
   { timestamps: true },
 );

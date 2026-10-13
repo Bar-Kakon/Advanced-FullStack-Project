@@ -20,6 +20,14 @@ export const NOTIFICATION_TYPES = [
   'responsibility.transfer_invited',
   'responsibility.transfer_accepted',
   'workplan.version_added',
+  'message.received',
+  'message.request_received',
+  'agreement.received',
+  'agreement.answered',
+  'connection.request_received',
+  'connection.accepted',
+  'connection.declined',
+  'company.employee_left',
 ] as const;
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
 
@@ -43,6 +51,7 @@ export interface AppNotification {
   readonly taskId: string | null;
   readonly proposalId: string | null;
   readonly scheduleExceptionId: string | null;
+  readonly conversationId: string | null;
   readonly payload: NotificationPayload;
   readonly muted: boolean;
   readonly seenAt: string | null;

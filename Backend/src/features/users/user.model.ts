@@ -5,6 +5,9 @@ import { PLAN_CODES, type PlanCode } from '../billing/plan.model.js';
 export type UserStatus = 'active' | 'restricted' | 'deactivated' | 'banned' | 'deleted';
 export type UserLanguage = 'he' | 'en';
 
+/** D8: how long a deleted account may be restored, measured from its `deletedAt`. */
+export const RECOVERY_WINDOW_DAYS = 60;
+
 export const REGISTRATION_CATEGORIES = ['contractor', 'architectural', 'supplier'] as const;
 export type RegistrationCategory = (typeof REGISTRATION_CATEGORIES)[number];
 
@@ -262,6 +265,10 @@ export interface UserRecord {
   readonly _id: Types.ObjectId;
   readonly email: string;
   readonly status: UserStatus;
+  /** When the deletion request was made. The 60-day recovery window is measured from it. */
+  readonly deletedAt?: Date;
+  /** Set exactly once, by the anonymization sweep. Its presence is what refuses restoration. */
+  readonly anonymizedAt?: Date;
   readonly isAdmin: boolean;
   readonly firstName: string;
   readonly lastName: string;
@@ -370,6 +377,8 @@ const userSchema = new Schema(
     // account starts, and it is a product state rather than the absence of one.
     planCode: { type: String, enum: PLAN_CODES, default: 'free', required: true, index: true },
     status: { type: String, enum: USER_STATUSES, default: 'active', required: true, index: true },
+    deletedAt: { type: Date },
+    anonymizedAt: { type: Date },
 
     // The only global role in the system. It gates platform moderation and nothing else — no
     // project role, no company position and no granted project authority can stand in for it.

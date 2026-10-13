@@ -8,6 +8,8 @@ export interface InboxState {
   readonly conversations: readonly ConversationSummary[];
   readonly loading: boolean;
   readonly failure: boolean;
+  /** Incoming requests waiting on this person, counted whichever folder is open. */
+  readonly incomingRequests: number;
   setFolder(next: 'inbox' | 'requests'): void;
   answer(conversationId: string, accept: boolean): Promise<void>;
   hide(conversationId: string): Promise<void>;
@@ -19,6 +21,7 @@ export const useInbox = (): InboxState => {
   const [conversations, setConversations] = useState<readonly ConversationSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [failure, setFailure] = useState(false);
+  const [incomingRequests, setIncomingRequests] = useState(0);
   const [revision, setRevision] = useState(0);
 
   const reload = useCallback(() => setRevision((current) => current + 1), []);
@@ -45,6 +48,20 @@ export const useInbox = (): InboxState => {
     };
   }, [folder, revision]);
 
+  useEffect(() => {
+    let current = true;
+    void fetchInbox('requests')
+      .then((page) => {
+        if (current) {
+          setIncomingRequests(page.conversations.filter((row) => row.awaitingMyAnswer).length);
+        }
+      })
+      .catch(() => undefined);
+    return () => {
+      current = false;
+    };
+  }, [revision]);
+
   const answer = useCallback(
     async (conversationId: string, accept: boolean): Promise<void> => {
       await answerRequest(conversationId, accept);
@@ -61,5 +78,5 @@ export const useInbox = (): InboxState => {
     [reload],
   );
 
-  return { folder, conversations, loading, failure, setFolder, answer, hide, reload };
+  return { folder, conversations, loading, failure, incomingRequests, setFolder, answer, hide, reload };
 };

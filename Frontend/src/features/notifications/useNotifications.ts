@@ -6,6 +6,8 @@ import {
   markNotificationsSeen,
 } from '../../api/notifications.api';
 import type { AppNotification } from '../../api/notifications.types';
+import { useAppDispatch } from '../../store/hooks';
+import { unreadNotificationsSet } from '../../store/sessionSlice';
 
 const PAGE_SIZE = 20;
 
@@ -15,13 +17,22 @@ const classify = (error: unknown): NotificationsFailure =>
   (error as { response?: unknown }).response === undefined ? 'network' : 'load';
 
 export const useNotifications = () => {
+  const dispatch = useAppDispatch();
   const [notifications, setNotifications] = useState<readonly AppNotification[] | null>(null);
   const [unreadOnly, setUnreadOnly] = useState(false);
   const [cursor, setCursor] = useState<string | null>(null);
-  const [unreadCount, setUnreadCount] = useState(0);
+  const [unreadCount, setUnreadCountState] = useState(0);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [failure, setFailure] = useState<NotificationsFailure | null>(null);
+
+  const setUnreadCount = useCallback(
+    (count: number): void => {
+      setUnreadCountState(count);
+      dispatch(unreadNotificationsSet(count));
+    },
+    [dispatch],
+  );
 
   const mounted = useRef(true);
   useEffect(() => {
@@ -45,7 +56,7 @@ export const useNotifications = () => {
     } finally {
       if (mounted.current) setLoading(false);
     }
-  }, [unreadOnly]);
+  }, [unreadOnly, setUnreadCount]);
 
   useEffect(() => {
     void load();
@@ -66,7 +77,7 @@ export const useNotifications = () => {
     } finally {
       if (mounted.current) setLoadingMore(false);
     }
-  }, [cursor, unreadOnly]);
+  }, [cursor, unreadOnly, setUnreadCount]);
 
   /**
    * Marks one row and stamps it locally. Seeing a notification is what cancels its queued email,
@@ -83,7 +94,7 @@ export const useNotifications = () => {
     } catch (error) {
       if (mounted.current) setFailure(classify(error));
     }
-  }, []);
+  }, [setUnreadCount]);
 
   const markAllSeen = useCallback(async (): Promise<void> => {
     const stamp = new Date().toISOString();
@@ -96,7 +107,7 @@ export const useNotifications = () => {
     } catch (error) {
       if (mounted.current) setFailure(classify(error));
     }
-  }, []);
+  }, [setUnreadCount]);
 
   return {
     notifications,

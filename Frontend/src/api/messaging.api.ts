@@ -47,6 +47,11 @@ export const deleteMessage = async (
   return data.message;
 };
 
+/** Hides one message for this viewer alone. Every other participant still sees it. */
+export const hideMessageForMe = async (conversationId: string, messageId: string): Promise<void> => {
+  await api.post(`/conversations/${conversationId}/messages/${messageId}/hide`);
+};
+
 export const removeMessageForAll = async (
   conversationId: string,
   messageId: string,

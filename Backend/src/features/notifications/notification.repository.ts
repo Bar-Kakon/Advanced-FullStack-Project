@@ -18,6 +18,7 @@ export interface NewNotification {
   readonly task?: Types.ObjectId;
   readonly proposal?: Types.ObjectId;
   readonly scheduleException?: Types.ObjectId;
+  readonly conversation?: Types.ObjectId;
   readonly payload: NotificationPayload;
   readonly mutedAtCreation: boolean;
   readonly dedupeKey: string;

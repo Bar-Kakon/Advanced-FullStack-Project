@@ -16,7 +16,9 @@ import {
   nothingToApprove,
   nothingToCancel,
   permissionsTargetNotFound,
+  companyOwnerInactive,
 } from './company.errors.js';
+import { companyOwnerStateFor } from './companyContext.service.js';
 import type { CreateInvitationBody } from './employeeManagement.validation.js';
 
 /** The capability that names this whole surface: add and invite employees. */
@@ -63,6 +65,9 @@ export const createEmployeeManagementService = ({
     const actor = await memberships.findActiveByUser(actorId);
     if (actor === null) throw noActiveCompany();
     if (!actor.permissions.includes(REQUIRED_PERMISSION)) throw notPermittedToManageEmployees();
+    if (actor.standing !== 'owner' && (await companyOwnerStateFor(actor.company)) !== 'active') {
+      throw companyOwnerInactive();
+    }
 
     return actor.company;
   };

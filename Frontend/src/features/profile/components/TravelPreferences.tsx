@@ -16,6 +16,8 @@ import type {
   TravelProposal,
 } from '../../../api/browse.types';
 import { PlaceAutocomplete } from '../../../location/PlaceAutocomplete';
+import { useScreenStylesheet } from '../../../styles/useScreenStylesheet';
+import travelCss from '../travel.css?inline';
 
 /** The bounds the server enforces on a travel radius. */
 const MIN_KM = 1;
@@ -50,6 +52,7 @@ const toPayload = (
  */
 export const TravelPreferences = ({ onClose }: { onClose: () => void }) => {
   const { t } = useLanguage();
+  useScreenStylesheet({ id: 'travel.css', css: travelCss });
   const dialogRef = useRef<HTMLDivElement>(null);
 
   const [base, setBase] = useState<StructuredPlace | null>(null);

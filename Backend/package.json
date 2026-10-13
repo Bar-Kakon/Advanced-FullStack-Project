@@ -65,6 +65,7 @@
     "migrate:report-indexes": "tsx scripts/migrate-report-indexes.ts",
     "seed:moderation": "tsx scripts/seed-moderation.ts",
     "migrate:agreement-company": "tsx scripts/migrate-agreement-company.ts",
+    "anonymize:accounts": "tsx scripts/anonymize-accounts.ts",
     "admin:grant": "tsx scripts/grant-platform-admin.ts grant",
     "admin:revoke": "tsx scripts/grant-platform-admin.ts revoke",
     "seed:plans": "tsx scripts/seed-plans.ts",

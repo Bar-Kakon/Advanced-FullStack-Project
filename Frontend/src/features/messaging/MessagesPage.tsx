@@ -57,6 +57,7 @@ export const MessagesPage = () => {
   const [composing, setComposing] = useState(false);
   const [proposing, setProposing] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState<string | null>(null);
+  const [confirmingHide, setConfirmingHide] = useState<string | null>(null);
   const [actionFailed, setActionFailed] = useState(false);
   const [pendingAttachments, setPendingAttachments] = useState<readonly MessageAttachment[]>([]);
   const [attachFailure, setAttachFailure] = useState<'size' | 'type' | 'upload' | null>(null);
@@ -82,6 +83,7 @@ export const MessagesPage = () => {
     setAttachFailure(null);
     setProposing(false);
     setConfirmingDelete(null);
+    setConfirmingHide(null);
     setActionFailed(false);
     setSendFailure(null);
   }, [openId]);
@@ -94,6 +96,32 @@ export const MessagesPage = () => {
 
   const rows = useMemo(() => toConversationRows(thread.messages), [thread.messages]);
   const open = inbox.conversations.find((c) => c.id === openId);
+
+  useEffect(() => {
+    if (openId !== undefined && thread.requestState === 'pending' && inbox.folder === 'inbox') {
+      inbox.setFolder('requests');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openId, thread.requestState]);
+
+  const answerOpenRequest = useCallback(
+    async (accept: boolean): Promise<void> => {
+      if (openId === undefined) return;
+      setActionFailed(false);
+      try {
+        await inbox.answer(openId, accept);
+        if (accept) {
+          thread.reload();
+          inbox.setFolder('inbox');
+        } else {
+          setOpenId(undefined);
+        }
+      } catch {
+        setActionFailed(true);
+      }
+    },
+    [openId, inbox, thread, setOpenId],
+  );
 
   // Both mutes are read when a thread is opened, so the toggles show the stored state rather than
   // an assumed one. A failure leaves them off rather than claiming a mute that is not there.
@@ -255,6 +283,39 @@ export const MessagesPage = () => {
           )
         ) : null}
 
+        {!message.mine && !message.kept ? (
+          confirmingHide === message.id ? (
+            <>
+              <span className="msg-bubble__time">{t.messaging.hideForMeNote}</span>
+              <button
+                type="button"
+                className="msg-report__reason"
+                onClick={() => {
+                  setConfirmingHide(null);
+                  void act(thread.hideForMe(message.id));
+                }}
+              >
+                {t.messaging.confirmHide}
+              </button>
+              <button
+                type="button"
+                className="msg-report__reason"
+                onClick={() => setConfirmingHide(null)}
+              >
+                {t.messaging.cancel}
+              </button>
+            </>
+          ) : (
+            <button
+              type="button"
+              className="msg-bubble__report"
+              onClick={() => setConfirmingHide(message.id)}
+            >
+              {t.messaging.hideForMe}
+            </button>
+          )
+        ) : null}
+
         {thread.canModerate && !message.mine && !message.kept ? (
           <button
             type="button"
@@ -323,6 +384,11 @@ export const MessagesPage = () => {
                   onClick={() => inbox.setFolder(folder)}
                 >
                   {folder === 'inbox' ? t.messaging.inbox : t.messaging.requests}
+                  {folder === 'requests' && inbox.incomingRequests > 0 ? (
+                    <span className="msg-tab__count" aria-label={t.messaging.requestsBadgeLabel}>
+                      {inbox.incomingRequests}
+                    </span>
+                  ) : null}
                 </button>
               ))}
             </div>
@@ -345,13 +411,25 @@ export const MessagesPage = () => {
                   >
                     <span className="msg-row__title">{conversation.title}</span>
                     <span className="msg-row__meta">
-                      {conversation.kind === 'project_room'
-                        ? t.messaging.projectRoom
-                        : conversation.requestState === 'pending'
-                          ? t.messaging.pendingRequest
-                          : conversation.lastMessageAt === null
-                            ? ''
-                            : dayLabel(new Date(conversation.lastMessageAt))}
+                      {conversation.kind === 'project_room' ? (
+                        t.messaging.projectRoom
+                      ) : conversation.requestState === 'pending' ? (
+                        <span
+                          className={`msg-request-tag ${
+                            conversation.awaitingMyAnswer
+                              ? 'msg-request-tag--incoming'
+                              : 'msg-request-tag--outgoing'
+                          }`}
+                        >
+                          {conversation.awaitingMyAnswer
+                            ? t.messaging.requestIncomingTag
+                            : t.messaging.requestOutgoingTag}
+                        </span>
+                      ) : conversation.lastMessageAt === null ? (
+                        ''
+                      ) : (
+                        dayLabel(new Date(conversation.lastMessageAt))
+                      )}
                     </span>
                   </button>
 
@@ -619,14 +697,33 @@ export const MessagesPage = () => {
                   </div>
                 ) : null}
 
-                {open?.requestState === 'pending' ? (
-                  <p className="msg-empty">
-                    {open.awaitingMyAnswer
-                      ? t.messaging.requestAnswerFirst
-                      : t.messaging.requestPendingNotice}
-                  </p>
+                {thread.requestState === 'pending' ? (
+                  thread.awaitingMyAnswer ? (
+                    <div className="msg-request-answer">
+                      <span className="msg-request-answer__note">
+                        {t.messaging.requestAnswerFirst}
+                      </span>
+                      <button
+                        type="button"
+                        className="btn btn--primary"
+                        onClick={() => void answerOpenRequest(true)}
+                      >
+                        {t.messaging.accept}
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn--secondary"
+                        onClick={() => void answerOpenRequest(false)}
+                      >
+                        {t.messaging.decline}
+                      </button>
+                    </div>
+                  ) : (
+                    <p className="msg-empty">{t.messaging.requestPendingNotice}</p>
+                  )
                 ) : null}
 
+                {thread.requestState === 'pending' ? null : (
                 <div className="msg-composer">
                   <input
                     ref={fileInput}
@@ -671,6 +768,7 @@ export const MessagesPage = () => {
                     {thread.sending ? <ButtonSpinner /> : null}
                   </button>
                 </div>
+                )}
               </>
             )}
           </section>

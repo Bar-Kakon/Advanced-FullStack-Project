@@ -194,6 +194,8 @@ export interface CompanyContext {
   readonly permissions: readonly CompanyPermission[];
   /** Whether the business has been through employee setup, by inviting somebody or by skipping. */
   readonly employeeSetupComplete: boolean;
+  /** Derived from the owner's account lifecycle; anything but `active` means no company writes. */
+  readonly ownerState: 'active' | 'recovery' | 'inactive';
 }
 
 /**

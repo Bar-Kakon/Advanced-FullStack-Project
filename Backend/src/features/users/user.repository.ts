@@ -24,7 +24,7 @@ import {
   type UserWithPasswordHash,
 } from './user.model.js';
 
-const IDENTITY_FIELDS = 'email status isAdmin firstName lastName language profileComplete identities security.passwordChangedAt security.tokenVersion';
+const IDENTITY_FIELDS = 'email status deletedAt anonymizedAt isAdmin firstName lastName language profileComplete identities security.passwordChangedAt security.tokenVersion';
 
 /**
  * Everything the profile screens read, and nothing else. `passwordHash` is `select: false` and is
@@ -146,6 +146,28 @@ export interface UserRepository {
    * moderators acting at once cannot both believe they applied it.
    */
   transitionStatus(id: Types.ObjectId, from: UserStatus, to: UserStatus): Promise<boolean>;
+  /** The three lifecycle facts the deletion window is decided on, and nothing else. */
+  findLifecycleState(
+    id: string,
+  ): Promise<{ status: UserStatus; deletedAt?: Date; anonymizedAt?: Date } | null>;
+  /** The deletion request: one write moves the status and stamps the window's start. */
+  markDeleted(id: Types.ObjectId): Promise<boolean>;
+  /** Restoration, refused by the filter itself outside the window or after anonymization. */
+  restoreWithinWindow(
+    id: Types.ObjectId,
+    deletedNoEarlierThan: Date,
+    session?: DbSession,
+  ): Promise<boolean>;
+  /** Accounts whose recovery window has passed and whose PII still stands. */
+  listAnonymizationEligible(deletedBefore: Date, limit: number): Promise<Types.ObjectId[]>;
+  /** Already-anonymized accounts, for the avatar-file cleanup pass to re-check. */
+  listAnonymizedIds(limit: number): Promise<Types.ObjectId[]>;
+  /**
+   * The irreversible step, guarded inside the update filter: only a still-deleted, still-stamped,
+   * not-yet-anonymized row is matched, so a restore or a second sweep can never be caught by it.
+   * The name survives as business attribution; everything personal beside it goes.
+   */
+  anonymize(id: Types.ObjectId, deletedBefore: Date, tombstoneEmail: string): Promise<boolean>;
   /** The hash and the change stamp move together, so one call writes both. */
   updatePassword(id: Types.ObjectId, update: PasswordUpdate, session?: DbSession): Promise<void>;
   existsByEmail(email: string): Promise<boolean>;
@@ -245,6 +267,96 @@ export const userRepository: UserRepository = {
 
   async transitionStatus(id, from, to) {
     const result = await UserModel.updateOne({ _id: id, status: from }, { $set: { status: to } }).exec();
+    return result.modifiedCount === 1;
+  },
+
+  async findLifecycleState(id) {
+    if (!Types.ObjectId.isValid(id)) return null;
+    return UserModel.findById(id)
+      .select('status deletedAt anonymizedAt')
+      .lean<{ status: UserStatus; deletedAt?: Date; anonymizedAt?: Date }>()
+      .exec();
+  },
+
+  async markDeleted(id) {
+    const result = await UserModel.updateOne(
+      { _id: id, status: 'active' },
+      { $set: { status: 'deleted', deletedAt: new Date() } },
+    ).exec();
+    return result.modifiedCount === 1;
+  },
+
+  async restoreWithinWindow(id, deletedNoEarlierThan, session) {
+    const query = UserModel.updateOne(
+      {
+        _id: id,
+        status: 'deleted',
+        anonymizedAt: { $exists: false },
+        deletedAt: { $gte: deletedNoEarlierThan },
+      },
+      { $set: { status: 'active' }, $unset: { deletedAt: '' } },
+    );
+    if (session) query.session(session);
+    const result = await query.exec();
+    return result.modifiedCount === 1;
+  },
+
+  async listAnonymizationEligible(deletedBefore, limit) {
+    const rows = await UserModel.find({
+      status: 'deleted',
+      anonymizedAt: { $exists: false },
+      deletedAt: { $lte: deletedBefore },
+    })
+      .select('_id')
+      .limit(limit)
+      .lean<{ _id: Types.ObjectId }[]>()
+      .exec();
+    return rows.map((row) => row._id);
+  },
+
+  async listAnonymizedIds(limit) {
+    const rows = await UserModel.find({ anonymizedAt: { $exists: true } })
+      .select('_id')
+      .limit(limit)
+      .lean<{ _id: Types.ObjectId }[]>()
+      .exec();
+    return rows.map((row) => row._id);
+  },
+
+  async anonymize(id, deletedBefore, tombstoneEmail) {
+    const result = await UserModel.updateOne(
+      {
+        _id: id,
+        status: 'deleted',
+        anonymizedAt: { $exists: false },
+        deletedAt: { $lte: deletedBefore },
+      },
+      {
+        $set: {
+          anonymizedAt: new Date(),
+          email: tombstoneEmail,
+        },
+        // The name AND the profession stay, by owner decision: historical business records keep
+        // identifying who performed the work and in which field. `specialtyOther` stays with them,
+        // because without it the `other` specialty names nothing.
+        $unset: {
+          passwordHash: '',
+          identities: '',
+          bio: '',
+          businessPhone: '',
+          contactVisibility: '',
+          location: '',
+          approvedTravelLocations: '',
+          excludedTravelLocations: '',
+          schedulingPrefs: '',
+          avatar: '',
+          notificationPreferences: '',
+          heavyEquipment: '',
+          drillingTypes: '',
+        },
+        $inc: { 'security.tokenVersion': 1 },
+      },
+    ).exec();
     return result.modifiedCount === 1;
   },
 
