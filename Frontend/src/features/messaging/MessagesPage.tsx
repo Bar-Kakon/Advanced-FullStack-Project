@@ -508,7 +508,9 @@ export const MessagesPage = () => {
                     </button>
                   )}
 
-                  {thread.canProposeAgreement ? (
+                  {thread.canProposeAgreement &&
+                  thread.requestState !== 'pending' &&
+                  thread.requestState !== 'declined' ? (
                     <button
                       type="button"
                       className="msg-thread__action"

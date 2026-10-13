@@ -410,6 +410,36 @@ export const createMessagingService = ({
     );
   };
 
+  /** An agreement is a commitment, so it rides only an OPEN thread: blocks refuse it, and a
+   *  pending or declined gate refuses it unless an approved connection retires the gate. */
+  const guardedAgreementThread = async (userId: string, conversationId: string): Promise<ConversationRecord> => {
+    let conversation = await reachable(userId, conversationId);
+    if (conversation.kind !== 'direct') return conversation;
+
+    const counterparty = counterpartyOf(conversation, userId);
+    if (counterparty !== null) {
+      const other = counterparty.toString();
+      if ((await noContactBetween(userId, other)) || (await noContactBetween(other, userId))) {
+        throw noContactWithUser();
+      }
+    }
+
+    const gateState = conversation.request?.state;
+    if (gateState === 'pending' || gateState === 'declined') {
+      const other = counterparty?.toString();
+      if (other !== undefined && (await network.isAccepted(userId, other))) {
+        conversation =
+          (await conversations.upgradeRequestToAccepted(conversation._id)) ?? conversation;
+      } else if (gateState === 'pending' && conversation.request?.requestedBy.toString() === userId) {
+        throw requestAwaitingResponse();
+      } else {
+        throw requestNotPending();
+      }
+    }
+    return conversation;
+  };
+
+
   return {
     reachable,
 
@@ -637,7 +667,7 @@ export const createMessagingService = ({
     },
 
     async proposeAgreement(userId, conversationId, input) {
-      const conversation = await reachable(userId, conversationId);
+      const conversation = await guardedAgreementThread(userId, conversationId);
 
       // Proposing commissions new work on the company's behalf; accepting never asks this. The
       // company is stamped here, immutably — attribution never reads a membership again.
