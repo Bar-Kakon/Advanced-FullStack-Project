@@ -6,7 +6,7 @@ import { ratingRepository } from './rating.repository.js';
 import { createRatingsController } from './ratings.controller.js';
 import { workEvidenceAdapter } from '../tasks/workEvidence.adapter.js';
 import { createRatingsService } from './ratings.service.js';
-import { createRatingBodySchema } from './ratings.validation.js';
+import { createRatingBodySchema, eligibleWorksParamsSchema } from './ratings.validation.js';
 
 export const createRatingsModule = (requireAccessToken: RequestHandler): Router => {
   const controller = createRatingsController(
@@ -21,6 +21,12 @@ export const createRatingsModule = (requireAccessToken: RequestHandler): Router 
   router.use(requireAccessToken);
 
   router.post('/', validateRequest({ body: createRatingBodySchema }), controller.handleRate);
+  // The form's first question: which completed shared work may this rating stand on.
+  router.get(
+    '/eligible-works/:rateeUserId',
+    validateRequest({ params: eligibleWorksParamsSchema }),
+    controller.handleEligibleWorks,
+  );
 
   return router;
 };

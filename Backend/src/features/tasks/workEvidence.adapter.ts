@@ -55,6 +55,24 @@ export const workEvidenceAdapter: RatingEligibilityPort = {
     return completed !== null;
   },
 
+  async listWorkEvidence(raterId, rateeId) {
+    if (![raterId, rateeId].every((id) => Types.ObjectId.isValid(id))) return [];
+    if (raterId === rateeId) return [];
+
+    const rows = await TaskModel.find(completedTogether(raterId, rateeId))
+      .select('title completedAt')
+      .sort({ completedAt: -1 })
+      .limit(50)
+      .lean<Pick<TaskRecord, '_id' | 'title' | 'completedAt'>[]>()
+      .exec();
+
+    return rows.flatMap((row) =>
+      row.completedAt === undefined
+        ? []
+        : [{ id: row._id.toString(), title: row.title, completedAt: row.completedAt }],
+    );
+  },
+
   async hasAnyWorkEvidence(raterId, rateeId) {
     if (![raterId, rateeId].every((id) => Types.ObjectId.isValid(id))) return false;
     if (raterId === rateeId) return false;
