@@ -15,6 +15,8 @@ export interface FlexibilityDto {
   readonly score: number;
   readonly category: FlexibilityCategory;
   readonly context: FlexibilityContextCounts;
+  /** True when continued negative conduct kept pre-window history inside the calculation. */
+  readonly includesOlderHistory: boolean;
 }
 
 export interface FlexibilityView {

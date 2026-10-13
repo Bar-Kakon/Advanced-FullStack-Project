@@ -150,6 +150,9 @@ export const PublicProfilePanel = ({
                       .replace('{count}', String(profile.flexibility.schedule.context.justifiedDeclines))}
                   </li>
                 ) : null}
+                {profile.flexibility.schedule.includesOlderHistory ? (
+                  <li>{t.profile.flexibility.context.history}</li>
+                ) : null}
               </ul>
             </details>
           ) : null}

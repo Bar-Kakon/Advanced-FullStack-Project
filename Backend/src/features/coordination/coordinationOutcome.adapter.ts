@@ -76,6 +76,7 @@ export const createCoordinationOutcomeAdapter = (
 
         events.push({
           outcome,
+          resolvedAt: proposal.resolution?.at ?? proposal.createdAt,
           requestedByCounterparty: proposal.requestedBy.toString() !== userId,
           noticeDays: noticeDaysFor(proposal, item),
         });

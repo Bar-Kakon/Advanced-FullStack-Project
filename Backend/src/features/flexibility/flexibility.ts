@@ -51,11 +51,43 @@ export const isScoreRelevant = (outcome: CoordinationOutcome): boolean =>
 
 export interface CoordinationEvent {
   readonly outcome: CoordinationOutcome;
+  /** When the outcome became final — the authoritative timestamp the history window is measured on. */
+  readonly resolvedAt: Date;
   /** Context only. It never changes the arithmetic. */
   readonly requestedByCounterparty: boolean;
   /** Days of warning before the affected date. `null` when the source cannot say. Context only. */
   readonly noticeDays: number | null;
 }
+
+export const HISTORY_WINDOW_YEARS = 5;
+
+/** Calendar-aware: five years back from the day the score is read, so leap years cannot drift it. */
+const windowStart = (asOf: Date): Date => {
+  const start = new Date(asOf);
+  start.setFullYear(start.getFullYear() - HISTORY_WINDOW_YEARS);
+  return start;
+};
+
+/**
+ * The owner's final historical rule (2026-10-13). Events inside the rolling five-year window always
+ * count, an event exactly five years old included. Older events count only while at least one
+ * substantiated negative outcome sits inside the window — and then ALL of them return, positive and
+ * negative alike, so history can never be mined for its negatives alone. A justified refusal is not
+ * negative evidence and establishes nothing.
+ */
+export const eligibleEvents = (
+  events: readonly CoordinationEvent[],
+  asOf: Date,
+): { readonly events: readonly CoordinationEvent[]; readonly includesOlderHistory: boolean } => {
+  const start = windowStart(asOf).getTime();
+  const recent = events.filter((event) => event.resolvedAt.getTime() >= start);
+  const continuity = recent.some((event) => event.outcome === 'unresolved_replaced');
+
+  if (!continuity || recent.length === events.length) {
+    return { events: recent, includesOlderHistory: false };
+  }
+  return { events, includesOlderHistory: true };
+};
 
 /**
  * Counts, and nothing else. Every field is an integer describing this contractor's own aggregate
@@ -77,6 +109,8 @@ export interface FlexibilityContextCounts {
 export interface FlexibilityDimensionScore {
   readonly score: number;
   readonly context: FlexibilityContextCounts;
+  /** True when continued negative conduct pulled pre-window history back into the calculation. */
+  readonly includesOlderHistory: boolean;
 }
 
 export interface FlexibilityScore {
@@ -121,16 +155,24 @@ const countsFor = (events: readonly CoordinationEvent[]): FlexibilityContextCoun
  * or rolling window: the number moves when new resolved behaviour is recorded, never because time
  * passed.
  */
-const scoreFor = (events: readonly CoordinationEvent[]): FlexibilityDimensionScore | null => {
+const scoreFor = (
+  events: readonly CoordinationEvent[],
+  includesOlderHistory: boolean,
+): FlexibilityDimensionScore | null => {
   const context = countsFor(events);
   if (context.events === 0) return null;
 
   return {
     score: Math.round((SCORE_SCALE * context.workableResolutions) / context.events),
     context,
+    includesOlderHistory,
   };
 };
 
-export const computeFlexibility = (events: readonly CoordinationEvent[]): FlexibilityScore => ({
-  schedule: scoreFor(events),
-});
+export const computeFlexibility = (
+  events: readonly CoordinationEvent[],
+  asOf: Date = new Date(),
+): FlexibilityScore => {
+  const eligible = eligibleEvents(events, asOf);
+  return { schedule: scoreFor(eligible.events, eligible.includesOlderHistory) };
+};

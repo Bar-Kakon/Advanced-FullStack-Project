@@ -148,6 +148,9 @@ export const TrustPanel = ({
                       .replace('{count}', String(schedule.context.justifiedDeclines))}
                   </li>
                 ) : null}
+                {schedule.includesOlderHistory ? (
+                  <li className="flex-context__item">{t.profile.flexibility.context.history}</li>
+                ) : null}
               </ul>
             </>
           ) : (

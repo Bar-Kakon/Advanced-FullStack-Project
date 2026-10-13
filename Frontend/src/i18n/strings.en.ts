@@ -1410,6 +1410,7 @@ export const en: Strings = {
         alternatives: 'An alternative date or another solution was offered and agreed {count} times.',
         notice: 'Advance notice allowed the change to be coordinated {count} times.',
         justified: '{count} justified declines are excluded from the score.',
+        history: 'History older than five years is included, because negative scheduling conduct continued into the recent period.',
       },
     },
     explain: {

@@ -55,6 +55,7 @@ export interface FlexibilityDimension {
   readonly score: number;
   readonly category: FlexibilityCategory;
   readonly context: FlexibilityContextCounts;
+  readonly includesOlderHistory: boolean;
 }
 
 export type FlexibilityCategory = 'high' | 'medium' | 'low';
