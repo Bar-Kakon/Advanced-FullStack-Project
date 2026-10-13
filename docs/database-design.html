@@ -2056,7 +2056,8 @@ module.exports = mongoose.model('Thread', threadSchema);`
     { name: 'agreement.commissioningCompany', type: 'ObjectId', ref: 'companies', note: '**Built 2026-10-13.** The company on whose behalf the work was commissioned, stamped server-side at proposal time and immutable forever — attribution never reads a membership, so moving between companies moves nothing. Legacy rows were stamped by the one-time migrate:agreement-company backfill; the claim (rejoin) endpoint refuses while any accepted agreement is unstamped.' },
     { name: 'removedByRole', type: 'String (project role)', note: '**Built 2026-10-12.** The remover\u2019s project role, captured at the moment of the act so a later role change cannot rewrite the attribution placeholder — a delegated moderator shows their own role, never the GC\u2019s. Rows removed before this field exists render the neutral wording instead.' },
     { name: 'deletedAt / deletedBy', type: 'Date / ObjectId', ref: 'users', note: 'Author delete-for-everyone (deletion rule b). Readers see the deletion placeholder; the stored body survives, which is what keeps the internal moderation copy for reported content (rule 3) without a snapshot.' },
-    { name: 'keptAt / keptBy', type: 'Date / ObjectId', ref: 'users', note: 'An explicit keep (rule e). It outranks the author deletion AND moderation removal, survives the removal-time delete choice (rule f), and is deliberately irreversible — no route clears it.' }
+    { name: 'keptAt / keptBy', type: 'Date / ObjectId', ref: 'users', note: 'An explicit keep (rule e). It outranks the author deletion AND moderation removal, survives the removal-time delete choice (rule f), and is deliberately irreversible — no route clears it.' },
+    { name: 'hiddenFor', type: '[ObjectId]', ref: 'users', note: '**Built 2026-10-13.** Viewers who hid this one message for themselves — the owner\u2019s rule that deleting another person\u2019s message hides it for the deleter alone. The row, its body and every other participant\u2019s view are untouched, and a kept message is never matched, so preservation outranks the per-viewer hide as well.' }
   ],
   indexes: [
     { def: '{ thread: 1, createdAt: -1 }', serves: 'Paged thread view', why: 'The canonical paging index: equality on the container, descending on time. Infinite scroll reads straight out of it.' },
@@ -2124,7 +2125,8 @@ module.exports = mongoose.model('Message', messageSchema);`
   fields: [
     { name: '_id', type: 'ObjectId', note: '' },
     { name: 'recipient', type: 'ObjectId', ref: 'users', req: true, idx: true, note: '' },
-    { name: 'type', type: 'enum', req: true, idx: true, note: 'Matches the filter chips on the notifications screen and the keys in `users.notificationPrefs`.' },
+    { name: 'type', type: 'enum', req: true, idx: true, note: 'Matches the filter chips on the notifications screen and the keys in `users.notificationPrefs`. **2026-10-13:** gained the connection pair — `connection.request_received` (blocking) and the two informational outcomes `connection.accepted` / `connection.declined` — so the professional-network request loop reaches both sides.' },
+    { name: 'conversation', type: 'ObjectId', ref: 'threads', note: '**Built 2026-10-13.** The conversation a messaging or agreement notification points back into — what lets the row open the exact thread (and, for a message request, the Accept / Decline waiting there) instead of rendering with nowhere to go.' },
     { name: 'payload', type: 'Object', denorm: true, note: 'A **frozen snapshot** of the *parts* needed to render the line — names, titles, dates. Never a pre-rendered sentence: the app is bilingual, so the client composes the wording from `type` in the reader current language.' },
     { name: 'link', type: 'String', note: 'The in-app route this notification opens.' },
     { name: 'readAt', type: 'Date | null', idx: true, note: 'Null means unread. Drives the navbar badge.' },
