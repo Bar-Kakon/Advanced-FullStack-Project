@@ -27,6 +27,9 @@ export const NOTIFICATION_TYPES = [
   'message.request_received',
   'agreement.received',
   'agreement.answered',
+  'connection.request_received',
+  'connection.accepted',
+  'connection.declined',
   'company.employee_left',
 ] as const;
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
@@ -65,6 +68,10 @@ export const CLASS_OF: Readonly<Record<NotificationType, NotificationClass>> = {
   'message.request_received': 'blocking',
   'agreement.received': 'blocking',
   'agreement.answered': 'blocking',
+  // An incoming connection request waits on this person; the two outcomes only inform.
+  'connection.request_received': 'blocking',
+  'connection.accepted': 'nonblocking',
+  'connection.declined': 'nonblocking',
 };
 
 /**
@@ -92,6 +99,7 @@ export interface NotificationRecord {
   readonly task?: Types.ObjectId;
   readonly proposal?: Types.ObjectId;
   readonly scheduleException?: Types.ObjectId;
+  readonly conversation?: Types.ObjectId;
   readonly payload: NotificationPayload;
   /**
    * Whether the project was muted for this recipient when the event happened. The row is written
@@ -128,6 +136,7 @@ const notificationSchema = new Schema(
     task: { type: Schema.Types.ObjectId, ref: 'Task' },
     proposal: { type: Schema.Types.ObjectId, ref: 'RescheduleProposal' },
     scheduleException: { type: Schema.Types.ObjectId, ref: 'ScheduleException' },
+    conversation: { type: Schema.Types.ObjectId, ref: 'Conversation' },
 
     payload: { type: payloadSchema, required: true, default: () => ({}) },
     mutedAtCreation: { type: Boolean, required: true, default: false },

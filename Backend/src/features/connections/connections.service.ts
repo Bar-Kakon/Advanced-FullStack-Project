@@ -1,6 +1,7 @@
 import { Types } from 'mongoose';
 
 import type { BlocksService } from '../blocks/blocks.service.js';
+import type { NotificationDispatchService } from '../notifications/notificationDispatch.service.js';
 import { isRestricted } from '../moderation/restriction.js';
 import type { UserRepository } from '../users/user.repository.js';
 import { REACTIVATABLE_CONNECTION_STATUSES } from './connection.model.js';
@@ -28,13 +29,33 @@ export interface ConnectionsDependencies {
   readonly connections: ConnectionRepository;
   readonly users: UserRepository;
   readonly blocks: BlocksService;
+  readonly notifications: NotificationDispatchService;
 }
 
 export const createConnectionsService = ({
   connections,
   users,
   blocks,
-}: ConnectionsDependencies): ConnectionsService => ({
+  notifications,
+}: ConnectionsDependencies): ConnectionsService => {
+  const nameOf = async (id: string): Promise<string> =>
+    (await users.findDisplayNames([new Types.ObjectId(id)])).get(id) ?? '';
+
+  const announce = async (
+    recipient: Types.ObjectId,
+    actorId: string,
+    type: 'connection.request_received' | 'connection.accepted' | 'connection.declined',
+    edgeId: Types.ObjectId,
+  ): Promise<void> => {
+    await notifications.emit({
+      userId: recipient,
+      type,
+      payload: { actorName: await nameOf(actorId) },
+      dedupeKey: `${type}:${edgeId.toString()}:${Date.now()}`,
+    });
+  };
+
+  return {
   async request(actorId, targetUserId) {
     if (actorId === targetUserId) throw cannotConnectToSelf();
 
@@ -59,11 +80,13 @@ export const createConnectionsService = ({
         new Types.ObjectId(targetUserId),
       );
       if (!reactivated) throw connectionAlreadyExists();
+      await announce(new Types.ObjectId(targetUserId), actorId, 'connection.request_received', existing._id);
       return;
     }
 
     const created = await connections.create(actorId, targetUserId);
     if (created === null) throw connectionAlreadyExists();
+    await announce(new Types.ObjectId(targetUserId), actorId, 'connection.request_received', created._id);
   },
 
   async accept(actorId, requesterUserId) {
@@ -73,6 +96,7 @@ export const createConnectionsService = ({
     }
 
     if (!(await connections.accept(edge._id, edge.recipient))) throw noPendingRequest();
+    await announce(edge.requester, actorId, 'connection.accepted', edge._id);
   },
 
   async decline(actorId, requesterUserId) {
@@ -82,6 +106,7 @@ export const createConnectionsService = ({
     }
 
     if (!(await connections.decline(edge._id, edge.recipient))) throw noPendingRequest();
+    await announce(edge.requester, actorId, 'connection.declined', edge._id);
   },
 
   async remove(actorId, otherUserId) {
@@ -99,4 +124,5 @@ export const createConnectionsService = ({
 
     if (!(await connections.withdraw(edge._id, edge.requester))) throw noPendingRequest();
   },
-});
+  };
+};
