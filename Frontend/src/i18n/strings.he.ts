@@ -2316,6 +2316,7 @@ export const he = {
     },
     types: {
       'project.invitation': 'הזמנה לפרויקט',
+      'project.cancelled': 'פרויקט בוטל לפני תחילת העבודה',
       'company.employee_left': 'עובד עזב את החברה',
       'task.assigned': 'משימה חדשה באחריותך',
       'task.updated': 'עודכנו פרטים במשימה',
