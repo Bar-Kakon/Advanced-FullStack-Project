@@ -288,6 +288,7 @@ export const en: Strings = {
       noRating: 'No ratings yet',
       ratingCount: '{count} ratings',
       drivingDistance: '{km} km by road',
+      flexibilityScore: 'Flexibility {score}/100',
       noFlexibility: 'No flexibility score yet',
     },
 
@@ -678,6 +679,11 @@ export const en: Strings = {
       title: 'Work detail',
       back: 'Back to tasks',
       loading: 'Loading the work…',
+      documents: {
+        title: 'Agreement Documents',
+        lede: 'The files attached to the work agreement this task was created from.',
+        download: 'Download the file',
+      },
       notFound: 'That work was not found, or it is not accessible.',
       dates: '{start} to {due}',
 
@@ -1410,7 +1416,7 @@ export const en: Strings = {
       answerOne:
         'The score is built from how you actually answer requests to change a date — approving, rejecting or proposing an alternative. You do not rate yourself and it cannot be edited, which is what makes it mean something to a contractor reading it.',
       answerTwo:
-        'While there are not enough responses, no score is shown at all — no score is better than one resting on a single answer.',
+        'The score exists from the first resolved event, and it updates with every further one. Until any event is recorded, no score is shown at all.',
     },
     about: 'About',
     work: {

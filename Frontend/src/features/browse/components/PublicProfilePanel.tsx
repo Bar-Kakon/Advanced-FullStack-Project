@@ -114,6 +114,11 @@ export const PublicProfilePanel = ({
                 ? `★ ${profile.rating.average.toFixed(1)} · ${t.browse.card.ratingCount.replace('{count}', String(profile.rating.count))}`
                 : t.browse.profile.noRatings}
             </span>
+            <span className="pp-signals__rating">
+              {profile.flexibility?.schedule
+                ? `${t.browse.card.flexibilityScore.replace('{score}', String(profile.flexibility.schedule.score))} · ${t.profile.flexibility.foot.replace('{count}', String(profile.flexibility.schedule.context.events))}`
+                : t.browse.card.noFlexibility}
+            </span>
           </div>
 
           {profile.specialties.length > 0 ? (
