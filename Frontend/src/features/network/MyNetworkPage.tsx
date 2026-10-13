@@ -167,6 +167,7 @@ export const MyNetworkPage = () => {
                 setProfile(null);
                 setProfileNotFound(false);
               }}
+              onBlocked={() => void reload()}
             />
           ) : null}
         </div>

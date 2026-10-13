@@ -1,10 +1,13 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 
 import { ButtonSpinner } from '../../../components/ButtonSpinner';
 import { FieldLabel } from '../../../components/FieldLabel';
 import { useLanguage } from '../../../i18n/useLanguage';
+import { uploadAttachment } from '../../../api/messaging.api';
+import type { MessageAttachment } from '../../../api/messaging.types';
 
 export interface AgreementProposalDialogProps {
+  readonly conversationId: string;
   readonly busyExternally: boolean;
   readonly onClose: () => void;
   readonly onPropose: (input: {
@@ -12,6 +15,7 @@ export interface AgreementProposalDialogProps {
     description?: string;
     startDate: string;
     dueDate: string;
+    attachments?: readonly string[];
   }) => Promise<void>;
 }
 
@@ -20,6 +24,7 @@ export interface AgreementProposalDialogProps {
  * fields, because acceptance creates the canonical Task — there is no second agreement system.
  */
 export const AgreementProposalDialog = ({
+  conversationId,
   busyExternally,
   onClose,
   onPropose,
@@ -33,6 +38,23 @@ export const AgreementProposalDialog = ({
   const [dueDate, setDueDate] = useState('');
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState(false);
+  const [attachments, setAttachments] = useState<readonly MessageAttachment[]>([]);
+  const [uploading, setUploading] = useState(false);
+  const [attachFailed, setAttachFailed] = useState(false);
+  const fileInput = useRef<HTMLInputElement | null>(null);
+
+  const attach = async (file: File): Promise<void> => {
+    setUploading(true);
+    setAttachFailed(false);
+    try {
+      const uploaded = await uploadAttachment(conversationId, file);
+      setAttachments((previous) => [...previous, uploaded]);
+    } catch {
+      setAttachFailed(true);
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const complete = title.trim().length > 0 && startDate !== '' && dueDate !== '';
 
@@ -47,6 +69,7 @@ export const AgreementProposalDialog = ({
         ...(description.trim() ? { description: description.trim() } : {}),
         startDate,
         dueDate,
+        ...(attachments.length === 0 ? {} : { attachments: attachments.map((a) => a.id) }),
       });
       onClose();
     } catch {
@@ -115,6 +138,46 @@ export const AgreementProposalDialog = ({
             onChange={(event) => setDueDate(event.target.value)}
           />
         </div>
+      </div>
+
+      <div className="msg-dialog__field">
+        <input
+          ref={fileInput}
+          type="file"
+          accept="image/jpeg,image/png,image/webp,application/pdf"
+          hidden
+          onChange={(event) => {
+            const file = event.target.files?.[0];
+            event.target.value = '';
+            if (file !== undefined) void attach(file);
+          }}
+        />
+        <button
+          type="button"
+          className="btn btn--ghost btn--sm"
+          onClick={() => fileInput.current?.click()}
+          disabled={uploading || busy}
+        >
+          {t.messaging.attach}
+          {uploading ? <ButtonSpinner /> : null}
+        </button>
+        {attachFailed ? (
+          <p className="msg-dialog__error" role="alert">{t.messaging.attachFailed}</p>
+        ) : null}
+        {attachments.map((attachment) => (
+          <span key={attachment.id} className="msg-attachment__file">
+            <span className="msg-attachment__name" dir="ltr">{attachment.filename}</span>
+            <button
+              type="button"
+              className="msg-bubble__report"
+              onClick={() =>
+                setAttachments((previous) => previous.filter((row) => row.id !== attachment.id))
+              }
+            >
+              {t.messaging.attachRemove}
+            </button>
+          </span>
+        ))}
       </div>
 
       <div className="msg-dialog__actions">

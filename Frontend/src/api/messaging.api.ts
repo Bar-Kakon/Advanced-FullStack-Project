@@ -134,7 +134,13 @@ export const hideConversation = async (conversationId: string): Promise<void> =>
 
 export const proposeAgreement = async (
   conversationId: string,
-  input: { title: string; description?: string; startDate: string; dueDate: string },
+  input: {
+    title: string;
+    description?: string;
+    startDate: string;
+    dueDate: string;
+    attachments?: readonly string[];
+  },
 ): Promise<ConversationMessage> => {
   const { data } = await api.post<{ message: ConversationMessage }>(
     `/conversations/${conversationId}/agreements`,

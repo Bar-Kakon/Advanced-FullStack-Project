@@ -50,6 +50,8 @@ const ProjectMembersPage = lazy(() =>
   import('./features/members/ProjectMembersPage').then((m) => ({ default: m.ProjectMembersPage })));
 const ProjectDashboardPage = lazy(() =>
   import('./features/projectdashboard/ProjectDashboardPage').then((m) => ({ default: m.ProjectDashboardPage })));
+const ProjectTimelinePage = lazy(() =>
+  import('./features/projectdashboard/ProjectTimelinePage').then((m) => ({ default: m.ProjectTimelinePage })));
 const MyTasksPage = lazy(() =>
   import('./features/tasks/MyTasksPage').then((m) => ({ default: m.MyTasksPage })));
 const CreateTaskPage = lazy(() =>
@@ -146,6 +148,7 @@ export const App = () => (
                 <Route path="/projects/:projectId/edit" element={<ProjectFormPage />} />
                 <Route path="/projects/:projectId/members" element={<ProjectMembersPage />} />
                 <Route path="/projects/:projectId" element={<ProjectDashboardPage />} />
+                <Route path="/projects/:projectId/timeline" element={<ProjectTimelinePage />} />
                 <Route path="/permissions" element={<PermissionsPage />} />
 
                 {/* Platform moderation. It sits under its own guard because it is platform

@@ -529,6 +529,7 @@ export const MessagesPage = () => {
 
                 {proposing ? (
                   <AgreementProposalDialog
+                    conversationId={openId}
                     busyExternally={thread.sending}
                     onClose={() => setProposing(false)}
                     onPropose={thread.propose}
@@ -587,6 +588,14 @@ export const MessagesPage = () => {
                             <div className="msg-agreement__dates">
                               {row.message.agreement.startDate} – {row.message.agreement.dueDate}
                             </div>
+
+                            {row.message.attachments.map((attachment) => (
+                              <MessageAttachmentItem
+                                key={attachment.id}
+                                conversationId={openId}
+                                attachment={attachment}
+                              />
+                            ))}
 
                             {row.message.agreement.state === 'proposed' && !row.message.agreement.mine ? (
                               <div className="msg-agreement__actions">

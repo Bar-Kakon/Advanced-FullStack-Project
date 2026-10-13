@@ -33,6 +33,7 @@ export interface ConversationState {
     description?: string;
     startDate: string;
     dueDate: string;
+    attachments?: readonly string[];
   }): Promise<void>;
   deleteOwn(messageId: string): Promise<void>;
   removeForAll(messageId: string): Promise<void>;
@@ -119,6 +120,7 @@ export const useConversation = (conversationId: string | undefined): Conversatio
       description?: string;
       startDate: string;
       dueDate: string;
+      attachments?: readonly string[];
     }): Promise<void> => {
       if (conversationId === undefined) return;
       applyUpdated(await proposeAgreementCall(conversationId, input));
