@@ -2,10 +2,16 @@ import { Types } from 'mongoose';
 
 import { AppError } from '../../shared/errors.js';
 import type { RefreshTokenRepository } from '../auth/refreshToken.repository.js';
-import { CURRENT_MEMBERSHIP_STATUSES } from '../companies/companyMembership.model.js';
 import type { CompanyMembershipRepository } from '../companies/companyMembership.repository.js';
 import type { PlatformAuditService } from '../moderation/platformAudit.service.js';
+import { RECOVERY_WINDOW_DAYS } from './user.model.js';
 import type { UserRepository } from './user.repository.js';
+
+const DAY_MS = 86_400_000;
+
+/** The earliest `deletedAt` that is still inside the recovery window right now. */
+export const recoveryWindowFloor = (): Date =>
+  new Date(Date.now() - RECOVERY_WINDOW_DAYS * DAY_MS);
 
 export const accountAlreadyDeleted = (): AppError =>
   new AppError('This account is already deleted.', 409, 'ACCOUNT_ALREADY_DELETED');
@@ -16,11 +22,11 @@ export const accountNotDeleted = (): AppError =>
 export const accountRestoreNotApplicable = (): AppError =>
   new AppError('That account cannot be restored.', 404, 'ACCOUNT_RESTORE_NOT_APPLICABLE');
 
-export const accountOwnsCompany = (): AppError =>
-  new AppError('A company owner closes the company side first.', 409, 'ACCOUNT_OWNS_COMPANY');
-
 export const accountInCompany = (): AppError =>
   new AppError('Leave the company before closing the account.', 409, 'ACCOUNT_IN_COMPANY');
+
+export const accountRestoreExpired = (): AppError =>
+  new AppError('The 60-day recovery window has passed.', 409, 'ACCOUNT_RESTORE_EXPIRED');
 
 export interface AccountLifecycleService {
   /** The account's own holder, closing it. Recoverable, and it destroys nothing. */
@@ -57,25 +63,16 @@ export const createAccountLifecycleService = ({
 
     const id = new Types.ObjectId(userId);
 
-    // Active work never blocks closure — "ההתחייבות ממשיכה מחוץ למערכת": the professional
-    // obligation continues outside the platform, so nothing here counts tasks. Only the company
-    // side gates, because an employment relationship and a stranded company are platform matters.
+    // Active work never blocks closure — "ההתחייבות ממשיכה מחוץ למערכת" — and neither does
+    // owning a company: the company derives its inactive state from this very deletion, nothing
+    // is transferred, and restoring the owner reactivates it. Only an EMPLOYEE is asked to end
+    // the employment relationship first, because the self-serve leave exists for exactly that.
     const membership = await memberships.findCurrentByUser(userId);
     if (membership !== null && membership.standing === 'employee') throw accountInCompany();
-    if (membership !== null && membership.standing === 'owner') {
-      // A sole owner strands nobody; an owner whose company still holds other current members does.
-      const members = await memberships.listByCompany(membership.company);
-      const others = members.filter(
-        (row) =>
-          row.user !== null &&
-          row.user.toString() !== userId &&
-          (CURRENT_MEMBERSHIP_STATUSES as readonly string[]).includes(row.status),
-      );
-      if (others.length > 0) throw accountOwnsCompany();
-    }
 
     // Filtered on the state being left, so a second submission is refused rather than re-applied.
-    if (!(await users.transitionStatus(id, 'active', 'deleted'))) throw accountAlreadyDeleted();
+    // The same write stamps `deletedAt`, which is what the 60-day window is measured from.
+    if (!(await users.markDeleted(id))) throw accountAlreadyDeleted();
 
     await refreshTokens.revokeAllForUser(id);
 
@@ -95,7 +92,18 @@ export const createAccountLifecycleService = ({
     const account = await users.findModerationSubject(userId);
     if (account === null) throw accountRestoreNotApplicable();
 
-    if (!(await users.transitionStatus(id, 'deleted', 'active'))) throw accountNotDeleted();
+    const life = await users.findLifecycleState(userId);
+    if (life === null || life.status !== 'deleted') throw accountNotDeleted();
+    if (
+      life.anonymizedAt !== undefined ||
+      life.deletedAt === undefined ||
+      life.deletedAt.getTime() < recoveryWindowFloor().getTime()
+    ) {
+      throw accountRestoreExpired();
+    }
+
+    // The filter re-proves the window, so a sweep racing this restore loses cleanly either way.
+    if (!(await users.restoreWithinWindow(id, recoveryWindowFloor()))) throw accountNotDeleted();
 
     await audit.record({
       actorId: adminId,
