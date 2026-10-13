@@ -47,6 +47,9 @@ export const notMessageSender = (): AppError =>
 export const messageKept = (): AppError =>
   new AppError('This message is preserved and cannot be removed.', 409, 'MESSAGE_KEPT');
 
+export const ownMessageNotHideable = (): AppError =>
+  new AppError('Your own message is deleted, not hidden.', 409, 'OWN_MESSAGE_NOT_HIDEABLE');
+
 export const roomModerationForbidden = (): AppError =>
   new AppError('You may not moderate this conversation.', 403, 'ROOM_MODERATION_FORBIDDEN');
 

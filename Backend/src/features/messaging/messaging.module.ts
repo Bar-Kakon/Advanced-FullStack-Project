@@ -171,6 +171,20 @@ export const createMessagingModule = (requireAccessToken: RequestHandler): Route
     },
   );
 
+  // Hides one message for the caller alone. The row, and every other view of it, are untouched.
+  router.post(
+    '/:conversationId/messages/:messageId/hide',
+    validateRequest({ params: messageIdParamsSchema }),
+    async (_req, res) => {
+      const { conversationId, messageId } = getValidated<{
+        conversationId: string;
+        messageId: string;
+      }>(res, 'params');
+      await service.hideMessage(me(res), conversationId, messageId);
+      res.status(204).end();
+    },
+  );
+
   // Moderation removal, Project Rooms only: the GC's role or an explicit `room.moderate` grant.
   router.post(
     '/:conversationId/messages/:messageId/remove',
