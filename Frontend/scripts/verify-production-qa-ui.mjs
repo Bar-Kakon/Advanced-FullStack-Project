@@ -135,6 +135,15 @@ const run = async () => {
   check('re-asking re-opens the SAME conversation as pending', reAsk.status === 201 && reAsk.body.conversation.id === declineId && reAsk.body.conversation.requestState === 'pending');
   const carmelReq2 = await api('GET', '/conversations?folder=requests', carmel.token);
   check('and it is back in the recipient Requests', carmelReq2.body.conversations.some((c) => c.id === declineId && c.awaitingMyAnswer));
+  // The owner-approved after-rejection decision, pinned point by point: the re-opened request
+  // lives in Requests alone, the gate still holds, and only an explicit answer opens the thread.
+  const orliInboxReAsk = await api('GET', '/conversations?folder=inbox', orli.token);
+  const carmelInboxReAsk = await api('GET', '/conversations?folder=inbox', carmel.token);
+  check('the re-opened request sits in NEITHER inbox', !orliInboxReAsk.body.conversations.some((c) => c.id === declineId) && !carmelInboxReAsk.body.conversations.some((c) => c.id === declineId));
+  const reAskFollowUp = await api('POST', `/conversations/${declineId}/messages`, orli.token, { body: 'עוד לפני אישור?' });
+  check('the requester still cannot write past the re-opened gate', reAskFollowUp.status === 409 && reAskFollowUp.body.code === 'MESSAGE_REQUEST_AWAITING_RESPONSE');
+  const reAskThird = await api('POST', `/conversations/direct/${carmel.userId}`, orli.token, { body: 'כפילות?' });
+  check('a third ask while re-pending is refused — no duplicate requests', reAskThird.status === 409 && reAskThird.body.code === 'MESSAGE_REQUEST_AWAITING_RESPONSE');
 
   section('5. Sender deletion is global; hiding another person\'s message is viewer-only');
   const m1 = await api('POST', `/conversations/${convId}/messages`, orli.token, { body: 'הודעה של אורלי' });
@@ -168,6 +177,11 @@ const run = async () => {
   await page.waitForSelector('.msg-request-answer', { timeout: 10000 });
   check('UI: Open lands inside the pending thread with Accept/Decline waiting', page.url().includes('/messages?c='));
   await notBlank(page, 'notification destination');
+  await page.click('.msg-request-answer .btn--primary');
+  await page.waitForSelector('.msg-composer', { timeout: 10000 });
+  check('UI: the recipient explicitly accepts the RE-ASKED request and the thread opens', true);
+  const carmelInboxAccepted = await api('GET', '/conversations?folder=inbox', carmel.token);
+  check('API: the re-asked, now accepted conversation reached the inbox', carmelInboxAccepted.body.conversations.some((c) => c.id === declineId));
   await page.goto(`${APP}/notifications`);
   await page.waitForSelector('.notif-row', { timeout: 10000 });
   const markAll = await page.$$('.notif-toolbar .btn');
