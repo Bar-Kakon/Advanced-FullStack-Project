@@ -94,6 +94,14 @@ export interface MessagingRepository {
   /** Whether an accepted, task-creating agreement ever bound these two people — in either
    *  direction, and regardless of what later happened to the work (D15: history persists). */
   hasAcceptedAgreementBetween(a: Types.ObjectId, b: Types.ObjectId): Promise<boolean>;
+  /** The accepted agreement behind one task: its two parties and the files it carried. */
+  findAgreementDocumentsByTask(
+    taskId: Types.ObjectId,
+  ): Promise<{
+    proposer: Types.ObjectId;
+    accepter: Types.ObjectId;
+    attachments: readonly Types.ObjectId[];
+  } | null>;
   listAgreementOriginsByTask(tasks: readonly Types.ObjectId[]): Promise<AgreementTaskOrigin[]>;
   listAgreementOriginsByProposer(proposer: Types.ObjectId): Promise<AgreementTaskOrigin[]>;
   /** Everything ever commissioned on this company's behalf, by the stamp alone. */
@@ -367,6 +375,26 @@ export const messagingRepository: MessagingRepository = {
       ],
     }).exec();
     return found !== null;
+  },
+
+  async findAgreementDocumentsByTask(taskId) {
+    const row = await MessageModel.findOne({
+      kind: 'agreement',
+      'agreement.state': 'accepted',
+      'agreement.task': taskId,
+      removedAt: { $exists: false },
+      deletedAt: { $exists: false },
+    })
+      .select('sender agreement.respondedBy attachments')
+      .lean<Pick<MessageRecord, 'sender' | 'agreement' | 'attachments'>>()
+      .exec();
+
+    if (row === null || row.agreement?.respondedBy === undefined) return null;
+    return {
+      proposer: row.sender,
+      accepter: row.agreement.respondedBy,
+      attachments: row.attachments ?? [],
+    };
   },
 
   async listAgreementOriginsByTask(taskIds) {

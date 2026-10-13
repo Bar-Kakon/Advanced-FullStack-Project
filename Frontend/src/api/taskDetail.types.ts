@@ -28,6 +28,12 @@ export interface TaskDetail {
   readonly counterparty: { readonly userId: string; readonly name: string } | null;
   /** Work that arrived through an accepted agreement; the counterparty is then its owner. */
   readonly fromAgreement: boolean;
+  readonly agreementDocuments: readonly {
+    readonly id: string;
+    readonly filename: string;
+    readonly mimeType: string;
+    readonly sizeBytes: number;
+  }[];
 
   /** Only the two parties to a delegation ever receive this. */
   readonly delegation: {

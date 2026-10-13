@@ -14,8 +14,16 @@ export interface AgreementOrigin {
   readonly company: Types.ObjectId | null;
 }
 
+/** The files an accepted agreement carried, with the two parties entitled to them. */
+export interface AgreementDocuments {
+  readonly proposer: Types.ObjectId;
+  readonly accepter: Types.ObjectId;
+  readonly attachments: readonly Types.ObjectId[];
+}
+
 export interface AgreementOriginPort {
   findByTaskIds(taskIds: readonly Types.ObjectId[]): Promise<AgreementOrigin[]>;
+  findDocumentsByTask(taskId: Types.ObjectId): Promise<AgreementDocuments | null>;
   listByProposer(proposer: Types.ObjectId): Promise<AgreementOrigin[]>;
   listByCompany(company: Types.ObjectId): Promise<AgreementOrigin[]>;
   /** The migration safeguard's question: how many accepted agreements still carry no stamp. */
