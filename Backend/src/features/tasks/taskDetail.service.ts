@@ -86,6 +86,7 @@ export interface TaskDetailService {
   endDelegation(userId: string, taskId: string): Promise<TaskDetailDto>;
   listPrivate(userId: string, taskId: string): Promise<PrivateWorkItemRecord[]>;
   addPrivate(userId: string, taskId: string, kind: PrivateItemKind, body: string): Promise<PrivateWorkItemRecord>;
+  updatePrivate(userId: string, taskId: string, itemId: string, body: string): Promise<PrivateWorkItemRecord>;
   togglePrivate(userId: string, taskId: string, itemId: string, done: boolean): Promise<PrivateWorkItemRecord>;
   removePrivate(userId: string, taskId: string, itemId: string): Promise<void>;
 }
@@ -260,6 +261,7 @@ export const createTaskDetailService = ({
         canEndDelegation: viewpoint === 'assignee' && task.delegation !== undefined,
         canRequestDateChange:
           reschedule.available &&
+          task.project !== undefined &&
           task.orphanedAt === undefined &&
           task.completedAt === undefined &&
           (viewpoint === 'assignee' || manages),
@@ -343,6 +345,22 @@ export const createTaskDetailService = ({
         order: count,
       });
       return created.toObject() as PrivateWorkItemRecord;
+    },
+
+    async updatePrivate(userId, taskId, itemId, body) {
+      const task = await loadOwnPrivate(userId, taskId);
+      if (!Types.ObjectId.isValid(itemId)) throw taskNotFound();
+
+      const updated = await PrivateWorkItemModel.findOneAndUpdate(
+        { _id: new Types.ObjectId(itemId), task: task._id, owner: new Types.ObjectId(userId) },
+        { $set: { body } },
+        { returnDocument: 'after' },
+      )
+        .lean<PrivateWorkItemRecord>()
+        .exec();
+
+      if (updated === null) throw taskNotFound();
+      return updated;
     },
 
     async togglePrivate(userId, taskId, itemId, done) {
