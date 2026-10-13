@@ -11,7 +11,7 @@ import type {
   StartDirectFailure,
 } from './messaging.types';
 
-export const fetchInbox = async (folder: 'inbox' | 'requests', cursor?: string): Promise<InboxPage> => {
+export const fetchInbox = async (folder: 'inbox' | 'requests' | 'sent', cursor?: string): Promise<InboxPage> => {
   const { data } = await api.get<InboxPage>('/conversations', {
     params: { folder, ...(cursor === undefined ? {} : { cursor }) },
   });

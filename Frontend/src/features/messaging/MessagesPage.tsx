@@ -99,10 +99,22 @@ export const MessagesPage = () => {
 
   useEffect(() => {
     if (openId !== undefined && thread.requestState === 'pending' && inbox.folder === 'inbox') {
-      inbox.setFolder('requests');
+      inbox.setFolder(thread.awaitingMyAnswer ? 'requests' : 'sent');
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [openId, thread.requestState]);
+  }, [openId, thread.requestState, thread.awaitingMyAnswer]);
+
+  // A tab click changes WHAT is listed, so whatever thread was open no longer belongs to the
+  // view: it closes, with its drafts and confirmations, and nothing is sent or answered by it.
+  const switchFolder = useCallback(
+    (folder: 'inbox' | 'requests' | 'sent'): void => {
+      if (folder === inbox.folder) return;
+      setOpenId(undefined);
+      inbox.setFolder(folder);
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [inbox.folder, setOpenId],
+  );
 
   const answerOpenRequest = useCallback(
     async (accept: boolean): Promise<void> => {
@@ -374,16 +386,20 @@ export const MessagesPage = () => {
         <div className="msg-layout">
           <section>
             <div className="msg-tabs" role="tablist" aria-label={t.messaging.title}>
-              {(['inbox', 'requests'] as const).map((folder) => (
+              {(['inbox', 'requests', 'sent'] as const).map((folder) => (
                 <button
                   key={folder}
                   type="button"
                   role="tab"
                   aria-selected={inbox.folder === folder}
                   className={`msg-tab ${inbox.folder === folder ? 'msg-tab--active' : ''}`}
-                  onClick={() => inbox.setFolder(folder)}
+                  onClick={() => switchFolder(folder)}
                 >
-                  {folder === 'inbox' ? t.messaging.inbox : t.messaging.requests}
+                  {folder === 'inbox'
+                    ? t.messaging.inbox
+                    : folder === 'requests'
+                      ? t.messaging.requests
+                      : t.messaging.sentRequests}
                   {folder === 'requests' && inbox.incomingRequests > 0 ? (
                     <span className="msg-tab__count" aria-label={t.messaging.requestsBadgeLabel}>
                       {inbox.incomingRequests}
@@ -397,7 +413,11 @@ export const MessagesPage = () => {
             {inbox.failure ? <p className="msg-empty">{t.messaging.failure}</p> : null}
             {!inbox.loading && !inbox.failure && inbox.conversations.length === 0 ? (
               <p className="msg-empty">
-                {inbox.folder === 'inbox' ? t.messaging.emptyInbox : t.messaging.emptyRequests}
+                {inbox.folder === 'inbox'
+                  ? t.messaging.emptyInbox
+                  : inbox.folder === 'requests'
+                    ? t.messaging.emptyRequests
+                    : t.messaging.emptySent}
               </p>
             ) : null}
 

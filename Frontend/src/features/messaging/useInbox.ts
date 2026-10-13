@@ -4,20 +4,20 @@ import { answerRequest, fetchInbox, hideConversation } from '../../api/messaging
 import type { ConversationSummary } from '../../api/messaging.types';
 
 export interface InboxState {
-  readonly folder: 'inbox' | 'requests';
+  readonly folder: 'inbox' | 'requests' | 'sent';
   readonly conversations: readonly ConversationSummary[];
   readonly loading: boolean;
   readonly failure: boolean;
   /** Incoming requests waiting on this person, counted whichever folder is open. */
   readonly incomingRequests: number;
-  setFolder(next: 'inbox' | 'requests'): void;
+  setFolder(next: 'inbox' | 'requests' | 'sent'): void;
   answer(conversationId: string, accept: boolean): Promise<void>;
   hide(conversationId: string): Promise<void>;
   reload(): void;
 }
 
 export const useInbox = (): InboxState => {
-  const [folder, setFolder] = useState<'inbox' | 'requests'>('inbox');
+  const [folder, setFolder] = useState<'inbox' | 'requests' | 'sent'>('inbox');
   const [conversations, setConversations] = useState<readonly ConversationSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [failure, setFailure] = useState(false);
@@ -53,7 +53,7 @@ export const useInbox = (): InboxState => {
     void fetchInbox('requests')
       .then((page) => {
         if (current) {
-          setIncomingRequests(page.conversations.filter((row) => row.awaitingMyAnswer).length);
+          setIncomingRequests(page.conversations.length);
         }
       })
       .catch(() => undefined);
