@@ -13,6 +13,7 @@ import {
   SPECIALTIES_BY_CATEGORY,
   type CompanyStanding,
   type DrillingType,
+  type LoginResponse,
   type RegistrationCategory,
 } from '../../api/types';
 import {
@@ -106,10 +107,14 @@ const withGoogle = (google: GoogleRegistration | null): RegisterFormValues =>
       };
 
 /**
- * `onSuccess` rather than a success state of its own: registration ends by going to Login, and
- * where a screen navigates is the page's business, not this hook's.
+ * `onComplete` rather than a success state of its own: where a finished registration lands is the
+ * page's business, not this hook's. It receives the session the server opened for a Google
+ * registration, and `null` on the password path, which still ends at Login (D30).
  */
-export const useRegisterForm = (onSuccess: () => void, google: GoogleRegistration | null = null) => {
+export const useRegisterForm = (
+  onComplete: (session: LoginResponse | null) => void,
+  google: GoogleRegistration | null = null,
+) => {
   const [values, setValues] = useState<RegisterFormValues>(() => withGoogle(google));
   const [step, setStep] = useState<RegisterStep>('details');
   // Which fields the user has actually finished with. Errors stay hidden until then, so a pristine
@@ -306,16 +311,16 @@ export const useRegisterForm = (onSuccess: () => void, google: GoogleRegistratio
     setSubmitting(true);
     setFailure(null);
     try {
-      await registerAccount(buildRegisterPayload(values));
-      // Nothing is stored. Creating an account does not sign anyone in; Login does that, and it
-      // is seconds away. A credential kept here would be one the flow guarantees nobody uses.
-      onSuccess();
+      const result = await registerAccount(buildRegisterPayload(values));
+      // Nothing is stored here either way: the page owns what a session means. The password path
+      // still hands over nothing — Login is its authentication boundary (D30).
+      onComplete('outcome' in result && result.outcome === 'signed_in' ? result : null);
     } catch (error) {
       setFailure(classifyRegisterError(error));
     } finally {
       setSubmitting(false);
     }
-  }, [isComplete, submitting, values, onSuccess]);
+  }, [isComplete, submitting, values, onComplete]);
 
   return {
     values, setValue, setStanding, setCategory, setSpecialty, toggleDrillingType,

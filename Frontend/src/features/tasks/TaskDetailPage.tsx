@@ -1,5 +1,7 @@
 import { Link, useParams } from 'react-router-dom';
 
+import { api } from '../../api/client';
+
 import { AppNav } from '../../components/AppNav';
 import { FormAlert } from '../../components/FormAlert';
 import { useAuth } from '../../auth/useAuth';
@@ -19,6 +21,7 @@ import projectsCss from '../projects/projects.css?inline';
 import permissionsCss from '../permissions/permissions.css?inline';
 import dashboardCss from '../projectdashboard/project-dashboard.css?inline';
 import tasksCss from './tasks.css?inline';
+import coordinationCss from '../coordination/coordination.css?inline';
 
 
 /**
@@ -27,13 +30,26 @@ import tasksCss from './tasks.css?inline';
  * Everything privacy-sensitive was decided by the server: a delegate simply receives no project,
  * no stage and no sequence, so there is nothing here to hide by hand.
  */
+const formatFileSize = (bytes: number): string =>
+  bytes >= 1_048_576 ? `${(bytes / 1_048_576).toFixed(1)} MB` : `${Math.max(1, Math.round(bytes / 1024))} KB`;
+
+const downloadAgreementDocument = async (taskId: string, fileId: string, filename: string): Promise<void> => {
+  const { data } = await api.get<Blob>(`/tasks/${taskId}/agreement-files/${fileId}`, { responseType: 'blob' });
+  const url = URL.createObjectURL(data);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = filename;
+  anchor.click();
+  URL.revokeObjectURL(url);
+};
+
 export const TaskDetailPage = () => {
   const { t, lang } = useLanguage();
   const { user } = useAuth();
   const { taskId = '' } = useParams<{ taskId: string }>();
   const {
     task, privateItems, loading, busy, failure, reload,
-    delegate, endDelegation, addPrivate, togglePrivate, removePrivate,
+    delegate, endDelegation, addPrivate, togglePrivate, updatePrivate, removePrivate,
   } = useTaskDetail(taskId);
 
   useScreenStylesheet(
@@ -42,6 +58,7 @@ export const TaskDetailPage = () => {
     { id: 'permissions.css', css: permissionsCss },
     { id: 'project-dashboard.css', css: dashboardCss },
     { id: 'tasks.css', css: tasksCss },
+    { id: 'coordination.css', css: coordinationCss },
   );
   useDocumentTitle('פרטי העבודה / Work detail — Blokta');
 
@@ -136,6 +153,32 @@ export const TaskDetailPage = () => {
               {task.orphaned ? <p className="dash-note dash-note--flag">{t.tasks.row.orphaned}</p> : null}
             </section>
 
+            {task.agreementDocuments.length > 0 ? (
+              <section className="panel" aria-labelledby="agreement-docs-title">
+                <h2 id="agreement-docs-title" className="panel__title">{copy.documents.title}</h2>
+                <p className="panel__lede">{copy.documents.lede}</p>
+                <ul className="tool-list">
+                  {task.agreementDocuments.map((doc) => (
+                    <li key={doc.id} className="tool-list__item">
+                      <div className="tool-list__text">
+                        <span className="tool-list__name" dir="ltr">{doc.filename}</span>
+                        <p className="tool-list__lede" dir="ltr">
+                          {doc.mimeType} · {formatFileSize(doc.sizeBytes)}
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        className="btn btn--ghost btn--sm"
+                        onClick={() => void downloadAgreementDocument(task.id, doc.id, doc.filename)}
+                      >
+                        {copy.documents.download}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            ) : null}
+
             {/* Dependencies are between stages. A delegate receives none of this. */}
             <section className="panel" aria-labelledby="stage-title">
               <h2 id="stage-title" className="panel__title">{copy.stage.title}</h2>
@@ -182,15 +225,23 @@ export const TaskDetailPage = () => {
                 busy={busy}
                 onAdd={(kind, body) => void addPrivate(kind, body)}
                 onToggle={(id, done) => void togglePrivate(id, done)}
+                onEdit={(id, body) => void updatePrivate(id, body)}
                 onRemove={(id) => void removePrivate(id)}
               />
             ) : null}
 
-            <DateChangePanel
-              taskId={task.id}
-              available={task.rescheduleAvailable && task.viewer.canRequestDateChange}
-              impact={task.rescheduleImpact}
-            />
+            {task.project === null && !task.viewerIsDelegate ? (
+              <section className="panel" aria-labelledby="date-change-title">
+                <h2 id="date-change-title" className="panel__title">{t.tasks.detail.dateChange.title}</h2>
+                <p className="panel__lede">{t.tasks.detail.dateChange.standaloneOnly}</p>
+              </section>
+            ) : (
+              <DateChangePanel
+                taskId={task.id}
+                available={task.rescheduleAvailable && task.viewer.canRequestDateChange}
+                impact={task.rescheduleImpact}
+              />
+            )}
 
             <HandoffPanel
               taskId={task.id}

@@ -9,6 +9,7 @@ import {
   fetchTaskDetail,
   removePrivateItem,
   togglePrivateItem,
+  updatePrivateItem,
 } from '../../api/taskDetail.api';
 import type {
   DelegationScope,
@@ -87,6 +88,7 @@ export const useTaskDetail = (taskId: string) => {
     endDelegation: () => run(() => endDelegation(taskId)),
     addPrivate: (kind: PrivateItemKind, body: string) => run(() => addPrivateItem(taskId, kind, body)),
     togglePrivate: (itemId: string, done: boolean) => run(() => togglePrivateItem(taskId, itemId, done)),
+    updatePrivate: (itemId: string, body: string) => run(() => updatePrivateItem(taskId, itemId, body)),
     removePrivate: (itemId: string) => run(() => removePrivateItem(taskId, itemId)),
   };
 };

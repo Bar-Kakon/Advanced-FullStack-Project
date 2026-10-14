@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 
 import type { LoginResponse } from '../../api/types';
@@ -6,6 +6,7 @@ import { AuthShell } from '../../components/AuthShell';
 import { FormAlert } from '../../components/FormAlert';
 import { GoogleSignInButton } from '../../components/GoogleSignInButton';
 import { destinationFor } from '../../auth/destination';
+import { consumeSessionEnded } from '../../auth/session';
 import { useAuth } from '../../auth/useAuth';
 import { useGoogleAuth } from '../../auth/useGoogleAuth';
 import { useLanguage } from '../../i18n/useLanguage';
@@ -28,7 +29,12 @@ export const LoginPage = () => {
   useDocumentTitle('כניסה / Sign In — Blokta');
 
   // Set by PrivateRoute when it turned a signed-out visitor away from an address they asked for.
-  const from = (location.state as { from?: string } | null)?.from;
+  // Honored only for a genuinely anonymous arrival: a route captured while a session was ending
+  // belongs to the PREVIOUS user's navigation, and the next sign-in starts on its own dashboard.
+  const capturedFrom = (location.state as { from?: string } | null)?.from;
+  const [from] = useState<string | undefined>(() =>
+    consumeSessionEnded() ? undefined : capturedFrom,
+  );
 
   const onSuccess = useCallback(
     (response: LoginResponse): void => {

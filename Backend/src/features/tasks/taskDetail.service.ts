@@ -20,6 +20,7 @@ import {
   partNeedsDescription,
 } from './taskDetail.errors.js';
 import type { TaskRepository } from './task.repository.js';
+import type { FileAssetRecord } from '../files/fileAsset.model.js';
 import { deriveTaskState, isOverdue, overdueDays } from './taskState.js';
 import type { AgreementOriginPort } from './agreementOrigin.port.js';
 import { counterpartyIdFor, projectForDelegate, viewpointOf, type TaskViewpoint } from './taskVisibility.js';
@@ -48,6 +49,13 @@ export interface TaskDetailDto {
   readonly counterparty: { readonly userId: string; readonly name: string } | null;
   /** True when this work arrived through an accepted agreement; the counterparty is its owner. */
   readonly fromAgreement: boolean;
+  /** The files the accepted agreement carried, readable without the original conversation. */
+  readonly agreementDocuments: readonly {
+    readonly id: string;
+    readonly filename: string;
+    readonly mimeType: string;
+    readonly sizeBytes: number;
+  }[];
 
   /** Only the two parties to a delegation ever see it. */
   readonly delegation: {
@@ -78,6 +86,7 @@ export interface TaskDetailService {
   endDelegation(userId: string, taskId: string): Promise<TaskDetailDto>;
   listPrivate(userId: string, taskId: string): Promise<PrivateWorkItemRecord[]>;
   addPrivate(userId: string, taskId: string, kind: PrivateItemKind, body: string): Promise<PrivateWorkItemRecord>;
+  updatePrivate(userId: string, taskId: string, itemId: string, body: string): Promise<PrivateWorkItemRecord>;
   togglePrivate(userId: string, taskId: string, itemId: string, done: boolean): Promise<PrivateWorkItemRecord>;
   removePrivate(userId: string, taskId: string, itemId: string): Promise<void>;
 }
@@ -90,6 +99,7 @@ export interface TaskDetailDependencies {
   readonly reschedule: RescheduleRequestPort;
   readonly eligibility: ContractorEligibilityService;
   readonly origins: AgreementOriginPort;
+  readonly files: { listByIds(ids: readonly Types.ObjectId[]): Promise<FileAssetRecord[]> };
 }
 
 export const createTaskDetailService = ({
@@ -100,6 +110,7 @@ export const createTaskDetailService = ({
   reschedule,
   eligibility,
   origins,
+  files,
 }: TaskDetailDependencies): TaskDetailService => {
   /**
    * Loads a task and works out where this viewer stands. Anybody with no standing — including a
@@ -156,6 +167,19 @@ export const createTaskDetailService = ({
       origin !== undefined ? origin.proposer : counterpartyIdFor(task, viewpoint, userId);
     const counterpartyName = await nameOf(counterpartyId);
 
+    let agreementDocuments: TaskDetailDto['agreementDocuments'] = [];
+    if (origin !== undefined) {
+      const documents = await origins.findDocumentsByTask(task._id);
+      if (documents !== null && documents.attachments.length > 0) {
+        agreementDocuments = (await files.listByIds([...documents.attachments])).map((asset) => ({
+          id: asset._id.toString(),
+          filename: asset.filename,
+          mimeType: asset.mimeType,
+          sizeBytes: asset.sizeBytes,
+        }));
+      }
+    }
+
     // A delegate is told neither the project nor where the work sits in it.
     let project: TaskDetailDto['project'] = null;
     let stage: StageRef | null = null;
@@ -208,6 +232,7 @@ export const createTaskDetailService = ({
           ? null
           : { userId: counterpartyId.toString(), name: counterpartyName },
       fromAgreement: origin !== undefined,
+      agreementDocuments,
 
       delegation:
         task.delegation === undefined || (viewpoint !== 'assignee' && !isDelegate)
@@ -236,6 +261,7 @@ export const createTaskDetailService = ({
         canEndDelegation: viewpoint === 'assignee' && task.delegation !== undefined,
         canRequestDateChange:
           reschedule.available &&
+          task.project !== undefined &&
           task.orphanedAt === undefined &&
           task.completedAt === undefined &&
           (viewpoint === 'assignee' || manages),
@@ -319,6 +345,22 @@ export const createTaskDetailService = ({
         order: count,
       });
       return created.toObject() as PrivateWorkItemRecord;
+    },
+
+    async updatePrivate(userId, taskId, itemId, body) {
+      const task = await loadOwnPrivate(userId, taskId);
+      if (!Types.ObjectId.isValid(itemId)) throw taskNotFound();
+
+      const updated = await PrivateWorkItemModel.findOneAndUpdate(
+        { _id: new Types.ObjectId(itemId), task: task._id, owner: new Types.ObjectId(userId) },
+        { $set: { body } },
+        { returnDocument: 'after' },
+      )
+        .lean<PrivateWorkItemRecord>()
+        .exec();
+
+      if (updated === null) throw taskNotFound();
+      return updated;
     },
 
     async togglePrivate(userId, taskId, itemId, done) {

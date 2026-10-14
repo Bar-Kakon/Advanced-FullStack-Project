@@ -9,6 +9,7 @@ export interface PrivateWorkPanelProps {
   readonly busy: boolean;
   readonly onAdd: (kind: PrivateItemKind, body: string) => void;
   readonly onToggle: (itemId: string, done: boolean) => void;
+  readonly onEdit: (itemId: string, body: string) => void;
   readonly onRemove: (itemId: string) => void;
 }
 
@@ -18,12 +19,14 @@ export interface PrivateWorkPanelProps {
  * A tick here is a checklist tick and nothing more: the public state of the task is set by Start
  * and Complete alone, so private progress can never leak the method upward through a status.
  */
-export const PrivateWorkPanel = ({ items, busy, onAdd, onToggle, onRemove }: PrivateWorkPanelProps) => {
-  const { t } = useLanguage();
+export const PrivateWorkPanel = ({ items, busy, onAdd, onToggle, onEdit, onRemove }: PrivateWorkPanelProps) => {
+  const { t, lang } = useLanguage();
   const copy = t.tasks.detail.privateWork;
 
   const [kind, setKind] = useState<PrivateItemKind>('subtask');
   const [body, setBody] = useState('');
+  const [openItem, setOpenItem] = useState<string | null>(null);
+  const [draft, setDraft] = useState('');
 
   return (
     <section className="panel" aria-labelledby="private-title">
@@ -36,27 +39,79 @@ export const PrivateWorkPanel = ({ items, busy, onAdd, onToggle, onRemove }: Pri
         <ul className="private-list">
           {items.map((item) => (
             <li key={item._id} className="private-item">
-              {item.kind === 'subtask' ? (
-                <label className="perm-check">
-                  <input
-                    type="checkbox"
-                    checked={item.done}
-                    disabled={busy}
-                    onChange={() => onToggle(item._id, !item.done)}
-                  />
-                  <span dir="auto">{item.body}</span>
-                </label>
-              ) : (
-                <span className="private-item__note" dir="auto">{item.body}</span>
-              )}
-              <button
-                type="button"
-                className="btn btn--quiet btn--sm"
-                disabled={busy}
-                onClick={() => onRemove(item._id)}
-              >
-                {copy.remove}
-              </button>
+              <div className="private-item__row">
+                {item.kind === 'subtask' ? (
+                  <label className="perm-check">
+                    <input
+                      type="checkbox"
+                      checked={item.done}
+                      disabled={busy}
+                      onChange={() => onToggle(item._id, !item.done)}
+                    />
+                    <span dir="auto">{item.body}</span>
+                  </label>
+                ) : (
+                  <span className="private-item__note" dir="auto">{item.body}</span>
+                )}
+                <button
+                  type="button"
+                  className="btn btn--quiet btn--sm"
+                  aria-expanded={openItem === item._id}
+                  onClick={() => {
+                    setOpenItem(openItem === item._id ? null : item._id);
+                    setDraft(item.body);
+                  }}
+                >
+                  {openItem === item._id ? copy.closeDetail : copy.openDetail}
+                </button>
+                <button
+                  type="button"
+                  className="btn btn--quiet btn--sm"
+                  disabled={busy}
+                  onClick={() => onRemove(item._id)}
+                >
+                  {copy.remove}
+                </button>
+              </div>
+
+              {openItem === item._id ? (
+                <div className="private-item__detail">
+                  <p className="dash-note">
+                    {(item.kind === 'subtask' ? copy.subtask : copy.note)}
+                    {' · '}
+                    {copy.createdAt.replace(
+                      '{date}',
+                      new Date(item.createdAt).toLocaleDateString(lang === 'he' ? 'he-IL' : 'en-GB'),
+                    )}
+                    {item.kind === 'subtask' ? ` · ${item.done ? copy.stateDone : copy.stateOpen}` : ''}
+                  </p>
+                  <div className="form-group">
+                    <label className="field-label" htmlFor={`private-edit-${item._id}`}>{copy.editLabel}</label>
+                    <input
+                      id={`private-edit-${item._id}`}
+                      className="form-input"
+                      type="text"
+                      dir="auto"
+                      value={draft}
+                      onChange={(e) => setDraft(e.target.value)}
+                    />
+                  </div>
+                  <div className="private-item__actions">
+                    <button
+                      type="button"
+                      className="btn btn--primary btn--sm"
+                      disabled={busy || draft.trim().length === 0 || draft.trim() === item.body}
+                      onClick={() => {
+                        onEdit(item._id, draft.trim());
+                        setOpenItem(null);
+                      }}
+                    >
+                      {copy.saveEdit}
+                      {busy ? <ButtonSpinner /> : null}
+                    </button>
+                  </div>
+                </div>
+              ) : null}
             </li>
           ))}
         </ul>

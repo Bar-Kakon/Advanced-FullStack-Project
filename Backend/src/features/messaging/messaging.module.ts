@@ -11,6 +11,8 @@ import { createFileAssetService } from '../files/fileAsset.service.js';
 import { openGridFsDownloadStream } from '../files/gridFs.service.js';
 import { MAX_IMAGE_BYTES, uploadSingleAttachment } from '../files/upload.middleware.js';
 import { blockRepository } from '../blocks/block.repository.js';
+import { muteRepository } from '../mutes/mute.repository.js';
+import { connectionRepository } from '../connections/connection.repository.js';
 import { companyRepository } from '../companies/company.repository.js';
 import { companyMembershipRepository } from '../companies/companyMembership.repository.js';
 import { createCompanyContextService } from '../companies/companyContext.service.js';
@@ -83,6 +85,10 @@ export const createMessagingModule = (requireAccessToken: RequestHandler): Route
     files: fileAssetRepository,
     audit: auditRepository,
     commissioning: createCommissioningAdapter(companyContext),
+    mutes: muteRepository,
+    connections: {
+      isAccepted: async (a, b) => (await connectionRepository.findByPair(a, b))?.status === 'accepted',
+    },
   });
 
   const fileAssets = createFileAssetService(fileAssetRepository);
@@ -235,6 +241,7 @@ export const createMessagingModule = (requireAccessToken: RequestHandler): Route
         startDate: body.startDate,
         dueDate: body.dueDate,
         ...(body.projectId === undefined ? {} : { projectId: body.projectId }),
+        ...(body.attachments === undefined ? {} : { attachments: body.attachments }),
       };
 
       res

@@ -77,7 +77,13 @@ export const ContractorCard = ({
             ? `★ ${contractor.rating.average.toFixed(1)} · ${t.browse.card.ratingCount.replace('{count}', String(contractor.rating.count))}`
             : t.browse.card.noRating}
         </span>
-        <span>{t.browse.card.noFlexibility}</span>
+        <span>
+          {contractor.flexibility?.schedule
+            ? t.browse.card.flexibilityScore
+                .replace('{score}', String(contractor.flexibility.schedule.score))
+                .replace('{category}', t.profile.flexibility.category[contractor.flexibility.schedule.category])
+            : t.browse.card.noFlexibility}
+        </span>
       </p>
 
       {contractor.relationship !== 'none' ? (

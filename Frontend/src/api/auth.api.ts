@@ -8,6 +8,7 @@ import type {
   LoginPayload,
   LoginResponse,
   RegisterPayload,
+  GoogleRegisterResponse,
   RegisterResponse,
   ResetPasswordPayload,
   SessionUser,
@@ -23,8 +24,10 @@ export type RegisterFailure =
   | 'NETWORK'
   | 'UNKNOWN';
 
-export const registerAccount = async (payload: RegisterPayload): Promise<RegisterResponse> => {
-  const { data } = await api.post<RegisterResponse>('/auth/register', payload);
+export const registerAccount = async (
+  payload: RegisterPayload,
+): Promise<RegisterResponse | GoogleRegisterResponse> => {
+  const { data } = await api.post<RegisterResponse | GoogleRegisterResponse>('/auth/register', payload);
   return data;
 };
 

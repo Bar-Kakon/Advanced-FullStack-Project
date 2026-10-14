@@ -91,7 +91,13 @@ export const createAuthModule = (config: AppConfig): AuthModule => {
   const googleAuthService =
     googleIdentity === null
       ? null
-      : createGoogleAuthService({ users: userRepository, googleIdentity, tokenPair, companyContext });
+      : createGoogleAuthService({
+          users: userRepository,
+          googleIdentity,
+          tokenPair,
+          companyContext,
+          registration: registrationService,
+        });
 
   const accountRecoveryService = createAccountRecoveryService({
     users: userRepository,

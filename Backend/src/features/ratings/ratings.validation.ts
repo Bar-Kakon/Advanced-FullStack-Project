@@ -16,3 +16,7 @@ export const createRatingBodySchema = Joi.object<CreateRatingBody>({
   score: Joi.number().integer().min(RATING_MIN).max(RATING_MAX).required(),
   comment: Joi.string().trim().max(600).optional(),
 });
+
+export const eligibleWorksParamsSchema = Joi.object({
+  rateeUserId: Joi.string().hex().length(24).required(),
+});

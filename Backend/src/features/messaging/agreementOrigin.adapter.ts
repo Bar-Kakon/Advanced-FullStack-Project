@@ -6,6 +6,10 @@ export const createAgreementOriginAdapter = (): AgreementOriginPort => ({
     return messagingRepository.listAgreementOriginsByTask(taskIds);
   },
 
+  async findDocumentsByTask(taskId) {
+    return messagingRepository.findAgreementDocumentsByTask(taskId);
+  },
+
   async listByProposer(proposer) {
     return messagingRepository.listAgreementOriginsByProposer(proposer);
   },

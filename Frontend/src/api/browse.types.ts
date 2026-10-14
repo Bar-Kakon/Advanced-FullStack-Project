@@ -53,13 +53,16 @@ export interface FlexibilityContextCounts {
 export interface FlexibilityDimension {
   /** 0-100, server-derived. There is no field a client can submit. */
   readonly score: number;
+  readonly category: FlexibilityCategory;
   readonly context: FlexibilityContextCounts;
+  readonly includesOlderHistory: boolean;
 }
 
+export type FlexibilityCategory = 'high' | 'medium' | 'low';
+
+/** Scheduling flexibility alone — the score never measures work-scope willingness. */
 export interface Flexibility {
   readonly schedule: FlexibilityDimension | null;
-  /** `null` while no resolved scope-change evidence exists. Never rendered as a zero. */
-  readonly scope: FlexibilityDimension | null;
 }
 
 export interface PublicWorkEntry {

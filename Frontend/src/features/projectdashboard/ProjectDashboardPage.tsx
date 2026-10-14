@@ -243,6 +243,9 @@ export const ProjectDashboardPage = () => {
               <Link to={`/projects/${projectId}/stages`} className="btn btn--ghost btn--sm">
                 {t.coordination.stages.open}
               </Link>
+              <Link to={`/projects/${projectId}/timeline`} className="btn btn--ghost btn--sm">
+                {t.timeline.open}
+              </Link>
             </section>
 
             <MutePanel projectId={projectId} />

@@ -103,6 +103,8 @@ export interface NotificationRecord {
   readonly proposal?: Types.ObjectId;
   readonly scheduleException?: Types.ObjectId;
   readonly conversation?: Types.ObjectId;
+  /** The user whose act raised this row, where current actionability must be re-derived from it. */
+  readonly actor?: Types.ObjectId;
   readonly payload: NotificationPayload;
   /**
    * Whether the project was muted for this recipient when the event happened. The row is written
@@ -140,6 +142,7 @@ const notificationSchema = new Schema(
     proposal: { type: Schema.Types.ObjectId, ref: 'RescheduleProposal' },
     scheduleException: { type: Schema.Types.ObjectId, ref: 'ScheduleException' },
     conversation: { type: Schema.Types.ObjectId, ref: 'Conversation' },
+    actor: { type: Schema.Types.ObjectId, ref: 'User' },
 
     payload: { type: payloadSchema, required: true, default: () => ({}) },
     mutedAtCreation: { type: Boolean, required: true, default: false },

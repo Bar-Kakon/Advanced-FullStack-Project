@@ -11,7 +11,7 @@ import type {
   StartDirectFailure,
 } from './messaging.types';
 
-export const fetchInbox = async (folder: 'inbox' | 'requests', cursor?: string): Promise<InboxPage> => {
+export const fetchInbox = async (folder: 'inbox' | 'requests' | 'sent', cursor?: string): Promise<InboxPage> => {
   const { data } = await api.get<InboxPage>('/conversations', {
     params: { folder, ...(cursor === undefined ? {} : { cursor }) },
   });
@@ -134,7 +134,13 @@ export const hideConversation = async (conversationId: string): Promise<void> =>
 
 export const proposeAgreement = async (
   conversationId: string,
-  input: { title: string; description?: string; startDate: string; dueDate: string },
+  input: {
+    title: string;
+    description?: string;
+    startDate: string;
+    dueDate: string;
+    attachments?: readonly string[];
+  },
 ): Promise<ConversationMessage> => {
   const { data } = await api.post<{ message: ConversationMessage }>(
     `/conversations/${conversationId}/agreements`,

@@ -28,8 +28,13 @@ declare module 'express-serve-static-core' {
  * for — the file part arrives as a stream and leaves as a stream, so nothing is ever buffered
  * whole.
  */
+/** Busboy decodes the filename header as latin1; a UTF-8 name arrives mangled unless re-decoded. */
+const decodedFilename = (name: string): string =>
+  /[\u0100-\uffff]/.test(name) ? name : Buffer.from(name, 'latin1').toString('utf8');
+
 const gridFsStorage: StorageEngine = {
   _handleFile(req, file, callback) {
+    file.originalname = decodedFilename(file.originalname);
     void uploadStreamToGridFs(file.stream, file.originalname, file.mimetype)
       .then(({ fileId, sizeBytes }) => {
         req.gridFsFileId = fileId;

@@ -4,6 +4,9 @@ import { Link, useNavigate } from 'react-router-dom';
 import { AppNav } from '../../components/AppNav';
 import { ButtonSpinner } from '../../components/ButtonSpinner';
 import { FormAlert } from '../../components/FormAlert';
+import { GoogleSignInButton } from '../../components/GoogleSignInButton';
+import { googleClientId } from '../../auth/googleIdentity';
+import { classifyGoogleError, linkGoogleAccount, type GoogleFailure } from '../../api/google.api';
 import { useAuth } from '../../auth/useAuth';
 import { useLanguage } from '../../i18n/useLanguage';
 import { useDocumentTitle } from '../../routes/useDocumentTitle';
@@ -48,6 +51,9 @@ export const SettingsPage = () => {
   const [confirmingClosure, setConfirmingClosure] = useState(false);
   const [closing, setClosing] = useState(false);
   const [closureFailure, setClosureFailure] = useState<AccountClosureFailure | null>(null);
+  const [linking, setLinking] = useState(false);
+  const [linkedEmail, setLinkedEmail] = useState<string | null>(null);
+  const [linkFailure, setLinkFailure] = useState<GoogleFailure | null>(null);
   useEffect(() => {
     if (settings?.notifications.digestHour !== null && settings?.notifications.digestHour !== undefined) {
       setDigestHour(settings.notifications.digestHour);
@@ -82,6 +88,26 @@ export const SettingsPage = () => {
   const closureMessage =
     closureFailure === 'IN_COMPANY' ? t.settings.account.blockedInCompany
     : closureFailure !== null ? t.settings.account.closureFailed
+    : null;
+
+  const linkGoogle = async (credential: string): Promise<void> => {
+    setLinking(true);
+    setLinkFailure(null);
+    try {
+      const { linkedEmail: email } = await linkGoogleAccount(credential);
+      setLinkedEmail(email);
+    } catch (error) {
+      setLinkFailure(classifyGoogleError(error));
+    } finally {
+      setLinking(false);
+    }
+  };
+
+  const linkMessage =
+    linkFailure === 'IDENTITY_CLAIMED' ? t.login.googleErrors.identityClaimed
+    : linkFailure === 'CREDENTIAL' ? t.login.googleErrors.credential
+    : linkFailure === 'NETWORK' ? t.settings.errors.network
+    : linkFailure !== null ? t.settings.account.googleLinkFailed
     : null;
 
   const savedIn = (section: string) =>
@@ -299,6 +325,32 @@ export const SettingsPage = () => {
               <h2 className="settings-section__title" id="settings-account">
                 {t.settings.account.title}
               </h2>
+
+              {googleClientId() === undefined ? null : (
+                <>
+                  <h3 className="settings-section__title">{t.settings.account.googleTitle}</h3>
+                  {linkedEmail !== null ? (
+                    <p className="settings-section__note">
+                      {t.settings.account.googleLinkedAs.replace('{email}', linkedEmail)}
+                    </p>
+                  ) : settings.googleLinked ? (
+                    <p className="settings-section__note">{t.settings.account.googleLinkedNote}</p>
+                  ) : (
+                    <>
+                      <p className="settings-section__note">{t.settings.account.googleNote}</p>
+                      {linkMessage === null ? null : <FormAlert message={linkMessage} />}
+                      <div className="settings-google">
+                        <GoogleSignInButton
+                          onCredential={(credential) => void linkGoogle(credential)}
+                          text="continue_with"
+                          disabled={linking}
+                        />
+                      </div>
+                    </>
+                  )}
+                </>
+              )}
+
               <h3 className="settings-section__title">{t.settings.account.deactivationTitle}</h3>
               <p className="settings-section__note">{t.settings.account.deactivationNote}</p>
               <p className="settings-section__note">{t.settings.account.deactivationObligations}</p>
