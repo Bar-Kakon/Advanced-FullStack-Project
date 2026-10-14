@@ -2483,6 +2483,11 @@ export const he = {
     },
     account: {
       title: 'החשבון',
+      googleTitle: 'חשבון Google מקושר',
+      googleNote: 'קישור חשבון Google מאפשר התחברות עם Google במקום סיסמה. הקישור אינו משנה את כתובת האימייל של החשבון.',
+      googleLinkedNote: 'החשבון מקושר ל-Google. התחברות עם Google זמינה במסך הכניסה.',
+      googleLinkedAs: 'קושר כעת חשבון Google: {email}. מהכניסה הבאה אפשר להתחבר עם Google.',
+      googleLinkFailed: 'קישור חשבון ה-Google לא הושלם. אפשר לנסות שוב.',
       deactivationTitle: 'סגירת חשבון',
       deactivationNote: 'בקשת מחיקה היא השבתה מיידית עם תקופת שחזור של 60 יום, והיסטוריית העבודה המשותפת נשמרת.',
       deactivationObligations: 'התחייבויות מקצועיות וחוזיות אינן מתבטלות עם סגירת החשבון — הן ממשיכות מחוץ למערכת.',

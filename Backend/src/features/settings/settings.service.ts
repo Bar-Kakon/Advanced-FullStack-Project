@@ -27,6 +27,7 @@ export interface SettingsDto {
     readonly digestHour: number | null;
   };
   readonly contactVisibility: ContactVisibility;
+  readonly googleLinked: boolean;
   readonly mutedProjects: readonly { readonly projectId: string; readonly name: string }[];
   readonly entitlements: {
     readonly planCode: string;
@@ -90,6 +91,7 @@ export const createSettingsService = ({
         businessPhone: normalizeVisibilityChoice(row.contactVisibility?.businessPhone),
         officePhone: normalizeVisibilityChoice(row.contactVisibility?.officePhone),
       },
+      googleLinked: (row.identities ?? []).some((identity) => identity.provider === 'google'),
       mutedProjects: names.map((project) => ({
         projectId: project._id.toString(),
         name: project.name,

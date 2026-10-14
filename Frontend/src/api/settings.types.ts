@@ -35,6 +35,7 @@ export interface AccountSettings {
     readonly digestHour: number | null;
   };
   readonly contactVisibility: ContactVisibility;
+  readonly googleLinked: boolean;
   readonly mutedProjects: readonly { readonly projectId: string; readonly name: string }[];
   readonly entitlements: SettingsEntitlements;
 }

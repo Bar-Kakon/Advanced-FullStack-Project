@@ -188,3 +188,8 @@
 .notice--error { background: var(--error-bg, #fbeeee); border-color: var(--error-border, #e3b9b9); color: var(--error, #a63232); }
 
 .settings-section__note--strong { font-weight: 700; color: var(--text, #2a3442); }
+
+.settings-google { max-width: 360px; margin-block-start: 8px; }
+.google-signin { display: flex; justify-content: center; width: 100%; }
+.google-signin__host { width: 100%; display: flex; justify-content: center; }
+.google-signin--busy { opacity: 0.55; cursor: progress; }

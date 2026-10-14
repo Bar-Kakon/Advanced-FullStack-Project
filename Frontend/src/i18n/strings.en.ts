@@ -2408,6 +2408,11 @@ export const en: Strings = {
     },
     account: {
       title: 'Account',
+      googleTitle: 'Linked Google account',
+      googleNote: 'Linking a Google account enables signing in with Google instead of a password. Linking does not change the account\u2019s email address.',
+      googleLinkedNote: 'This account is linked to Google. Google sign-in is available on the login screen.',
+      googleLinkedAs: 'Google account linked just now: {email}. From the next sign-in, Google login is available.',
+      googleLinkFailed: 'Linking the Google account did not complete. Try again.',
       deactivationTitle: 'Closing your account',
       deactivationNote: 'A deletion request is an immediate deactivation plus a 60-day recovery period, and shared work history is preserved.',
       deactivationObligations: 'Professional and contractual obligations are not cancelled by closing the account — they continue outside the platform.',
