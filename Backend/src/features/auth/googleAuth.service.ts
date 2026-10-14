@@ -11,7 +11,9 @@ import {
 } from './auth.errors.js';
 import { currentTokenVersion, isSessionPermitted } from './auth.service.js';
 import { toSessionUser, type SessionUser } from './authenticatedUser.mapper.js';
+import type { RegisterBody } from './auth.validation.js';
 import type { GoogleIdentityService } from './googleIdentity.service.js';
+import type { RegistrationService } from './registration.service.js';
 import type { TokenPair, TokenPairService } from './tokens/tokenPair.service.js';
 
 /**
@@ -34,8 +36,15 @@ export interface GoogleLinkResult {
   readonly linkedEmail: string;
 }
 
+export type GoogleSignUpResult = { readonly user: SessionUser } & TokenPair;
+
 export interface GoogleAuthService {
   signIn(idToken: string): Promise<GoogleSignInResult>;
+  /**
+   * The approved D30 exception: a registration completing a verified Google identity ends signed
+   * in, because the identity Login would re-verify was just verified inside the same request.
+   */
+  signUp(input: RegisterBody): Promise<GoogleSignUpResult>;
   /** Attaches Google to the account already holding this session. */
   link(userId: string, idToken: string): Promise<GoogleLinkResult>;
 }
@@ -45,6 +54,7 @@ export interface GoogleAuthDependencies {
   readonly googleIdentity: GoogleIdentityService;
   readonly tokenPair: TokenPairService;
   readonly companyContext: CompanyContextService;
+  readonly registration: RegistrationService;
 }
 
 export const createGoogleAuthService = ({
@@ -52,6 +62,7 @@ export const createGoogleAuthService = ({
   googleIdentity,
   tokenPair,
   companyContext,
+  registration,
 }: GoogleAuthDependencies): GoogleAuthService => {
   const verified = async (idToken: string) => {
     const identity = await googleIdentity.verify(idToken);
@@ -100,6 +111,17 @@ export const createGoogleAuthService = ({
           lastName: identity.lastName,
         },
       };
+    },
+
+    async signUp(input) {
+      const { record } = await registration.register(input);
+      const userId = record._id.toString();
+      const tokens = await tokenPair.issue({
+        userId,
+        tokenVersion: currentTokenVersion(record),
+      });
+
+      return { ...tokens, user: toSessionUser(record, await companyContext.forUser(userId)) };
     },
 
     /**

@@ -71,8 +71,15 @@ export const createAuthController = ({
     /** 201: an account exists. No session — Login is the only thing that authenticates. */
     handleRegister: async (req: Request, res: Response) => {
       const input = getValidated<RegisterBody>(res, 'body');
-      const { user } = await registrationService.register(input);
 
+      if (input.googleIdToken !== undefined) {
+        const { accessToken, refreshToken, user } = await google().signUp(input);
+        sendRefreshToken(res, refreshToken);
+        res.status(201).json({ outcome: 'signed_in', accessToken, user });
+        return;
+      }
+
+      const { user } = await registrationService.register(input);
       res.status(201).json({ user });
     },
 

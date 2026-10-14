@@ -43,9 +43,13 @@ type EmployeeRegisterBody = RegisterBody & { readonly companyPosition: CompanyPo
 import { toAuthenticatedUser, type AuthenticatedUser } from './authenticatedUser.mapper.js';
 import type { PasswordService } from './password.service.js';
 
-/** No tokens. Register creates an account; Login is the only thing that opens a session. */
+/**
+ * No tokens here. Password registration stays unauthenticated (D30); the approved Google
+ * exception issues its session in `googleAuth.signUp`, over the `record` this result carries.
+ */
 export interface RegistrationResult {
   readonly user: AuthenticatedUser;
+  readonly record: UserRecord;
 }
 
 export interface RegistrationService {
@@ -265,7 +269,7 @@ export const createRegistrationService = ({
         return created;
       });
 
-      return { user: toAuthenticatedUser(user) };
+      return { user: toAuthenticatedUser(user), record: user };
     } catch (error) {
       throw isDuplicateEmailError(error) ? emailAlreadyRegistered() : error;
     }
