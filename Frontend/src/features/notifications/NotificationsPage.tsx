@@ -126,8 +126,21 @@ export const NotificationsPage = () => {
           <ul className="notif-list">
             {(notifications ?? []).map((row) => {
               const unread = row.seenAt === null;
-              const destination = destinationOf(row);
+              // The action state is the server's CURRENT answer: a resolved request keeps its row
+              // as history but loses its button, and information never pretends to need one.
+              const destination =
+                row.action === 'resolved' || row.action === 'none' ? null : destinationOf(row);
               const context = contextOf(row);
+              const chip =
+                row.action === 'required'
+                  ? t.notifications.blocking
+                  : row.action === 'resolved'
+                    ? t.notifications.resolvedBadge
+                    : row.action === 'none'
+                      ? t.notifications.nonblocking
+                      : row.notificationClass === 'blocking'
+                        ? t.notifications.blocking
+                        : t.notifications.nonblocking;
 
               return (
                 <li key={row.id} className={`notif-row${unread ? ' notif-row--unread' : ''}`}>
@@ -139,11 +152,14 @@ export const NotificationsPage = () => {
 
                     <div className="notif-row__meta">
                       <span
-                        className={`notif-chip${row.notificationClass === 'blocking' ? ' notif-chip--blocking' : ''}`}
+                        className={`notif-chip${
+                          row.action === 'required' ||
+                          (row.action === null && row.notificationClass === 'blocking')
+                            ? ' notif-chip--blocking'
+                            : ''
+                        }`}
                       >
-                        {row.notificationClass === 'blocking'
-                          ? t.notifications.blocking
-                          : t.notifications.nonblocking}
+                        {chip}
                       </span>
                       <span className="notif-row__time">
                         {formatter.format(new Date(row.createdAt))}

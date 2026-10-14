@@ -53,6 +53,8 @@ export interface AppNotification {
   readonly proposalId: string | null;
   readonly scheduleExceptionId: string | null;
   readonly conversationId: string | null;
+  /** The row's CURRENT standing, re-derived server-side from the authoritative entity. */
+  readonly action: 'required' | 'resolved' | 'none' | null;
   readonly payload: NotificationPayload;
   readonly muted: boolean;
   readonly seenAt: string | null;

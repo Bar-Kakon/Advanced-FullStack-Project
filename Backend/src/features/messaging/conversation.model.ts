@@ -9,8 +9,8 @@ export const CONVERSATION_KINDS = ['direct', 'project_room'] as const;
 export type ConversationKind = (typeof CONVERSATION_KINDS)[number];
 
 /**
- * First contact goes through a request. Connections do NOT gate it: two people who have never met
- * may write to each other, and the recipient decides whether the thread opens.
+ * First contact goes through a request, and anyone may write to anyone. A mutually approved
+ * connection opens the thread accepted at once; everyone else waits on the recipient's answer.
  */
 export const REQUEST_STATES = ['pending', 'accepted', 'declined'] as const;
 export type RequestState = (typeof REQUEST_STATES)[number];

@@ -15,7 +15,7 @@ import { InputWarning } from './InputWarning';
 export const TextField = ({
   id, label, value, onChange, onBlur, placeholder, type = 'text', autoComplete, maxLength,
   required = false, dir, optionalText, hint, error, touched = false, className = '',
-  withWarning = false, invalid = false,
+  withWarning = false, invalid = false, readOnly = false,
 }: {
   id: string;
   label: string;
@@ -36,6 +36,8 @@ export const TextField = ({
   className?: string;
   /** Wraps the box so the in-field hard-hat can be positioned against it. Auth screens only. */
   withWarning?: boolean;
+  /** A value the person may read but not change — the Google-verified email address. */
+  readOnly?: boolean;
   /**
    * A rule this field is breaking that the browser cannot see — a name carrying digits, a phone
    * that is not a number. `:invalid` covers the native cases; this covers the rest, so one class
@@ -57,6 +59,7 @@ export const TextField = ({
       {...(autoComplete ? { autoComplete } : {})}
       {...(maxLength ? { maxLength } : {})}
       {...(dir ? { dir } : {})}
+      {...(readOnly ? { readOnly: true } : {})}
       required={required}
     />
   );

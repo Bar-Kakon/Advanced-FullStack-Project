@@ -22,14 +22,14 @@ export const fileParamsSchema = Joi.object({
 export const projectIdParamsSchema = Joi.object({ projectId: OBJECT_ID.required() });
 
 export interface InboxQueryInput {
-  readonly folder: 'inbox' | 'requests';
+  readonly folder: 'inbox' | 'requests' | 'sent';
   readonly limit: number;
   readonly cursor?: string;
 }
 
 /** Hidden conversations are simply absent; there is no folder that lists them back. */
 export const inboxQuerySchema = Joi.object({
-  folder: Joi.string().valid('inbox', 'requests').default('inbox'),
+  folder: Joi.string().valid('inbox', 'requests', 'sent').default('inbox'),
   limit: Joi.number().integer().min(1).max(50).default(20),
   cursor: Joi.string().max(120).optional(),
 });
@@ -69,6 +69,7 @@ export interface AgreementBody {
   readonly startDate: string;
   readonly dueDate: string;
   readonly projectId?: string;
+  readonly attachments?: readonly string[];
 }
 
 /**
@@ -81,6 +82,8 @@ export const agreementBodySchema = Joi.object({
   startDate: Joi.string().trim().pattern(CALENDAR_DATE).required(),
   dueDate: Joi.string().trim().pattern(CALENDAR_DATE).required(),
   projectId: OBJECT_ID.optional(),
+  // FIL-04: the work message may carry files, under the same upload rules as any message.
+  attachments: Joi.array().items(OBJECT_ID).max(10).optional(),
 });
 
 export interface ReportMessageBody {

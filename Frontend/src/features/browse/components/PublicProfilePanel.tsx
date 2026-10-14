@@ -3,6 +3,9 @@ import { useNavigate } from 'react-router-dom';
 
 import { useLanguage } from '../../../i18n/useLanguage';
 import { ReportDialog } from '../../reports/ReportDialog';
+import { RatingDialog } from './RatingDialog';
+import { ButtonSpinner } from '../../../components/ButtonSpinner';
+import { blockUser } from '../../../api/ratings.api';
 import { StartMessageDialog } from '../../messaging/components/StartMessageDialog';
 import { ProfileAvatar } from '../../profile/components/ProfileAvatar';
 import { initialsOf } from '../../profile/profileModel';
@@ -15,22 +18,46 @@ export const PublicProfilePanel = ({
   loading,
   notFound,
   onClose,
+  onBlocked,
 }: {
   profile: PublicProfile | null;
   loading: boolean;
   notFound: boolean;
   onClose: () => void;
+  onBlocked?: () => void;
 }) => {
   const { t } = useLanguage();
   const navigate = useNavigate();
   const [reporting, setReporting] = useState(false);
   const [messaging, setMessaging] = useState(false);
+  const [rating, setRating] = useState(false);
+  const [confirmingBlock, setConfirmingBlock] = useState(false);
+  const [blocking, setBlocking] = useState(false);
+  const [blockFailed, setBlockFailed] = useState(false);
 
   // Selecting a different contractor must not carry an open form across to them.
   useEffect(() => {
     setReporting(false);
     setMessaging(false);
+    setRating(false);
+    setConfirmingBlock(false);
+    setBlockFailed(false);
   }, [profile?.userId]);
+
+  const block = async (): Promise<void> => {
+    if (profile === null || blocking) return;
+    setBlocking(true);
+    setBlockFailed(false);
+    try {
+      await blockUser(profile.userId);
+      onBlocked?.();
+      onClose();
+    } catch {
+      setBlockFailed(true);
+    } finally {
+      setBlocking(false);
+    }
+  };
 
   const facts = profile === null ? [] : [
     ...(profile.city ? [{ term: t.browse.profile.city, value: profile.city, auto: true }] : []),
@@ -87,7 +114,48 @@ export const PublicProfilePanel = ({
                 ? `★ ${profile.rating.average.toFixed(1)} · ${t.browse.card.ratingCount.replace('{count}', String(profile.rating.count))}`
                 : t.browse.profile.noRatings}
             </span>
+            <span className="pp-signals__rating">
+              {profile.flexibility?.schedule
+                ? t.browse.card.flexibilityScore
+                    .replace('{score}', String(profile.flexibility.schedule.score))
+                    .replace('{category}', t.profile.flexibility.category[profile.flexibility.schedule.category])
+                : t.browse.card.noFlexibility}
+            </span>
           </div>
+
+          {profile.flexibility?.schedule ? (
+            <details className="pp-block">
+              <summary className="pp-block__title">{t.profile.explain.question}</summary>
+              <ul className="pp-block__text">
+                <li>
+                  {t.profile.flexibility.context.workable
+                    .replace('{workable}', String(profile.flexibility.schedule.context.workableResolutions))
+                    .replace('{events}', String(profile.flexibility.schedule.context.events))}
+                </li>
+                {profile.flexibility.schedule.context.alternativesAgreed > 0 ? (
+                  <li>
+                    {t.profile.flexibility.context.alternatives
+                      .replace('{count}', String(profile.flexibility.schedule.context.alternativesAgreed))}
+                  </li>
+                ) : null}
+                {profile.flexibility.schedule.context.withAdvanceNotice > 0 ? (
+                  <li>
+                    {t.profile.flexibility.context.notice
+                      .replace('{count}', String(profile.flexibility.schedule.context.withAdvanceNotice))}
+                  </li>
+                ) : null}
+                {profile.flexibility.schedule.context.justifiedDeclines > 0 ? (
+                  <li>
+                    {t.profile.flexibility.context.justified
+                      .replace('{count}', String(profile.flexibility.schedule.context.justifiedDeclines))}
+                  </li>
+                ) : null}
+                {profile.flexibility.schedule.includesOlderHistory ? (
+                  <li>{t.profile.flexibility.context.history}</li>
+                ) : null}
+              </ul>
+            </details>
+          ) : null}
 
           {profile.specialties.length > 0 ? (
             <ul className="tags">
@@ -198,11 +266,64 @@ export const PublicProfilePanel = ({
 
           {/* Absent rather than disabled: the server decides whether a rating may be given. */}
           {profile.rateable.canRate ? (
-            <button type="button" className="btn btn--primary btn--sm">{t.browse.profile.rate}</button>
+            rating ? (
+              <RatingDialog
+                rateeUserId={profile.userId}
+                rateeName={`${profile.firstName} ${profile.lastName}`.trim()}
+                onClose={() => setRating(false)}
+                onRated={() => undefined}
+              />
+            ) : (
+              <button
+                type="button"
+                className="btn btn--primary btn--sm"
+                onClick={() => setRating(true)}
+              >
+                {t.browse.profile.rate}
+              </button>
+            )
           ) : (
             <p className="pp-foot">
               {profile.isSelf ? t.browse.profile.cannotRateSelf : t.browse.profile.cannotRateYet}
             </p>
+          )}
+
+          {/* PUB-07: the existing block domain, reached from the profile. Never shown on one's own. */}
+          {profile.isSelf ? null : confirmingBlock ? (
+            <div className="msg-dialog" role="alertdialog" aria-label={t.browse.profile.blockUser}>
+              <p className="msg-dialog__subject">{t.browse.profile.blockNote}</p>
+              {blockFailed ? (
+                <p className="msg-dialog__error" role="alert">{t.browse.errors.generic}</p>
+              ) : null}
+              <div className="msg-dialog__actions">
+                <button
+                  type="button"
+                  className="btn btn--danger btn--sm"
+                  disabled={blocking}
+                  aria-busy={blocking}
+                  onClick={() => void block()}
+                >
+                  {t.browse.profile.blockConfirm}
+                  {blocking ? <ButtonSpinner /> : null}
+                </button>
+                <button
+                  type="button"
+                  className="btn btn--ghost btn--sm"
+                  disabled={blocking}
+                  onClick={() => setConfirmingBlock(false)}
+                >
+                  {t.browse.profile.blockCancel}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button
+              type="button"
+              className="btn btn--ghost btn--sm pp-report"
+              onClick={() => setConfirmingBlock(true)}
+            >
+              {t.browse.profile.blockUser}
+            </button>
           )}
 
           {/* Absent on your own profile, because self-reporting is refused by the server anyway. */}

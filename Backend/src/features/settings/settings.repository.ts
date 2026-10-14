@@ -19,6 +19,7 @@ import {
  */
 export interface SettingsRow {
   readonly language: UserLanguage;
+  readonly identities?: readonly { readonly provider: string }[];
   readonly notificationPreferences?: {
     readonly operationalEmail?: boolean;
     readonly timing?: readonly NotificationTimingRule[];
@@ -43,7 +44,7 @@ export interface SettingsRepository {
   setContactVisibility(user: Types.ObjectId, update: Partial<ContactVisibility>): Promise<void>;
 }
 
-const SELECT = 'language notificationPreferences contactVisibility';
+const SELECT = 'language notificationPreferences contactVisibility identities';
 
 export const settingsRepository: SettingsRepository = {
   async find(user) {

@@ -42,6 +42,10 @@ export const createBrowseModule = ({
   relationships,
   routes,
 }: BrowseModuleDependencies): Router => {
+  const flexibilityService = createFlexibilityService(
+    createCoordinationOutcomeAdapter(proposalRepository, handoffRepository),
+  );
+
   const controller = createBrowseController(
     createBrowseService({
       browse: browseRepository,
@@ -49,6 +53,7 @@ export const createBrowseModule = ({
       relationships,
       ratings: ratingRepository,
       routes,
+      flexibility: flexibilityService,
     }),
     createPublicProfileService({
       users: userRepository,
@@ -57,7 +62,7 @@ export const createBrowseModule = ({
       workEntries: workEntryRepository,
       ratings: ratingRepository,
       eligibility: workEvidenceAdapter,
-      flexibility: createFlexibilityService(createCoordinationOutcomeAdapter(proposalRepository, handoffRepository)),
+      flexibility: flexibilityService,
       relationships,
       blocks,
       phones: createPhoneVisibilityService({

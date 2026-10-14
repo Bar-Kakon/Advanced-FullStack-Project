@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { isAxiosError } from 'axios';
 import { Link } from 'react-router-dom';
 
 import { ButtonSpinner } from '../../../components/ButtonSpinner';
@@ -38,8 +39,9 @@ export const DateChangePanel = ({ taskId, available, impact }: DateChangePanelPr
     setError(null);
     try {
       await work();
-    } catch {
-      setError(copy.failed);
+    } catch (failure) {
+      const code = isAxiosError(failure) ? (failure.response?.data as { code?: string } | undefined)?.code : undefined;
+      setError(code === 'PROJECT_CEILING_EXCEEDED' ? copy.beyondCeiling : copy.failed);
     } finally {
       setBusy(false);
     }
@@ -92,11 +94,11 @@ export const DateChangePanel = ({ taskId, available, impact }: DateChangePanelPr
 
       {available ? (
         <div className="date-change">
-          <label className="field">
+          <label className="field form-group">
             <span className="field-label" id="dc-days-label">{copy.daysLabel}</span>
             <input
               type="number"
-              className="input"
+              className="input form-input"
               inputMode="numeric"
               aria-labelledby="dc-days-label"
               value={days}
@@ -105,11 +107,11 @@ export const DateChangePanel = ({ taskId, available, impact }: DateChangePanelPr
             />
           </label>
 
-          <label className="field">
+          <label className="field form-group">
             <span className="field-label" id="dc-start-label">{copy.altStartLabel}</span>
             <input
               type="date"
-              className="input"
+              className="input form-input"
               aria-labelledby="dc-start-label"
               value={altStart}
               disabled={busy}
@@ -117,10 +119,10 @@ export const DateChangePanel = ({ taskId, available, impact }: DateChangePanelPr
             />
           </label>
 
-          <label className="field date-change__reason">
+          <label className="field form-group date-change__reason">
             <span className="field-label" id="dc-reason-label">{copy.reasonLabel}</span>
             <textarea
-              className="input"
+              className="input form-input"
               rows={2}
               aria-labelledby="dc-reason-label"
               value={reason}

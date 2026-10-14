@@ -213,6 +213,7 @@ export const BrowsePage = () => {
               loading={profileLoading}
               notFound={profileMissing}
               onClose={() => setSelectedId(null)}
+              onBlocked={() => state.retry()}
             />
           ) : null}
         </div>

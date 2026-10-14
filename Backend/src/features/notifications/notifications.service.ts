@@ -3,6 +3,10 @@ import { Types } from 'mongoose';
 import type { NotificationRecord } from './notification.model.js';
 import type { NotificationDto, NotificationPageDto } from './notification.dto.js';
 import type { NotificationRepository } from './notification.repository.js';
+import {
+  notificationActionabilityService,
+  type NotificationAction,
+} from './notificationActionability.service.js';
 import type { QueuedEmailRepository } from './queuedEmail.repository.js';
 
 export const NOTIFICATIONS_DEFAULT_LIMIT = 20;
@@ -23,7 +27,10 @@ export interface NotificationsDependencies {
   readonly emails: QueuedEmailRepository;
 }
 
-export const toNotificationDto = (row: NotificationRecord): NotificationDto => ({
+export const toNotificationDto = (
+  row: NotificationRecord,
+  action: NotificationAction = null,
+): NotificationDto => ({
   id: row._id.toString(),
   type: row.type,
   notificationClass: row.class,
@@ -32,6 +39,7 @@ export const toNotificationDto = (row: NotificationRecord): NotificationDto => (
   proposalId: row.proposal?.toString() ?? null,
   scheduleExceptionId: row.scheduleException?.toString() ?? null,
   conversationId: row.conversation?.toString() ?? null,
+  action,
   payload: row.payload,
   muted: row.mutedAtCreation,
   seenAt: row.seenAt?.toISOString() ?? null,
@@ -57,9 +65,12 @@ export const createNotificationsService = ({
         notifications.page(user, limit, cursor, unreadOnly),
         notifications.unreadCount(user),
       ]);
+      const actions = await notificationActionabilityService.resolve(userId, page.rows);
 
       return {
-        notifications: page.rows.map(toNotificationDto),
+        notifications: page.rows.map((row) =>
+          toNotificationDto(row, actions.get(row._id.toString()) ?? null),
+        ),
         nextCursor: page.nextCursor,
         unreadCount,
       };

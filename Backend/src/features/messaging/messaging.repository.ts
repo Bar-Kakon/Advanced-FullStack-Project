@@ -52,11 +52,13 @@ export interface MessagingRepository {
   createProjectRoom(project: Types.ObjectId): Promise<ConversationRecord>;
   listForUser(
     user: Types.ObjectId,
-    folder: 'inbox' | 'requests',
+    folder: 'inbox' | 'requests' | 'sent',
     page: CursorPage,
   ): Promise<ConversationRecord[]>;
   /** Re-opens a declined request as a fresh pending one from `requestedBy`. */
   reopenRequest(id: Types.ObjectId, requestedBy: Types.ObjectId): Promise<ConversationRecord | null>;
+  /** An approved connection retires the gate: pending or declined becomes accepted, in place. */
+  upgradeRequestToAccepted(id: Types.ObjectId): Promise<ConversationRecord | null>;
   /** Hides one message for one viewer. A kept message is never matched. */
   hideMessageFor(messageId: Types.ObjectId, user: Types.ObjectId): Promise<boolean>;
   listProjectRooms(projects: readonly Types.ObjectId[]): Promise<ConversationRecord[]>;
@@ -92,10 +94,21 @@ export interface MessagingRepository {
   /** Whether an accepted, task-creating agreement ever bound these two people — in either
    *  direction, and regardless of what later happened to the work (D15: history persists). */
   hasAcceptedAgreementBetween(a: Types.ObjectId, b: Types.ObjectId): Promise<boolean>;
+  /** The accepted agreement behind one task: its two parties and the files it carried. */
+  findAgreementDocumentsByTask(
+    taskId: Types.ObjectId,
+  ): Promise<{
+    proposer: Types.ObjectId;
+    accepter: Types.ObjectId;
+    project: Types.ObjectId | null;
+    attachments: readonly Types.ObjectId[];
+  } | null>;
   listAgreementOriginsByTask(tasks: readonly Types.ObjectId[]): Promise<AgreementTaskOrigin[]>;
   listAgreementOriginsByProposer(proposer: Types.ObjectId): Promise<AgreementTaskOrigin[]>;
   /** Everything ever commissioned on this company's behalf, by the stamp alone. */
   listAgreementOriginsByCompany(company: Types.ObjectId): Promise<AgreementTaskOrigin[]>;
+  /** Whether a proposed agreement from somebody else still waits in this conversation. */
+  hasProposedAgreementAwaiting(conversation: Types.ObjectId, viewer: Types.ObjectId): Promise<boolean>;
   /** The migration safeguard's question: accepted, task-creating agreements with no stamp. */
   countUnstampedAcceptedAgreements(): Promise<number>;
   findMessageWithAttachment(
@@ -186,14 +199,17 @@ export const messagingRepository: MessagingRepository = {
   async listForUser(user, folder, { limit, cursor }) {
     const after = parseCursor(cursor);
 
-    // Pending requests, whichever side sent them, live in Requests alone; the Inbox holds only
-    // accepted conversations, and a declined thread is listed nowhere until it is re-asked.
+    // The owner's final split: Requests holds ONLY what waits on this person, Sent holds their
+    // own pending asks, the Inbox holds only accepted conversations, and a declined thread is
+    // listed nowhere until it is re-asked.
     const requestFilter =
       folder === 'requests'
-        ? { 'request.state': 'pending' }
-        : {
-            $or: [{ request: { $exists: false } }, { 'request.state': 'accepted' }],
-          };
+        ? { 'request.state': 'pending', 'request.requestedBy': { $ne: user } }
+        : folder === 'sent'
+          ? { 'request.state': 'pending', 'request.requestedBy': user }
+          : {
+              $or: [{ request: { $exists: false } }, { 'request.state': 'accepted' }],
+            };
 
     const filter: Record<string, unknown> = {
       participants: user,
@@ -226,6 +242,16 @@ export const messagingRepository: MessagingRepository = {
     return ConversationModel.find({ project: { $in: projects } })
       .sort({ lastMessageAt: -1, _id: -1 })
       .lean<ConversationRecord[]>()
+      .exec();
+  },
+
+  async upgradeRequestToAccepted(id) {
+    return ConversationModel.findOneAndUpdate(
+      { _id: id, 'request.state': { $in: ['pending', 'declined'] } },
+      { $set: { 'request.state': 'accepted' } },
+      { returnDocument: 'after' },
+    )
+      .lean<ConversationRecord>()
       .exec();
   },
 
@@ -352,6 +378,27 @@ export const messagingRepository: MessagingRepository = {
     return found !== null;
   },
 
+  async findAgreementDocumentsByTask(taskId) {
+    const row = await MessageModel.findOne({
+      kind: 'agreement',
+      'agreement.state': 'accepted',
+      'agreement.task': taskId,
+      removedAt: { $exists: false },
+      deletedAt: { $exists: false },
+    })
+      .select('sender agreement.respondedBy agreement.project attachments')
+      .lean<Pick<MessageRecord, 'sender' | 'agreement' | 'attachments'>>()
+      .exec();
+
+    if (row === null || row.agreement?.respondedBy === undefined) return null;
+    return {
+      proposer: row.sender,
+      accepter: row.agreement.respondedBy,
+      project: row.agreement.project ?? null,
+      attachments: row.attachments ?? [],
+    };
+  },
+
   async listAgreementOriginsByTask(taskIds) {
     if (taskIds.length === 0) return [];
 
@@ -393,6 +440,16 @@ export const messagingRepository: MessagingRepository = {
       .exec();
 
     return toOrigins(rows);
+  },
+
+  async hasProposedAgreementAwaiting(conversation, viewer) {
+    const found = await MessageModel.exists({
+      conversation,
+      kind: 'agreement',
+      'agreement.state': 'proposed',
+      sender: { $ne: viewer },
+    }).exec();
+    return found !== null;
   },
 
   async countUnstampedAcceptedAgreements() {

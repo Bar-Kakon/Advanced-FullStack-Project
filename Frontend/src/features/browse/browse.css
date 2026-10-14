@@ -366,3 +366,30 @@
 }
 
 .report-dialog__actions { display: flex; flex-wrap: wrap; gap: 8px; }
+
+
+/* RAT-04: the score control. Plain buttons so keyboard and readers get a real radio group. */
+.rating-stars { display: flex; gap: 6px; margin-block: 4px 10px; }
+.rating-star {
+  border: 1px solid var(--line, #d8dde4);
+  background: var(--surface, #fdfcf9);
+  border-radius: 8px;
+  width: 40px;
+  height: 40px;
+  font-size: 20px;
+  color: var(--text-mute, #8a94a0);
+  cursor: pointer;
+}
+.rating-star--on { color: #b8860b; border-color: #b8860b; }
+
+/* The dialogs the profile panel hosts (message, rating, block) share messaging's dialog shell.
+   Browse never loads messaging.css, so the shell lives here too — same declarations. */
+.msg-dialog { display: flex; flex-direction: column; gap: 10px; margin-bottom: 14px; padding: 14px; border: 1px solid var(--line, #d8dde4); border-radius: 12px; background: #fff; }
+.msg-dialog__title { margin: 0; font-size: 1rem; }
+.msg-dialog__subject { margin: 0; font-size: 0.86rem; color: #66727f; }
+.msg-dialog__error { margin: 0; font-size: 0.84rem; color: #a33; }
+.msg-dialog__input { resize: vertical; }
+.msg-dialog__actions { display: flex; gap: 8px; }
+.msg-dialog__sent { font-size: 15px; color: var(--text, #2a3442); margin-block: 6px; }
+.msg-composer__input { width: 100%; border: 1px solid var(--line, #d8dde4); border-radius: 8px; padding: 8px 10px; font: inherit; }
+.msg-empty { padding: 14px; text-align: center; font-size: 14.5px; color: var(--text, #2a3442); background: var(--surface, #fdfcf9); border: 1px solid var(--line, #d8dde4); border-radius: 10px; }

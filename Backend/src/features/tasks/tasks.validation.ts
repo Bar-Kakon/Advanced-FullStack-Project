@@ -38,6 +38,10 @@ export const privateItemBodySchema = Joi.object({
   body: Joi.string().trim().min(1).max(1000).required(),
 });
 
+export const privateItemEditSchema = Joi.object({
+  body: Joi.string().trim().min(1).max(1000).required(),
+});
+
 export const privateToggleBodySchema = Joi.object({
   done: Joi.boolean().required(),
 });

@@ -4,7 +4,7 @@ import { logout } from '../api/auth.api';
 import { SESSION_EXPIRED_EVENT } from '../api/client';
 import type { LoginResponse, SessionUser } from '../api/types';
 import { ACCESS_TOKEN_KEY, clearAccessToken, getAccessToken, setAccessToken } from './tokenStorage';
-import { USER_KEY, clearStoredUser, readStoredUser, storeUser } from './session';
+import { USER_KEY, clearStoredUser, markSessionEnded, readStoredUser, storeUser } from './session';
 import { useAppDispatch } from '../store/hooks';
 import { unreadNotificationsCleared } from '../store/sessionSlice';
 
@@ -56,7 +56,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // The HTTP client failed to renew the session and already cleared storage. The `storage` event
   // never fires in the tab that wrote, so this is how the same tab finds out and redirects.
   useEffect(() => {
-    const onExpired = (): void => reread();
+    const onExpired = (): void => {
+      markSessionEnded();
+      reread();
+    };
     window.addEventListener(SESSION_EXPIRED_EVENT, onExpired);
     return () => window.removeEventListener(SESSION_EXPIRED_EVENT, onExpired);
   }, [reread]);
@@ -95,6 +98,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       clearStoredUser();
       // The badge is session-derived, so it must not survive the session that produced it.
       dispatch(unreadNotificationsCleared());
+      // Whatever route the guards capture during this teardown is the OLD user's place.
+      markSessionEnded();
       reread();
     }
   }, [reread]);

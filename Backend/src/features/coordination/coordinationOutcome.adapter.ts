@@ -50,11 +50,8 @@ export const outcomeOf = (
   return null;
 };
 
-const noticeDaysFor = (proposal: ProposalRecord, item: ProposalItemRecord): number | null => {
-  const at = proposal.resolution?.at;
-  if (at === undefined) return null;
-  return Math.max(0, daysBetween(at, item.currentStart));
-};
+const noticeDaysFor = (proposal: ProposalRecord, item: ProposalItemRecord): number | null =>
+  Math.max(0, daysBetween(proposal.createdAt, item.currentStart));
 
 export const createCoordinationOutcomeAdapter = (
   proposals: ProposalRepository,
@@ -78,8 +75,8 @@ export const createCoordinationOutcomeAdapter = (
         if (outcome === null) continue;
 
         events.push({
-          dimension: 'schedule',
           outcome,
+          resolvedAt: proposal.resolution?.at ?? proposal.createdAt,
           requestedByCounterparty: proposal.requestedBy.toString() !== userId,
           noticeDays: noticeDaysFor(proposal, item),
         });

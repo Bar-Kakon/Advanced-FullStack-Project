@@ -1,0 +1,34 @@
+/* PRJ-10 — the read-only project timeline. Logical insets, so RTL runs the axis right-to-left. */
+
+.tl-range { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin-block: 8px 14px; font-size: 14px; color: var(--text-soft, #4a5568); }
+.tl-range__title { font-weight: 700; font-size: 16px; color: var(--text, #2a3442); }
+
+.tl-chart { position: relative; display: flex; flex-direction: column; gap: 18px; padding-block: 8px; }
+
+.tl-today { position: absolute; top: 0; bottom: 0; border-inline-start: 2px dashed #a63232; z-index: 1; }
+.tl-today__label { position: absolute; top: -4px; inset-inline-start: 4px; font-size: 11px; color: #a63232; }
+
+.tl-stage { background: var(--surface, #fdfcf9); border: 1px solid var(--line, #d8dde4); border-radius: 12px; padding: 12px 14px; }
+.tl-stage__head { margin-block-end: 8px; }
+.tl-stage__name { font-size: 15.5px; font-weight: 700; margin: 0; display: flex; align-items: center; gap: 8px; }
+.tl-stage__deps { font-size: 13px; color: var(--text-soft, #4a5568); margin: 2px 0 0; }
+.tl-stage__empty { font-size: 13px; color: var(--text-mute, #8a94a0); margin: 0; }
+.tl-tag { font-size: 11px; font-weight: 600; padding: 1px 8px; border-radius: 999px; border: 1px solid #b8860b; color: #b8860b; }
+
+.tl-row { display: grid; grid-template-columns: minmax(110px, 180px) 1fr; align-items: center; gap: 10px; padding-block: 3px; }
+.tl-row__title { font-size: 13.5px; overflow-wrap: anywhere; }
+.tl-row__track { position: relative; height: 16px; background: rgba(110, 127, 140, 0.12); border-radius: 999px; overflow: hidden; }
+.tl-bar { position: absolute; top: 2px; bottom: 2px; border-radius: 999px; min-width: 6px; }
+.tl-bar--planned { background: #8a94a0; }
+.tl-bar--active { background: #23384d; }
+.tl-bar--done { background: #2f6b3a; }
+.tl-bar--overdue { background: #a63232; }
+
+.tl-legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 13px; color: var(--text-soft, #4a5568); }
+.tl-dot { display: inline-block; width: 12px; height: 12px; border-radius: 50%; position: static; vertical-align: middle; margin-inline-end: 4px; }
+
+.msg-empty { padding: 18px; text-align: center; font-size: 15px; color: var(--text, #2a3442); background: var(--surface, #fdfcf9); border: 1px solid var(--line, #d8dde4); border-radius: 10px; }
+
+@media (max-width: 560px) {
+  .tl-row { grid-template-columns: 1fr; gap: 4px; }
+}

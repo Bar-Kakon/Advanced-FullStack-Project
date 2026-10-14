@@ -170,10 +170,15 @@ export interface AuthenticatedUser {
  * nothing else.
  *
  * `accessToken` is deliberately absent, and the server agrees: Register creates an account, and
- * Login is the authentication boundary.
+ * Login is the authentication boundary. The one approved exception is a Google registration,
+ * which answers `GoogleRegisterResponse` — the identity was verified inside the same request.
  */
 export interface RegisterResponse {
   readonly user: AuthenticatedUser;
+}
+
+export interface GoogleRegisterResponse extends LoginResponse {
+  readonly outcome: 'signed_in';
 }
 
 /** The four capability codes, mirrored from `COMPANY_PERMISSIONS`. The list is closed on purpose. */
