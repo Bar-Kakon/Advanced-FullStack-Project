@@ -35,16 +35,16 @@ export const RegisterPage = () => {
   );
   useDocumentTitle('יצירת חשבון / Create account — Blokta');
 
-  const onSuccess = useCallback((): void => {
-    navigate('/login', { replace: true });
-  }, [navigate]);
-
   /**
    * Set by Login when Google verified somebody who has no Blokta account yet. It carries the
    * identity and the credential, and nothing about their trade or their business: those are this
    * screen's own questions and are still asked.
    */
   const google = (location.state as { google?: GoogleRegistration } | null)?.google ?? null;
+
+  const onSuccess = useCallback((): void => {
+    navigate('/login', { replace: true, state: google === null ? null : { googleRegistered: true } });
+  }, [navigate, google]);
 
   const form = useRegisterForm(onSuccess, google);
   const googleAuth = useGoogleAuth();

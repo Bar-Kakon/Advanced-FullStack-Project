@@ -214,7 +214,7 @@ export const RegisterForm = ({ form }: { form: ReturnType<typeof useRegisterForm
               placeholder={t.form.email.placeholder} autoComplete="email" maxLength={MAX.email} required
               // The address Google verified is the one the account is opened for, and the server
               // refuses any other, so it is not offered as an editable field.
-              {...(viaGoogle ? { readOnly: true } : {})}
+              {...(viaGoogle ? { readOnly: true, hint: t.form.googleOnboarding.emailLocked } : {})}
               value={values.email} onChange={(v) => setValue('email', v)}
               onBlur={() => markTouched('email')} touched={!!touched.email}
               invalid={shows('email')}
@@ -418,7 +418,7 @@ export const RegisterForm = ({ form }: { form: ReturnType<typeof useRegisterForm
                 disabled={!isComplete || submitting}
                 aria-busy={submitting}
               >
-                {t.form.submit}
+                {viaGoogle ? t.form.googleOnboarding.submit : t.form.submit}
                 {submitting ? <ButtonSpinner /> : null}
               </button>
             </div>

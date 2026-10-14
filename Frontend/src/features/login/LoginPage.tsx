@@ -32,6 +32,8 @@ export const LoginPage = () => {
   // Honored only for a genuinely anonymous arrival: a route captured while a session was ending
   // belongs to the PREVIOUS user's navigation, and the next sign-in starts on its own dashboard.
   const capturedFrom = (location.state as { from?: string } | null)?.from;
+  const googleRegistered =
+    (location.state as { googleRegistered?: boolean } | null)?.googleRegistered === true;
   const [from] = useState<string | undefined>(() =>
     consumeSessionEnded() ? undefined : capturedFrom,
   );
@@ -59,6 +61,10 @@ export const LoginPage = () => {
         <h2 className="form-title">{t.login.title}</h2>
         <p className="form-subtitle">{t.login.subtitle}</p>
       </header>
+
+      {googleRegistered ? (
+        <p className="form-note form-note--google">{t.login.googleRegisteredNote}</p>
+      ) : null}
 
       <LoginForm form={form} />
 

@@ -426,6 +426,7 @@ export const en: Strings = {
       generic: 'Something went wrong. Please try again.',
     },
 
+    googleRegisteredNote: 'The account was created, with no password. Sign in to it with "Continue with Google".',
     googleErrors: {
       linkRequired:
         'That address already has an account with a password. Sign in with your password, then connect Google from your account.',

@@ -462,6 +462,7 @@ export const he = {
      * No provider message ever reaches the screen. Google's own errors are written for developers
      * and can name internals, so every case here is answered in the product's own words.
      */
+    googleRegisteredNote: 'החשבון נוצר בהצלחה, ללא סיסמה. ההתחברות אליו מתבצעת בלחיצה על "להמשיך עם Google".',
     googleErrors: {
       // The address already has a Blokta account with no Google link. It says whose move it is,
       // because the person cannot fix this from the Google side.
