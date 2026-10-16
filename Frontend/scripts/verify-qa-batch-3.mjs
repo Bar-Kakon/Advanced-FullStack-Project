@@ -4,6 +4,7 @@
  * (attachments on the work message), the connected-DM gate bypass, and Employee Management
  * navigation. Real browser, real local API, isolated local database.
  */
+import './support/developmentGuard.mjs';
 import { execSync } from 'node:child_process';
 import { chromium } from 'playwright';
 

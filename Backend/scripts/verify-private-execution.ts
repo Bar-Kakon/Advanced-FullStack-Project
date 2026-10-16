@@ -10,6 +10,7 @@
  *
  *   npm run verify:private-execution
  */
+import './support/developmentGuard.js';
 import { config as loadEnvFile } from 'dotenv';
 import mongoose, { Types } from 'mongoose';
 

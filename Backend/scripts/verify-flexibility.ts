@@ -2,6 +2,7 @@
  * The Flexibility Score: the closed formula, the event classification, the privacy of the
  * explanatory context, and the real coordination adapter that now feeds it.
  */
+import './support/developmentGuard.js';
 import { Types } from 'mongoose';
 
 import { outcomeOf } from '../src/features/coordination/coordinationOutcome.adapter.js';

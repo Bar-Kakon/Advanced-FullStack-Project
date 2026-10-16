@@ -5,6 +5,7 @@
  * is indistinguishable from one that does not exist, an invitation discloses exactly what the owner
  * approved and nothing else, and a grant on one project buys nothing on any other.
  */
+import './support/developmentGuard.js';
 import { Types } from 'mongoose';
 
 import { CompanyModel } from '../src/features/companies/company.model.js';

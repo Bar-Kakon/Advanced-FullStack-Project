@@ -4,6 +4,7 @@
  * audit of the Professional Rating and the Flexibility Score — every expected number below is
  * computed independently from the approved specification, never from the code under test.
  */
+import './support/developmentGuard.mjs';
 import { execSync } from 'node:child_process';
 import { chromium } from 'playwright';
 

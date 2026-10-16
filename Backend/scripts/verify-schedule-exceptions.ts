@@ -4,6 +4,7 @@
  *
  *   npm run verify:schedule-exceptions
  */
+import './support/developmentGuard.js';
 import { Types } from 'mongoose';
 
 import { DEFAULT_WORKING_CALENDAR } from '../src/features/calendar/workingCalendar.types.js';

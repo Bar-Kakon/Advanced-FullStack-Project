@@ -4,6 +4,7 @@
  * The lifecycle rules are the point: D17 (a decline is historical, not permanent) and D19 (a block
  * is its own record, never a connection state, and never disclosed to the person blocked).
  */
+import './support/developmentGuard.js';
 import { BlockModel } from '../src/features/blocks/block.model.js';
 import { CompanyModel } from '../src/features/companies/company.model.js';
 import { CompanyMembershipModel } from '../src/features/companies/companyMembership.model.js';

@@ -4,6 +4,7 @@
  * Boots the real application on an ephemeral port, so the auth rate limiter starts fresh and no
  * separately running server is needed.
  */
+import './support/developmentGuard.js';
 import { CompanyModel } from '../src/features/companies/company.model.js';
 import { CompanyMembershipModel } from '../src/features/companies/companyMembership.model.js';
 import { createAccount, cleanUp } from './support/accounts.js';

@@ -1,4 +1,5 @@
 /** Work-entry editing, work-entry photos, heavy-equipment storage and Browse self-exclusion. */
+import './support/developmentGuard.js';
 import { Types } from 'mongoose';
 
 import { FileAssetModel } from '../src/features/files/fileAsset.model.js';

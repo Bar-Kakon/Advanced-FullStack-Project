@@ -7,6 +7,7 @@
  * Needs a FRESHLY STARTED server: it spends a large share of the register rate-limit budget.
  * Start the API (`npm run dev`), then: `npm run verify:employee-lifecycle`.
  */
+import './support/developmentGuard.js';
 import { config as loadEnvFile } from 'dotenv';
 
 import { connectToDatabase, disconnectFromDatabase } from '../src/db/mongoose.js';

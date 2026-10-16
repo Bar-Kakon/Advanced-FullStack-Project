@@ -5,6 +5,7 @@
  * database. Sections 6–9 need a FRESHLY STARTED server and the real database, and prove the same
  * decision survives a write, a reload and a change of radius.
  */
+import './support/developmentGuard.js';
 import { config as loadEnvFile } from 'dotenv';
 
 import { connectToDatabase, disconnectFromDatabase } from '../src/db/mongoose.js';

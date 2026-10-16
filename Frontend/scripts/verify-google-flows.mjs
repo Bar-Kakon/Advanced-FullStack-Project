@@ -5,6 +5,7 @@
  * through the Settings surface. Every leg that requires a credential only Google can issue is
  * named UNVERIFIED with its exact blocker, never simulated into a pass.
  */
+import './support/developmentGuard.mjs';
 import { execSync } from 'node:child_process';
 import { chromium } from 'playwright';
 

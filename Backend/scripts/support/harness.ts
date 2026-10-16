@@ -5,10 +5,13 @@
  * middleware — on an ephemeral port and drives it over real HTTP. Nothing is stubbed, so a check
  * that passes here passes against the server the client will talk to.
  */
+import { assertConnectedLocally } from './developmentGuard.js';
+
 import type { AddressInfo } from 'node:net';
 import type { Server } from 'node:http';
 
 import { config as loadEnvFile } from 'dotenv';
+import mongoose from 'mongoose';
 
 import { createApp } from '../../src/app.js';
 import { loadConfig } from '../../src/config/env.js';
@@ -24,6 +27,7 @@ export const startHarness = async (): Promise<Harness> => {
 
   const config = loadConfig();
   await connectToDatabase(config.mongoUri);
+  assertConnectedLocally(mongoose.connection.host, config.mongoUri);
 
   const server: Server = await new Promise((resolve) => {
     const listener = createApp(config).listen(0, () => resolve(listener));

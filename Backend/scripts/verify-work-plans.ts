@@ -5,6 +5,7 @@
  * confidential delegate cannot be discovered by the party above through anything a work plan
  * carries — not an id, not a name, not a filename, not an upload time, not the version history.
  */
+import './support/developmentGuard.js';
 import { Types } from 'mongoose';
 
 import { FileAssetModel } from '../src/features/files/fileAsset.model.js';

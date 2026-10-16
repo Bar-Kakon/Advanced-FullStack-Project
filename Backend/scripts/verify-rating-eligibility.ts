@@ -6,6 +6,7 @@
  * bare project membership must both fail, and a completed shared piece of project work must pass,
  * including when the party who did it is a supplier fulfilling a delivery commitment.
  */
+import './support/developmentGuard.js';
 import { Types } from 'mongoose';
 
 import { ProjectStageModel } from '../src/features/tasks/projectStage.model.js';

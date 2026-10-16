@@ -6,6 +6,7 @@
  * of the reset, and a second after it — so the timing that used to let a token survive is forced
  * rather than hoped for.
  */
+import './support/developmentGuard.js';
 import { config as loadEnvFile } from 'dotenv';
 import jwt from 'jsonwebtoken';
 import { Types } from 'mongoose';

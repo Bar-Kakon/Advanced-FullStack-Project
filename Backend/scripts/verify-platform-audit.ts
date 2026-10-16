@@ -6,6 +6,7 @@
  * account deletion is a recoverable state that erases nothing and blocks access; and restoration
  * is an explicit admin action that is itself audited.
  */
+import './support/developmentGuard.js';
 import { Types } from 'mongoose';
 
 import { AuditEntryModel } from '../src/features/coordination/auditEntry.model.js';
