@@ -28,6 +28,11 @@
 /* Overdue is a fact about the row, marked on its leading edge so RTL and LTR both read it. */
 .task-row--overdue { border-inline-start: 3px solid var(--primary); }
 
+.task-row--focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-20);
+}
+
 .task-row__head {
   display: flex;
   flex-wrap: wrap;
@@ -217,7 +222,8 @@
 
 .private-item { display: flex; flex-direction: column; gap: 8px; }
 .private-item__row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-.private-item__row .perm-check { flex: 1 1 220px; }
+.private-item__row .perm-check,
+.private-item__row .private-item__body { flex: 1 1 220px; }
 .private-item__detail {
   display: flex;
   flex-direction: column;

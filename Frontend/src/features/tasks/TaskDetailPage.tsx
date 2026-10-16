@@ -13,6 +13,7 @@ import { initialsOf } from '../profile/profileModel';
 import { DelegationPanel } from './components/DelegationPanel';
 import { PrivateWorkPanel } from './components/PrivateWorkPanel';
 import { DateChangePanel } from './components/DateChangePanel';
+import { StandaloneDatesPanel } from './components/StandaloneDatesPanel';
 import { HandoffPanel } from './components/HandoffPanel';
 import { WorkPlansPanel } from './components/WorkPlansPanel';
 import { useTaskDetail } from './useTaskDetail';
@@ -49,7 +50,7 @@ export const TaskDetailPage = () => {
   const { taskId = '' } = useParams<{ taskId: string }>();
   const {
     task, privateItems, loading, busy, failure, reload,
-    delegate, endDelegation, addPrivate, togglePrivate, updatePrivate, removePrivate,
+    delegate, endDelegation, addPrivate, startPrivate, completePrivate, updatePrivate, removePrivate,
   } = useTaskDetail(taskId);
 
   useScreenStylesheet(
@@ -120,7 +121,11 @@ export const TaskDetailPage = () => {
                 <dd>{t.tasks.kind[task.kind]}</dd>
 
                 <dt>{t.tasks.filters.project.label}</dt>
-                <dd dir="auto">{task.project ? task.project.name : t.tasks.row.noProject}</dd>
+                <dd dir="auto">
+                  {task.project
+                    ? task.project.name
+                    : task.kind === 'project' ? t.tasks.row.projectWithheld : t.tasks.row.noProject}
+                </dd>
 
                 <dt>{t.tasks.filters.state.label}</dt>
                 <dd>
@@ -179,7 +184,8 @@ export const TaskDetailPage = () => {
               </section>
             ) : null}
 
-            {/* Dependencies are between stages. A delegate receives none of this. */}
+            {/* Dependencies are between stages. Drawn only where this viewer can see the project. */}
+            {task.project === null ? null : (
             <section className="panel" aria-labelledby="stage-title">
               <h2 id="stage-title" className="panel__title">{copy.stage.title}</h2>
               <p className="panel__lede">{copy.stage.note}</p>
@@ -211,6 +217,7 @@ export const TaskDetailPage = () => {
                 </>
               )}
             </section>
+            )}
 
             <DelegationPanel
               task={task}
@@ -224,18 +231,16 @@ export const TaskDetailPage = () => {
                 items={privateItems}
                 busy={busy}
                 onAdd={(kind, body) => void addPrivate(kind, body)}
-                onToggle={(id, done) => void togglePrivate(id, done)}
+                onStart={(id) => void startPrivate(id)}
+                onComplete={(id) => void completePrivate(id)}
                 onEdit={(id, body) => void updatePrivate(id, body)}
                 onRemove={(id) => void removePrivate(id)}
               />
             ) : null}
 
-            {task.project === null && !task.viewerIsDelegate ? (
-              <section className="panel" aria-labelledby="date-change-title">
-                <h2 id="date-change-title" className="panel__title">{t.tasks.detail.dateChange.title}</h2>
-                <p className="panel__lede">{t.tasks.detail.dateChange.standaloneOnly}</p>
-              </section>
-            ) : (
+            {task.kind === 'standalone' && !task.viewerIsDelegate ? <StandaloneDatesPanel task={task} /> : null}
+
+            {task.project === null ? null : (
               <DateChangePanel
                 taskId={task.id}
                 available={task.rescheduleAvailable && task.viewer.canRequestDateChange}
@@ -243,11 +248,13 @@ export const TaskDetailPage = () => {
               />
             )}
 
-            <HandoffPanel
-              taskId={task.id}
-              projectId={task.project?.id ?? null}
-              onResponsibilityChanged={() => void reload()}
-            />
+            {task.project === null ? null : (
+              <HandoffPanel
+                taskId={task.id}
+                projectId={task.project.id}
+                onResponsibilityChanged={() => void reload()}
+              />
+            )}
 
             <WorkPlansPanel
               taskId={task.id}

@@ -22,6 +22,20 @@ export interface TaskDetail {
   readonly description: string | null;
   readonly startDate: string;
   readonly dueDate: string;
+  /** The dates first agreed; `null` when the historical original was never recorded. */
+  readonly originalStartDate: string | null;
+  readonly originalDueDate: string | null;
+  /** `migration_baseline` is never presented as a verified record of the original agreement. */
+  readonly originalDatesSource: 'creation' | 'agreement' | 'migration_baseline' | null;
+  /** The standalone date-change trail, newest first; always empty on project work. */
+  readonly dateChanges: readonly {
+    readonly at: string;
+    readonly fromStartDate: string;
+    readonly fromDueDate: string;
+    readonly toStartDate: string;
+    readonly toDueDate: string;
+    readonly reason: string | null;
+  }[];
   readonly state: TaskState;
   readonly overdue: boolean;
   readonly overdueDays: number;
@@ -51,6 +65,8 @@ export interface TaskDetail {
     readonly canDelegate: boolean;
     readonly canEndDelegation: boolean;
     readonly canRequestDateChange: boolean;
+    /** The assignee or the delegate; nobody else has a private layer to read. */
+    readonly hasPrivateLayer?: boolean;
   };
   /** `null` while the cascade domain does not exist. Never a fabricated count. */
   readonly rescheduleImpact: number | null;
@@ -65,6 +81,14 @@ export interface PrivateWorkItem {
   readonly kind: PrivateItemKind;
   readonly body: string;
   readonly done: boolean;
+  readonly startedAt?: string;
+  readonly completedAt?: string;
   readonly order: number;
   readonly createdAt: string;
 }
+
+export const privateItemState = (item: PrivateWorkItem): TaskState => {
+  if (item.done || item.completedAt !== undefined) return 'completed';
+  if (item.startedAt !== undefined) return 'in_progress';
+  return 'not_started';
+};

@@ -9,6 +9,7 @@ import { formatCalendarDate } from '../projects/projectDates.js';
 import { PrivateWorkItemModel, type PrivateItemKind, type PrivateWorkItemRecord } from './privateWork.model.js';
 import { ProjectStageModel, type ProjectStageRecord } from './projectStage.model.js';
 import type { RescheduleRequestPort } from './reschedule.port.js';
+import { TaskDateChangeModel, type TaskDateChangeRecord } from './taskDateChange.model.js';
 import { TaskModel, type DelegationScope, type TaskRecord } from './task.model.js';
 import { taskNotFound } from './task.errors.js';
 import {
@@ -18,6 +19,10 @@ import {
   notDelegated,
   ownCrewOnly,
   partNeedsDescription,
+  privateItemAlreadyCompleted,
+  privateItemAlreadyStarted,
+  privateItemNotStarted,
+  privateItemNotSubtask,
 } from './taskDetail.errors.js';
 import type { TaskRepository } from './task.repository.js';
 import type { FileAssetRecord } from '../files/fileAsset.model.js';
@@ -43,6 +48,20 @@ export interface TaskDetailDto {
   readonly description: string | null;
   readonly startDate: string;
   readonly dueDate: string;
+  /** The dates first agreed; `null` when the historical original was never recorded. */
+  readonly originalStartDate: string | null;
+  readonly originalDueDate: string | null;
+  /** `migration_baseline` must never be shown as a verified record of the original agreement. */
+  readonly originalDatesSource: 'creation' | 'agreement' | 'migration_baseline' | null;
+  /** The standalone date-change trail, newest first. Project dates keep the proposal audit instead. */
+  readonly dateChanges: readonly {
+    readonly at: string;
+    readonly fromStartDate: string;
+    readonly fromDueDate: string;
+    readonly toStartDate: string;
+    readonly toDueDate: string;
+    readonly reason: string | null;
+  }[];
   readonly state: string;
   readonly overdue: boolean;
   readonly overdueDays: number;
@@ -74,6 +93,8 @@ export interface TaskDetailDto {
     readonly canDelegate: boolean;
     readonly canEndDelegation: boolean;
     readonly canRequestDateChange: boolean;
+    /** Whether this viewer owns a private layer on this work: the assignee or the delegate. */
+    readonly hasPrivateLayer: boolean;
   };
   /** `null` while the cascade domain does not exist. Never a fabricated count. */
   readonly rescheduleImpact: number | null;
@@ -88,6 +109,8 @@ export interface TaskDetailService {
   addPrivate(userId: string, taskId: string, kind: PrivateItemKind, body: string): Promise<PrivateWorkItemRecord>;
   updatePrivate(userId: string, taskId: string, itemId: string, body: string): Promise<PrivateWorkItemRecord>;
   togglePrivate(userId: string, taskId: string, itemId: string, done: boolean): Promise<PrivateWorkItemRecord>;
+  startPrivate(userId: string, taskId: string, itemId: string): Promise<PrivateWorkItemRecord>;
+  completePrivate(userId: string, taskId: string, itemId: string): Promise<PrivateWorkItemRecord>;
   removePrivate(userId: string, taskId: string, itemId: string): Promise<void>;
 }
 
@@ -214,6 +237,25 @@ export const createTaskDetailService = ({
       task.orphanedAt === undefined &&
       (task.delegation !== undefined ? isDelegate : viewpoint === 'assignee');
 
+    // The trail and the originals stay behind the delegation wall with the rest of the negotiation.
+    const dateChanges =
+      task.kind === 'standalone' && !isDelegate
+        ? (
+            await TaskDateChangeModel.find({ task: task._id })
+              .sort({ at: -1 })
+              .limit(50)
+              .lean<TaskDateChangeRecord[]>()
+              .exec()
+          ).map((row) => ({
+            at: formatCalendarDate(row.at),
+            fromStartDate: formatCalendarDate(row.fromStartDate),
+            fromDueDate: formatCalendarDate(row.fromDueDate),
+            toStartDate: formatCalendarDate(row.toStartDate),
+            toDueDate: formatCalendarDate(row.toDueDate),
+            reason: row.reason ?? null,
+          }))
+        : [];
+
     return {
       id: task._id.toString(),
       kind: task.kind,
@@ -224,6 +266,19 @@ export const createTaskDetailService = ({
       description: delegateView ? delegateView.description : task.description ?? null,
       startDate: formatCalendarDate(task.startDate),
       dueDate: formatCalendarDate(task.dueDate),
+      originalStartDate:
+        isDelegate || task.originalStartDate === undefined
+          ? null
+          : formatCalendarDate(task.originalStartDate),
+      originalDueDate:
+        isDelegate || task.originalDueDate === undefined
+          ? null
+          : formatCalendarDate(task.originalDueDate),
+      originalDatesSource:
+        isDelegate || task.originalStartDate === undefined
+          ? null
+          : task.originalDatesSource ?? 'creation',
+      dateChanges,
       state: deriveTaskState(task),
       overdue: isOverdue(task, now),
       overdueDays: overdueDays(task, now),
@@ -265,8 +320,9 @@ export const createTaskDetailService = ({
           task.orphanedAt === undefined &&
           task.completedAt === undefined &&
           (viewpoint === 'assignee' || manages),
+        hasPrivateLayer: viewpoint === 'assignee' || viewpoint === 'delegate',
       },
-      rescheduleImpact: await reschedule.impactOf(task._id.toString()),
+      rescheduleImpact: isDelegate ? null : await reschedule.impactOf(task._id.toString()),
       rescheduleAvailable: reschedule.available,
     };
   };
@@ -367,16 +423,57 @@ export const createTaskDetailService = ({
       const task = await loadOwnPrivate(userId, taskId);
       if (!Types.ObjectId.isValid(itemId)) throw taskNotFound();
 
+      const owned = { _id: new Types.ObjectId(itemId), task: task._id, owner: new Types.ObjectId(userId) };
+      await PrivateWorkItemModel.updateOne(
+        { ...owned, done: !done },
+        done ? { $set: { done: true, completedAt: new Date() } } : { $set: { done: false }, $unset: { completedAt: '' } },
+      ).exec();
+
+      const current = await PrivateWorkItemModel.findOne(owned).lean<PrivateWorkItemRecord>().exec();
+      if (current === null) throw taskNotFound();
+      return current;
+    },
+
+    async startPrivate(userId, taskId, itemId) {
+      const task = await loadOwnPrivate(userId, taskId);
+      if (!Types.ObjectId.isValid(itemId)) throw taskNotFound();
+
+      const owned = { _id: new Types.ObjectId(itemId), task: task._id, owner: new Types.ObjectId(userId) };
       const updated = await PrivateWorkItemModel.findOneAndUpdate(
-        { _id: new Types.ObjectId(itemId), task: task._id, owner: new Types.ObjectId(userId) },
-        { $set: { done } },
+        { ...owned, kind: 'subtask', done: false, startedAt: { $exists: false } },
+        { $set: { startedAt: new Date() } },
         { returnDocument: 'after' },
       )
         .lean<PrivateWorkItemRecord>()
         .exec();
+      if (updated !== null) return updated;
 
-      if (updated === null) throw taskNotFound();
-      return updated;
+      const current = await PrivateWorkItemModel.findOne(owned).lean<PrivateWorkItemRecord>().exec();
+      if (current === null) throw taskNotFound();
+      if (current.kind !== 'subtask') throw privateItemNotSubtask();
+      if (current.done || current.completedAt !== undefined) throw privateItemAlreadyCompleted();
+      throw privateItemAlreadyStarted();
+    },
+
+    async completePrivate(userId, taskId, itemId) {
+      const task = await loadOwnPrivate(userId, taskId);
+      if (!Types.ObjectId.isValid(itemId)) throw taskNotFound();
+
+      const owned = { _id: new Types.ObjectId(itemId), task: task._id, owner: new Types.ObjectId(userId) };
+      const updated = await PrivateWorkItemModel.findOneAndUpdate(
+        { ...owned, kind: 'subtask', done: false, startedAt: { $exists: true } },
+        { $set: { done: true, completedAt: new Date() } },
+        { returnDocument: 'after' },
+      )
+        .lean<PrivateWorkItemRecord>()
+        .exec();
+      if (updated !== null) return updated;
+
+      const current = await PrivateWorkItemModel.findOne(owned).lean<PrivateWorkItemRecord>().exec();
+      if (current === null) throw taskNotFound();
+      if (current.kind !== 'subtask') throw privateItemNotSubtask();
+      if (current.done || current.completedAt !== undefined) throw privateItemAlreadyCompleted();
+      throw privateItemNotStarted();
     },
 
     async removePrivate(userId, taskId, itemId) {

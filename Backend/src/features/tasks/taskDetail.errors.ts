@@ -20,3 +20,14 @@ export const ownCrewOnly = (): AppError =>
 export const partNeedsDescription = (): AppError =>
   new AppError('Delegating part of the work needs that part described.', 400, 'PART_NEEDS_DESCRIPTION');
 
+export const privateItemNotSubtask = (): AppError =>
+  new AppError('Only a sub-task has an execution to start or complete.', 409, 'PRIVATE_ITEM_NOT_SUBTASK');
+
+export const privateItemAlreadyStarted = (): AppError =>
+  new AppError('That sub-task has already started.', 409, 'PRIVATE_ITEM_ALREADY_STARTED');
+
+export const privateItemNotStarted = (): AppError =>
+  new AppError('That sub-task has not started yet.', 409, 'PRIVATE_ITEM_NOT_STARTED');
+
+export const privateItemAlreadyCompleted = (): AppError =>
+  new AppError('That sub-task is already complete.', 409, 'PRIVATE_ITEM_ALREADY_COMPLETED');

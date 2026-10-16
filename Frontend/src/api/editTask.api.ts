@@ -32,6 +32,7 @@ export interface EditTaskPayload {
   readonly stageId?: string;
   readonly startDate?: string;
   readonly dueDate?: string;
+  readonly dateChangeReason?: string;
 }
 
 export const fetchEditableFields = async (

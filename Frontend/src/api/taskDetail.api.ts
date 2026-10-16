@@ -44,15 +44,13 @@ export const addPrivateItem = async (
   return data.item;
 };
 
-export const togglePrivateItem = async (
-  taskId: string,
-  itemId: string,
-  done: boolean,
-): Promise<PrivateWorkItem> => {
-  const { data } = await api.patch<{ item: PrivateWorkItem }>(
-    `/tasks/${taskId}/private/${itemId}`,
-    { done },
-  );
+export const startPrivateItem = async (taskId: string, itemId: string): Promise<PrivateWorkItem> => {
+  const { data } = await api.post<{ item: PrivateWorkItem }>(`/tasks/${taskId}/private/${itemId}/start`);
+  return data.item;
+};
+
+export const completePrivateItem = async (taskId: string, itemId: string): Promise<PrivateWorkItem> => {
+  const { data } = await api.post<{ item: PrivateWorkItem }>(`/tasks/${taskId}/private/${itemId}/complete`);
   return data.item;
 };
 

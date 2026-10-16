@@ -360,7 +360,7 @@ footer.foot { margin-top: 56px; padding-top: 22px; border-top: 1px solid var(--p
       <span class="meta-chip">Collections <b id="stat-collections">—</b></span>
       <span class="meta-chip">Relations <b id="stat-relations">—</b></span>
       <span class="meta-chip">Source of truth <b>PROJECT_DECISIONS.md</b></span>
-      <span class="meta-chip">Updated <b id="stat-updated">2026-10-13</b></span>
+      <span class="meta-chip">Updated <b id="stat-updated">2026-10-16</b></span>
     </div>
   </div>
 </header>
@@ -1340,6 +1340,8 @@ module.exports = mongoose.model('CompanyCalendarVersion', companyCalendarVersion
     { name: 'createdBy', type: 'ObjectId', ref: 'users', req: true, note: 'Provenance, and the counterparty an ordinary assignee answers to. <strong>Never reaches a delegate</strong> — this field alone would expose the party above (D21).' },
     { name: 'assignee', type: 'ObjectId', ref: 'users', idx: true, note: '<strong>The contract of record.</strong> When work is delegated this stays pointing at the delegator, because that is who the general contractor believes is doing the job. Becomes ABSENT when the work is orphaned — never silently reassigned.' },
     { name: 'startDate / dueDate', type: 'Date', req: true, note: 'UTC. The values a date change would move.' },
+    { name: 'originalStartDate / originalDueDate', type: 'Date', note: '<strong>Added 2026-10-16 (standalone date management).</strong> The reference dates the trail is read against, stamped once and never written by any edit or proposal. What they MEAN is carried by <code>originalDatesSource</code> beside them — a creation stamp, a verified agreement recovery, or a migration baseline.' },
+    { name: 'originalDatesSource', type: "'creation' | 'agreement' | 'migration_baseline'", note: '<strong>Owner correction, 2026-10-16.</strong> <code>creation</code> — stamped by the one repository create every path shares. <code>agreement</code> — recovered by the backfill from the accepted agreement message, the authoritative record of the two parties\' commitment. <code>migration_baseline</code> — a legacy standalone task\'s CURRENT dates, taken as the baseline when change tracking was introduced, and <strong>never presented as an independently verified historical agreement</strong>. A legacy project row keeps no originals at all: its dates answer to the proposal flow.' },
 
     { group: 'Progress', groupNote: 'two timestamps, and nothing else' },
     { name: 'startedAt', type: 'Date', note: 'Written by Start. Absent means not started.' },
@@ -1410,6 +1412,9 @@ module.exports = mongoose.model('CompanyCalendarVersion', companyCalendarVersion
 
   startDate: { type: Date, required: true },
   dueDate:   { type: Date, required: true },
+  originalStartDate: Date,    // the trail's reference dates; meaning carried by the source field
+  originalDueDate:   Date,
+  originalDatesSource: { type: String, enum: ['creation','agreement','migration_baseline'] },
   startedAt:   Date,          // the whole of progress reporting
   completedAt: Date,
 
@@ -1526,15 +1531,17 @@ projectStageSchema.index({ project: 1, order: 1 });`
   tag: 'how the performer organises their own work',
   pos: { x: 320, y: 430 },
   purpose: 'The receiver\'s own sub-tasks and notes on work they were given. <strong>Built 2026-08-30</strong>, moved out of the embedded `subTasks` array the tasks entry used to carry.',
-  callout: '<strong>Delegation hides WHO performs; this hides HOW they organise it.</strong> They are two features that share a serializer and nothing else. A private sub-task is a checklist item: it carries no dependency edges, it cannot propagate a date, and <strong>the public state of the parent task is never derived from it</strong> — the receiver sets that themselves with Start and Complete, or the method leaks upward through the status field.',
+  callout: '<strong>Delegation hides WHO performs; this hides HOW they organise it.</strong> They are two features that share a serializer and nothing else. A private sub-task carries its own execution — <strong>2026-10-16:</strong> started and completed, two timestamps, exactly the model of the task it belongs to (D7 §3.3: the receiver\'s real start/complete lives in the private layer) — but it carries no dependency edges, it cannot propagate a date, and <strong>the public state of the parent task is never derived from it</strong>: the receiver sets that themselves with the task\'s own Start and Complete, or the method leaks upward through the status field.',
   calloutKind: 'warn',
   fields: [
     { name: '_id', type: 'ObjectId', note: '' },
     { name: 'task', type: 'ObjectId', ref: 'tasks', req: true, idx: true, note: '' },
-    { name: 'owner', type: 'ObjectId', ref: 'users', req: true, idx: true, note: '<strong>Whose private layer this is.</strong> Nobody else ever reads it — not the delegator who owns the task, not the GC, whatever authority they hold.' },
+    { name: 'owner', type: 'ObjectId', ref: 'users', req: true, idx: true, note: '<strong>Whose private layer this is.</strong> Nobody else ever reads it — not the delegator who owns the task, not the GC, not the commissioning party, whatever authority they hold. <strong>Reaffirmed by the owner\'s D7 clarification of 2026-10-16:</strong> the task\'s shared progress is visible to its authorized participants; this layer, including its execution details, is its owner\'s alone.' },
     { name: 'kind', type: "'subtask' | 'note'", req: true, note: 'One shape for both, because they differ only in whether a tick means anything.' },
     { name: 'body', type: 'String', req: true, note: 'Max 1000 characters.' },
-    { name: 'done', type: 'Boolean', req: true, note: 'Sub-tasks only. A checklist tick with no bearing on the parent task.' },
+    { name: 'done', type: 'Boolean', req: true, note: 'Sub-tasks only. Completion, with no bearing on the parent task. Kept true alongside <code>completedAt</code>; a row ticked before 2026-10-16 is complete with no completion time, and none is invented for it.' },
+    { name: 'startedAt', type: 'Date', note: '<strong>Added 2026-10-16, approved by the owner the same day.</strong> Sub-tasks only. Written once by Start. Absent means not started.' },
+    { name: 'completedAt', type: 'Date', note: '<strong>Added 2026-10-16, approved by the owner the same day.</strong> Sub-tasks only. Written once by Complete, which requires a start. State — not started, in progress, completed — is derived from the two stamps on read and never stored.' },
     { name: 'order', type: 'Number', req: true, note: '' }
   ],
   indexes: [
@@ -1563,11 +1570,68 @@ projectStageSchema.index({ project: 1, order: 1 });`
   kind:  { type: String, enum: ['subtask','note'], required: true },
   body:  { type: String, required: true, maxlength: 1000 },
   done:  { type: Boolean, required: true, default: false },
+  startedAt:   Date,   // sub-tasks only: Start, once
+  completedAt: Date,   // sub-tasks only: Complete, once, after Start
   order: { type: Number, required: true, default: 0 }
 }, { timestamps: true });
 
 // Always read as "this person's layer on this task" — never by task alone.
 privateWorkItemSchema.index({ task: 1, owner: 1, order: 1 });`
+},
+
+/* ─────────── taskdatechanges ─────────── */
+{
+  id: 'taskdatechanges', model: 'TaskDateChange', domain: 'work', stage: 3,
+  tag: 'the standalone date trail',
+  pos: { x: 320, y: 510 },
+  purpose: 'One direct date change on standalone work: who moved the planned dates, from what, to what, and why. <strong>Built 2026-10-16</strong> with the standalone date-management correction. Appended by the edit path and never rewritten, so the originally agreed dates on [[tasks]] plus this trail are the whole history of the schedule.',
+  callout: '<strong>Project work never writes here.</strong> A committed project date moves only through the proposal flow, which keeps its own record in [[auditentries]] — two coordination regimes, two records, and neither borrows the other\'s. An internal standalone date edit is also never counted as a flexibility negotiation outcome, because no negotiation happened.',
+  calloutKind: 'warn',
+  fields: [
+    { name: '_id', type: 'ObjectId', note: '' },
+    { name: 'task', type: 'ObjectId', ref: 'tasks', req: true, idx: true, note: 'Always standalone work — the edit path is the only writer and it refuses project dates before it gets here.' },
+    { name: 'actor', type: 'ObjectId', ref: 'users', req: true, note: 'The responsible performer who moved the dates. On standalone work that is the only person allowed to.' },
+    { name: 'fromStartDate / fromDueDate', type: 'Date', req: true, note: 'The planned dates as they stood before the change.' },
+    { name: 'toStartDate / toDueDate', type: 'Date', req: true, note: 'The planned dates the change wrote.' },
+    { name: 'reason', type: 'String', note: 'Why the dates moved — the delay record, max 400 characters, optional.' },
+    { name: 'at', type: 'Date', req: true, note: '' }
+  ],
+  indexes: [
+    { def: '{ task: 1, at: -1 }', serves: 'One task\'s trail, newest first', why: 'The trail is only ever read per task, for the detail screen and the counterparty\'s information.' }
+  ],
+  why: [
+    '<strong>A separate collection rather than an embedded array</strong>, for the same reason the private layer left [[tasks]]: the trail is unbounded in principle, and the task document the serializer sends around should not grow with every reschedule.',
+    '<strong>The coordination audit could not host it.</strong> `auditentries.project` is required and its action enum is proposal-shaped; bending both for standalone work would blur the boundary between the two regimes the callout names.',
+    '<strong>The agreement message is never rewritten.</strong> Agreement-born work keeps its commitment on the message (see [[messages]]); this trail records what happened after, and the originals on [[tasks]] keep what was first agreed visible beside the current plan.'
+  ],
+  relations: [
+    { to: 'tasks', via: 'task', store: 'ref', card: 'N:1', why: 'The standalone work whose planned dates moved.' },
+    { to: 'users', via: 'actor', store: 'ref', card: 'N:1', why: 'Who moved them.' }
+  ],
+  sample: `{
+  _id: ObjectId("6690d1a0c2b9e30012af3401"),
+  task:  ObjectId("6670a1a0c2b9e30012af2101"),
+  actor: ObjectId("6650a2c8c2b9e30012af0b33"),
+  fromStartDate: ISODate("2027-11-06"), fromDueDate: ISODate("2027-11-10"),
+  toStartDate:   ISODate("2027-11-08"), toDueDate:   ISODate("2027-11-13"),
+  reason: "\u05e2\u05d9\u05db\u05d5\u05d1 \u05d1\u05d0\u05e1\u05e4\u05e7\u05ea \u05d4\u05d7\u05d5\u05de\u05e8\u05d9\u05dd",
+  at: ISODate("2027-11-04T09:12:00Z")
+}
+
+// The task's originalStartDate / originalDueDate still carry what was first agreed.`,
+  schema: `const taskDateChangeSchema = new Schema({
+  task:  { type: Schema.Types.ObjectId, ref: 'Task', required: true },
+  actor: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+  fromStartDate: { type: Date, required: true },
+  fromDueDate:   { type: Date, required: true },
+  toStartDate:   { type: Date, required: true },
+  toDueDate:     { type: Date, required: true },
+  reason: { type: String, trim: true, maxlength: 400 },
+  at: { type: Date, required: true, default: () => new Date() }
+}, { timestamps: false });
+
+// Always read as one task's trail, newest first.
+taskDateChangeSchema.index({ task: 1, at: -1 });`
 },
 
 /* ─────────── fileassets ─────────── */
