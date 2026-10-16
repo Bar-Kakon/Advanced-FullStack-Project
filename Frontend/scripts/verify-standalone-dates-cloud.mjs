@@ -10,8 +10,9 @@
  *     original-date migration are all observably live.
  *
  * It creates only its own clearly titled fixtures (one standalone task, one agreement in the
- * existing QA conversation and the task it becomes), consumes no pending QA state, and marks only
- * the notifications it caused as seen. Passwords, tokens and email addresses never reach a log.
+ * existing QA conversation and the task it becomes), consumes no pending QA state, reads the
+ * existing delegated QA task without changing it, and marks only the notifications it caused as
+ * seen. Passwords, tokens and email addresses never reach a log.
  *
  *   node scripts/verify-standalone-dates-cloud.mjs                                   preflight only
  *   BLOKTA_VERIFY_CONFIRM=standalone-dates node scripts/verify-standalone-dates-cloud.mjs
@@ -145,6 +146,16 @@ const markedSeen = [];
 const pageErrors = [];
 const consoleErrors = [];
 const browserHttpErrors = [];
+const browserRequests = [];
+const knownErrors = [];
+const PRIVATE_LAYER = /\/api\/tasks\/[0-9a-f]{24}\/private$/;
+const pathOf = (url) => {
+  try {
+    return new URL(url).pathname;
+  } catch {
+    return '';
+  }
+};
 let browser = null;
 let aborted = null;
 
@@ -163,7 +174,7 @@ const finish = async () => {
     aborted,
     fixtures,
     notificationsMarkedSeen: markedSeen,
-    browser: { pageErrors: pageErrors.length, consoleErrors: consoleErrors.length, httpErrors: browserHttpErrors.length },
+    browser: { pageErrors: pageErrors.length, consoleErrors: consoleErrors.length, httpErrors: browserHttpErrors.length, knownPreExisting: knownErrors },
     files: {
       runLog: join(OUT, 'run.log'),
       http: join(OUT, 'http.jsonl'),
@@ -208,14 +219,22 @@ const watch = (page, who) => {
     const text = sanitize(message.text());
     const source = message.location()?.url ?? '';
     const external = /accounts\.google\.com|gstatic\.com/.test(source) || /GSI_LOGGER/.test(text);
-    if (!external) consoleErrors.push(text);
+    const known = PRIVATE_LAYER.test(pathOf(source));
+    if (known) knownErrors.push(`${who} console: ${pathOf(source)}`);
+    else if (!external) consoleErrors.push(text);
     write('browser.jsonl', JSON.stringify({ at: new Date().toISOString(), who, kind: 'console.error', external, text, source: sanitize(source) }));
+  });
+  page.on('request', (request) => {
+    const url = new URL(request.url());
+    if (url.origin === new URL(API).origin) browserRequests.push({ who, method: request.method(), path: url.pathname });
   });
   page.on('response', (response) => {
     const url = new URL(response.url());
     if (response.status() < 400 || url.origin !== new URL(API).origin) return;
     const expected = response.status() === 401 && url.pathname.endsWith('/auth/refresh');
-    if (!expected) browserHttpErrors.push(`${response.request().method()} ${url.pathname} ${response.status()}`);
+    const known = response.status() === 404 && response.request().method() === 'GET' && PRIVATE_LAYER.test(url.pathname);
+    if (known) knownErrors.push(`${who} GET ${url.pathname} 404`);
+    else if (!expected) browserHttpErrors.push(`${who} ${response.request().method()} ${url.pathname} ${response.status()}`);
     write('browser.jsonl', JSON.stringify({ at: new Date().toISOString(), who, kind: 'http', expected, method: response.request().method(), path: url.pathname, status: response.status() }));
   });
   page.on('requestfailed', (request) => {
@@ -244,6 +263,27 @@ const uiLogin = async (account) => {
   return page;
 };
 
+const openTask = async (page, taskId, refresh = false) => {
+  await page.goto(`${APP}/tasks/${taskId}`, { waitUntil: 'domcontentloaded', timeout: 60000 });
+  if (refresh) await page.reload({ waitUntil: 'domcontentloaded', timeout: 60000 });
+  await page.waitForSelector('#task-summary-title', { timeout: 45000 }).catch(() => {});
+  await sleep(1500);
+};
+
+const has = async (page, selector) => (await page.locator(selector).count()) > 0;
+
+/** The delegation panel is drawn only for a delegate, the delegator of an active delegation, or someone who may delegate now. */
+const checkDelegationPanel = async (page, task, where) => {
+  const expected = task.viewerIsDelegate || task.delegation !== null || task.viewer.canDelegate;
+  const present = await has(page, '#delegation-title');
+  check(`${where}: the delegation panel is ${expected ? 'shown' : 'absent'} as the viewer’s standing requires`, present === expected, { expected, present });
+  if (present) {
+    const controls = await has(page, 'section[aria-labelledby="delegation-title"] .btn--primary');
+    const controlsExpected = task.viewer.canDelegate && !task.viewerIsDelegate && task.delegation === null;
+    check(`${where}: delegation controls appear only when the viewer may delegate`, controls === controlsExpected, { controls, controlsExpected });
+  }
+};
+
 const editDatesInUi = async (page, taskId, dates) => {
   const panel = page.locator('section[aria-labelledby="standalone-dates-title"]');
   await panel.locator('a[href$="/edit"]').click();
@@ -261,13 +301,6 @@ const editDatesInUi = async (page, taskId, dates) => {
   return response.status();
 };
 
-const openPanelAfterRefresh = async (page, taskId) => {
-  await page.goto(`${APP}/tasks/${taskId}`, { waitUntil: 'domcontentloaded', timeout: 60000 });
-  await page.reload({ waitUntil: 'domcontentloaded', timeout: 60000 });
-  await page.waitForSelector('#standalone-dates-title', { timeout: 45000 });
-  return page.locator('section[aria-labelledby="standalone-dates-title"]');
-};
-
 /* ── the procedure ─────────────────────────────────────────────────────────────────────────── */
 
 const run = async () => {
@@ -275,11 +308,7 @@ const run = async () => {
   say(`run ${runId} · app ${APP} · api ${API} · ${WRITE ? 'writes ENABLED' : 'PREFLIGHT ONLY'}`);
 
   const credentials = JSON.parse(readFileSync(CREDENTIALS, 'utf8'));
-  const account = (id) => {
-    const found = credentials.accounts.find((row) => row.id === id);
-    if (found === undefined) throw new Error(`QA account ${id} is not in the credentials file.`);
-    return found;
-  };
+  const account = (id) => credentials.accounts.find((row) => row.id === id);
 
   section('0. Preflight — read-only');
   let health = null;
@@ -295,26 +324,27 @@ const run = async () => {
   const shell = await fetch(`${APP}/`);
   const html = await shell.text();
   check('the frontend serves the application shell', shell.status === 200 && html.includes('id="root"'), shell.status);
-  const scripts = [...html.matchAll(/\/assets\/[\w.-]+\.js/g)].map((match) => match[0]);
+  const queue = [...html.matchAll(/\/assets\/[\w.-]+\.js/g)].map((match) => match[0]);
   const seen = new Set();
-  const queue = [...scripts];
   let bundleText = '';
+  const apiHost = new URL(API).host;
   while (queue.length > 0 && seen.size < 80) {
     const path = queue.shift();
     if (seen.has(path)) continue;
     seen.add(path);
     const text = await (await fetch(`${APP}${path}`)).text();
     bundleText += text;
-    if (bundleText.includes('ניהול מועדים') && bundleText.includes('מועד הבסיס') && bundleText.includes(new URL(API).host)) break;
+    if (bundleText.includes('ניהול מועדים') && bundleText.includes('מועד הבסיס') && bundleText.includes(apiHost)) break;
     for (const match of text.matchAll(/assets\/[\w.-]+\.js/g)) queue.push(`/${match[0]}`);
   }
   const frontendLive = bundleText.includes('ניהול מועדים') && bundleText.includes('מועד הבסיס');
   check('the deployed frontend bundle carries the new date-management copy', frontendLive, `${seen.size} chunk(s) scanned`);
-  check('and it is built against this backend', bundleText.includes(new URL(API).host), new URL(API).host);
+  check('and it is built against this backend', bundleText.includes(apiHost), apiHost);
   if (!frontendLive) return abort('the new frontend is not deployed — nothing was written');
 
   const login = async (id) => {
     const qa = account(id);
+    if (qa === undefined) return null;
     const res = await api(id, 'POST', '/auth/login', { email: qa.email, password: qa.password });
     if (res.status !== 200 || typeof res.body?.accessToken !== 'string') return null;
     return { id, token: res.body.accessToken, userId: res.body.user?.id };
@@ -322,9 +352,11 @@ const run = async () => {
   const performer = await login('QA-03');
   const commissioner = await login('QA-02');
   const outsider = await login('QA-08');
+  const delegate = await login('QA-04');
   check('QA-03 (performer) signs in through the API', performer !== null);
-  check('QA-02 (commissioner) signs in through the API', commissioner !== null);
+  check('QA-02 (commissioner, project GC) signs in through the API', commissioner !== null);
   check('QA-08 (outsider) signs in through the API', outsider !== null);
+  if (delegate === null) info('QA-04 (delegate) unavailable — the delegate view is skipped');
   if (!performer || !commissioner || !outsider) return abort('a QA account could not sign in');
   const asPerformer = as(performer);
   const asCommissioner = as(commissioner);
@@ -403,7 +435,13 @@ const run = async () => {
     : null;
   if (pendingProposalId) info('the pending QA proposal (read-only)', proposalBefore);
 
-  section('2. Project-linked scheduling is unchanged — read-only plus one refused write');
+  browser = await chromium.launch();
+  const performerPage = await uiLogin(account('QA-03'));
+  check('QA-03 signs in through the deployed login screen', !new URL(performerPage.url()).pathname.startsWith('/login'));
+  const commissionerPage = await uiLogin(account('QA-02'));
+  check('QA-02 signs in through the deployed login screen', !new URL(commissionerPage.url()).pathname.startsWith('/login'));
+
+  section('2. Project-linked scheduling and panels are unchanged — read-only plus one refused write');
   const projectRow = before.find(
     (row) => row.kind === 'project' && row.state !== 'completed' && !row.orphaned && !row.viewerIsDelegate && !row.delegated,
   );
@@ -419,26 +457,78 @@ const run = async () => {
     check('the read-only impact preview still computes (200)', preview.status === 200 && preview.body?.preview !== undefined, preview.status);
     const after = (await asPerformer('GET', `/tasks/${projectRow.id}`)).body?.task;
     check('and its dates did not move', after?.startDate === projectTask?.startDate && after?.dueDate === projectTask?.dueDate);
+
+    await openTask(performerPage, projectRow.id);
+    check('performer’s project page: the stage section is drawn', await has(performerPage, '#stage-title'));
+    check('performer’s project page: the project date-change panel is drawn', await has(performerPage, '#date-change-title'));
+    check('performer’s project page: the responsibility-handoff panel is drawn', await has(performerPage, '#handoff-title'));
+    check('performer’s project page: no standalone date panel', !(await has(performerPage, '#standalone-dates-title')));
+    await checkDelegationPanel(performerPage, projectTask, 'performer’s project page');
+    await screenshot(performerPage, 'project-performer');
+
+    const gcView = await asCommissioner('GET', `/tasks/${projectRow.id}`);
+    if (gcView.status === 200) {
+      await openTask(commissionerPage, projectRow.id);
+      check('GC’s project page: the stage section is drawn', await has(commissionerPage, '#stage-title'));
+      check('GC’s project page: the responsibility-handoff panel is drawn', await has(commissionerPage, '#handoff-title'));
+      await checkDelegationPanel(commissionerPage, gcView.body.task, 'GC’s project page');
+      await screenshot(commissionerPage, 'project-gc');
+    } else info('the GC cannot open this project task — GC page checks skipped', gcView.status);
   }
 
-  section('3. A self-created standalone task, through the deployed UI');
+  section('3. D7 — the delegation wall, on the existing delegated QA task (read-only)');
+  const delegatedRow = before.find((row) => row.kind === 'project' && row.delegated && !row.viewerIsDelegate);
+  if (delegatedRow === undefined) {
+    info('the performer holds no delegated task — D7 legs skipped');
+  } else {
+    const asDelegator = details.get(delegatedRow.id);
+    check('the delegator is told who performs', typeof asDelegator?.delegation?.delegateName === 'string');
+    const gcSide = await asCommissioner('GET', `/tasks/${delegatedRow.id}`);
+    if (gcSide.status === 200) {
+      check('the party above is served no delegation at all', gcSide.body.task.delegation === null && gcSide.body.task.viewerIsDelegate === false, gcSide.body.task.delegation);
+    }
+    await openTask(performerPage, delegatedRow.id);
+    await checkDelegationPanel(performerPage, asDelegator, 'delegator’s page');
+    if (gcSide.status === 200) {
+      await openTask(commissionerPage, delegatedRow.id);
+      await checkDelegationPanel(commissionerPage, gcSide.body.task, 'GC’s page of the delegated task');
+      const gcText = (await commissionerPage.locator('main').textContent()) ?? '';
+      check('the GC’s page never names the delegate', !gcText.includes(asDelegator.delegation.delegateName), 'delegate name visible');
+    }
+    if (delegate !== null) {
+      const delegateSide = await as(delegate)('GET', `/tasks/${delegatedRow.id}`);
+      if (delegateSide.status === 200 && delegateSide.body.task.viewerIsDelegate) {
+        const view = delegateSide.body.task;
+        check('the delegate is served no project and no stage', view.project === null && view.stage === null);
+        check('the delegate is served no impact count — no sequence information', view.rescheduleImpact === null, view.rescheduleImpact);
+        check('the delegate’s counterparty is the delegator, never the GC', view.counterparty?.userId === performer.userId, view.counterparty);
+        const delegatePage = await uiLogin(account('QA-04'));
+        await openTask(delegatePage, delegatedRow.id);
+        await checkDelegationPanel(delegatePage, view, 'delegate’s page');
+        check('the delegate’s page has no stage section', !(await has(delegatePage, '#stage-title')));
+        check('the delegate’s page has no responsibility-handoff panel', !(await has(delegatePage, '#handoff-title')));
+        check('the delegate’s page has no project date-change panel', !(await has(delegatePage, '#date-change-title')));
+        await screenshot(delegatePage, 'delegate-view');
+      } else info('QA-04 is not the delegate of this task — delegate view skipped', delegateSide.status);
+    }
+  }
+
+  section('4. A self-created standalone task, through the deployed UI');
   const created = await asPerformer('POST', '/tasks', { kind: 'standalone', title: SOLO_TITLE, startDate: day(40), dueDate: day(44) });
   check('the performer opens a fresh standalone task (201)', created.status === 201, created.status);
   const soloId = created.body?.task?.id;
   if (!soloId) return abort('the standalone fixture could not be created');
   fixtures.soloTaskId = soloId;
   fixtures.soloTitle = SOLO_TITLE;
+  const soloDetail = (await asPerformer('GET', `/tasks/${soloId}`)).body?.task;
 
-  browser = await chromium.launch();
-  const performerPage = await uiLogin(account('QA-03'));
-  check('QA-03 signs in through the deployed login screen', !new URL(performerPage.url()).pathname.startsWith('/login'));
-
-  await performerPage.goto(`${APP}/tasks/${soloId}`, { waitUntil: 'domcontentloaded', timeout: 60000 });
-  await performerPage.waitForSelector('#standalone-dates-title', { timeout: 45000 }).catch(() => {});
+  await openTask(performerPage, soloId);
   const soloPanel = performerPage.locator('section[aria-labelledby="standalone-dates-title"]');
   check('the standalone date-management panel is drawn', (await soloPanel.count()) === 1);
-  check('no project stage section is drawn', (await performerPage.locator('#stage-title').count()) === 0);
-  check('no project date-change panel is drawn', (await performerPage.locator('#date-change-title').count()) === 0);
+  check('no project stage section is drawn', !(await has(performerPage, '#stage-title')));
+  check('no project date-change panel is drawn', !(await has(performerPage, '#date-change-title')));
+  check('no responsibility-handoff panel is drawn', !(await has(performerPage, '#handoff-title')));
+  await checkDelegationPanel(performerPage, soloDetail, 'standalone page');
   const soloPanelText = (await soloPanel.textContent()) ?? '';
   check('the originals are labelled as originally agreed', /המועד שסוכם במקור|Originally agreed/.test(soloPanelText));
   check('the history starts empty', /המועדים טרם שונו|have not changed yet/.test(soloPanelText));
@@ -448,8 +538,8 @@ const run = async () => {
   check('saving new planned dates in Edit Task succeeds (PATCH 200)', soloSave === 200, soloSave);
   await screenshot(performerPage, 'solo-saved');
 
-  const soloAfterPanel = await openPanelAfterRefresh(performerPage, soloId);
-  const soloRows = soloAfterPanel.locator('.dash-history__row');
+  await openTask(performerPage, soloId, true);
+  const soloRows = performerPage.locator('section[aria-labelledby="standalone-dates-title"] .dash-history__row');
   check('after a refresh the history shows exactly one change', (await soloRows.count()) === 1, await soloRows.count());
   check('carrying the reason that was entered', ((await soloRows.first().textContent()) ?? '').includes(REASON_SOLO));
   await screenshot(performerPage, 'solo-after-refresh');
@@ -464,7 +554,7 @@ const run = async () => {
     solo?.dateChanges,
   );
 
-  section('4. An agreement-born standalone task, and the commissioner’s informational notice');
+  section('5. An agreement-born standalone task, and the commissioner’s informational notice');
   const proposed = await asCommissioner('POST', `/conversations/${conversation.id}/agreements`, { title: BORN_TITLE, startDate: day(60), dueDate: day(66) });
   check('the commissioner proposes a fresh agreement in the existing QA conversation (201)', proposed.status === 201, proposed.status);
   const agreementId = proposed.body?.message?.id;
@@ -488,16 +578,17 @@ const run = async () => {
   const byOutsider = await asOutsider('GET', `/tasks/${bornId}`);
   check('the outsider cannot read the task (404)', byOutsider.status === 404, byOutsider.status);
 
-  await performerPage.goto(`${APP}/tasks/${bornId}`, { waitUntil: 'domcontentloaded', timeout: 60000 });
-  await performerPage.waitForSelector('#standalone-dates-title', { timeout: 45000 }).catch(() => {});
+  await openTask(performerPage, bornId);
   const bornPanelText = (await performerPage.locator('section[aria-labelledby="standalone-dates-title"]').textContent()) ?? '';
   check('the panel says the work was born from an agreement', /העבודה נולדה מהסכם|born from an agreement/.test(bornPanelText));
+  check('no responsibility-handoff panel on the agreement-born task', !(await has(performerPage, '#handoff-title')));
+  await checkDelegationPanel(performerPage, born, 'agreement-born page');
   await screenshot(performerPage, 'born-before');
 
   const bornSave = await editDatesInUi(performerPage, bornId, { due: day(70), reason: REASON_BORN });
   check('recording the execution delay in Edit Task succeeds (PATCH 200)', bornSave === 200, bornSave);
-  const bornAfterPanel = await openPanelAfterRefresh(performerPage, bornId);
-  const bornRows = bornAfterPanel.locator('.dash-history__row');
+  await openTask(performerPage, bornId, true);
+  const bornRows = performerPage.locator('section[aria-labelledby="standalone-dates-title"] .dash-history__row');
   check('after a refresh its history shows the delay', (await bornRows.count()) === 1 && ((await bornRows.first().textContent()) ?? '').includes(REASON_BORN));
   await screenshot(performerPage, 'born-after-refresh');
 
@@ -524,62 +615,70 @@ const run = async () => {
   const tracked = commissioned.find((row) => row.id === bornId);
   check('the commissioner’s commissioned-work list shows the new due date', tracked?.dueDate === day(70), tracked);
 
-  const commissionerPage = await uiLogin(account('QA-02'));
-  check('QA-02 signs in through the deployed login screen', !new URL(commissionerPage.url()).pathname.startsWith('/login'));
   await commissionerPage.goto(`${APP}/notifications`, { waitUntil: 'domcontentloaded', timeout: 60000 });
   await commissionerPage.waitForSelector('.notif-row', { timeout: 45000 }).catch(() => {});
   const row = commissionerPage.locator('.notif-row', { hasText: BORN_TITLE });
   check('the notice appears in the commissioner’s notification centre', (await row.count()) === 1, await row.count());
   await screenshot(commissionerPage, 'commissioner-notifications');
   const link = row.locator('.notif-row__actions a');
-  if ((await link.count()) === 0) {
-    check('the notice is informational and offers no dead link', true);
-  } else {
+  check('the notice offers a way to the change', (await link.count()) === 1, await link.count());
+  if ((await link.count()) === 1) {
     await link.first().click();
-    await commissionerPage.waitForLoadState('domcontentloaded');
-    await sleep(2500);
-    const landed = (await commissionerPage.locator('main').textContent()) ?? '';
-    await screenshot(commissionerPage, 'commissioner-notice-destination');
-    check(
-      'following the notice lands where the commissioner can see the new date',
-      landed.includes(BORN_TITLE) && landed.includes(day(70)),
-      { landedOn: new URL(commissionerPage.url()).pathname },
-    );
+    await commissionerPage.waitForURL((url) => url.pathname === '/tasks', { timeout: 30000 }).catch(() => {});
+    const landed = new URL(commissionerPage.url());
+    check('following it lands on My Tasks, at this commissioned work', landed.pathname === '/tasks' && landed.searchParams.get('commissioned') === bornId, `${landed.pathname}${landed.search}`);
+    const focused = commissionerPage.locator(`#commissioned-${bornId}`);
+    await focused.waitFor({ timeout: 30000 }).catch(() => {});
+    check('the commissioned row is highlighted', ((await focused.getAttribute('class')) ?? '').includes('task-row--focus') && (await focused.getAttribute('aria-current')) === 'true');
+    const focusedText = (await focused.textContent()) ?? '';
+    check('it shows the work and its new due date', focusedText.includes(BORN_TITLE) && focusedText.includes(day(70)), focusedText.slice(0, 160));
+    await screenshot(commissionerPage, 'commissioner-commissioned-work');
   }
+  check(
+    'the commissioner’s browser never requested the performer’s task detail',
+    !browserRequests.some((r) => r.who === 'QA-02' && (r.path.endsWith(`/tasks/${bornId}`) || r.path.endsWith(`/tasks/${soloId}`))),
+  );
+  check(
+    'no responsibility-handoff request was made for either standalone task',
+    !browserRequests.some((r) => r.path.endsWith(`/tasks/${soloId}/handoff`) || r.path.endsWith(`/tasks/${bornId}/handoff`)),
+  );
 
-  section('5. Nothing unrelated moved');
+  section('6. Nothing unrelated moved');
   const afterRows = (await listAll(asPerformer, '/tasks?limit=50', 'tasks')) ?? [];
-  const afterById = new Map(afterRows.map((row) => [row.id, row]));
-  const moved = before.filter((row) => {
-    const now2 = afterById.get(row.id);
-    return now2 === undefined || now2.startDate !== row.startDate || now2.dueDate !== row.dueDate || now2.state !== row.state || now2.pendingProposal !== row.pendingProposal;
+  const afterById = new Map(afterRows.map((entry) => [entry.id, entry]));
+  const moved = before.filter((entry) => {
+    const current = afterById.get(entry.id);
+    return current === undefined || current.startDate !== entry.startDate || current.dueDate !== entry.dueDate || current.state !== entry.state || current.pendingProposal !== entry.pendingProposal || current.delegated !== entry.delegated;
   });
-  check('every pre-existing performer task kept its dates, state and proposal marker', moved.length === 0, moved.map((row) => row.id));
-  const commissionedAfter = new Map(commissioned.map((row) => [row.id, row]));
-  const shifted = commissionedBefore.filter((row) => commissionedAfter.get(row.id)?.dueDate !== row.dueDate);
-  check('every pre-existing commissioned task kept its due date', shifted.length === 0, shifted.map((row) => row.id));
+  check('every pre-existing performer task kept its dates, state, delegation and proposal marker', moved.length === 0, moved.map((entry) => entry.id));
+  const commissionedAfter = new Map(commissioned.map((entry) => [entry.id, entry]));
+  const shifted = commissionedBefore.filter((entry) => commissionedAfter.get(entry.id)?.dueDate !== entry.dueDate);
+  check('every pre-existing commissioned task kept its due date', shifted.length === 0, shifted.map((entry) => entry.id));
   if (pendingProposalId) {
     const proposalAfter = (await asCommissioner('GET', `/coordination/proposals/${pendingProposalId}`)).body?.proposal?.status ?? null;
     check('the pending QA date-change proposal is untouched', proposalAfter === proposalBefore, [proposalBefore, proposalAfter]);
   }
 
-  section('6. The deployed frontend stayed healthy');
+  section('7. The deployed frontend stayed healthy');
   check('no uncaught page errors', pageErrors.length === 0, pageErrors);
   check('no application console errors', consoleErrors.length === 0, consoleErrors);
   check('no unexpected failed API responses in the browser', browserHttpErrors.length === 0, browserHttpErrors);
+  if (knownErrors.length > 0) {
+    info(`KNOWN pre-existing, not caused by this release: the task page asks every viewer for their private layer and a non-owner is refused (${knownErrors.length})`, knownErrors);
+  }
 
-  section('7. Restoring the QA notification baseline');
+  section('8. Restoring the QA notification baseline');
   for (const [label, call] of [['commissioner', asCommissioner], ['performer', asPerformer]]) {
     const rows = (await feed(call)).filter(
-      (row) =>
-        row.seenAt === null &&
-        new Date(row.createdAt) >= started &&
-        (row.taskId === soloId || row.taskId === bornId || row.conversationId === conversation.id),
+      (entry) =>
+        entry.seenAt === null &&
+        new Date(entry.createdAt) >= started &&
+        (entry.taskId === soloId || entry.taskId === bornId || entry.conversationId === conversation.id),
     );
     if (rows.length > 0) {
-      const res = await call('POST', '/notifications/seen', { ids: rows.map((row) => row.id) });
+      const res = await call('POST', '/notifications/seen', { ids: rows.map((entry) => entry.id) });
       check(`the ${label}’s ${rows.length} run-created notification(s) marked seen`, res.status < 300, res.status);
-      markedSeen.push(...rows.map((row) => ({ account: label, id: row.id, type: row.type })));
+      markedSeen.push(...rows.map((entry) => ({ account: label, id: entry.id, type: entry.type })));
     }
   }
   const unreadAfter = { performer: await unread(asPerformer), commissioner: await unread(asCommissioner), outsider: await unread(asOutsider) };

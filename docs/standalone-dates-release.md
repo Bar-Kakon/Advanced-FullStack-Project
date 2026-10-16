@@ -8,49 +8,46 @@ authorization, given at that step.
 
 | Stage | Status |
 |---|---|
-| Local verification | **Done.** `npm run verify:standalone-dates` (Backend) — 52 PASS on an isolated local database, including the migration's dry run, manifest, idempotency and exact rollback. |
-| Local rehearsal of this plan | **Done, not cloud.** The migration and the cloud procedure were run end to end against a throwaway local backend, a production-mode frontend build and a seeded throwaway database: 67 PASS, 3 FAIL — all three are real findings, listed under *Blockers*. |
-| Cloud deployment | **Not done.** Production still serves the previous build (checked read-only 2026-10-16 17:19 UTC: `/api/health` ok, and the live bundle carries none of the new copy). |
-| Cloud runtime verification | **Not done.** It cannot run until the deployment and the migration are live; the procedure refuses to write anything before then. |
+| Local verification | **Done.** Backend, on isolated local databases: `verify:standalone-dates` 52 PASS (including the migration's dry run, manifest, idempotency and exact rollback) and `verify:task-detail` 68 PASS. |
+| Release rehearsal | **Done, not cloud.** The full cloud procedure against a throwaway local backend, a production-mode frontend build and a seeded throwaway database migrated with the real script: **105 PASS, 0 FAIL**. |
+| Deployment compatibility | **Done, not cloud.** The new frontend against today's `main` backend: 14 PASS. A negative control — the same check on the frontend from before the guard — crashes into the error boundary, which shows the guard is what prevents it. |
+| Cloud deployment | **Not done.** Production still serves the previous build. |
+| Cloud runtime verification | **Not done.** The procedure refuses to write anything until the deployment and the migration are live. |
 
 The private-subtask execution defect is **still OPEN** and is not touched by any of this.
 
-## Blockers needing an owner decision before the merge
+## The rehearsal defects, and their corrections (approved 2026-10-16)
 
-1. **The commissioner's notice opens a page they cannot see.** `task.updated` is not an
-   informational notification type, so the row draws an "open" link to `/tasks/:id`. The
-   commissioner has no view of the performer's task, and the page answers «העבודה לא נמצאה, או
-   שאין גישה אליה». Seen in the rehearsal (screenshot `07`). Options:
-   (a) **recommended** — send the commissioner's notice to My Tasks, where the commissioned-work list
-   already shows the new due date; or (b) make the commissioner's notice informational with no link,
-   matching the existing owner rule for status updates.
-2. **The handoff panel («העברת אחריות») is still drawn on standalone work.** The handoff flow is
-   project-only: its endpoint answers 404 for standalone tasks, the panel swallows that and shows an
-   explanation of a flow that cannot happen, and every standalone task page logs a console 404. This
-   falls under the original clarification (hide project-specific sections) and was missed. Fix: do
-   not render the panel when the task is standalone, as was done for the stage section.
-3. **The delegation panel («העברת ביצוע») draws an empty shell** when the viewer can neither
-   delegate nor is party to a delegation (the owner's first screenshot). It is not project-specific,
-   but an empty titled panel also reveals the feature to accounts it should stay hidden from. Fix:
-   render nothing in that case. Pre-existing; affects project tasks too. Include it in this batch or
-   leave it out — the owner's call.
-4. **Deploy race.** Vercel usually finishes before Render. In that window the new frontend reads a
-   standalone task from the old backend, which has no `dateChanges` field, and the page would crash
-   into the error boundary. Fix (recommended): a two-line guard in the new panel. Alternative:
-   deploy Render first and hold the Vercel deploy until Render is live.
-5. **Confirm the deploy sources in the dashboards.** Vercel production follows `main` (a fix merged to
-   `main` at 08:18 UTC on 2026-10-13 was live on Vercel at 08:20). Render's branch and auto-deploy
-   setting are not visible from the repository: confirm Render → service → Settings → Branch = `main`,
-   Auto-Deploy = Yes.
+1. **Commissioner notice → a page they could not see.** The notice linked to `/tasks/:id`, which is
+   the performer's task. It now leads to My Tasks → Commissioned Work, with the work highlighted
+   (`/tasks?commissioned=:id`), using the existing list. No schema change was needed: a
+   `task.updated` notice without a project is, by construction, only ever the commissioner's.
+2. **The responsibility-handoff panel on standalone work.** It is now drawn only where the viewer
+   can see the project. Handoff rules are unchanged.
+3. **The empty delegation panel.** It is now drawn only for a delegate, for the delegator of an active
+   delegation, or for someone who may delegate now. The own-crew-only note went with it: it was a
+   panel with no possible action, and it was also shown to accounts that must not detect the
+   feature.
+4. **Deployment compatibility.** The new date panel tolerates the previous backend's response shape:
+   a missing trail reads as an empty history and missing originals read as «לא תועד במערכת».
 
-Items 1–4 are small code changes on this branch. They are **not made**; each waits for approval, and
-the local verification and the rehearsal are rerun afterwards.
+**Found by the corrected rehearsal and closed under "preserve D7":** a delegate was shown the
+project stage section and the project date-change panel, and the API served the delegate an impact
+count of other works — sequence information D7 withholds. Both project panels now follow the same
+"project visible to this viewer" rule, and a delegate's `rescheduleImpact` is `null`.
+
+**Known and pre-existing, deliberately not changed here:** the task page asks every viewer for
+their private layer, and a non-owner is refused with a 404. The code treats that as normal, but the
+browser logs it as an error. It belongs with the open private-subtask defect. The procedure lists
+it as KNOWN instead of passing it silently.
+
+**Owner to confirm in the dashboard:** Render's deploy branch is `main` with Auto-Deploy on. Vercel
+production follows `main`: a fix merged at 08:18 UTC on 2026-10-13 was live at 08:20.
 
 ## 1. Merge plan
 
-The branch already contains current `develop` (`4b8ca54`), and `main`'s tree is identical to
-`develop`'s. Both merges were run on throwaway branches and are clean: each yields exactly this
-branch's tree, and only the 19 standalone-date files (plus this preparation) reach `main`.
+The branch already contains current `develop`, and `main`'s tree is identical to `develop`'s. Run
+both merges on throwaway branches again immediately before executing them.
 
 ```zsh
 # Step 1 — develop (standard workflow)
@@ -106,12 +103,11 @@ once the release is accepted. Atlas M0 has no snapshots, so the manifest is the 
 
 ## 3. Deployment steps
 
-1. Owner confirms blocker 5, and decides blockers 1–4 (any approved fixes land on this branch first,
-   with local verification and the rehearsal rerun).
+1. Owner confirms Render's deploy branch.
 2. Migration dry run A, then pass 1 B — authorized separately.
 3. Merge step 1 (develop), then merge step 2 (main) — `main` authorized separately.
 4. Render: wait for the deploy of the new `main` commit to show **Live**; `GET /api/health` answers ok
-   with a small `uptimeSeconds`.
+   with a small `uptimeSeconds`. The compatibility guard covers the minutes in which Vercel is ahead.
 5. Vercel: wait for the production deployment of the same commit to show **Ready**.
 6. Migration pass 2 (C) and the post-check (D).
 7. The cloud runtime verification (section 4).
@@ -125,21 +121,24 @@ once the release is accepted. Atlas M0 has no snapshots, so the manifest is the 
 
 ```zsh
 cd Frontend
-npm run verify:standalone-dates-cloud                                  # preflight only, read-only
 BLOKTA_VERIFY_CONFIRM=standalone-dates npm run verify:standalone-dates-cloud   # AUTHORIZATION REQUIRED
 ```
 
-**Accounts:** QA-03 שי לוינסון (performer), QA-02 גיל שרון (commissioner), QA-08 טל אורן (outsider),
-read from `~/.blokta-qa/credentials/qa-accounts.production.json`. Five logins in all, inside the
-limit of 10 per 15 minutes.
+Without the confirmation variable it runs the read-only preflight and stops. Skip that separate
+preflight on the day: the full run performs it anyway, and both together would exceed the login
+limit (10 per 15 minutes).
+
+**Accounts:** QA-03 שי לוינסון (performer and delegator), QA-02 גיל שרון (commissioner and project
+GC), QA-04 דנה אדלר (the delegate of the existing delegated task), and QA-08 טל אורן (outsider). They
+are read from `~/.blokta-qa/credentials/qa-accounts.production.json`. Seven logins in all.
 
 **What it creates** (all titled `אימות מועדים · … · <run id>`): one standalone task for QA-03, and
 one agreement in the existing QA-02 ↔ QA-03 conversation, proposed and accepted in the same run,
 plus the task it becomes. It consumes **no** pending QA state: the pending agreement איטום גג, the
-open date-change request, invitations and connection requests are all untouched, and the pending
-proposal is only read. There is no task-delete endpoint, so these fixtures stay as labelled QA
-records. Afterwards it marks as seen only the notifications the run itself caused, so the QA unread
-badges return to their pre-run values.
+open date-change request, invitations, connection requests and the existing delegation are all
+untouched; the pending proposal and the delegated task are only read. There is no task-delete
+endpoint, so these fixtures stay as labelled QA records. Afterwards it marks as seen only the
+notifications the run itself caused, so the QA unread badges return to their pre-run values.
 
 **What it checks:**
 
@@ -148,30 +147,46 @@ badges return to their pre-run values.
 - **Original-date sources on the existing QA tasks.** Agreement-born tasks must equal their agreement
   message dates; migration baselines must equal the dates on record; project tasks have no
   originals.
-- **Project scheduling is unaffected.** On QA-03's project task: the stage still shows, the date-change
-  flow is still offered, a direct date edit is refused with 409, the impact preview still computes,
-  and the dates do not move.
-- **Self-created standalone task, through the deployed UI.** The new panel replaces the stage and
-  date-change panels; the dates are edited with a reason; after a refresh the history persists; the
-  server-side dates, originals, source and trail are correct; and nobody is notified.
-- **Agreement-born standalone task.** The counterparty comes from the agreement; the commissioner
-  gets 403 on editing and the outsider gets 404 on reading; a delay is recorded through the UI and
-  persists after a refresh; the agreement message is unchanged; the commissioner receives exactly
-  one notice and sees the new due date in commissioned work; the performer and the outsider get
-  nothing; and following the notice leads somewhere the commissioner can see (blocker 1).
-- **Nothing unrelated moved.** Every pre-existing QA-03 task and every commissioned task keeps its
-  dates, and the pending proposal keeps its status.
+- **Project scheduling is unaffected.** On QA-03's project task: the stage still shows, the
+  date-change flow is still offered, a direct date edit is refused with 409, the impact preview still
+  computes, and the dates do not move. On the performer's and the GC's project pages, the stage,
+  date-change and handoff panels are drawn, and the delegation panel follows the viewer's standing.
+- **D7, on the existing delegated task (read-only).**
+  - The delegator sees who performs; the GC is served no delegation, and their page never names the
+    delegate.
+  - The delegate gets no project, no stage and no impact count, and their counterparty is the
+    delegator.
+  - The delegate's page shows the "received" note and none of the stage, date-change or handoff
+    panels.
+- **Self-created standalone task, through the deployed UI.**
+  - Only the new date panel is drawn: no stage, date-change or handoff panel.
+  - The delegation panel follows the viewer's standing.
+  - Dates are edited with a reason, and after a refresh the history persists.
+  - The server-side dates, originals, source and trail are correct, and nobody is notified.
+- **Agreement-born standalone task.**
+  - The counterparty comes from the agreement; the commissioner gets 403 on editing and the
+    outsider gets 404 on reading.
+  - A delay recorded through the UI persists after a refresh, and the agreement message is unchanged.
+  - The commissioner receives exactly one notice; the performer and the outsider get nothing.
+  - Following the notice lands on My Tasks with the commissioned work highlighted and its new due
+    date shown.
+  - The commissioner's browser never requests the performer's task, and no handoff request is made
+    for standalone work.
+- **Nothing unrelated moved.** Every pre-existing QA-03 task keeps its dates, state, delegation and
+  proposal marker; every commissioned task keeps its due date; and the pending proposal keeps its
+  status.
 - **Frontend health.** No uncaught page errors, no application console errors, and no unexpected
-  failed API calls. With blocker 2 unfixed, the handoff 404 will fail this check.
+  failed API calls. The known private-layer refusal is listed separately.
 
 **What it does not prove:** email delivery (QA accounts have none); behaviour for accounts outside
-the QA set; the deploy race (blocker 4), which exists only during the deploy itself.
+the QA set; the live deploy gap itself. The compatibility guard is proven only by the rehearsal:
+`npm run verify:previous-backend-compat`, which runs against local URLs only.
 
 **Logs** (outside git, mode 600): `~/.blokta-qa/verification/standalone-dates/<run id>/`, containing
 `run.log`, `http.jsonl` (every API call: status, timing, sanitized bodies), `browser.jsonl` (console
 errors, page errors, failed calls), `screens/*.png`, and `summary.json` (counts, fixture ids, the UTC
-window). Passwords, tokens and email addresses are never written; logins are recorded as
-`[auth body redacted]` and emails are masked.
+window, the known pre-existing errors). Passwords, tokens and email addresses are never written;
+logins are recorded as `[auth body redacted]` and emails are masked.
 
 **Backend logs:** the API logs only startup, database and server-side errors; there is no per-request
 access log. The Render log for the run's UTC window can therefore show that nothing errored, but it
@@ -189,7 +204,9 @@ cannot trace individual requests.
   newest first.
 - **Git:** `git revert -m 1 <merge commit>` on `main`, after approval. Never a force-push.
 
-## Rehearsal evidence
+## Evidence
 
-Logs, screenshots and the rehearsal manifest are in
-`~/.blokta-qa/verification/standalone-dates/rehearsal-*`.
+The integrated verification session is in
+`~/.blokta-qa/verification/standalone-dates/integrated-20261016T180232Z/`. It contains the backend
+logs (A1, A2), the migration log and its manifest (B1), the full release rehearsal with screenshots
+(B2), the compatibility check (C), and the negative control (C, unguarded).
