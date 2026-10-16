@@ -2012,6 +2012,18 @@ My projects, and a row that acts inside an `Invited` project fails.
 >
 > **Format:** `[YYYY-MM-DD] What changed — why.`
 
+- `[2026-10-17]` **Security release record: the development-test guard is on `develop` (`4ac577b`) and `main` (`a47b923`); the obsolete QA branch is archived and removed from GitHub; the historical hostname exposure now survives only in GitHub's storage of five commit IDs.**
+  - **Protection.** 51 backend and 36 frontend development scripts load the fail-closed guard first. `verify:development-guard` passed 34/34 on isolated local databases with fictional production-like targets. The 12 authorized operations and the 2 production procedures stay outside the guard.
+  - **Release.** Vercel deployed `a47b923` (GitHub deployment status: success). Render's deployed commit is **NOT VERIFIED**. Render publishes no deployment metadata this project can read, and the release changes no production response. A new Render process started 36 s after the push. That is consistent with the deploy, but it is not proof of the commit.
+  - **Production.** The smoke check passed 7/7: the site loaded, a QA account signed in, the dashboard opened, with no 5xx and no console or page errors. Data was byte-identical before and after the deploy (39 collections, 684 documents). The smoke sign-in added only its own refresh token.
+  - **Credentials.** No real password, token, key or authenticated connection string was found on the inspected surfaces: every public branch, pull ref and reachable commit; the deployed bundles, whose source maps are not served; the API's public responses; and the local verification and migration logs. Not inspected: the Render and Vercel dashboards and their logs, and GitHub's secret-scanning alerts.
+  - **The hostname exposure.** The real cluster hostname, never a credential, was public in two places:
+    - this guard's first push (2 commits, rewritten on owner approval before merging);
+    - `feature/qa-environment` (3 commits, public since 14 Oct). That branch was archived to a verified local bundle and removed from GitHub on owner approval.
+
+    No public branch or pull ref now reaches any of the five commits. GitHub still serves all five by commit ID, and its events feed names three of the QA pushes, until GitHub Support purges them. Nothing here claims those caches are cleared.
+  - **Kept for integration.** `docs/qa-production-accounts.md`, `seed-qa-production.ts` and `verify-qa-production.ts` were saved separately, with their two npm scripts and the branch's five decision entries. When they land, the guard verifier must list the two scripts as authorized production procedures.
+
 - `[2026-10-16]` **Development tests can no longer write to production — fail-closed guards on every development script, with the separate QA environment kept out of `develop`/`main`. IMPLEMENTED · VERIFIED (`verify:development-guard` 34/34 on throwaway local checkouts with fictional production-like targets; before the API-client addition, the three newest suites 25 + 35 + 52 and a real browser test 63 PASS under the guard) · OWNER-APPROVED FOR `develop` AND `main` 2026-10-16 · NO `.env` CHANGED.**
   - **The cause.** Every development test took its database from the checkout's `.env` and its API from `API_URL`/`APP_URL`, with no check on either, and the main checkout's `Backend/.env` names the production cluster while its `Frontend/.env` names the production API. There were three write paths from that checkout:
     - backend tests and fixture seeders connected straight to production;
