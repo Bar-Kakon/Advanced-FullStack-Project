@@ -1536,12 +1536,12 @@ projectStageSchema.index({ project: 1, order: 1 });`
   fields: [
     { name: '_id', type: 'ObjectId', note: '' },
     { name: 'task', type: 'ObjectId', ref: 'tasks', req: true, idx: true, note: '' },
-    { name: 'owner', type: 'ObjectId', ref: 'users', req: true, idx: true, note: '<strong>Whose private layer this is.</strong> Nobody else ever reads it — not the delegator who owns the task, not the GC, whatever authority they hold.' },
+    { name: 'owner', type: 'ObjectId', ref: 'users', req: true, idx: true, note: '<strong>Whose private layer this is.</strong> Nobody else ever reads it — not the delegator who owns the task, not the GC, not the commissioning party, whatever authority they hold. <strong>Reaffirmed by the owner\'s D7 clarification of 2026-10-16:</strong> the task\'s shared progress is visible to its authorized participants; this layer, including its execution details, is its owner\'s alone.' },
     { name: 'kind', type: "'subtask' | 'note'", req: true, note: 'One shape for both, because they differ only in whether a tick means anything.' },
     { name: 'body', type: 'String', req: true, note: 'Max 1000 characters.' },
     { name: 'done', type: 'Boolean', req: true, note: 'Sub-tasks only. Completion, with no bearing on the parent task. Kept true alongside <code>completedAt</code>; a row ticked before 2026-10-16 is complete with no completion time, and none is invented for it.' },
-    { name: 'startedAt', type: 'Date', note: '<strong>Added 2026-10-16.</strong> Sub-tasks only. Written once by Start. Absent means not started.' },
-    { name: 'completedAt', type: 'Date', note: '<strong>Added 2026-10-16.</strong> Sub-tasks only. Written once by Complete, which requires a start. State — not started, in progress, completed — is derived from the two stamps on read and never stored.' },
+    { name: 'startedAt', type: 'Date', note: '<strong>Added 2026-10-16, approved by the owner the same day.</strong> Sub-tasks only. Written once by Start. Absent means not started.' },
+    { name: 'completedAt', type: 'Date', note: '<strong>Added 2026-10-16, approved by the owner the same day.</strong> Sub-tasks only. Written once by Complete, which requires a start. State — not started, in progress, completed — is derived from the two stamps on read and never stored.' },
     { name: 'order', type: 'Number', req: true, note: '' }
   ],
   indexes: [

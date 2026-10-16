@@ -50,9 +50,11 @@ count of other works — sequence information D7 withholds. Both project panels 
 3. **The delegate's summary.** It keeps the real type «משימה בפרויקט», and the project line reads
    «פרטי הפרויקט אינם מוצגים» on both the task page and My Tasks, instead of the false «ללא פרויקט».
 
-**Open for the owner:** D7 §3.3 describes the private layer as Delegator ↔ Delegate, but the layer
-as built is owner-only. A delegator therefore does not see the delegate's sub-task progress. This
-batch keeps the built rule.
+**D7 clarified (owner decision, 2026-10-16):** the shared task's progress is visible to its
+authorized participants, including the delegator. The Private Execution Layer is its owner's alone.
+The implementation already followed this and was left unchanged. A runtime probe confirmed it
+(14 PASS, log in `~/.blokta-qa/verification/standalone-dates/d7-clarification-20261016T184813Z/`).
+The two sub-task fields are approved.
 
 **Owner to confirm in the dashboard:** Render's deploy branch is `main` with Auto-Deploy on. Vercel
 production follows `main`: a fix merged at 08:18 UTC on 2026-10-13 was live at 08:20.
