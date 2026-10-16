@@ -764,6 +764,8 @@ export const en: Strings = {
         ledeAgreement: 'This work was born from an agreement. A date update is recorded here without changing the original agreement, and the commissioning party is notified.',
         planned: 'Planned dates',
         originalLabel: 'Originally agreed',
+        baselineLabel: 'Baseline dates',
+        baselineNote: 'The baseline was set from the dates on record when change tracking was introduced; it is not an independently verified record of the original agreement.',
         originalUnknown: 'Not recorded',
         edit: 'Edit the dates',
         historyTitle: 'Change history',

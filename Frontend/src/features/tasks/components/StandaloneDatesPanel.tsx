@@ -29,13 +29,19 @@ export const StandaloneDatesPanel = ({ task }: StandaloneDatesPanelProps) => {
         <dt>{copy.planned}</dt>
         <dd>{span(task.startDate, task.dueDate)}</dd>
 
-        <dt>{copy.originalLabel}</dt>
+        <dt>
+          {task.originalDatesSource === 'migration_baseline' ? copy.baselineLabel : copy.originalLabel}
+        </dt>
         <dd>
           {task.originalStartDate !== null && task.originalDueDate !== null
             ? span(task.originalStartDate, task.originalDueDate)
             : copy.originalUnknown}
         </dd>
       </dl>
+
+      {task.originalDatesSource === 'migration_baseline' ? (
+        <p className="panel__lede">{copy.baselineNote}</p>
+      ) : null}
 
       <Link to={`/tasks/${task.id}/edit`} className="btn btn--ghost btn--sm">
         {copy.edit}

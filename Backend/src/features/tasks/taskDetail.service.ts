@@ -47,6 +47,8 @@ export interface TaskDetailDto {
   /** The dates first agreed; `null` when the historical original was never recorded. */
   readonly originalStartDate: string | null;
   readonly originalDueDate: string | null;
+  /** `migration_baseline` must never be shown as a verified record of the original agreement. */
+  readonly originalDatesSource: 'creation' | 'agreement' | 'migration_baseline' | null;
   /** The standalone date-change trail, newest first. Project dates keep the proposal audit instead. */
   readonly dateChanges: readonly {
     readonly at: string;
@@ -264,6 +266,10 @@ export const createTaskDetailService = ({
         isDelegate || task.originalDueDate === undefined
           ? null
           : formatCalendarDate(task.originalDueDate),
+      originalDatesSource:
+        isDelegate || task.originalStartDate === undefined
+          ? null
+          : task.originalDatesSource ?? 'creation',
       dateChanges,
       state: deriveTaskState(task),
       overdue: isOverdue(task, now),

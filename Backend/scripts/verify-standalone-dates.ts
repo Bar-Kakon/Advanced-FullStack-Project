@@ -6,8 +6,9 @@
  * written; no project schedule moves, no proposal opens, no approval is asked and no audit or
  * flexibility evidence is fabricated; the commissioning counterparty of agreement-born work is
  * told for information only, and nobody else is; the original agreement message is never
- * rewritten; project-linked scheduling keeps working; and the legacy backfill recovers originals
- * only from authoritative evidence, leaving the rest unknown.
+ * rewritten; project-linked scheduling keeps working; and the legacy backfill recovers verified
+ * originals from agreement evidence, sets a clearly marked migration baseline from the current
+ * dates on other standalone work, and invents history for nothing.
  *
  *   npm run verify:standalone-dates
  */
@@ -44,6 +45,7 @@ interface DetailDto {
     readonly dueDate: string;
     readonly originalStartDate: string | null;
     readonly originalDueDate: string | null;
+    readonly originalDatesSource: string | null;
     readonly dateChanges: readonly {
       readonly fromDueDate: string;
       readonly toDueDate: string;
@@ -84,8 +86,9 @@ const run = async (): Promise<void> => {
   const soloRow = await TaskModel.findById(soloId).lean().exec();
   check(
     soloRow?.originalStartDate?.toISOString().slice(0, 10) === iso(2) &&
-      soloRow?.originalDueDate?.toISOString().slice(0, 10) === iso(6),
-    'creation stamps the originally agreed dates',
+      soloRow?.originalDueDate?.toISOString().slice(0, 10) === iso(6) &&
+      soloRow?.originalDatesSource === 'creation',
+    'creation stamps the originally agreed dates, marked as a creation stamp',
   );
 
   const editable = await get(`/api/tasks/${soloId}/editable`, performer.token);
@@ -250,32 +253,62 @@ const run = async (): Promise<void> => {
     'and no project schedule moved from any of it',
   );
 
-  section('4. The backfill recovers originals only from authoritative evidence');
+  section('4. The backfill: agreement originals recovered, standalone baselines set, nothing invented');
+  const third = await post('/api/tasks', performer.token, {
+    kind: 'standalone', title: 'עבודה שלישית', startDate: iso(30), dueDate: iso(33),
+  });
+  const thirdId = ((third.body as { task: { id: string } }).task).id;
+  await TaskModel.updateOne(
+    { _id: new Types.ObjectId(thirdId) },
+    { $unset: { originalDatesSource: '' } },
+  ).exec();
   await TaskModel.updateMany(
     { _id: { $in: [new Types.ObjectId(soloId), new Types.ObjectId(bornId)] } },
-    { $unset: { originalStartDate: '', originalDueDate: '' } },
+    { $unset: { originalStartDate: '', originalDueDate: '', originalDatesSource: '' } },
   ).exec();
 
   const report = await backfillOriginalDates();
   check(report.missing === 3, 'three legacy rows had no originals', report.missing);
-  check(report.recovered === 1, 'exactly the agreement-born one was recoverable', report.recovered);
-  check(report.unknown === 2, 'the rest are reported and left unknown', report.unknown);
+  check(report.fromAgreement === 1, 'the agreement-born one recovered its verified originals', report.fromAgreement);
+  check(report.baselined === 1, 'the plain standalone one took a migration baseline', report.baselined);
+  check(report.leftUnknown === 1, 'the project row is reported and left unknown', report.leftUnknown);
+  check(report.sourceStamped === 1, 'an already-filled creation stamp is marked creation, never baseline', report.sourceStamped);
 
   const bornHealed = await TaskModel.findById(bornId).lean().exec();
   check(
     bornHealed?.originalStartDate?.toISOString().slice(0, 10) === iso(10) &&
-      bornHealed?.originalDueDate?.toISOString().slice(0, 10) === iso(16),
-    'recovery used the agreement’s dates, not the task’s current ones',
+      bornHealed?.originalDueDate?.toISOString().slice(0, 10) === iso(16) &&
+      bornHealed?.originalDatesSource === 'agreement',
+    'recovery used the agreement’s dates and says so',
   );
   const soloHealed = await TaskModel.findById(soloId).lean().exec();
   check(
-    soloHealed?.originalStartDate === undefined && soloHealed?.originalDueDate === undefined,
-    'a task with no evidence stays unknown rather than gaining invented history',
+    soloHealed?.originalStartDate?.toISOString().slice(0, 10) === iso(4) &&
+      soloHealed?.originalDueDate?.toISOString().slice(0, 10) === iso(9) &&
+      soloHealed?.originalDatesSource === 'migration_baseline',
+    'the baseline is the current persisted dates, marked as a baseline',
   );
-  const soloUnknownView = await detail(soloId, performer.token);
   check(
-    soloUnknownView.originalStartDate === null && soloUnknownView.originalDueDate === null,
-    'and the screen is told "unknown", never a guess',
+    soloHealed?.originalStartDate?.toISOString().slice(0, 10) !== iso(2),
+    'and it is never presented as recovered creation-time history',
+  );
+  const soloBaselineView = await detail(soloId, performer.token);
+  check(
+    soloBaselineView.originalStartDate === iso(4) &&
+      soloBaselineView.originalDatesSource === 'migration_baseline',
+    'the screen is told it is a baseline, never a verified agreement',
+  );
+  const thirdHealed = await TaskModel.findById(thirdId).lean().exec();
+  check(
+    thirdHealed?.originalDatesSource === 'creation' &&
+      thirdHealed?.originalStartDate?.toISOString().slice(0, 10) === iso(30),
+    'the re-marked row keeps its genuine creation dates',
+  );
+  const projectUnknown = await TaskModel.findById(projectTask._id).lean().exec();
+  check(
+    projectUnknown?.originalStartDate === undefined &&
+      projectUnknown?.originalDatesSource === undefined,
+    'project work gains no invented originals',
   );
 
   await finish(harness);

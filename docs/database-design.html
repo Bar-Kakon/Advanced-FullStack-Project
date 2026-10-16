@@ -1340,7 +1340,8 @@ module.exports = mongoose.model('CompanyCalendarVersion', companyCalendarVersion
     { name: 'createdBy', type: 'ObjectId', ref: 'users', req: true, note: 'Provenance, and the counterparty an ordinary assignee answers to. <strong>Never reaches a delegate</strong> — this field alone would expose the party above (D21).' },
     { name: 'assignee', type: 'ObjectId', ref: 'users', idx: true, note: '<strong>The contract of record.</strong> When work is delegated this stays pointing at the delegator, because that is who the general contractor believes is doing the job. Becomes ABSENT when the work is orphaned — never silently reassigned.' },
     { name: 'startDate / dueDate', type: 'Date', req: true, note: 'UTC. The values a date change would move.' },
-    { name: 'originalStartDate / originalDueDate', type: 'Date', note: '<strong>Added 2026-10-16 (standalone date management).</strong> The dates first agreed, stamped once at creation and never written by any edit or proposal. ABSENT on a legacy row with no authoritative evidence of its historical original — the backfill recovers agreement-born work from its accepted agreement message and leaves everything else honestly unknown, never copying the current dates.' },
+    { name: 'originalStartDate / originalDueDate', type: 'Date', note: '<strong>Added 2026-10-16 (standalone date management).</strong> The reference dates the trail is read against, stamped once and never written by any edit or proposal. What they MEAN is carried by <code>originalDatesSource</code> beside them — a creation stamp, a verified agreement recovery, or a migration baseline.' },
+    { name: 'originalDatesSource', type: "'creation' | 'agreement' | 'migration_baseline'", note: '<strong>Owner correction, 2026-10-16.</strong> <code>creation</code> — stamped by the one repository create every path shares. <code>agreement</code> — recovered by the backfill from the accepted agreement message, the authoritative record of the two parties\' commitment. <code>migration_baseline</code> — a legacy standalone task\'s CURRENT dates, taken as the baseline when change tracking was introduced, and <strong>never presented as an independently verified historical agreement</strong>. A legacy project row keeps no originals at all: its dates answer to the proposal flow.' },
 
     { group: 'Progress', groupNote: 'two timestamps, and nothing else' },
     { name: 'startedAt', type: 'Date', note: 'Written by Start. Absent means not started.' },
@@ -1411,8 +1412,9 @@ module.exports = mongoose.model('CompanyCalendarVersion', companyCalendarVersion
 
   startDate: { type: Date, required: true },
   dueDate:   { type: Date, required: true },
-  originalStartDate: Date,    // stamped once at creation; absent = historical original unknown
+  originalStartDate: Date,    // the trail's reference dates; meaning carried by the source field
   originalDueDate:   Date,
+  originalDatesSource: { type: String, enum: ['creation','agreement','migration_baseline'] },
   startedAt:   Date,          // the whole of progress reporting
   completedAt: Date,
 

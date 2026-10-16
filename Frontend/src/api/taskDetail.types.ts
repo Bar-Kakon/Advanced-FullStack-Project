@@ -25,6 +25,8 @@ export interface TaskDetail {
   /** The dates first agreed; `null` when the historical original was never recorded. */
   readonly originalStartDate: string | null;
   readonly originalDueDate: string | null;
+  /** `migration_baseline` is never presented as a verified record of the original agreement. */
+  readonly originalDatesSource: 'creation' | 'agreement' | 'migration_baseline' | null;
   /** The standalone date-change trail, newest first; always empty on project work. */
   readonly dateChanges: readonly {
     readonly at: string;

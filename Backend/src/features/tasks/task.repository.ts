@@ -209,6 +209,7 @@ export const taskRepository: TaskRepository = {
       ...task,
       originalStartDate: task.startDate,
       originalDueDate: task.dueDate,
+      originalDatesSource: 'creation',
     });
     await created.save();
     return created.toObject() as TaskRecord;

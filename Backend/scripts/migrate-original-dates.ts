@@ -1,10 +1,13 @@
 /**
- * One-time backfill of the originally agreed dates on tasks created before the fields existed.
+ * One-time backfill of original and baseline dates on tasks created before the fields existed,
+ * per the owner's correction of 2026-10-16.
  *
- * Agreement-born work recovers its originals from the accepted agreement message, which is the
- * authoritative record of what the two parties agreed. Every other legacy task is REPORTED AND
- * LEFT UNKNOWN — its current dates are what the task says today, never evidence of what was first
- * agreed, and inventing historical accuracy would be worse than admitting its absence.
+ * Agreement-born work recovers its ORIGINAL dates from the accepted agreement message — the
+ * authoritative record of what the two parties agreed — and is marked `agreement`. Every other
+ * legacy STANDALONE task takes its current persisted dates as a MIGRATION BASELINE, marked
+ * `migration_baseline`, which is never presented as a verified historical agreement. A legacy
+ * project task is reported and left unknown — its dates answer to the proposal flow, not to this
+ * mechanism.
  *
  *   npm run migrate:original-dates
  */
@@ -20,14 +23,22 @@ const asDate = (calendar: string): Date => new Date(`${calendar}T00:00:00.000Z`)
 
 export interface BackfillReport {
   readonly missing: number;
-  readonly recovered: number;
-  readonly unknown: number;
+  readonly fromAgreement: number;
+  readonly baselined: number;
+  readonly leftUnknown: number;
+  readonly sourceStamped: number;
 }
 
 export const backfillOriginalDates = async (): Promise<BackfillReport> => {
+  // A row the creation path already stamped carries genuine creation dates; only the marker is new.
+  const stamped = await TaskModel.updateMany(
+    { originalStartDate: { $exists: true }, originalDatesSource: { $exists: false } },
+    { $set: { originalDatesSource: 'creation' } },
+  ).exec();
+
   const missing = await TaskModel.find({ originalStartDate: { $exists: false } })
-    .select('_id')
-    .lean<{ _id: Types.ObjectId }[]>()
+    .select('_id kind startDate dueDate')
+    .lean<{ _id: Types.ObjectId; kind: string; startDate: Date; dueDate: Date }[]>()
     .exec();
 
   const agreements = await MessageModel.find({
@@ -39,7 +50,8 @@ export const backfillOriginalDates = async (): Promise<BackfillReport> => {
     .lean<{ agreement: { task: Types.ObjectId; startDate: string; dueDate: string } }[]>()
     .exec();
 
-  let recovered = 0;
+  let fromAgreement = 0;
+  const recovered = new Set<string>();
   for (const row of agreements) {
     await TaskModel.updateOne(
       { _id: row.agreement.task, originalStartDate: { $exists: false } },
@@ -47,13 +59,42 @@ export const backfillOriginalDates = async (): Promise<BackfillReport> => {
         $set: {
           originalStartDate: asDate(row.agreement.startDate),
           originalDueDate: asDate(row.agreement.dueDate),
+          originalDatesSource: 'agreement',
         },
       },
     ).exec();
-    recovered += 1;
+    recovered.add(row.agreement.task.toString());
+    fromAgreement += 1;
   }
 
-  return { missing: missing.length, recovered, unknown: missing.length - recovered };
+  let baselined = 0;
+  let leftUnknown = 0;
+  for (const row of missing) {
+    if (recovered.has(row._id.toString())) continue;
+    if (row.kind !== 'standalone') {
+      leftUnknown += 1;
+      continue;
+    }
+    await TaskModel.updateOne(
+      { _id: row._id, originalStartDate: { $exists: false } },
+      {
+        $set: {
+          originalStartDate: row.startDate,
+          originalDueDate: row.dueDate,
+          originalDatesSource: 'migration_baseline',
+        },
+      },
+    ).exec();
+    baselined += 1;
+  }
+
+  return {
+    missing: missing.length,
+    fromAgreement,
+    baselined,
+    leftUnknown,
+    sourceStamped: stamped.modifiedCount,
+  };
 };
 
 const run = async (): Promise<void> => {
@@ -62,8 +103,10 @@ const run = async (): Promise<void> => {
 
   const report = await backfillOriginalDates();
   console.log(`tasks without originals: ${report.missing}`);
-  console.log(`recovered from accepted agreements: ${report.recovered}`);
-  console.log(`left unknown (no authoritative evidence): ${report.unknown}`);
+  console.log(`originals recovered from accepted agreements: ${report.fromAgreement}`);
+  console.log(`standalone baselines set from current dates: ${report.baselined}`);
+  console.log(`left unknown (project work, no evidence): ${report.leftUnknown}`);
+  console.log(`creation stamps marked on already-filled rows: ${report.sourceStamped}`);
 
   await disconnectFromDatabase();
 };

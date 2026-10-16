@@ -11,6 +11,9 @@ export const TASK_KINDS = ['project', 'standalone'] as const;
 export type TaskKind = (typeof TASK_KINDS)[number];
 
 /** Whole work or part of it — the delegator's choice, inside the single-level model. */
+export const ORIGINAL_DATE_SOURCES = ['creation', 'agreement', 'migration_baseline'] as const;
+export type OriginalDatesSource = (typeof ORIGINAL_DATE_SOURCES)[number];
+
 export const DELEGATION_SCOPES = ['whole', 'part'] as const;
 export type DelegationScope = (typeof DELEGATION_SCOPES)[number];
 
@@ -45,6 +48,8 @@ export interface TaskRecord {
   /** The dates first agreed, written once at creation and never by any edit. Absent means the historical original is unknown, never assumed. */
   readonly originalStartDate?: Date;
   readonly originalDueDate?: Date;
+  /** Where the originals came from: stamped at creation, recovered from the agreement, or a migration baseline that is never presented as a verified agreement. */
+  readonly originalDatesSource?: OriginalDatesSource;
   /** The whole of progress reporting. */
   readonly startedAt?: Date;
   readonly completedAt?: Date;
@@ -91,6 +96,7 @@ const taskSchema = new Schema(
     dueDate: { type: Date, required: true },
     originalStartDate: { type: Date },
     originalDueDate: { type: Date },
+    originalDatesSource: { type: String, enum: ORIGINAL_DATE_SOURCES },
     startedAt: { type: Date },
     completedAt: { type: Date },
 
