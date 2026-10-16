@@ -496,6 +496,18 @@ const run = async () => {
         check('the delegate is served no project and no stage', view.project === null && view.stage === null);
         check('the delegate is served no impact count — no sequence information', view.rescheduleImpact === null, view.rescheduleImpact);
         check('the delegate’s counterparty is the delegator, never the GC', view.counterparty?.userId === performer.userId, view.counterparty);
+        check(
+          'the shared progress reads the same for the delegate, the delegator and the GC',
+          view.state === asDelegator.state && (gcSide.status !== 200 || gcSide.body.task.state === asDelegator.state),
+          { delegate: view.state, delegator: asDelegator.state, gc: gcSide.body?.task?.state ?? null },
+        );
+        const delegateRows = (await listAll(as(delegate), '/tasks?limit=50', 'tasks')) ?? [];
+        const sharedRow = delegateRows.find((entry) => entry.id === delegatedRow.id);
+        check(
+          'the delegator’s and the delegate’s rows carry the same start and completion times',
+          sharedRow !== undefined && sharedRow.startedAt === delegatedRow.startedAt && sharedRow.completedAt === delegatedRow.completedAt,
+          { delegator: [delegatedRow.startedAt, delegatedRow.completedAt], delegate: [sharedRow?.startedAt, sharedRow?.completedAt] },
+        );
         const delegatePage = await uiLogin(account('QA-04'));
         await openTask(delegatePage, delegatedRow.id);
         await checkDelegationPanel(delegatePage, view, 'delegate’s page');
