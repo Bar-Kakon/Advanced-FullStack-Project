@@ -11,8 +11,9 @@ authorization, given at that step.
 | Local verification | **Done.** Backend, on isolated local databases: `verify:private-execution` 35 PASS, `verify:task-detail` 68 PASS, `verify:standalone-dates` 52 PASS (including the migration's dry run, manifest, idempotency and exact rollback). |
 | Release rehearsal | **Done, not cloud.** The full cloud procedure against a throwaway local backend, a production-mode frontend build and a seeded throwaway database migrated with the real script: **121 PASS, 0 FAIL** — the 105 earlier conditions plus 16 for the remaining task corrections, with zero browser errors and no exemptions. |
 | Deployment compatibility | **Done, not cloud.** The new frontend against today's `main` backend: 18 PASS. The earlier negative control — the frontend from before the guard — crashes into the error boundary, which shows the guard is what prevents it. |
-| Cloud deployment | **Not done.** Production still serves the previous build. |
-| Cloud runtime verification | **Not done.** The procedure refuses to write anything until the deployment and the migration are live. |
+| Production migration | **Done, 2026-10-16.** Pass 1 updated exactly the 15 approved tasks (14 agreement, 1 baseline). A snapshot diff proved nothing else changed: no current dates, execution times, agreements, projects, memberships or proposals. Pass 2, after the deploy, changed 0. Manifests are in `~/.blokta-qa/migrations/production-release-20261016T185739Z/`. |
+| Cloud deployment | **Done, 2026-10-16.** `main` is at `0e67fa3`. Vercel: a GitHub Production deployment of that commit reached success at 19:00:29 UTC, and the live bundle carries the release copy. Render: at 19:01:46 UTC it served the release-only fields. |
+| Cloud runtime verification | **Done, 2026-10-16: 130 PASS, 1 FAIL.** The failure was a false positive in the check: the delegate is also a project member, so her name appears in the GC's handoff member picker. A read-only follow-up proved D7 holds. The check is now scoped to exclude the member picker. Logs are in `~/.blokta-qa/verification/standalone-dates/sd-20261016T190237Z/`. |
 
 The private-subtask execution defect is **implemented and verified on this branch** (see *The remaining task corrections* below); it closes with the owner's acceptance of the release.
 
