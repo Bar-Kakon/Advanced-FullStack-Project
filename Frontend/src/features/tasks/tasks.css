@@ -222,7 +222,8 @@
 
 .private-item { display: flex; flex-direction: column; gap: 8px; }
 .private-item__row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-.private-item__row .perm-check { flex: 1 1 220px; }
+.private-item__row .perm-check,
+.private-item__row .private-item__body { flex: 1 1 220px; }
 .private-item__detail {
   display: flex;
   flex-direction: column;

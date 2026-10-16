@@ -346,6 +346,16 @@ export const createTasksModule = (requireAccessToken: RequestHandler): Router =>
     },
   );
 
+  router.post('/:taskId/private/:itemId/start', itemParams, async (req, res) => {
+    const { taskId, itemId } = getValidated<{ taskId: string; itemId: string }>(res, 'params');
+    res.json({ item: await detail.startPrivate(me(res), taskId, itemId) });
+  });
+
+  router.post('/:taskId/private/:itemId/complete', itemParams, async (req, res) => {
+    const { taskId, itemId } = getValidated<{ taskId: string; itemId: string }>(res, 'params');
+    res.json({ item: await detail.completePrivate(me(res), taskId, itemId) });
+  });
+
   router.delete('/:taskId/private/:itemId', itemParams, async (req, res) => {
     const { taskId, itemId } = getValidated<{ taskId: string; itemId: string }>(res, 'params');
     await detail.removePrivate(me(res), taskId, itemId);

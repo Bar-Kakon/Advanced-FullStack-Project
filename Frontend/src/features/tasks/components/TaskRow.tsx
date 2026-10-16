@@ -46,7 +46,11 @@ export const TaskRow = ({ task, busy, busyId, onStart, onComplete }: TaskRowProp
 
       <p className="task-row__meta">
         {/* A delegate is never told the project, so the slot is simply absent for them. */}
-        <span dir="auto">{task.project ? task.project.name : t.tasks.row.noProject}</span>
+        <span dir="auto">
+          {task.project
+            ? task.project.name
+            : task.kind === 'project' ? t.tasks.row.projectWithheld : t.tasks.row.noProject}
+        </span>
         <span>
           {task.completedAt !== null
             ? t.tasks.row.completedOn.replace('{date}', formatCalendarDate(task.completedAt.slice(0, 10), lang))

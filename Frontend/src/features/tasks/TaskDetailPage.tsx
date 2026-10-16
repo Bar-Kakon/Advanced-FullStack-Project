@@ -50,7 +50,7 @@ export const TaskDetailPage = () => {
   const { taskId = '' } = useParams<{ taskId: string }>();
   const {
     task, privateItems, loading, busy, failure, reload,
-    delegate, endDelegation, addPrivate, togglePrivate, updatePrivate, removePrivate,
+    delegate, endDelegation, addPrivate, startPrivate, completePrivate, updatePrivate, removePrivate,
   } = useTaskDetail(taskId);
 
   useScreenStylesheet(
@@ -121,7 +121,11 @@ export const TaskDetailPage = () => {
                 <dd>{t.tasks.kind[task.kind]}</dd>
 
                 <dt>{t.tasks.filters.project.label}</dt>
-                <dd dir="auto">{task.project ? task.project.name : t.tasks.row.noProject}</dd>
+                <dd dir="auto">
+                  {task.project
+                    ? task.project.name
+                    : task.kind === 'project' ? t.tasks.row.projectWithheld : t.tasks.row.noProject}
+                </dd>
 
                 <dt>{t.tasks.filters.state.label}</dt>
                 <dd>
@@ -227,7 +231,8 @@ export const TaskDetailPage = () => {
                 items={privateItems}
                 busy={busy}
                 onAdd={(kind, body) => void addPrivate(kind, body)}
-                onToggle={(id, done) => void togglePrivate(id, done)}
+                onStart={(id) => void startPrivate(id)}
+                onComplete={(id) => void completePrivate(id)}
                 onEdit={(id, body) => void updatePrivate(id, body)}
                 onRemove={(id) => void removePrivate(id)}
               />

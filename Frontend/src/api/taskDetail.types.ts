@@ -65,6 +65,8 @@ export interface TaskDetail {
     readonly canDelegate: boolean;
     readonly canEndDelegation: boolean;
     readonly canRequestDateChange: boolean;
+    /** The assignee or the delegate; nobody else has a private layer to read. */
+    readonly hasPrivateLayer?: boolean;
   };
   /** `null` while the cascade domain does not exist. Never a fabricated count. */
   readonly rescheduleImpact: number | null;
@@ -79,6 +81,14 @@ export interface PrivateWorkItem {
   readonly kind: PrivateItemKind;
   readonly body: string;
   readonly done: boolean;
+  readonly startedAt?: string;
+  readonly completedAt?: string;
   readonly order: number;
   readonly createdAt: string;
 }
+
+export const privateItemState = (item: PrivateWorkItem): TaskState => {
+  if (item.done || item.completedAt !== undefined) return 'completed';
+  if (item.startedAt !== undefined) return 'in_progress';
+  return 'not_started';
+};

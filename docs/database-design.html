@@ -1531,7 +1531,7 @@ projectStageSchema.index({ project: 1, order: 1 });`
   tag: 'how the performer organises their own work',
   pos: { x: 320, y: 430 },
   purpose: 'The receiver\'s own sub-tasks and notes on work they were given. <strong>Built 2026-08-30</strong>, moved out of the embedded `subTasks` array the tasks entry used to carry.',
-  callout: '<strong>Delegation hides WHO performs; this hides HOW they organise it.</strong> They are two features that share a serializer and nothing else. A private sub-task is a checklist item: it carries no dependency edges, it cannot propagate a date, and <strong>the public state of the parent task is never derived from it</strong> — the receiver sets that themselves with Start and Complete, or the method leaks upward through the status field.',
+  callout: '<strong>Delegation hides WHO performs; this hides HOW they organise it.</strong> They are two features that share a serializer and nothing else. A private sub-task carries its own execution — <strong>2026-10-16:</strong> started and completed, two timestamps, exactly the model of the task it belongs to (D7 §3.3: the receiver\'s real start/complete lives in the private layer) — but it carries no dependency edges, it cannot propagate a date, and <strong>the public state of the parent task is never derived from it</strong>: the receiver sets that themselves with the task\'s own Start and Complete, or the method leaks upward through the status field.',
   calloutKind: 'warn',
   fields: [
     { name: '_id', type: 'ObjectId', note: '' },
@@ -1539,7 +1539,9 @@ projectStageSchema.index({ project: 1, order: 1 });`
     { name: 'owner', type: 'ObjectId', ref: 'users', req: true, idx: true, note: '<strong>Whose private layer this is.</strong> Nobody else ever reads it — not the delegator who owns the task, not the GC, whatever authority they hold.' },
     { name: 'kind', type: "'subtask' | 'note'", req: true, note: 'One shape for both, because they differ only in whether a tick means anything.' },
     { name: 'body', type: 'String', req: true, note: 'Max 1000 characters.' },
-    { name: 'done', type: 'Boolean', req: true, note: 'Sub-tasks only. A checklist tick with no bearing on the parent task.' },
+    { name: 'done', type: 'Boolean', req: true, note: 'Sub-tasks only. Completion, with no bearing on the parent task. Kept true alongside <code>completedAt</code>; a row ticked before 2026-10-16 is complete with no completion time, and none is invented for it.' },
+    { name: 'startedAt', type: 'Date', note: '<strong>Added 2026-10-16.</strong> Sub-tasks only. Written once by Start. Absent means not started.' },
+    { name: 'completedAt', type: 'Date', note: '<strong>Added 2026-10-16.</strong> Sub-tasks only. Written once by Complete, which requires a start. State — not started, in progress, completed — is derived from the two stamps on read and never stored.' },
     { name: 'order', type: 'Number', req: true, note: '' }
   ],
   indexes: [
@@ -1568,6 +1570,8 @@ projectStageSchema.index({ project: 1, order: 1 });`
   kind:  { type: String, enum: ['subtask','note'], required: true },
   body:  { type: String, required: true, maxlength: 1000 },
   done:  { type: Boolean, required: true, default: false },
+  startedAt:   Date,   // sub-tasks only: Start, once
+  completedAt: Date,   // sub-tasks only: Complete, once, after Start
   order: { type: Number, required: true, default: 0 }
 }, { timestamps: true });
 
