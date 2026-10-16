@@ -30,6 +30,8 @@ export const DelegationPanel = ({ task, busy, onDelegate, onEnd }: DelegationPan
 
   const ready = person !== null && (scope === 'whole' || part.trim().length > 0);
 
+  if (!task.viewerIsDelegate && task.delegation === null && !task.viewer.canDelegate) return null;
+
   return (
     <section className="panel" aria-labelledby="delegation-title">
       <h2 id="delegation-title" className="panel__title">{copy.title}</h2>
@@ -60,8 +62,6 @@ export const DelegationPanel = ({ task, busy, onDelegate, onEnd }: DelegationPan
             </>
           ) : null}
         </>
-      ) : task.ownCrewOnly ? (
-        <p className="panel__lede">{copy.ownCrewOnly}</p>
       ) : task.viewer.canDelegate ? (
         <>
           <p className="panel__lede">{copy.lede}</p>

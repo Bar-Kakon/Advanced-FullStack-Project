@@ -138,6 +138,7 @@ export const createTasksModule = (requireAccessToken: RequestHandler): Router =>
       companies: companyRepository,
     }),
     notifications: buildNotificationDispatchService(),
+    origins,
   });
 
   const router = Router();
@@ -275,6 +276,7 @@ export const createTasksModule = (requireAccessToken: RequestHandler): Router =>
         stageId?: string;
         startDate?: string;
         dueDate?: string;
+        dateChangeReason?: string;
       }>(res, 'body');
 
       const input: EditTaskInput = {
@@ -287,6 +289,7 @@ export const createTasksModule = (requireAccessToken: RequestHandler): Router =>
         ...(body.stageId === undefined ? {} : { stageId: body.stageId }),
         ...(body.startDate === undefined ? {} : { startDate: requireDate(body.startDate) }),
         ...(body.dueDate === undefined ? {} : { dueDate: requireDate(body.dueDate) }),
+        ...(body.dateChangeReason === undefined ? {} : { dateChangeReason: body.dateChangeReason }),
       };
 
       res.json({ task: await edit.edit(me(res), taskId, input) });
@@ -342,6 +345,16 @@ export const createTasksModule = (requireAccessToken: RequestHandler): Router =>
       res.json({ item: await detail.updatePrivate(me(res), taskId, itemId, body) });
     },
   );
+
+  router.post('/:taskId/private/:itemId/start', itemParams, async (req, res) => {
+    const { taskId, itemId } = getValidated<{ taskId: string; itemId: string }>(res, 'params');
+    res.json({ item: await detail.startPrivate(me(res), taskId, itemId) });
+  });
+
+  router.post('/:taskId/private/:itemId/complete', itemParams, async (req, res) => {
+    const { taskId, itemId } = getValidated<{ taskId: string; itemId: string }>(res, 'params');
+    res.json({ item: await detail.completePrivate(me(res), taskId, itemId) });
+  });
 
   router.delete('/:taskId/private/:itemId', itemParams, async (req, res) => {
     const { taskId, itemId } = getValidated<{ taskId: string; itemId: string }>(res, 'params');

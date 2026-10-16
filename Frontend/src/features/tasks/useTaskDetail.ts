@@ -7,8 +7,9 @@ import {
   endDelegation,
   fetchPrivateWork,
   fetchTaskDetail,
+  completePrivateItem,
   removePrivateItem,
-  togglePrivateItem,
+  startPrivateItem,
   updatePrivateItem,
 } from '../../api/taskDetail.api';
 import type {
@@ -40,11 +41,14 @@ export const useTaskDetail = (taskId: string) => {
       if (!mounted.current) return;
       setTask(next);
       setFailure(null);
-      // The private layer is a second read: only its owner is allowed it, so a refusal is normal.
-      try {
-        setPrivateItems(await fetchPrivateWork(taskId));
-      } catch {
+      if (next.viewer.hasPrivateLayer === false) {
         setPrivateItems([]);
+      } else {
+        try {
+          setPrivateItems(await fetchPrivateWork(taskId));
+        } catch {
+          setPrivateItems([]);
+        }
       }
     } catch (error) {
       if (!mounted.current) return;
@@ -87,7 +91,8 @@ export const useTaskDetail = (taskId: string) => {
       run(() => delegateTask(taskId, payload)),
     endDelegation: () => run(() => endDelegation(taskId)),
     addPrivate: (kind: PrivateItemKind, body: string) => run(() => addPrivateItem(taskId, kind, body)),
-    togglePrivate: (itemId: string, done: boolean) => run(() => togglePrivateItem(taskId, itemId, done)),
+    startPrivate: (itemId: string) => run(() => startPrivateItem(taskId, itemId)),
+    completePrivate: (itemId: string) => run(() => completePrivateItem(taskId, itemId)),
     updatePrivate: (itemId: string, body: string) => run(() => updatePrivateItem(taskId, itemId, body)),
     removePrivate: (itemId: string) => run(() => removePrivateItem(taskId, itemId)),
   };

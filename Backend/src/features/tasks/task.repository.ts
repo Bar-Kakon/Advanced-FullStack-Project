@@ -204,7 +204,13 @@ export const taskRepository: TaskRepository = {
   },
 
   async create(task) {
-    const created = new TaskModel(task);
+    // The dates first agreed are stamped once here, so every creation path preserves them.
+    const created = new TaskModel({
+      ...task,
+      originalStartDate: task.startDate,
+      originalDueDate: task.dueDate,
+      originalDatesSource: 'creation',
+    });
     await created.save();
     return created.toObject() as TaskRecord;
   },

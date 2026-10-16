@@ -2,13 +2,14 @@ import { useState } from 'react';
 
 import { ButtonSpinner } from '../../../components/ButtonSpinner';
 import { useLanguage } from '../../../i18n/useLanguage';
-import type { PrivateItemKind, PrivateWorkItem } from '../../../api/taskDetail.types';
+import { privateItemState, type PrivateItemKind, type PrivateWorkItem } from '../../../api/taskDetail.types';
 
 export interface PrivateWorkPanelProps {
   readonly items: readonly PrivateWorkItem[];
   readonly busy: boolean;
   readonly onAdd: (kind: PrivateItemKind, body: string) => void;
-  readonly onToggle: (itemId: string, done: boolean) => void;
+  readonly onStart: (itemId: string) => void;
+  readonly onComplete: (itemId: string) => void;
   readonly onEdit: (itemId: string, body: string) => void;
   readonly onRemove: (itemId: string) => void;
 }
@@ -16,12 +17,13 @@ export interface PrivateWorkPanelProps {
 /**
  * How the performer organises their own work — sub-tasks and notes nobody else can read.
  *
- * A tick here is a checklist tick and nothing more: the public state of the task is set by Start
- * and Complete alone, so private progress can never leak the method upward through a status.
+ * A sub-task starts and completes on its own, and nothing here moves the task: its public state is
+ * set by the task's own Start and Complete, so private progress never leaks the method upward.
  */
-export const PrivateWorkPanel = ({ items, busy, onAdd, onToggle, onEdit, onRemove }: PrivateWorkPanelProps) => {
+export const PrivateWorkPanel = ({ items, busy, onAdd, onStart, onComplete, onEdit, onRemove }: PrivateWorkPanelProps) => {
   const { t, lang } = useLanguage();
   const copy = t.tasks.detail.privateWork;
+  const dateOf = (iso: string): string => new Date(iso).toLocaleDateString(lang === 'he' ? 'he-IL' : 'en-GB');
 
   const [kind, setKind] = useState<PrivateItemKind>('subtask');
   const [body, setBody] = useState('');
@@ -40,19 +42,26 @@ export const PrivateWorkPanel = ({ items, busy, onAdd, onToggle, onEdit, onRemov
           {items.map((item) => (
             <li key={item._id} className="private-item">
               <div className="private-item__row">
+                <span className={item.kind === 'subtask' ? 'private-item__body' : 'private-item__note'} dir="auto">
+                  {item.body}
+                </span>
                 {item.kind === 'subtask' ? (
-                  <label className="perm-check">
-                    <input
-                      type="checkbox"
-                      checked={item.done}
-                      disabled={busy}
-                      onChange={() => onToggle(item._id, !item.done)}
-                    />
-                    <span dir="auto">{item.body}</span>
-                  </label>
-                ) : (
-                  <span className="private-item__note" dir="auto">{item.body}</span>
-                )}
+                  <span className={`task-chip task-chip--${privateItemState(item)}`}>
+                    {t.tasks.state[privateItemState(item)]}
+                  </span>
+                ) : null}
+                {item.kind === 'subtask' && privateItemState(item) === 'not_started' ? (
+                  <button type="button" className="btn btn--ghost btn--sm" disabled={busy} onClick={() => onStart(item._id)}>
+                    {copy.start}
+                    {busy ? <ButtonSpinner /> : null}
+                  </button>
+                ) : null}
+                {item.kind === 'subtask' && privateItemState(item) === 'in_progress' ? (
+                  <button type="button" className="btn btn--ghost btn--sm" disabled={busy} onClick={() => onComplete(item._id)}>
+                    {copy.complete}
+                    {busy ? <ButtonSpinner /> : null}
+                  </button>
+                ) : null}
                 <button
                   type="button"
                   className="btn btn--quiet btn--sm"
@@ -79,12 +88,15 @@ export const PrivateWorkPanel = ({ items, busy, onAdd, onToggle, onEdit, onRemov
                   <p className="dash-note">
                     {(item.kind === 'subtask' ? copy.subtask : copy.note)}
                     {' · '}
-                    {copy.createdAt.replace(
-                      '{date}',
-                      new Date(item.createdAt).toLocaleDateString(lang === 'he' ? 'he-IL' : 'en-GB'),
-                    )}
-                    {item.kind === 'subtask' ? ` · ${item.done ? copy.stateDone : copy.stateOpen}` : ''}
+                    {copy.createdAt.replace('{date}', dateOf(item.createdAt))}
+                    {item.kind === 'subtask' ? ` · ${t.tasks.state[privateItemState(item)]}` : ''}
                   </p>
+                  {item.kind === 'subtask' && item.startedAt !== undefined ? (
+                    <p className="dash-note">{copy.startedAt.replace('{date}', dateOf(item.startedAt))}</p>
+                  ) : null}
+                  {item.kind === 'subtask' && item.completedAt !== undefined ? (
+                    <p className="dash-note">{copy.completedAt.replace('{date}', dateOf(item.completedAt))}</p>
+                  ) : null}
                   <div className="form-group">
                     <label className="field-label" htmlFor={`private-edit-${item._id}`}>{copy.editLabel}</label>
                     <input
