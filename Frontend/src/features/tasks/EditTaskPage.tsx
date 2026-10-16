@@ -63,6 +63,7 @@ export const EditTaskPage = () => {
   const [onSite, setOnSite] = useState(false);
   const [startDate, setStartDate] = useState('');
   const [dueDate, setDueDate] = useState('');
+  const [dateChangeReason, setDateChangeReason] = useState('');
 
   useEffect(() => {
     const controller = new AbortController();
@@ -98,6 +99,9 @@ export const EditTaskPage = () => {
         delegatorOnSiteRequired: onSite,
         // Sent only where the server said they may be edited here, which is standalone work alone.
         ...(editable?.canEditDatesDirectly === true ? { startDate, dueDate } : {}),
+        ...(editable?.canEditDatesDirectly === true && dateChangeReason.trim().length > 0
+          ? { dateChangeReason: dateChangeReason.trim() }
+          : {}),
       });
       setSaved(true);
       setFailure(null);
@@ -182,7 +186,9 @@ export const EditTaskPage = () => {
 
               {editable.canEditDatesDirectly ? (
                 <>
-                  <p className="exc-panel__note">{t.editTask.datesDirectNote}</p>
+                  <p className="exc-panel__note">
+                    {task?.fromAgreement ? t.editTask.datesDirectAgreementNote : t.editTask.datesDirectNote}
+                  </p>
                   <div className="exc-form">
                     <div className="form-group">
                       <label className="form-label" htmlFor="edit-start">{t.editTask.startDate}</label>
@@ -204,6 +210,19 @@ export const EditTaskPage = () => {
                         onChange={(event) => setDueDate(event.target.value)}
                       />
                     </div>
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label" htmlFor="edit-date-reason">
+                      {t.editTask.dateChangeReason}
+                    </label>
+                    <textarea
+                      id="edit-date-reason"
+                      className="form-input"
+                      rows={2}
+                      maxLength={400}
+                      value={dateChangeReason}
+                      onChange={(event) => setDateChangeReason(event.target.value)}
+                    />
                   </div>
                 </>
               ) : (

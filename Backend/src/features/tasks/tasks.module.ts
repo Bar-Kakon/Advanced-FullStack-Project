@@ -138,6 +138,7 @@ export const createTasksModule = (requireAccessToken: RequestHandler): Router =>
       companies: companyRepository,
     }),
     notifications: buildNotificationDispatchService(),
+    origins,
   });
 
   const router = Router();
@@ -275,6 +276,7 @@ export const createTasksModule = (requireAccessToken: RequestHandler): Router =>
         stageId?: string;
         startDate?: string;
         dueDate?: string;
+        dateChangeReason?: string;
       }>(res, 'body');
 
       const input: EditTaskInput = {
@@ -287,6 +289,7 @@ export const createTasksModule = (requireAccessToken: RequestHandler): Router =>
         ...(body.stageId === undefined ? {} : { stageId: body.stageId }),
         ...(body.startDate === undefined ? {} : { startDate: requireDate(body.startDate) }),
         ...(body.dueDate === undefined ? {} : { dueDate: requireDate(body.dueDate) }),
+        ...(body.dateChangeReason === undefined ? {} : { dateChangeReason: body.dateChangeReason }),
       };
 
       res.json({ task: await edit.edit(me(res), taskId, input) });

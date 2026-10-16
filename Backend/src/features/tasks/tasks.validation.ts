@@ -133,4 +133,5 @@ export const editTaskBodySchema = Joi.object({
   stageId: Joi.string().trim(),
   startDate: Joi.string().trim().pattern(CALENDAR_DATE),
   dueDate: Joi.string().trim().pattern(CALENDAR_DATE),
+  dateChangeReason: Joi.string().trim().min(1).max(400),
 }).min(1);

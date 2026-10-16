@@ -751,12 +751,24 @@ export const en: Strings = {
         beyondCeiling: 'The request would pass the project overrun ceiling, so it cannot be sent as it stands.',
         sent: 'The request was sent and is waiting on the project authority.',
         failed: 'The request could not be sent right now.',
-        standaloneOnly: 'A date-change request operates on a project schedule. This work is not part of a project, so its dates are coordinated directly with the other party, in the work conversation where the agreement was made.',
         emptyChange: 'Ask for at least one change — extra days or an alternative date.',
         openRequest: 'Open the request',
         request: 'Request a date change',
         impact: 'A change here also reaches {n} other pieces of work.',
         impactNone: 'A change here reaches no other work.',
+      },
+
+      standaloneDates: {
+        title: 'Date management',
+        lede: 'Standalone work sits on no project schedule, so its dates are edited directly, with no approval process.',
+        ledeAgreement: 'This work was born from an agreement. A date update is recorded here without changing the original agreement, and the commissioning party is notified.',
+        planned: 'Planned dates',
+        originalLabel: 'Originally agreed',
+        originalUnknown: 'Not recorded',
+        edit: 'Edit the dates',
+        historyTitle: 'Change history',
+        historyEmpty: 'The dates have not changed yet.',
+        historyRow: 'From {from} to {to}',
       },
 
       workPlans: {
@@ -2507,6 +2519,8 @@ export const en: Strings = {
     datesThroughProposal: 'Changing a date on project work goes through date coordination, so everyone affected is asked and answers.',
     goToDateChange: 'Open a date-change request',
     datesDirectNote: 'This work is standalone and affects nobody else, so its dates are edited here.',
+    datesDirectAgreementNote: 'This work was born from an agreement. A date update is recorded in the history and the commissioning party is notified — the original agreement does not change.',
+    dateChangeReason: 'Reason for the change (optional)',
     notPermitted: 'Editing this work is not permitted.',
     responsibilityNote: 'Responsibility is transferred on the task screen, not here.',
     errors: {

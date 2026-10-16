@@ -22,6 +22,18 @@ export interface TaskDetail {
   readonly description: string | null;
   readonly startDate: string;
   readonly dueDate: string;
+  /** The dates first agreed; `null` when the historical original was never recorded. */
+  readonly originalStartDate: string | null;
+  readonly originalDueDate: string | null;
+  /** The standalone date-change trail, newest first; always empty on project work. */
+  readonly dateChanges: readonly {
+    readonly at: string;
+    readonly fromStartDate: string;
+    readonly fromDueDate: string;
+    readonly toStartDate: string;
+    readonly toDueDate: string;
+    readonly reason: string | null;
+  }[];
   readonly state: TaskState;
   readonly overdue: boolean;
   readonly overdueDays: number;

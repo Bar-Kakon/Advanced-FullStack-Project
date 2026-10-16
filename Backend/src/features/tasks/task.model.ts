@@ -42,6 +42,9 @@ export interface TaskRecord {
 
   readonly startDate: Date;
   readonly dueDate: Date;
+  /** The dates first agreed, written once at creation and never by any edit. Absent means the historical original is unknown, never assumed. */
+  readonly originalStartDate?: Date;
+  readonly originalDueDate?: Date;
   /** The whole of progress reporting. */
   readonly startedAt?: Date;
   readonly completedAt?: Date;
@@ -86,6 +89,8 @@ const taskSchema = new Schema(
 
     startDate: { type: Date, required: true },
     dueDate: { type: Date, required: true },
+    originalStartDate: { type: Date },
+    originalDueDate: { type: Date },
     startedAt: { type: Date },
     completedAt: { type: Date },
 

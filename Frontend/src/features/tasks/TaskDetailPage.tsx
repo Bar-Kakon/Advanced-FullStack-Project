@@ -13,6 +13,7 @@ import { initialsOf } from '../profile/profileModel';
 import { DelegationPanel } from './components/DelegationPanel';
 import { PrivateWorkPanel } from './components/PrivateWorkPanel';
 import { DateChangePanel } from './components/DateChangePanel';
+import { StandaloneDatesPanel } from './components/StandaloneDatesPanel';
 import { HandoffPanel } from './components/HandoffPanel';
 import { WorkPlansPanel } from './components/WorkPlansPanel';
 import { useTaskDetail } from './useTaskDetail';
@@ -179,7 +180,9 @@ export const TaskDetailPage = () => {
               </section>
             ) : null}
 
-            {/* Dependencies are between stages. A delegate receives none of this. */}
+            {/* Dependencies are between stages. Standalone work has no stage, so the section
+                is not drawn at all; a delegate receives none of this either way. */}
+            {task.kind === 'standalone' ? null : (
             <section className="panel" aria-labelledby="stage-title">
               <h2 id="stage-title" className="panel__title">{copy.stage.title}</h2>
               <p className="panel__lede">{copy.stage.note}</p>
@@ -211,6 +214,7 @@ export const TaskDetailPage = () => {
                 </>
               )}
             </section>
+            )}
 
             <DelegationPanel
               task={task}
@@ -230,11 +234,8 @@ export const TaskDetailPage = () => {
               />
             ) : null}
 
-            {task.project === null && !task.viewerIsDelegate ? (
-              <section className="panel" aria-labelledby="date-change-title">
-                <h2 id="date-change-title" className="panel__title">{t.tasks.detail.dateChange.title}</h2>
-                <p className="panel__lede">{t.tasks.detail.dateChange.standaloneOnly}</p>
-              </section>
+            {task.kind === 'standalone' ? (
+              task.viewerIsDelegate ? null : <StandaloneDatesPanel task={task} />
             ) : (
               <DateChangePanel
                 taskId={task.id}

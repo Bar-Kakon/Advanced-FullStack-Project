@@ -9,6 +9,7 @@ import { formatCalendarDate } from '../projects/projectDates.js';
 import { PrivateWorkItemModel, type PrivateItemKind, type PrivateWorkItemRecord } from './privateWork.model.js';
 import { ProjectStageModel, type ProjectStageRecord } from './projectStage.model.js';
 import type { RescheduleRequestPort } from './reschedule.port.js';
+import { TaskDateChangeModel, type TaskDateChangeRecord } from './taskDateChange.model.js';
 import { TaskModel, type DelegationScope, type TaskRecord } from './task.model.js';
 import { taskNotFound } from './task.errors.js';
 import {
@@ -43,6 +44,18 @@ export interface TaskDetailDto {
   readonly description: string | null;
   readonly startDate: string;
   readonly dueDate: string;
+  /** The dates first agreed; `null` when the historical original was never recorded. */
+  readonly originalStartDate: string | null;
+  readonly originalDueDate: string | null;
+  /** The standalone date-change trail, newest first. Project dates keep the proposal audit instead. */
+  readonly dateChanges: readonly {
+    readonly at: string;
+    readonly fromStartDate: string;
+    readonly fromDueDate: string;
+    readonly toStartDate: string;
+    readonly toDueDate: string;
+    readonly reason: string | null;
+  }[];
   readonly state: string;
   readonly overdue: boolean;
   readonly overdueDays: number;
@@ -214,6 +227,25 @@ export const createTaskDetailService = ({
       task.orphanedAt === undefined &&
       (task.delegation !== undefined ? isDelegate : viewpoint === 'assignee');
 
+    // The trail and the originals stay behind the delegation wall with the rest of the negotiation.
+    const dateChanges =
+      task.kind === 'standalone' && !isDelegate
+        ? (
+            await TaskDateChangeModel.find({ task: task._id })
+              .sort({ at: -1 })
+              .limit(50)
+              .lean<TaskDateChangeRecord[]>()
+              .exec()
+          ).map((row) => ({
+            at: formatCalendarDate(row.at),
+            fromStartDate: formatCalendarDate(row.fromStartDate),
+            fromDueDate: formatCalendarDate(row.fromDueDate),
+            toStartDate: formatCalendarDate(row.toStartDate),
+            toDueDate: formatCalendarDate(row.toDueDate),
+            reason: row.reason ?? null,
+          }))
+        : [];
+
     return {
       id: task._id.toString(),
       kind: task.kind,
@@ -224,6 +256,15 @@ export const createTaskDetailService = ({
       description: delegateView ? delegateView.description : task.description ?? null,
       startDate: formatCalendarDate(task.startDate),
       dueDate: formatCalendarDate(task.dueDate),
+      originalStartDate:
+        isDelegate || task.originalStartDate === undefined
+          ? null
+          : formatCalendarDate(task.originalStartDate),
+      originalDueDate:
+        isDelegate || task.originalDueDate === undefined
+          ? null
+          : formatCalendarDate(task.originalDueDate),
+      dateChanges,
       state: deriveTaskState(task),
       overdue: isOverdue(task, now),
       overdueDays: overdueDays(task, now),

@@ -13,7 +13,9 @@ import {
   resolveProjectAccess,
   type ResolvedProjectAccess,
 } from '../projects/projectAuthorization.js';
+import type { AgreementOriginPort } from './agreementOrigin.port.js';
 import { ProjectStageModel, type ProjectStageRecord } from './projectStage.model.js';
+import { TaskDateChangeModel } from './taskDateChange.model.js';
 import { stageNotFound } from './stages.service.js';
 import { TaskModel, type TaskRecord } from './task.model.js';
 import { taskNotFound } from './task.errors.js';
@@ -53,6 +55,8 @@ export interface EditTaskInput {
   /** Only ever accepted on standalone work, where no other professional and no stage is involved. */
   readonly startDate?: Date;
   readonly dueDate?: Date;
+  /** Why the planned dates moved — a delay record on standalone work, kept with the change. */
+  readonly dateChangeReason?: string;
 }
 
 export interface EditableFieldsDto {
@@ -85,6 +89,7 @@ export interface TaskEditDependencies {
   readonly access: ProjectAccessRepository;
   readonly companyContext: CompanyContextService;
   readonly notifications: NotificationDispatchService;
+  readonly origins: AgreementOriginPort;
 }
 
 export const notPermittedToEdit = (): AppError =>
@@ -119,6 +124,7 @@ export const createTaskEditService = ({
   access,
   companyContext,
   notifications,
+  origins,
 }: TaskEditDependencies): TaskEditService => {
   const loadTask = async (taskId: string): Promise<TaskRecord> => {
     if (!Types.ObjectId.isValid(taskId)) throw taskNotFound();
@@ -246,6 +252,36 @@ export const createTaskEditService = ({
         .lean<TaskRecord>()
         .exec();
       if (updated === null) throw taskNotFound();
+
+      const datesMoved =
+        wantsDates &&
+        (updated.startDate.getTime() !== task.startDate.getTime() ||
+          updated.dueDate.getTime() !== task.dueDate.getTime());
+
+      if (task.kind === 'standalone' && datesMoved) {
+        await TaskDateChangeModel.create({
+          task: task._id,
+          actor: new Types.ObjectId(userId),
+          fromStartDate: task.startDate,
+          fromDueDate: task.dueDate,
+          toStartDate: updated.startDate,
+          toDueDate: updated.dueDate,
+          ...(input.dateChangeReason === undefined ? {} : { reason: input.dateChangeReason }),
+        });
+
+        // The commissioning party of agreement-born work is told for information only: the
+        // agreement message is never rewritten, and no approval is asked of anybody.
+        const [origin] = await origins.findByTaskIds([task._id]);
+        if (origin !== undefined && origin.proposer.toString() !== userId) {
+          await notifications.emit({
+            userId: origin.proposer,
+            type: 'task.updated',
+            taskId: task._id,
+            payload: { taskTitle: updated.title },
+            dedupeKey: `task.updated:${task._id.toString()}:${updated.updatedAt.getTime()}`,
+          });
+        }
+      }
 
       // The responsible party is told what changed about work they are carrying — unless they made
       // the change themselves, in which case telling them would be noise.
