@@ -7,6 +7,7 @@
  *
  *   APP_URL=... API_URL=... MONGO_PORT=27272 SHOTS=<dir> node scripts/verify-project-cancellation.mjs
  */
+import './support/developmentGuard.mjs';
 import { execSync } from 'node:child_process';
 import { chromium } from 'playwright';
 

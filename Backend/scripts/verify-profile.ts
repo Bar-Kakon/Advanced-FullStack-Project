@@ -7,6 +7,7 @@
  *
  *   npm run verify:profile
  */
+import './support/developmentGuard.js';
 import { CompanyMembershipModel } from '../src/features/companies/companyMembership.model.js';
 import { UserModel } from '../src/features/users/user.model.js';
 import { cleanUp, createAccount } from './support/accounts.js';

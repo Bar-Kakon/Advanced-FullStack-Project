@@ -37,6 +37,7 @@ import { createScheduleExceptionsModule } from '../features/scheduleexceptions/s
 import { createSettingsModule } from '../features/settings/settings.module.js';
 import { createReportsModule } from '../features/reports/reports.module.js';
 import { createModerationModule } from '../features/moderation/moderation.module.js';
+import { isLocalDatabaseUri } from '../db/localDatabase.js';
 import { createHealthRouter } from './health.routes.js';
 import { createHealthAuthRouter } from './healthAuth.routes.js';
 
@@ -55,7 +56,7 @@ export const createApiRouter = (config: AppConfig): Router => {
 
   const billing = createBillingModule(config, auth.requireAccessToken, config.apiPublicUrl);
 
-  router.use('/health', createHealthRouter());
+  router.use('/health', createHealthRouter(isLocalDatabaseUri(config.mongoUri)));
   router.use('/health-auth', createHealthAuthRouter(auth.requireAccessToken));
   router.use('/auth', auth.router);
   // Public, like the Landing page it is submitted from: there is no session to require.

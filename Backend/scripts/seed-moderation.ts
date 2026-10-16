@@ -4,6 +4,7 @@
  *
  *   npm run seed:moderation
  */
+import './support/developmentGuard.js';
 import { config as loadEnvFile } from 'dotenv';
 
 import { connectToDatabase, disconnectFromDatabase } from '../src/db/mongoose.js';

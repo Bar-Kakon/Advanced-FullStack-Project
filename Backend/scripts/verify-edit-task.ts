@@ -4,6 +4,7 @@
  *
  *   npm run verify:edit-task
  */
+import './support/developmentGuard.js';
 import { Types } from 'mongoose';
 
 import { ProjectMembershipModel } from '../src/features/projectaccess/projectMembership.model.js';

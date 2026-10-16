@@ -4,6 +4,7 @@
  * read-only production probes. The one step a machine cannot perform — a human choosing a Google
  * account — is reported honestly, never simulated.
  */
+import './support/developmentGuard.mjs';
 import { execSync } from 'node:child_process';
 import { chromium } from 'playwright';
 

@@ -5,6 +5,7 @@
  * active owner lands on the dashboard, a pending employee on Waiting for Approval. The legs only
  * a genuine Google credential can walk are named UNVERIFIED with their exact reason.
  */
+import './support/developmentGuard.mjs';
 import { execSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { chromium } from 'playwright';

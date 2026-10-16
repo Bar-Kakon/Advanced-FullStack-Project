@@ -4,6 +4,7 @@
  * Needs GOOGLE_MAPS_API_KEY in the environment, with Places API (New) and Routes API enabled.
  * The key is never printed, and no response is logged verbatim.
  */
+import './support/developmentGuard.js';
 import { config as loadEnvFile } from 'dotenv';
 
 import { loadConfig } from '../src/config/env.js';

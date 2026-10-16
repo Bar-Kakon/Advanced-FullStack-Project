@@ -6,6 +6,7 @@
  * holds in both directions — the delegate is never told the party above or the project, and the
  * party above is never told the delegate exists.
  */
+import './support/developmentGuard.js';
 import { Types } from 'mongoose';
 
 import { CompanyModel } from '../src/features/companies/company.model.js';

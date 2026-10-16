@@ -1,4 +1,5 @@
 /** Seeds six contractors with known rating averages and prints them as one JSON line. */
+import './support/developmentGuard.js';
 import { Types } from 'mongoose';
 
 import { CompanyModel } from '../src/features/companies/company.model.js';

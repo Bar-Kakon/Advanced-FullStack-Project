@@ -8,6 +8,7 @@
  *   APP_URL=http://localhost:5411 API_URL=http://localhost:4545/api \
  *   BACKEND_LOG=<path> SHOTS=<dir> node scripts/verify-production-qa-ui.mjs
  */
+import './support/developmentGuard.mjs';
 import { readFileSync } from 'node:fs';
 import { chromium } from 'playwright';
 

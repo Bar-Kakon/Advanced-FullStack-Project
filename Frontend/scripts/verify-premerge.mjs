@@ -4,6 +4,7 @@
  * request on project work and its honest refusal on standalone work, agreement delivery across
  * every conversation state, and the task-form layout corrections.
  */
+import './support/developmentGuard.mjs';
 import { execSync } from 'node:child_process';
 import { chromium } from 'playwright';
 

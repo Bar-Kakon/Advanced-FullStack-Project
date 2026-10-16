@@ -6,6 +6,7 @@
  * It expects a FRESHLY STARTED server: the rate limiters keep their counters in memory, and this
  * script deliberately spends a large share of the register and forgot-password budgets.
  */
+import './support/developmentGuard.js';
 import { config as loadEnvFile } from 'dotenv';
 
 import { connectToDatabase, disconnectFromDatabase } from '../src/db/mongoose.js';

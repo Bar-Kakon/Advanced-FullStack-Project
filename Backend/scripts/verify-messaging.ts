@@ -7,6 +7,7 @@
  * Project Room; an invited-but-not-accepted member has no room access; an accepted agreement
  * creates the canonical Task exactly once; and every message carries its persisted send time.
  */
+import './support/developmentGuard.js';
 import { Types } from 'mongoose';
 
 import { ConversationModel } from '../src/features/messaging/conversation.model.js';

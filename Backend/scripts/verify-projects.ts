@@ -5,6 +5,7 @@
  * be passed, the original target survives every move, statuses are derived, and a project another
  * company owns is indistinguishable from one that does not exist.
  */
+import './support/developmentGuard.js';
 import { CompanyModel } from '../src/features/companies/company.model.js';
 import { CompanyMembershipModel } from '../src/features/companies/companyMembership.model.js';
 import { ProjectModel } from '../src/features/projects/project.model.js';

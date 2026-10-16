@@ -6,6 +6,7 @@
  *   APP_URL=<new frontend built against the previous API> API_URL=<previous API> \
  *   QA_CREDENTIALS=<rehearsal credentials> node scripts/verify-previous-backend-compat.mjs
  */
+import './support/developmentGuard.mjs';
 import { appendFileSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';

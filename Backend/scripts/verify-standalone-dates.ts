@@ -12,6 +12,7 @@
  *
  *   npm run verify:standalone-dates
  */
+import './support/developmentGuard.js';
 import { config as loadEnvFile } from 'dotenv';
 import mongoose, { Types } from 'mongoose';
 

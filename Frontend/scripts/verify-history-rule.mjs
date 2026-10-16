@@ -3,6 +3,7 @@
  * value below is computed by hand from the owner's final decision — the rolling window, the
  * negative-continuity reactivation, and the no-bias requirement — never from the code under test.
  */
+import './support/developmentGuard.mjs';
 import { execSync } from 'node:child_process';
 import { chromium } from 'playwright';
 

@@ -1,3 +1,4 @@
+import './support/developmentGuard.mjs';
 import { chromium } from 'playwright';
 const browser = await chromium.launch();
 for (const origin of ['http://localhost:5173']) {

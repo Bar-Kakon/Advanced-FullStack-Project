@@ -13,6 +13,7 @@
  *
  *   npm run verify:delegation-wall
  */
+import './support/developmentGuard.js';
 import { config as loadEnvFile } from 'dotenv';
 import mongoose, { Types } from 'mongoose';
 

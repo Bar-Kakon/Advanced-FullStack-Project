@@ -2012,6 +2012,29 @@ My projects, and a row that acts inside an `Invited` project fails.
 >
 > **Format:** `[YYYY-MM-DD] What changed — why.`
 
+- `[2026-10-16]` **Development tests can no longer write to production — fail-closed guards on every development script, with the separate QA environment kept out of `develop`/`main`. IMPLEMENTED · VERIFIED (`verify:development-guard` 34/34 on throwaway local checkouts with fictional production-like targets; before the API-client addition, the three newest suites 25 + 35 + 52 and a real browser test 63 PASS under the guard) · OWNER-APPROVED FOR `develop` AND `main` 2026-10-16 · NO `.env` CHANGED.**
+  - **The cause.** Every development test took its database from the checkout's `.env` and its API from `API_URL`/`APP_URL`, with no check on either, and the main checkout's `Backend/.env` names the production cluster while its `Frontend/.env` names the production API. There were three write paths from that checkout:
+    - backend tests and fixture seeders connected straight to production;
+    - browser tests drove an app built to call the production API;
+    - two browser tests ran `seed:my-tasks` inside that checkout's `Backend/`.
+
+    A fourth path crossed checkouts: a test in a safe checkout driving `localhost`, where the API had been started from the production checkout.
+  - **The correction.** One rule, `src/db/localDatabase.ts`: a database is local only if it is a plain `mongodb://` URI and every host is this machine. SRV and remote hosts never qualify, and neither `NODE_ENV` nor database names are consulted.
+    - **The health route.** `/api/health` adds `localDatabase: true` only when that holds. Production's response is unchanged.
+    - **`scripts/support/developmentGuard.ts` / `.mjs`.** Each is imported **first** by all 51 backend and 36 frontend development scripts, with no override. It refuses a non-local `MONGODB_URI` or API/APP URL before any module loads. It refuses any request to a deployment host or a remote `/api/`. Before the first request to a local API, it requires that API to confirm `localDatabase: true`.
+    - **In the browser.** Every Playwright context is routed through the same rules, and Playwright's API client (`page.request`, `request.newContext`) is checked the same way; a browser the guard did not launch is refused. An app built to call production is stopped before the request leaves.
+    - **In the harness.** The live connection's host is re-checked after connecting.
+    - **What stays outside.** The authorized operations (migrations, admin grant, anonymization, billing, PayPal, plan seeding, the cloud procedure) never import the guard and are unaffected.
+  - **Was production touched before?** Read-only evidence says no development test left anything:
+    - zero accounts or companies match any of the 46 test markers;
+    - zero orphaned projects or tasks;
+    - the cluster holds only `test`, `admin` and `local`.
+
+    Production does hold 26 non-QA `@example.com` accounts made on 31 Aug and 12 Oct by ad-hoc production checks outside the repository's scripts. They are intact, two of them with one project each, and are left for the owner to decide.
+  - **Scope.** Nothing built only for the separate QA environment enters `develop` or `main`: `seed-qa-dataset`, `seed-qa-additions`, `verify-qa-dataset`, `verify-qa-cloud`, `make-qa-cloud-env`, `support/qaDatabase.ts`, `docs/qa-environment.md` and `docs/qa-cloud.md` stay on `feature/qa-environment` as history.
+  - **The verifier's production-like targets are fictional** (`*.example.invalid`). An earlier push of this branch carried the real cluster hostname, with no credentials. On owner approval, the branch's commits were rewritten before merging, so `develop` and `main` never contained it.
+  - **Noted.** `verify-flexibility.ts` and `verify-google-adapters.ts` fail the scripts typecheck (13 errors, identical on `develop`); they are stale and await a fix-or-retire decision. `verify-404-ui.mjs` sends a registration payload older than the current registration rules (the API answers 400). The guard allowed that request; the test itself is stale.
+
 - `[2026-10-16]` **D7 clarified by owner decision — a confidential delegation never, by itself, makes the delegate visible to the GC — and the production check that failed on it investigated: a test-design flaw, not a product defect. NO CODE CHANGE · VERIFIED ON ISOLATED DATA (API 25/25; Gil's screens 15/16, the one failure being a wrong expectation of mine) · ON `develop` · NOT ON `main`.** The clarification is recorded in the D7 row and the [§3.3](#33-delegation-visibility-model-depth--1) addendum.
   - **Where Dana's membership came from.** Read-only on production: Dana (QA-04) holds an **active membership in הדקל 12 that Gil himself created**. He invited her at 18:27:56.372 on 2026-10-14 and she accepted at 18:27:56.690. That is **8 seconds before** Shi's confidential part-delegation (18:28:04.161), in the QA seed's own "projects, stages, members" step. Gil also gave her an independent assignment in that project, and no handoff involves her. The production QA world is therefore the owner's scenario B.
   - **Why the check failed.** Her name appeared on Gil's page of the delegated task only as an option in the handoff panel's generic member picker. That list is every active member except the viewer and the task's assignee, and never depends on delegation. The check had treated "the name appears anywhere" as disclosure. Since the release, it ignores the member picker.

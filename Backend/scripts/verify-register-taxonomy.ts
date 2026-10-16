@@ -7,6 +7,7 @@
  * the same object the route already delegates to. Everything that has to prove storage, Browse or
  * the profile guard goes over real HTTP against the real app.
  */
+import './support/developmentGuard.js';
 import { Types } from 'mongoose';
 
 import { registerBodySchema } from '../src/features/auth/auth.validation.js';

@@ -4,6 +4,7 @@
  * Needs a FRESHLY STARTED server: it spends a large share of the register rate-limit budget.
  * Start the API (`npm run dev`), then: `npm run verify:blocks-connections-ratings`.
  */
+import './support/developmentGuard.js';
 import { config as loadEnvFile } from 'dotenv';
 import { Types } from 'mongoose';
 

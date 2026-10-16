@@ -4,6 +4,7 @@
  * Boots the real application on an ephemeral port and drives it over real HTTP, carrying the
  * refresh cookie the way a browser would.
  */
+import './support/developmentGuard.js';
 import { CompanyMembershipModel } from '../src/features/companies/companyMembership.model.js';
 import { RefreshTokenModel } from '../src/features/auth/refreshToken.model.js';
 import { UserModel } from '../src/features/users/user.model.js';

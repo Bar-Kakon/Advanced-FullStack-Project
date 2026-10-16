@@ -7,6 +7,7 @@
  *
  *   npm run verify:completed-work
  */
+import './support/developmentGuard.js';
 import { Types } from 'mongoose';
 
 import { WorkEntryModel } from '../src/features/workentries/workEntry.model.js';

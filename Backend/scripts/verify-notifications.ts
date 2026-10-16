@@ -4,6 +4,7 @@
  *
  *   npm run verify:notifications
  */
+import './support/developmentGuard.js';
 import { Types } from 'mongoose';
 
 import type { MailMessage, Mailer } from '../src/mail/mailer.js';
