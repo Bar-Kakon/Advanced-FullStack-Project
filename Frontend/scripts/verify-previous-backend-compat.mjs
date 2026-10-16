@@ -104,6 +104,16 @@ check('missing originals read as "not recorded", never a guess', /לא תועד 
 check('a missing trail reads as an empty history', /המועדים טרם שונו|have not changed yet/.test(text));
 await page.screenshot({ path: join(OUT, 'screens', '01-task-previous-backend.png'), fullPage: true });
 
+const legacy = await api('POST', `/tasks/${taskId}/private`, { kind: 'subtask', body: 'תת-משימה ותיקה' }, token);
+check('the previous backend stores a private sub-task', legacy.status === 201, legacy.status);
+await openTask();
+const legacyRow = page.locator('.private-item', { hasText: 'תת-משימה ותיקה' });
+check('without the new flag the page still loads the owner’s private layer', (await legacyRow.count()) === 1);
+check('the sub-task renders as not started from the previous shape', (await legacyRow.locator('.task-chip--not_started').count()) === 1);
+await legacyRow.getByRole('button', { name: /התחלת ביצוע|^Start$/ }).click();
+await new Promise((resolve) => setTimeout(resolve, 1500));
+check('starting it before the backend is updated fails softly — no crash', (await page.locator('.app-error').count()) === 0);
+
 await panel.locator('a[href$="/edit"]').click();
 await page.waitForSelector('#edit-start', { timeout: 30000 });
 await page.fill('#edit-due', day(27));
@@ -127,7 +137,11 @@ await new Promise((resolve) => setTimeout(resolve, 1500));
 check('the notification centre renders', (await page.locator('.app-error').count()) === 0);
 
 check('no uncaught page errors anywhere', pageErrors.length === 0, pageErrors);
-check('no console errors anywhere', consoleErrors.length === 0, consoleErrors);
+check(
+  'no console errors other than the expected refusal of the not-yet-deployed start route',
+  consoleErrors.every((text) => /status of 404/.test(text)) && consoleErrors.length <= 1,
+  consoleErrors,
+);
 
 await browser.close();
 writeFileSync(join(OUT, 'summary.json'), `${JSON.stringify({ runId, app: APP, api: API, passed, failed: failures.length, failures }, null, 2)}\n`, { mode: 0o600 });

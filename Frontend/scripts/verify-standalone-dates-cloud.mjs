@@ -10,9 +10,10 @@
  *     original-date migration are all observably live.
  *
  * It creates only its own clearly titled fixtures (one standalone task, one agreement in the
- * existing QA conversation and the task it becomes), consumes no pending QA state, reads the
- * existing delegated QA task without changing it, and marks only the notifications it caused as
- * seen. Passwords, tokens and email addresses never reach a log.
+ * existing QA conversation and the task it becomes, and private sub-tasks on its own standalone
+ * task only), consumes no pending QA state, reads the existing delegated QA task without changing
+ * it, and marks only the notifications it caused as seen. Passwords, tokens and email addresses
+ * never reach a log.
  *
  *   node scripts/verify-standalone-dates-cloud.mjs                                   preflight only
  *   BLOKTA_VERIFY_CONFIRM=standalone-dates node scripts/verify-standalone-dates-cloud.mjs
@@ -147,15 +148,7 @@ const pageErrors = [];
 const consoleErrors = [];
 const browserHttpErrors = [];
 const browserRequests = [];
-const knownErrors = [];
-const PRIVATE_LAYER = /\/api\/tasks\/[0-9a-f]{24}\/private$/;
-const pathOf = (url) => {
-  try {
-    return new URL(url).pathname;
-  } catch {
-    return '';
-  }
-};
+
 let browser = null;
 let aborted = null;
 
@@ -174,7 +167,7 @@ const finish = async () => {
     aborted,
     fixtures,
     notificationsMarkedSeen: markedSeen,
-    browser: { pageErrors: pageErrors.length, consoleErrors: consoleErrors.length, httpErrors: browserHttpErrors.length, knownPreExisting: knownErrors },
+    browser: { pageErrors: pageErrors.length, consoleErrors: consoleErrors.length, httpErrors: browserHttpErrors.length },
     files: {
       runLog: join(OUT, 'run.log'),
       http: join(OUT, 'http.jsonl'),
@@ -219,9 +212,7 @@ const watch = (page, who) => {
     const text = sanitize(message.text());
     const source = message.location()?.url ?? '';
     const external = /accounts\.google\.com|gstatic\.com/.test(source) || /GSI_LOGGER/.test(text);
-    const known = PRIVATE_LAYER.test(pathOf(source));
-    if (known) knownErrors.push(`${who} console: ${pathOf(source)}`);
-    else if (!external) consoleErrors.push(text);
+    if (!external) consoleErrors.push(text);
     write('browser.jsonl', JSON.stringify({ at: new Date().toISOString(), who, kind: 'console.error', external, text, source: sanitize(source) }));
   });
   page.on('request', (request) => {
@@ -232,9 +223,7 @@ const watch = (page, who) => {
     const url = new URL(response.url());
     if (response.status() < 400 || url.origin !== new URL(API).origin) return;
     const expected = response.status() === 401 && url.pathname.endsWith('/auth/refresh');
-    const known = response.status() === 404 && response.request().method() === 'GET' && PRIVATE_LAYER.test(url.pathname);
-    if (known) knownErrors.push(`${who} GET ${url.pathname} 404`);
-    else if (!expected) browserHttpErrors.push(`${who} ${response.request().method()} ${url.pathname} ${response.status()}`);
+    if (!expected) browserHttpErrors.push(`${who} ${response.request().method()} ${url.pathname} ${response.status()}`);
     write('browser.jsonl', JSON.stringify({ at: new Date().toISOString(), who, kind: 'http', expected, method: response.request().method(), path: url.pathname, status: response.status() }));
   });
   page.on('requestfailed', (request) => {
@@ -450,6 +439,7 @@ const run = async () => {
     const projectTask = details.get(projectRow.id);
     check('it still shows its project stage', projectTask?.stage !== null, projectTask?.stage);
     check('it still offers the project date-change flow', projectTask?.viewer?.canRequestDateChange === true);
+    check('the performer is told they have a private layer on it', projectTask?.viewer?.hasPrivateLayer === true);
     const refused = await asPerformer('PATCH', `/tasks/${projectRow.id}`, { startDate: day(200), dueDate: day(201) });
     check('a direct date edit on it is refused (409)', refused.status === 409, refused.status);
     check('naming the proposal flow', refused.body?.code === 'TASK_EDIT_DATES_NEED_PROPOSAL', refused.body?.code);
@@ -472,6 +462,10 @@ const run = async () => {
       check('GC’s project page: the stage section is drawn', await has(commissionerPage, '#stage-title'));
       check('GC’s project page: the responsibility-handoff panel is drawn', await has(commissionerPage, '#handoff-title'));
       await checkDelegationPanel(commissionerPage, gcView.body.task, 'GC’s project page');
+      check('the GC is told they have no private layer on it', gcView.body.task.viewer.hasPrivateLayer === false);
+      check('GC’s project page: no private-layer panel', !(await has(commissionerPage, '#private-title')));
+      const gcPrivate = await asCommissioner('GET', `/tasks/${projectRow.id}/private`);
+      check('a direct private-layer request from the GC still answers 404', gcPrivate.status === 404, gcPrivate.status);
       await screenshot(commissionerPage, 'project-gc');
     } else info('the GC cannot open this project task — GC page checks skipped', gcView.status);
   }
@@ -509,6 +503,15 @@ const run = async () => {
         check('the delegate’s page has no responsibility-handoff panel', !(await has(delegatePage, '#handoff-title')));
         check('the delegate’s page has no project date-change panel', !(await has(delegatePage, '#date-change-title')));
         await screenshot(delegatePage, 'delegate-view');
+        const facts = (await delegatePage.locator('.dash-facts').textContent()) ?? '';
+        check('the delegate’s summary keeps the real task type', /משימה בפרויקט|Project task/.test(facts), facts.slice(0, 120));
+        check('and says the project is not shown, never "no project"', /פרטי הפרויקט אינם מוצגים|Project details are not shown/.test(facts) && !/ללא פרויקט|No project/.test(facts), facts.slice(0, 160));
+        await delegatePage.goto(`${APP}/tasks`, { waitUntil: 'domcontentloaded', timeout: 60000 });
+        const delegateRow = delegatePage.locator('.task-row', { hasText: view.title });
+        await delegateRow.first().waitFor({ timeout: 30000 }).catch(() => {});
+        const rowText = (await delegateRow.first().textContent()) ?? '';
+        check('the delegate’s My Tasks row says the same', /פרטי הפרויקט אינם מוצגים|Project details are not shown/.test(rowText) && !/ללא פרויקט|No project/.test(rowText), rowText.slice(0, 160));
+        await screenshot(delegatePage, 'delegate-my-tasks');
       } else info('QA-04 is not the delegate of this task — delegate view skipped', delegateSide.status);
     }
   }
@@ -553,6 +556,39 @@ const run = async () => {
     solo?.dateChanges?.length === 1 && solo.dateChanges[0].fromDueDate === day(44) && solo.dateChanges[0].toDueDate === day(49) && solo.dateChanges[0].reason === REASON_SOLO,
     solo?.dateChanges,
   );
+
+  section('4b. Private sub-task execution, through the deployed UI, on the run’s own task');
+  const SUBTASK = `תת-משימת אימות ${runId}`;
+  await openTask(performerPage, soloId);
+  await performerPage.selectOption('#private-kind', 'subtask');
+  await performerPage.fill('#private-body', SUBTASK);
+  await performerPage.click('.private-add .btn--primary');
+  const subtaskRow = performerPage.locator('.private-item', { hasText: SUBTASK });
+  await subtaskRow.waitFor({ timeout: 30000 }).catch(() => {});
+  check('a private sub-task is added and shows as not started', (await subtaskRow.locator('.task-chip--not_started').count()) === 1);
+  await subtaskRow.getByRole('button', { name: /התחלת ביצוע|^Start$/ }).click();
+  await subtaskRow.locator('.task-chip--in_progress').waitFor({ timeout: 30000 }).catch(() => {});
+  await openTask(performerPage, soloId, true);
+  check('after a refresh it is in progress', (await performerPage.locator('.private-item', { hasText: SUBTASK }).locator('.task-chip--in_progress').count()) === 1);
+  await performerPage.locator('.private-item', { hasText: SUBTASK }).getByRole('button', { name: /סיום ביצוע|Mark complete/ }).click();
+  await performerPage.locator('.private-item', { hasText: SUBTASK }).locator('.task-chip--completed').waitFor({ timeout: 30000 }).catch(() => {});
+  await openTask(performerPage, soloId, true);
+  const doneRow = performerPage.locator('.private-item', { hasText: SUBTASK });
+  check('after a refresh it is complete, and offers no further action', (await doneRow.locator('.task-chip--completed').count()) === 1 && (await doneRow.getByRole('button', { name: /התחלת ביצוע|סיום ביצוע|^Start$|Mark complete/ }).count()) === 0);
+  await doneRow.getByRole('button', { name: /פתיחה|Open/ }).click();
+  const detailText = (await doneRow.textContent()) ?? '';
+  check('its detail shows when it started and when it completed', /הביצוע התחיל|Started on/.test(detailText) && /הביצוע הסתיים|Completed on/.test(detailText));
+  await screenshot(performerPage, 'private-subtask-completed');
+  const layer = (await asPerformer('GET', `/tasks/${soloId}/private`)).body?.items ?? [];
+  const stored = layer.find((item) => item.body === SUBTASK);
+  check('the server holds both stamps', typeof stored?.startedAt === 'string' && typeof stored?.completedAt === 'string' && stored?.done === true);
+  const parentAfter = (await asPerformer('GET', `/tasks/${soloId}`)).body?.task;
+  check('the task itself did not move — no automatic completion', parentAfter?.state === 'not_started', parentAfter?.state);
+  for (const [who, call] of [['commissioner', asCommissioner], ['outsider', asOutsider]]) {
+    const read = await call('GET', `/tasks/${soloId}/private`);
+    const act = await call('POST', `/tasks/${soloId}/private/${stored?._id}/start`);
+    check(`the ${who} cannot read or act on that layer (404)`, read.status === 404 && act.status === 404, [read.status, act.status]);
+  }
 
   section('5. An agreement-born standalone task, and the commissioner’s informational notice');
   const proposed = await asCommissioner('POST', `/conversations/${conversation.id}/agreements`, { title: BORN_TITLE, startDate: day(60), dueDate: day(66) });
@@ -660,12 +696,15 @@ const run = async () => {
   }
 
   section('7. The deployed frontend stayed healthy');
+  check(
+    'no page asked for a private layer the viewer does not have',
+    !browserRequests.some((r) => r.who === 'QA-02' && r.path.endsWith('/private')),
+    browserRequests.filter((r) => r.who === 'QA-02' && r.path.endsWith('/private')),
+  );
   check('no uncaught page errors', pageErrors.length === 0, pageErrors);
   check('no application console errors', consoleErrors.length === 0, consoleErrors);
   check('no unexpected failed API responses in the browser', browserHttpErrors.length === 0, browserHttpErrors);
-  if (knownErrors.length > 0) {
-    info(`KNOWN pre-existing, not caused by this release: the task page asks every viewer for their private layer and a non-owner is refused (${knownErrors.length})`, knownErrors);
-  }
+
 
   section('8. Restoring the QA notification baseline');
   for (const [label, call] of [['commissioner', asCommissioner], ['performer', asPerformer]]) {

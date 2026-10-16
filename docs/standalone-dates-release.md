@@ -8,13 +8,13 @@ authorization, given at that step.
 
 | Stage | Status |
 |---|---|
-| Local verification | **Done.** Backend, on isolated local databases: `verify:standalone-dates` 52 PASS (including the migration's dry run, manifest, idempotency and exact rollback) and `verify:task-detail` 68 PASS. |
-| Release rehearsal | **Done, not cloud.** The full cloud procedure against a throwaway local backend, a production-mode frontend build and a seeded throwaway database migrated with the real script: **105 PASS, 0 FAIL**. |
-| Deployment compatibility | **Done, not cloud.** The new frontend against today's `main` backend: 14 PASS. A negative control — the same check on the frontend from before the guard — crashes into the error boundary, which shows the guard is what prevents it. |
+| Local verification | **Done.** Backend, on isolated local databases: `verify:private-execution` 35 PASS, `verify:task-detail` 68 PASS, `verify:standalone-dates` 52 PASS (including the migration's dry run, manifest, idempotency and exact rollback). |
+| Release rehearsal | **Done, not cloud.** The full cloud procedure against a throwaway local backend, a production-mode frontend build and a seeded throwaway database migrated with the real script: **121 PASS, 0 FAIL** — the 105 earlier conditions plus 16 for the remaining task corrections, with zero browser errors and no exemptions. |
+| Deployment compatibility | **Done, not cloud.** The new frontend against today's `main` backend: 18 PASS. The earlier negative control — the frontend from before the guard — crashes into the error boundary, which shows the guard is what prevents it. |
 | Cloud deployment | **Not done.** Production still serves the previous build. |
 | Cloud runtime verification | **Not done.** The procedure refuses to write anything until the deployment and the migration are live. |
 
-The private-subtask execution defect is **still OPEN** and is not touched by any of this.
+The private-subtask execution defect is **implemented and verified on this branch** (see *The remaining task corrections* below); it closes with the owner's acceptance of the release.
 
 ## The rehearsal defects, and their corrections (approved 2026-10-16)
 
@@ -36,10 +36,23 @@ project stage section and the project date-change panel, and the API served the 
 count of other works — sequence information D7 withholds. Both project panels now follow the same
 "project visible to this viewer" rule, and a delegate's `rescheduleImpact` is `null`.
 
-**Known and pre-existing, deliberately not changed here:** the task page asks every viewer for
-their private layer, and a non-owner is refused with a 404. The code treats that as normal, but the
-browser logs it as an error. It belongs with the open private-subtask defect. The procedure lists
-it as KNOWN instead of passing it silently.
+## The remaining task corrections (approved 2026-10-16)
+
+1. **Private sub-task execution.** A sub-task now starts and completes using the parent task's own
+   model: `startedAt` / `completedAt`, each written once, Complete only after Start, and state
+   derived on read. Notes have no execution, and the parent task is never moved by it. The layer is
+   still visible only to its owner: the GC, the commissioner, company employees, the delegator (for
+   the delegate's layer) and outsiders all get 404.
+2. **The private-layer 404.** The task detail now says whether this viewer has a private layer
+   (`viewer.hasPrivateLayer`), and the page asks for one only then. Direct requests still get 404.
+   Against the previous backend, which sends no flag, the page still asks, so owners never lose
+   their layer during the deploy.
+3. **The delegate's summary.** It keeps the real type «משימה בפרויקט», and the project line reads
+   «פרטי הפרויקט אינם מוצגים» on both the task page and My Tasks, instead of the false «ללא פרויקט».
+
+**Open for the owner:** D7 §3.3 describes the private layer as Delegator ↔ Delegate, but the layer
+as built is owner-only. A delegator therefore does not see the delegate's sub-task progress. This
+batch keeps the built rule.
 
 **Owner to confirm in the dashboard:** Render's deploy branch is `main` with Auto-Deploy on. Vercel
 production follows `main`: a fix merged at 08:18 UTC on 2026-10-13 was live at 08:20.
@@ -132,9 +145,9 @@ limit (10 per 15 minutes).
 GC), QA-04 דנה אדלר (the delegate of the existing delegated task), and QA-08 טל אורן (outsider). They
 are read from `~/.blokta-qa/credentials/qa-accounts.production.json`. Seven logins in all.
 
-**What it creates** (all titled `אימות מועדים · … · <run id>`): one standalone task for QA-03, and
-one agreement in the existing QA-02 ↔ QA-03 conversation, proposed and accepted in the same run,
-plus the task it becomes. It consumes **no** pending QA state: the pending agreement איטום גג, the
+**What it creates** (all titled `אימות מועדים · … · <run id>`): one standalone task for QA-03 with
+one private sub-task on it, and one agreement in the existing QA-02 ↔ QA-03 conversation, proposed
+and accepted in the same run, plus the task it becomes. It consumes **no** pending QA state: the pending agreement איטום גג, the
 open date-change request, invitations, connection requests and the existing delegation are all
 untouched; the pending proposal and the delegated task are only read. There is no task-delete
 endpoint, so these fixtures stay as labelled QA records. Afterwards it marks as seen only the
@@ -175,8 +188,17 @@ notifications the run itself caused, so the QA unread badges return to their pre
 - **Nothing unrelated moved.** Every pre-existing QA-03 task keeps its dates, state, delegation and
   proposal marker; every commissioned task keeps its due date; and the pending proposal keeps its
   status.
-- **Frontend health.** No uncaught page errors, no application console errors, and no unexpected
-  failed API calls. The known private-layer refusal is listed separately.
+- **Private sub-task execution, on the run's own standalone task, through the deployed UI.**
+  - A sub-task is added; Start, a refresh, Complete and another refresh each show the right state.
+  - Its detail shows when it started and when it completed, and the server holds both stamps.
+  - The task itself stays «טרם התחילה».
+  - The commissioner and the outsider get 404 on the layer, and the GC gets 404 on a project task's
+    layer.
+  - Only viewers who have a layer are told they have one, and the GC's pages show no private panel.
+- **The delegate's summary.** It keeps «משימה בפרויקט» and reads «פרטי הפרויקט אינם מוצגים» on both
+  the task page and the My Tasks row.
+- **Frontend health.** No uncaught page errors, no application console errors, no unexpected failed
+  API calls, and no request for a private layer by a viewer who has none.
 
 **What it does not prove:** email delivery (QA accounts have none); behaviour for accounts outside
 the QA set; the live deploy gap itself. The compatibility guard is proven only by the rehearsal:
@@ -206,7 +228,12 @@ cannot trace individual requests.
 
 ## Evidence
 
-The integrated verification session is in
-`~/.blokta-qa/verification/standalone-dates/integrated-20261016T180232Z/`. It contains the backend
-logs (A1, A2), the migration log and its manifest (B1), the full release rehearsal with screenshots
-(B2), the compatibility check (C), and the negative control (C, unguarded).
+The latest integrated verification session is in
+`~/.blokta-qa/verification/standalone-dates/integrated-20261016T182639Z/`. It contains:
+
+- the three backend logs (A);
+- the migration log and its manifest (B1);
+- the full release rehearsal with screenshots (B2);
+- the compatibility check (C).
+
+The previous session, `integrated-20261016T180232Z`, also holds the guard's negative control.
