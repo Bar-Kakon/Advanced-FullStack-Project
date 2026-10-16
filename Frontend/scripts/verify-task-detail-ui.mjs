@@ -6,6 +6,7 @@
  *
  *   npm run verify:task-detail-ui
  */
+import './support/developmentGuard.mjs';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';

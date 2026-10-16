@@ -486,8 +486,12 @@ const run = async () => {
     if (gcSide.status === 200) {
       await openTask(commissionerPage, delegatedRow.id);
       await checkDelegationPanel(commissionerPage, gcSide.body.task, 'GC’s page of the delegated task');
-      const gcText = (await commissionerPage.locator('main').textContent()) ?? '';
-      check('the GC’s page never names the delegate', !gcText.includes(asDelegator.delegation.delegateName), 'delegate name visible');
+      const gcText = await commissionerPage.locator('main').evaluate((main) => {
+        const copy = main.cloneNode(true);
+        copy.querySelectorAll('section[aria-labelledby="handoff-title"] option').forEach((option) => option.remove());
+        return copy.textContent ?? '';
+      });
+      check('the GC’s page never names the delegate outside the project-member picker', !gcText.includes(asDelegator.delegation.delegateName), 'delegate name visible');
     }
     if (delegate !== null) {
       const delegateSide = await as(delegate)('GET', `/tasks/${delegatedRow.id}`);

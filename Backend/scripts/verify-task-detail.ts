@@ -6,6 +6,7 @@
  * stage dependencies refuse to form a loop, and the date-change entry point says the cascade does
  * not exist rather than pretending to accept a request.
  */
+import './support/developmentGuard.js';
 import { Types } from 'mongoose';
 
 import { CompanyModel } from '../src/features/companies/company.model.js';

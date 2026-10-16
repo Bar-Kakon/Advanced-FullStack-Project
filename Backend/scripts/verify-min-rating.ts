@@ -1,4 +1,5 @@
 /** The minimum-rating filter, proved on the result set rather than on the query it was sent. */
+import './support/developmentGuard.js';
 import { Types } from 'mongoose';
 
 import { RatingModel } from '../src/features/ratings/rating.model.js';

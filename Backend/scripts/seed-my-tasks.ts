@@ -5,6 +5,7 @@
  *
  *   npm run seed:my-tasks -- someone@example.com [delegate@example.com]
  */
+import './support/developmentGuard.js';
 import { config as loadEnvFile } from 'dotenv';
 import { Types } from 'mongoose';
 

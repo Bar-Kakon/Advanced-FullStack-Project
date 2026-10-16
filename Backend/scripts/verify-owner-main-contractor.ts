@@ -3,6 +3,7 @@
  *
  * Boots the real application on an ephemeral port, so nothing else needs to be running.
  */
+import './support/developmentGuard.js';
 import { CompanyMembershipModel } from '../src/features/companies/companyMembership.model.js';
 import { createAccount, cleanUp } from './support/accounts.js';
 import { check, finish, request, section, startHarness } from './support/harness.js';

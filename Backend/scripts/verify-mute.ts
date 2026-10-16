@@ -1,3 +1,4 @@
+import './support/developmentGuard.js';
 import { Types } from 'mongoose';
 
 import { ConversationModel } from '../src/features/messaging/conversation.model.js';

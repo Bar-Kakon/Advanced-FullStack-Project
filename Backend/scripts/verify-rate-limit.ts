@@ -6,6 +6,7 @@
  *
  * Start the API (`npm run dev`), then: `npm run verify:rate-limit`.
  */
+import './support/developmentGuard.js';
 import { AUTH_RATE_LIMITS } from '../src/middleware/rateLimit.js';
 
 const API = process.env['API_URL'] ?? 'http://localhost:3000/api';

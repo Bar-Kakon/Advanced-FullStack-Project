@@ -4,6 +4,7 @@
  * Needs a FRESHLY STARTED server. Google is NOT called: no test here applies a driving-distance
  * filter, so the routing adapter is never reached. `verify:google-adapters` covers that boundary.
  */
+import './support/developmentGuard.js';
 import { config as loadEnvFile } from 'dotenv';
 
 import { connectToDatabase, disconnectFromDatabase } from '../src/db/mongoose.js';

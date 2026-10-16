@@ -1,3 +1,4 @@
+import './support/developmentGuard.js';
 import { Types } from 'mongoose';
 
 import { AuditEntryModel } from '../src/features/coordination/auditEntry.model.js';

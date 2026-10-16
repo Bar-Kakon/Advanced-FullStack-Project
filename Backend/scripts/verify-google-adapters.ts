@@ -3,6 +3,7 @@
  * application behaves when Google succeeds, fails, times out or answers partially — deterministically
  * and without spending quota. `verify:google-live` is the separate smoke test that calls Google.
  */
+import './support/developmentGuard.js';
 import { createTravelService } from '../src/features/location/travel.service.js';
 import { createBrowseService } from '../src/features/browse/browse.service.js';
 import type { PlacesAdapter } from '../src/features/location/places.adapter.js';

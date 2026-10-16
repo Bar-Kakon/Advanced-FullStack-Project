@@ -4,6 +4,7 @@
  *
  *   npm run verify:settings
  */
+import './support/developmentGuard.js';
 import { Types } from 'mongoose';
 
 import { PlanModel } from '../src/features/billing/plan.model.js';

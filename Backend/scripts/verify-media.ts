@@ -7,6 +7,7 @@
  *
  *   npm run verify:media
  */
+import './support/developmentGuard.js';
 import mongoose from 'mongoose';
 
 import { FileAssetModel } from '../src/features/files/fileAsset.model.js';

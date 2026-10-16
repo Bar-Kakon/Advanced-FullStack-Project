@@ -8,6 +8,7 @@
  *
  *   npm run verify:register-txn
  */
+import './support/developmentGuard.js';
 import { config as loadEnvFile } from 'dotenv';
 import mongoose from 'mongoose';
 

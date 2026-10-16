@@ -6,6 +6,7 @@
  *
  *   npm run verify:projects-ui
  */
+import './support/developmentGuard.mjs';
 import { chromium } from 'playwright';
 
 const APP = process.env.APP_URL ?? 'http://localhost:5173';

@@ -4,6 +4,7 @@
  * Every number the dashboard reports is checked against the state that produced it, so a value
  * that is merely plausible cannot pass.
  */
+import './support/developmentGuard.js';
 import { BlockModel } from '../src/features/blocks/block.model.js';
 import { CompanyModel } from '../src/features/companies/company.model.js';
 import { CompanyMembershipModel } from '../src/features/companies/companyMembership.model.js';

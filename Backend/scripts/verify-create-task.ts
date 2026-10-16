@@ -7,6 +7,7 @@
  * while a non-working day is only a warning, and creating work starts neither the task nor the
  * project.
  */
+import './support/developmentGuard.js';
 import { Types } from 'mongoose';
 
 import { CompanyMembershipModel } from '../src/features/companies/companyMembership.model.js';

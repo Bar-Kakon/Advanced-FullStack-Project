@@ -5,6 +5,7 @@
  * are refused; a reporter cannot write any moderation field; the duplicate rule is deterministic;
  * and nothing about a report leaks through an ordinary endpoint to anyone.
  */
+import './support/developmentGuard.js';
 import { ReportModel } from '../src/features/reports/report.model.js';
 import { UserModel } from '../src/features/users/user.model.js';
 import { cleanUp, createAccount } from './support/accounts.js';

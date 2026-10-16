@@ -6,6 +6,7 @@
  * not exist; the pinned calendar version never moves on its own; and no task figure is invented
  * while the Tasks domain does not exist.
  */
+import './support/developmentGuard.js';
 import { Types } from 'mongoose';
 
 import { CompanyModel } from '../src/features/companies/company.model.js';

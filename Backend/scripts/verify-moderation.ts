@@ -6,6 +6,7 @@
  * internal; restriction stops new work without touching committed work; and the report shape
  * stays compatible with D8 anonymisation.
  */
+import './support/developmentGuard.js';
 import { Types } from 'mongoose';
 
 import { ProjectMembershipModel } from '../src/features/projectaccess/projectMembership.model.js';

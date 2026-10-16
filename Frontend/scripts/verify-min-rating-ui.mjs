@@ -8,6 +8,7 @@
  *
  *   npm run verify:min-rating-ui
  */
+import './support/developmentGuard.mjs';
 import { execFile } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';

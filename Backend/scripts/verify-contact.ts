@@ -14,6 +14,7 @@
  * It spends the whole contact budget, so it needs a freshly started server: the counter lives in
  * memory and resets when the process does.
  */
+import './support/developmentGuard.js';
 import { ContactMessageModel } from '../src/features/contact/contactMessage.model.js';
 import { submitContactMessageBodySchema } from '../src/features/contact/contact.validation.js';
 import { CONTACT_SUBMISSION_RATE_LIMIT } from '../src/middleware/rateLimit.js';

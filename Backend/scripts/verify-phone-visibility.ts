@@ -6,6 +6,7 @@
  * largely to keep it that way — `schedule.change.manage` and Full Authority are asserted to show
  * nothing, because an earlier implementation read exactly those and that was the defect.
  */
+import './support/developmentGuard.js';
 import { Types } from 'mongoose';
 
 import { CompanyMembershipModel } from '../src/features/companies/companyMembership.model.js';

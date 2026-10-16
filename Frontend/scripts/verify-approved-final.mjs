@@ -5,6 +5,7 @@
  * agreement-document authorization rules. Every expected number is computed independently
  * from the approved specification, never from the code under test.
  */
+import './support/developmentGuard.mjs';
 import { execSync } from 'node:child_process';
 import { chromium } from 'playwright';
 

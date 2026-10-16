@@ -10,6 +10,7 @@
  *
  *   npm run verify:subscriptions
  */
+import './support/developmentGuard.js';
 import { loadConfig } from '../src/config/env.js';
 import { runInTransaction } from '../src/db/mongoose.js';
 import { CheckoutModel } from '../src/features/billing/checkout.model.js';
