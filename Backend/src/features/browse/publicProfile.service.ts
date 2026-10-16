@@ -5,7 +5,6 @@ import type { RatingEligibilityPort } from '../ratings/ratings.service.js';
 import type { RatingRepository } from '../ratings/rating.repository.js';
 import type { CompanyRepository } from '../companies/company.repository.js';
 import type { CompanyMembershipRepository } from '../companies/companyMembership.repository.js';
-import { DEFAULT_CONTACT_VISIBILITY } from '../users/user.model.js';
 import type { UserRepository } from '../users/user.repository.js';
 import type { WorkEntryRepository } from '../workentries/workEntry.repository.js';
 import type { FileAssetRecord } from '../files/fileAsset.model.js';
@@ -75,24 +74,20 @@ export const createPublicProfileService = ({
         relationships.between(viewerId, subjectUserId),
         ratings.summaryFor(subjectUserId),
         workEntries.listByOwner(subject._id),
-        phones.decide({ viewerId, subjectId: subjectUserId }),
+        phones.decide({
+          viewerId,
+          subjectId: subjectUserId,
+          ...(subject.contactVisibility === undefined
+            ? {}
+            : { subjectContactVisibility: subject.contactVisibility }),
+        }),
         eligibility.hasAnyWorkEvidence(viewerId, subjectUserId),
         flexibility.forUser(subjectUserId),
       ]);
 
     const isSelf = viewerId === subjectUserId;
-    /**
-     * An automatic case shows the numbers outright. Every other viewer sees only what the
-     * professional chose to publish, which is the fourth part of the policy — so the two layers
-     * are OR-ed rather than one overriding the other, and a withheld default stays withheld until
-     * its owner says otherwise.
-     */
-    const automatic = phoneVisibility === 'self'
-      || phoneVisibility === 'visible_shared_project_role'
-      || phoneVisibility === 'visible_work_commitment';
-    const chosen = { ...DEFAULT_CONTACT_VISIBILITY, ...(subject.contactVisibility ?? {}) };
-    const showOfficePhone = automatic || chosen.officePhone;
-    const showBusinessPhone = automatic || chosen.businessPhone;
+    const showsOffice = phoneVisibility.officePhone !== 'hidden_no_approved_case';
+    const showsBusiness = phoneVisibility.businessPhone !== 'hidden_no_approved_case';
 
     const work: PublicWorkEntryDto[] = entries.map((entry) => ({
       id: entry._id.toString(),
@@ -135,14 +130,11 @@ export const createPublicProfileService = ({
       },
       work,
       phones: {
-        // The personal/login number is never in this shape at all.
-        officePhone: showOfficePhone ? company?.officePhone ?? null : null,
-        businessPhone: showBusinessPhone ? subject.businessPhone ?? null : null,
-        visibility: phoneVisibility,
+        // The personal/login number is never in this shape at all, and each field answers alone.
+        officePhone: showsOffice ? company?.officePhone ?? null : null,
+        businessPhone: showsBusiness ? subject.businessPhone ?? null : null,
+        visibility: phoneVisibility.businessPhone,
       },
-      // The one contact detail the policy publishes by default, and still the professional's to
-      // withdraw. Never a fallback for a number that is being withheld.
-      email: automatic || chosen.email ? subject.email : null,
       rateable: isSelf
         ? { canRate: false, reason: 'self' }
         : canRate

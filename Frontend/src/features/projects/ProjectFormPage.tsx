@@ -41,7 +41,7 @@ export const ProjectFormPage = () => {
 
   const editing = projectId !== undefined;
   useDocumentTitle(
-    editing ? 'עריכת פרויקט / Edit project — FieldSync' : 'פרויקט חדש / New project — FieldSync',
+    editing ? 'עריכת פרויקט / Edit project — Blokta' : 'פרויקט חדש / New project — Blokta',
   );
 
   const firstName = user?.firstName ?? '';

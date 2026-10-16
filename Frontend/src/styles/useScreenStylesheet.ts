@@ -3,7 +3,7 @@ import { useInsertionEffect } from 'react';
 /**
  * Applies one screen's stylesheet while that screen is on the page, and removes it again.
  *
- * The static prototypes were separate documents, so each could own a stylesheet that redefines
+ * The earlier static screens were separate documents, so each could own a stylesheet that redefines
  * `:root`, `.btn`, `.form-input` and `.lang-switch` in its own terms — and they do: the auth
  * sheets and the profile sheet disagree about button gaps, field heights, shadows and shape
  * tokens. A single-page application has one document, so importing all of them the ordinary way

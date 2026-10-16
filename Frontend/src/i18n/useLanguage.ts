@@ -1,6 +1,7 @@
 import { useContext } from 'react';
 
-import { LanguageContext, type LanguageValue } from './LanguageContext';
+import { LanguageContext } from './languageContextObject';
+import type { LanguageValue } from './LanguageContext';
 
 /**
  * The only way a component reads the language. The null check turns "rendered outside the

@@ -53,13 +53,16 @@ export interface FlexibilityContextCounts {
 export interface FlexibilityDimension {
   /** 0-100, server-derived. There is no field a client can submit. */
   readonly score: number;
+  readonly category: FlexibilityCategory;
   readonly context: FlexibilityContextCounts;
+  readonly includesOlderHistory: boolean;
 }
 
+export type FlexibilityCategory = 'high' | 'medium' | 'low';
+
+/** Scheduling flexibility alone — the score never measures work-scope willingness. */
 export interface Flexibility {
   readonly schedule: FlexibilityDimension | null;
-  /** `null` while no resolved scope-change evidence exists. Never rendered as a zero. */
-  readonly scope: FlexibilityDimension | null;
 }
 
 export interface PublicWorkEntry {
@@ -75,6 +78,7 @@ export type PhoneVisibilityReason =
   | 'self'
   | 'visible_shared_project_role'
   | 'visible_work_commitment'
+  | 'visible_contact_setting'
   | 'hidden_no_approved_case';
 
 export type RateabilityReason = 'self' | 'no_shared_completed_work' | 'eligible';

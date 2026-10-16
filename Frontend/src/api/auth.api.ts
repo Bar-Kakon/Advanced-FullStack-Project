@@ -8,6 +8,7 @@ import type {
   LoginPayload,
   LoginResponse,
   RegisterPayload,
+  GoogleRegisterResponse,
   RegisterResponse,
   ResetPasswordPayload,
   SessionUser,
@@ -23,8 +24,10 @@ export type RegisterFailure =
   | 'NETWORK'
   | 'UNKNOWN';
 
-export const registerAccount = async (payload: RegisterPayload): Promise<RegisterResponse> => {
-  const { data } = await api.post<RegisterResponse>('/auth/register', payload);
+export const registerAccount = async (
+  payload: RegisterPayload,
+): Promise<RegisterResponse | GoogleRegisterResponse> => {
+  const { data } = await api.post<RegisterResponse | GoogleRegisterResponse>('/auth/register', payload);
   return data;
 };
 
@@ -127,4 +130,30 @@ export const classifyResetPasswordError = (error: unknown): ResetPasswordFailure
   if (body?.code === 'INVALID_RESET_TOKEN') return 'INVALID_RESET_TOKEN';
   if (body?.code === 'REQUEST_VALIDATION_FAILED') return 'WEAK_PASSWORD';
   return 'UNKNOWN';
+};
+
+export type AccountRecoveryFailure = 'INVALID' | 'EXPIRED' | 'NETWORK' | 'UNKNOWN';
+
+/** Answers identically for every address; only the mailbox that owned the account learns more. */
+export const requestAccountRecovery = async (payload: { email: string }): Promise<void> => {
+  await api.post('/auth/recover-account', payload);
+};
+
+export const restoreAccount = async (payload: { token: string }): Promise<void> => {
+  await api.post('/auth/restore-account', payload);
+};
+
+export const classifyAccountRecoveryError = (error: unknown): AccountRecoveryFailure => {
+  if (!isAxiosError(error)) return 'UNKNOWN';
+  if (!error.response) return 'NETWORK';
+
+  const body = error.response.data as ApiErrorBody | undefined;
+  switch (body?.code) {
+    case 'INVALID_RECOVERY_TOKEN':
+      return 'INVALID';
+    case 'ACCOUNT_RESTORE_EXPIRED':
+      return 'EXPIRED';
+    default:
+      return 'UNKNOWN';
+  }
 };

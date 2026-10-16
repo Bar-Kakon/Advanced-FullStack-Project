@@ -46,3 +46,28 @@ export const clearStoredUser = (): void => {
     /* nothing to clean up if storage is unavailable */
   }
 };
+
+/**
+ * Set when an authenticated session ENDS on this tab — logout or expiry — and read once by Login.
+ * A `from` redirect captured at that moment belongs to the previous user's navigation, never to
+ * whoever signs in next; only a genuinely anonymous arrival's deep link may steer a login.
+ */
+const SESSION_ENDED_KEY = 'fieldsync-session-ended';
+
+export const markSessionEnded = (): void => {
+  try {
+    sessionStorage.setItem(SESSION_ENDED_KEY, '1');
+  } catch {
+    /* Blocked storage only loses the one redirect guard. */
+  }
+};
+
+export const consumeSessionEnded = (): boolean => {
+  try {
+    const ended = sessionStorage.getItem(SESSION_ENDED_KEY) !== null;
+    sessionStorage.removeItem(SESSION_ENDED_KEY);
+    return ended;
+  } catch {
+    return false;
+  }
+};

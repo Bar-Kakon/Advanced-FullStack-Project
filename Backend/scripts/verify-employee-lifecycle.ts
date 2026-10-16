@@ -77,7 +77,7 @@ const run = async (): Promise<void> => {
 
   console.log('\n1. The owner registers and gets the canonical owner relationship');
   const ownerRegistered = await send('POST', '/auth/register',
-    account('Orit', 'Owner', { standing: 'owner', companyName: COMPANY, availability: 'open' }));
+    account('Orit', 'Owner', { standing: 'owner', companyName: COMPANY, availability: 'open', contractorCategory: 'subcontractor' }));
   check('owner registration answers 201 with no session',
     ownerRegistered.status === 201 && !('accessToken' in ownerRegistered.body));
 

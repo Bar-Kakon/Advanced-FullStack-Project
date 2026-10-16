@@ -78,6 +78,7 @@ const registerBody = (password: string) => ({
   firstName: 'Reset',
   lastName: 'Verify',
   standing: 'owner',
+  contractorCategory: 'subcontractor',
   companyName: COMPANY,
   email: EMAIL,
   password,
@@ -303,14 +304,14 @@ const run = async (): Promise<void> => {
   };
 
   const hebrew = await requestAs('he');
-  check('a Hebrew account gets a Hebrew subject', hebrew.subject === 'איפוס סיסמה — FieldSync', hebrew.subject);
+  check('a Hebrew account gets a Hebrew subject', hebrew.subject === 'איפוס סיסמה — Blokta', hebrew.subject);
   check('the Hebrew body carries no English wording',
     hebrew.text.includes('איפוס סיסמה') && !hebrew.text.includes('Reset your password'));
   check('the Hebrew HTML is marked lang=he dir=rtl',
     hebrew.html.includes('lang="he"') && hebrew.html.includes('dir="rtl"'));
 
   const english = await requestAs('en');
-  check('an English account gets an English subject', english.subject === 'Reset your password — FieldSync', english.subject);
+  check('an English account gets an English subject', english.subject === 'Reset your password — Blokta', english.subject);
   check('the English body carries no Hebrew wording',
     english.text.includes('Reset your password') && !english.text.includes('איפוס סיסמה'));
   check('the English HTML is marked lang=en dir=ltr',

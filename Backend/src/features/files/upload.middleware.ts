@@ -28,8 +28,13 @@ declare module 'express-serve-static-core' {
  * for — the file part arrives as a stream and leaves as a stream, so nothing is ever buffered
  * whole.
  */
+/** Busboy decodes the filename header as latin1; a UTF-8 name arrives mangled unless re-decoded. */
+const decodedFilename = (name: string): string =>
+  /[\u0100-\uffff]/.test(name) ? name : Buffer.from(name, 'latin1').toString('utf8');
+
 const gridFsStorage: StorageEngine = {
   _handleFile(req, file, callback) {
+    file.originalname = decodedFilename(file.originalname);
     void uploadStreamToGridFs(file.stream, file.originalname, file.mimetype)
       .then(({ fileId, sizeBytes }) => {
         req.gridFsFileId = fileId;
@@ -96,3 +101,14 @@ export const uploadSingleImage = (fieldName: string): RequestHandler =>
 
 export const uploadSingleDocument = (fieldName: string): RequestHandler =>
   singleUpload(fieldName, ALLOWED_DOCUMENT_MIME_TYPES, MAX_DOCUMENT_BYTES);
+
+/**
+ * One message attachment: any approved image type or a PDF. Multer can hold only one byte limit,
+ * so it carries the document ceiling and the stricter image ceiling is enforced after storage.
+ */
+export const uploadSingleAttachment = (fieldName: string): RequestHandler =>
+  singleUpload(
+    fieldName,
+    [...ALLOWED_IMAGE_MIME_TYPES, ...ALLOWED_DOCUMENT_MIME_TYPES],
+    MAX_DOCUMENT_BYTES,
+  );

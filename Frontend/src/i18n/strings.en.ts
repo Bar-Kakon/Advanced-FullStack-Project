@@ -5,16 +5,63 @@ import type { Strings } from './strings.types';
  * file's shape, so a key that is renamed on one side and not the other stops the build instead of
  * rendering an empty label in one language only.
  *
- * Copy is verbatim from `screens/register.html`. Where a Hebrew and English pair say different
+ * Copy is verbatim from the approved Register screen. Where a Hebrew and English pair say different
  * things, that difference is deliberate and predates this migration.
  */
 export const en: Strings = {
   langName: 'EN',
   otherLangName: 'עב',
   langSwitchLabel: 'Language / שפה',
+  routeLoading: 'Loading…',
+
+  timeline: {
+    documentTitle: 'Timeline — Blokta',
+    title: 'Project timeline',
+    lede: 'The chronological progression, stages and dependencies — read-only.',
+    back: 'Back to the project',
+    loading: 'Loading the timeline…',
+    failed: 'The timeline could not be loaded.',
+    empty: 'No stages or dated tasks to show yet.',
+    stageEmpty: 'No scheduled tasks in this stage.',
+    noStage: 'No stage',
+    dependsOn: 'Depends on',
+    gate: 'Gate',
+    today: 'Today',
+    planned: 'Planned',
+    inProgress: 'In progress',
+    completed: 'Completed',
+    overdue: 'Overdue',
+    open: 'Timeline',
+  },
+
+  rating: {
+    title: 'Rate this professional',
+    workLabel: 'The shared work this rating stands on',
+    workPlaceholder: 'Choose a completed work',
+    scoreLabel: 'Score (1–5)',
+    commentLabel: 'Written feedback (optional)',
+    submit: 'Submit the rating',
+    success: 'The rating was submitted. Thank you!',
+    close: 'Close',
+    cancel: 'Cancel',
+    loading: 'Loading the shared work…',
+    errors: {
+      notEligible: 'Rating is possible only after shared work completed on the platform.',
+      alreadyRated: 'A rating for this work was already submitted.',
+      superseded: 'The rating context changed. Refresh and try again.',
+      network: 'We could not reach the server. Check the connection and try again.',
+      generic: 'The rating was not submitted. Try again.',
+    },
+  },
+
+  appError: {
+    title: 'Something went wrong',
+    body: 'The screen failed to load. Refreshing the page usually resolves it.',
+    reload: 'Refresh the page',
+    home: 'Back to the home page',
+  },
 
   brand: {
-    beta: 'Beta',
     headline: 'One account. Every project you run.',
     sub: 'General contractors, subcontractors, and suppliers — all equal users, on one platform.',
     featuresLabel: 'Platform highlights',
@@ -38,10 +85,11 @@ export const en: Strings = {
     signIn: 'Sign in',
     secureNote: 'TLS · end-to-end encrypted session',
     togglePassword: 'Toggle password visibility',
+    required: 'This field is required',
 
-    firstName: { label: 'First name', placeholder: 'John' },
-    lastName: { label: 'Last name', placeholder: 'Smith' },
-    companyName: { label: 'Company name', placeholder: 'Smith Contracting Ltd.' },
+    firstName: { label: 'First name', placeholder: 'John', error: 'A name must contain at least one letter' },
+    lastName: { label: 'Last name', placeholder: 'Smith', error: 'A name must contain at least one letter' },
+    companyName: { label: 'Company name', placeholder: 'Smith Contracting Ltd.', error: 'The company name must contain at least one letter' },
     email: { label: 'Email address', placeholder: 'you@example.com', error: 'Please enter a valid email address' },
     registrationCategory: {
       label: 'Registration route',
@@ -49,15 +97,16 @@ export const en: Strings = {
       hint: 'The route decides which specialties are offered below.',
     },
     specialty: { label: 'Primary specialty', placeholder: 'Select your specialty…', hint: 'You can add or change specialties later' },
-    specialtyOther: { label: 'Specify your specialty', placeholder: 'e.g. scaffolding, landscaping, elevators' },
+    specialtyOther: { label: 'Specify your specialty', placeholder: 'e.g. scaffolding, landscaping, elevators', error: 'Describe the specialty in words' },
     drillingTypes: { label: 'Drilling types', hint: 'Select the drilling types that apply.' },
-    city: { label: 'City', placeholder: 'Tel Aviv' },
+    city: { label: 'City', placeholder: 'Tel Aviv', error: 'A city name must contain at least one letter' },
     region: { label: 'Region', placeholder: 'Select a region…' },
-    officePhone: { label: 'Office phone', placeholder: '03-1234567' },
-    businessPhone: { label: 'Business phone', placeholder: '050-1234567' },
+    officePhone: { label: 'Office phone', placeholder: '03-1234567', error: 'A phone number may contain digits, spaces, hyphens, parentheses and + only, with at least 7 digits' },
+    businessPhone: { label: 'Business phone', placeholder: '050-1234567', error: 'A phone number may contain digits, spaces, hyphens, parentheses and + only, with at least 7 digits' },
     availability: { label: 'Availability', hint: 'You can change this at any time from your profile.' },
+    contractorCategory: { label: 'Type of business', hint: 'It decides which capabilities the account has.' },
     standing: {
-      label: 'How are you joining FieldSync?',
+      label: 'How are you joining Blokta?',
       placeholder: 'Select…',
       owner: 'Company owner',
       employee: 'Company employee',
@@ -66,7 +115,7 @@ export const en: Strings = {
     companyPosition: { label: 'Position in the company', placeholder: 'Select a position…' },
     password: { label: 'Password', placeholder: '••••••••', hint: 'At least 8 characters', error: 'Password must be at least 8 characters' },
     confirmPassword: { label: 'Confirm password', placeholder: '••••••••', error: "Passwords don't match" },
-    terms: { before: 'I have read and agree to the ', tos: 'Terms of Service', between: ' and ', privacy: 'Privacy Policy' },
+    terms: { before: 'I have read and agree to the ', tos: 'Terms of Use', open: 'Open the Terms of Use', error: 'Please accept the Terms of Use to continue' },
 
     steps: {
       label: 'Registration steps',
@@ -79,11 +128,11 @@ export const en: Strings = {
 
     emailNotifications: {
       legend: 'Email notifications',
-      body: 'FieldSync can send operational messages by email about projects, tasks, requests, approvals and schedule changes that may need attention.',
-      inApp: 'The notifications themselves also appear inside FieldSync, according to the nature of the event and the account settings.',
-      optOut: 'You can choose not to receive email messages and carry on using the system as usual. In that case it matters to follow the notifications inside FieldSync, because an update that needs timely attention may not be read straight away.',
+      body: 'Blokta can send operational messages by email about projects, tasks, requests, approvals and schedule changes that may need attention.',
+      inApp: 'The notifications themselves also appear inside Blokta, according to the nature of the event and the account settings.',
+      optOut: 'You can choose not to receive email messages and carry on using the system as usual. In that case it matters to follow the notifications inside Blokta, because an update that needs timely attention may not be read straight away.',
       accept: 'Receive operational messages by email',
-      decline: 'Rely on notifications inside FieldSync only',
+      decline: 'Rely on notifications inside Blokta only',
       changeable: 'This choice can be changed later in Notification Settings.',
     },
 
@@ -184,7 +233,7 @@ export const en: Strings = {
   },
 
   browse: {
-    title: 'Browse contractors',
+    title: 'Find professionals',
     lede: 'Find professionals by trade, region, availability and real driving distance.',
     resultsCount: '{count} results',
     loading: 'Loading contractors…',
@@ -239,7 +288,8 @@ export const en: Strings = {
       noRating: 'No ratings yet',
       ratingCount: '{count} ratings',
       drivingDistance: '{km} km by road',
-      noFlexibility: 'No flexibility score yet',
+      flexibilityScore: '{score}/100 — {category}',
+      noFlexibility: 'No relevant data yet',
     },
 
     profile: {
@@ -254,14 +304,20 @@ export const en: Strings = {
       noApprovedPlaces: 'No approved locations have been set.',
       work: 'Completed work',
       noWork: 'No completed work yet.',
-      badge: 'Completed on FieldSync',
+      badge: 'Completed on Blokta',
       phones: 'Contact details',
       officePhone: 'Office phone',
       businessPhone: 'Business phone',
       phonesHidden: 'No contact details available.',
+      blockUser: 'Block this user',
+      blockNote: 'Blocking hides the two of you from each other and prevents new conversations. Existing shared project work is unaffected.',
+      blockConfirm: 'Block',
+      blockCancel: 'Cancel',
+      blockDone: 'The user was blocked.',
       ratings: 'Rating',
       noRatings: 'No ratings yet.',
       rate: 'Rate this professional',
+      message: 'Send message',
       cannotRateSelf: 'A profile cannot be self-rated.',
       cannotRateYet: 'Rating opens after shared work is completed on the platform.',
       loading: 'Loading profile…',
@@ -316,12 +372,13 @@ export const en: Strings = {
   },
 
   nav: {
-    home: 'FieldSync — home',
+    home: 'Blokta — home',
     label: 'Main',
-    browse: 'Browse',
+    browse: 'Find professionals',
     network: 'Network',
     projects: 'Projects',
     myTasks: 'My Tasks',
+    messages: 'Messages',
     notifications: 'Notifications',
     accountMenu: 'Account menu',
     account: {
@@ -335,8 +392,7 @@ export const en: Strings = {
 
   login: {
     brand: {
-      beta: 'Beta',
-      headline: 'Coordination that moves at the speed of construction.',
+        headline: 'Coordination that moves at the speed of construction.',
       sub: 'Tasks, dependencies, and reschedules handled inside the platform — not over the phone.',
       featuresLabel: 'Platform highlights',
       features: [
@@ -373,7 +429,7 @@ export const en: Strings = {
     googleErrors: {
       linkRequired:
         'That address already has an account with a password. Sign in with your password, then connect Google from your account.',
-      identityClaimed: 'This Google account is already connected to a different FieldSync account.',
+      identityClaimed: 'This Google account is already connected to a different Blokta account.',
       emailNotVerified: 'Google has not verified the email address on that account.',
       notConfigured: 'Google sign-in is unavailable right now. You can sign in with email and password.',
       credential: 'We could not verify that Google account. Please try again.',
@@ -381,10 +437,35 @@ export const en: Strings = {
     },
   },
 
+  accountRecovery: {
+    entry: 'Restore deleted account',
+    title: 'Restore a deleted account',
+    subtitle: 'A deleted account is recoverable for 60 days. Entering the account email sends a restoration link.',
+    email: { label: 'Email address', placeholder: 'you@example.com', error: 'A valid email address is required' },
+    submit: 'Send a restoration link',
+    backToSignIn: 'Back to sign in',
+    sentTitle: 'If a matching account exists — a link was sent',
+    sentSubtitle: 'If the address belongs to an account deleted within the recovery window, a one-time restoration link is waiting in the inbox. It is valid for 60 minutes.',
+    privacyNote: 'For privacy, the same message is shown either way.',
+    confirmTitle: 'Complete the restoration',
+    confirmSubtitle: 'Confirming the link restores the account and normal sign-in.',
+    confirmAction: 'Restore the account',
+    restoring: 'Restoring…',
+    successTitle: 'The account is restored',
+    successSubtitle: 'The account is active again. Sign in with the existing credentials.',
+    toLogin: 'Go to sign in',
+    missingToken: 'The link is missing or broken. A new restoration link can be requested.',
+    errors: {
+      invalid: 'The link is no longer usable. A new restoration link can be requested.',
+      expired: 'The 60-day recovery window has ended, and the account can no longer be restored.',
+      network: 'We could not reach the server. Check the connection and try again.',
+      generic: 'The request did not complete. Try again.',
+    },
+  },
+
   forgotPassword: {
     brand: {
-      beta: 'Beta',
-      headline: "Your projects are waiting — let's get you back in.",
+        headline: "Your projects are waiting — let's get you back in.",
       sub: 'Secure password reset. We email a single-use link to the address on file — it expires in 30 minutes.',
       featuresLabel: 'Reset highlights',
       features: [
@@ -406,6 +487,8 @@ export const en: Strings = {
     backButton: 'Back to sign in',
     noMail: "Didn't get it?",
     resend: 'Resend link',
+    resent: 'The link was sent again.',
+    resendFailed: 'Resending failed. Please try again in a moment.',
     errors: {
       network: 'Unable to connect to the server. Check your internet connection and try again.',
       generic: 'Something went wrong. Please try again.',
@@ -414,8 +497,7 @@ export const en: Strings = {
 
   resetPassword: {
     brand: {
-      beta: 'Beta',
-      headline: "One new password and you're back in.",
+        headline: "One new password and you're back in.",
       sub: "Choose a strong password you haven't used before. Every active session is signed out after the reset.",
       featuresLabel: 'Password guidance',
       features: [
@@ -497,9 +579,13 @@ export const en: Strings = {
       'project.member.manage': 'Manage participants',
       'project.permission.grant': 'Grant permissions',
       'task.create': 'Create tasks',
+      'task.edit': 'Edit tasks',
       'task.assign': 'Assign tasks',
       'schedule.exception.approve': 'Approve calendar exceptions',
       'schedule.partial_release.manage': 'Release work partially to the next trade',
+      'workplan.manage': 'Manage work plans',
+      'schedule.change.manage': 'Manage schedule changes',
+      'room.moderate': 'Moderate the project conversation (remove and preserve messages)',
     },
 
     roles: {
@@ -541,6 +627,21 @@ export const en: Strings = {
     kind: {
       project: 'Project task',
       standalone: 'Standalone work',
+      agreement: 'Work from an agreement',
+    },
+
+    commissioned: {
+      title: 'Commissioned work',
+      lede: 'Read-only tracking of work commissioned through an agreement. The professional manages the work itself.',
+      loading: 'Loading commissioned work…',
+      failure: 'The commissioned work could not be loaded.',
+      empty: 'No work has been commissioned by agreement yet.',
+      performer: 'Performer: {name}',
+      roleOversight: 'Oversight · commissioned by {name}',
+      roleTrackee: 'Tracked by me · commissioned by {name}',
+      arrangementOwnerOnly: 'Owner tracks',
+      arrangementTransferred: 'Tracking transferred to {name}',
+      arrangementShared: 'Tracking shared with {name}',
     },
 
     groups: {
@@ -553,6 +654,9 @@ export const en: Strings = {
       due: 'Target {date}',
       from: 'From {name}',
       selfOpened: 'Opened by me',
+      workOwner: 'Work owner: {name}',
+      workOwnerLabel: 'Work owner',
+      performerSelf: 'Performer: me',
       delegated: 'Handed to someone else to perform',
       performing: 'Received to perform',
       pendingProposal: 'A date change is waiting on my answer',
@@ -575,6 +679,11 @@ export const en: Strings = {
       title: 'Work detail',
       back: 'Back to tasks',
       loading: 'Loading the work…',
+      documents: {
+        title: 'Agreement Documents',
+        lede: 'The files attached to the work agreement this task was created from.',
+        download: 'Download the file',
+      },
       notFound: 'That work was not found, or it is not accessible.',
       dates: '{start} to {due}',
 
@@ -619,6 +728,13 @@ export const en: Strings = {
         remove: 'Delete',
         none: 'Nothing in my own organisation yet.',
         noEffect: 'Ticking a sub-task does not change how the work appears to anybody else.',
+        openDetail: 'Open',
+        closeDetail: 'Close',
+        createdAt: 'Created on {date}',
+        stateDone: 'Done',
+        stateOpen: 'Not done yet',
+        editLabel: 'Edit the item',
+        saveEdit: 'Save the change',
       },
 
       dateChange: {
@@ -635,6 +751,7 @@ export const en: Strings = {
         beyondCeiling: 'The request would pass the project overrun ceiling, so it cannot be sent as it stands.',
         sent: 'The request was sent and is waiting on the project authority.',
         failed: 'The request could not be sent right now.',
+        standaloneOnly: 'A date-change request operates on a project schedule. This work is not part of a project, so its dates are coordinated directly with the other party, in the work conversation where the agreement was made.',
         emptyChange: 'Ask for at least one change — extra days or an alternative date.',
         openRequest: 'Open the request',
         request: 'Request a date change',
@@ -790,6 +907,8 @@ export const en: Strings = {
       members: 'Manage members',
       permissions: 'Manage permissions',
       calendar: 'Working calendar',
+      conversation: 'Project conversation',
+      conversationFailed: 'The project conversation could not be opened.',
       none: 'No management actions are available on this project.',
     },
 
@@ -846,6 +965,14 @@ export const en: Strings = {
     backToProjects: 'Back to projects',
 
     active: { title: 'Members', none: 'Nobody is taking part in this project yet.' },
+
+    removeDialog: {
+      title: 'Remove a participant',
+      question: 'What happens to this participant\u2019s messages in the project conversation?',
+      keepMessages: 'Keep the messages',
+      deleteMessages: 'Delete the messages',
+      cancel: 'Cancel',
+    },
     pending: { title: 'Invitations awaiting an answer', none: 'There are no open invitations.' },
 
     row: {
@@ -1029,7 +1156,7 @@ export const en: Strings = {
     },
 
     empty: {
-      connected: 'No active connections yet. You can find people through Browse contractors.',
+      connected: 'No active connections yet. You can find people through Find professionals.',
       incoming: 'No connection requests are waiting for an answer.',
       outgoing: 'No connection requests of yours are open.',
       blocked: 'You have not blocked anyone.',
@@ -1044,6 +1171,7 @@ export const en: Strings = {
 
     actions: {
       viewProfile: 'View profile',
+      message: 'Message',
       accept: 'Accept',
       decline: 'Decline',
       withdraw: 'Withdraw request',
@@ -1082,7 +1210,7 @@ export const en: Strings = {
       incoming: 'Requests received',
       outgoing: 'Requests sent',
       blocked: 'Blocks you created',
-      browse: 'Browse contractors',
+      browse: 'Find professionals',
     },
 
     team: {
@@ -1158,6 +1286,54 @@ export const en: Strings = {
       nameMissing: 'No name',
       positionMissing: 'No position',
     },
+    permissions: {
+      title: 'Company permissions',
+      'project.create': 'Open projects',
+      'task.create': 'Open work and commission work by agreement',
+      'company.manage': 'Manage company details',
+      'company.invite_employees': 'Invite and approve employees',
+    },
+
+    departure: {
+      titleOffboard: 'End employment: {name}',
+      titleManage: 'Manage the work of {name}',
+      lede: 'The open work this member is responsible for. Each item gets an arrangement; confirming applies everything together.',
+      loading: 'Loading the open work…',
+      failed: 'The action did not complete, and no arrangement was applied.',
+      empty: 'No open work needs an arrangement.',
+      commissionsTitle: 'Work commissioned by agreement',
+      assignedTitle: 'Tasks this member performs',
+      selectAll: 'Select all',
+      selectNone: 'Clear selection',
+      selectedCount: '{count} selected',
+      pickEmployee: 'Pick an employee',
+      actionOwnerOnly: 'Owner tracks',
+      actionTransfer: 'Transfer tracking',
+      actionShare: 'Share tracking',
+      actionMove: 'Move execution',
+      actionAwait: 'Await reassignment',
+      choiceOwnerOnly: 'Owner tracks',
+      choiceTransferred: 'Tracking transferred',
+      choiceShared: 'Tracking shared',
+      choiceMoved: 'Execution moved',
+      choiceAwaiting: 'Awaiting reassignment',
+      awaitingBadge: 'Awaiting reassignment',
+      performer: 'Performer: {name}',
+      summary: 'Summary: {ownerOnly} owner-tracked · {transferred} transferred · {shared} shared · {moved} execution moved · {awaiting} awaiting reassignment · {unset} by the default',
+      confirmOffboard: 'Confirm and end employment',
+      confirmManage: 'Apply the arrangements',
+    },
+
+    departureDefaults: {
+      title: 'Departure default',
+      lede: 'Applied automatically to work nobody arranged explicitly when an employee leaves.',
+      commissionedLabel: 'Work commissioned by agreement',
+      assignedLabel: 'Tasks in execution',
+      assignedNone: 'No default (await reassignment)',
+      save: 'Save the default',
+      saved: 'The default was saved.',
+      failed: 'Saving failed.',
+    },
 
     status: {
       invited: 'Invitation open — not registered yet',
@@ -1169,6 +1345,8 @@ export const en: Strings = {
     actions: {
       approve: 'Approve membership',
       cancelInvitation: 'Cancel invitation',
+      offboard: 'End employment',
+      manageDeparture: 'Manage remaining work',
       approveAll: 'Approve all waiting ({count})',
       refresh: 'Refresh list',
     },
@@ -1232,13 +1410,15 @@ export const en: Strings = {
     },
     flexibility: {
       label: 'Your flexibility score',
+      category: { high: 'High Flexibility', medium: 'Medium Flexibility', low: 'Low Flexibility' },
       foot: 'Based on {count} resolved coordination events',
-      empty: 'No flexibility score yet',
+      empty: 'No relevant data yet',
       context: {
         workable: 'A workable solution was reached in {workable} of {events} coordination events.',
         alternatives: 'An alternative date or another solution was offered and agreed {count} times.',
         notice: 'Advance notice allowed the change to be coordinated {count} times.',
         justified: '{count} justified declines are excluded from the score.',
+        history: 'History older than five years is included, because negative scheduling conduct continued into the recent period.',
       },
     },
     explain: {
@@ -1246,13 +1426,13 @@ export const en: Strings = {
       answerOne:
         'The score is built from how you actually answer requests to change a date — approving, rejecting or proposing an alternative. You do not rate yourself and it cannot be edited, which is what makes it mean something to a contractor reading it.',
       answerTwo:
-        'While there are not enough responses, no score is shown at all — no score is better than one resting on a single answer.',
+        'The score exists from the first resolved event, and it updates with every further one. Until any event is recorded, no score is shown at all.',
     },
     about: 'About',
     work: {
       title: 'Completed work',
-      lede: 'The "Completed on FieldSync" mark means the completion is recorded on the platform; it is not a judgement of quality.',
-      badge: 'Completed on FieldSync',
+      lede: 'The "Completed on Blokta" mark means the completion is recorded on the platform; it is not a judgement of quality.',
+      badge: 'Completed on Blokta',
     },
     details: {
       title: 'Details and work area',
@@ -1285,7 +1465,7 @@ export const en: Strings = {
     lede: 'Update the details other contractors see about you and your coordination preferences. Your rating and flexibility score are calculated for you — they cannot be edited.',
     identity: {
       title: 'Identity',
-      lede: 'These are the details other contractors find you by when browsing.',
+      lede: 'These are the details other professionals find you by in Find professionals.',
     },
     avatar: {
       upload: 'Upload photo',
@@ -1393,9 +1573,9 @@ export const en: Strings = {
   },
 
   landing: {
-    documentTitle: 'FieldSync — תיאום עבודה באתר / Construction coordination',
+    documentTitle: 'Blokta — תיאום עבודה באתר / Construction coordination',
     metaDescription:
-      'FieldSync — a coordination platform for construction professionals: assign work, link the tasks that depend on each other, and manage dates and changes in one place.',
+      'Blokta — a coordination platform for construction professionals: assign work, link the tasks that depend on each other, and manage dates and changes in one place.',
     skip: 'Skip to content',
     navLabel: 'Menu',
     signIn: 'Sign in',
@@ -1403,7 +1583,7 @@ export const en: Strings = {
 
     hero: {
       title: 'Tasks, dates and dependencies — coordinated in one place, not over the phone.',
-      lede: 'FieldSync is a coordination platform for construction professionals: assign work, link the tasks that depend on each other, and manage dates and changes — all in one place.',
+      lede: 'Blokta is a coordination platform for construction professionals: assign work, link the tasks that depend on each other, and manage dates and changes — all in one place.',
     },
 
     example: {
@@ -1468,7 +1648,39 @@ export const en: Strings = {
       cta: 'Create account',
     },
 
-    footerNote: 'FieldSync — an academic prototype in development.',
+    contact: {
+      title: 'Contact us',
+      lede: 'A question, a request or anything else — this form reaches the platform team.',
+      name: { label: 'Full name', placeholder: 'First and last name' },
+      email: { label: 'Email', placeholder: 'name@example.com', error: 'That email address is not valid' },
+      topic: {
+        label: 'Topic',
+        placeholder: 'Select a topic…',
+        general: 'General question',
+        support: 'Technical support',
+        partnership: 'Business or partnership',
+        other: 'Other',
+      },
+      message: {
+        label: 'Message',
+        placeholder: 'Tell us what you need',
+        hint: 'At least 10 characters, up to 2,000.',
+        error: 'The message is too short',
+      },
+      submit: 'Send message',
+      submittedTitle: 'Message sent',
+      submitted: 'Your message has been received and stored. A reply will go to the email address you entered.',
+      again: 'Send another message',
+      errors: {
+        validation: 'Some of the details are not valid. Check the fields and try again.',
+        rateLimited: 'Too many messages have been sent from this device. Please try again in an hour.',
+        network: 'No connection to the server. Check your internet connection and try again.',
+        unknown: 'The message could not be sent. Please try again.',
+      },
+    },
+
+    footerContact: 'Contact',
+    footerNote: 'Blokta — an academic earlier screen in development.',
   },
 
   coordination: {
@@ -1735,8 +1947,53 @@ export const en: Strings = {
       'work.handoff_initiated': 'A responsibility handover was offered',
       'work.handoff_accepted': 'Responsibility was handed over',
       'work.handoff_declined': 'The handover was declined',
+      'room.message_removed': 'A message was removed from the project conversation',
+      'room.message_kept': 'A message was marked as preserved',
+      'room.messages_removal_decision': 'A decision was recorded for the messages of a removed participant',
     },
   },
+
+  terms: {
+    title: 'Terms of Use',
+    version: 'Version {version} · Last updated: 31 August 2026',
+    close: 'Close',
+    done: 'I have read the terms',
+    sections: [
+      {
+        heading: 'The service',
+        body: 'Blokta is a platform for professional coordination and information management in construction. It brings tasks, dates, dependencies and contacts together in one place.',
+      },
+      {
+        heading: 'Accuracy of information',
+        body: 'You are responsible for the accuracy of the information you enter — account details, project details, tasks and dates alike.',
+      },
+      {
+        heading: 'Lawful and professional use',
+        body: 'The platform is intended for professional activity, and your use of it must be lawful and fair.',
+      },
+      {
+        heading: 'Prohibited use',
+        body: 'Do not misuse the platform. This includes impersonating another person or organisation, sending spam, harassment, and uploading offensive, unlawful or infringing content.',
+      },
+      {
+        heading: 'Professional responsibility',
+        body: 'Project, task and schedule information entered into the platform does not replace professional, contractual, engineering, legal, safety or regulatory responsibility. You remain responsible for your own professional decisions and commitments.',
+      },
+      {
+        heading: 'Access restrictions',
+        body: 'Access to the platform may be restricted in cases of misuse, according to the platform rules.',
+      },
+      {
+        heading: 'Privacy and account data',
+        body: 'The platform stores your account data and the information you enter in order to operate the service. A separate, full privacy policy has not been published yet.',
+      },
+      {
+        heading: 'Changes to the service',
+        body: 'The platform is in development, and the service may change as it evolves.',
+      },
+    ],
+  },
+
   reports: {
     trigger: 'Report',
     dialogTitle: 'Report a user',
@@ -1769,8 +2026,8 @@ export const en: Strings = {
 
   moderation: {
     navLabel: 'Moderation',
-    documentTitle: 'תור המודרציה / Moderation queue — FieldSync',
-    detailDocumentTitle: 'פרטי דיווח / Report detail — FieldSync',
+    documentTitle: 'תור המודרציה / Moderation queue — Blokta',
+    detailDocumentTitle: 'פרטי דיווח / Report detail — Blokta',
     queueTitle: 'Moderation queue',
     queueLede: 'Reports filed by users, newest first.',
     filterLabel: 'Filter by state',
@@ -1858,7 +2115,7 @@ export const en: Strings = {
   },
 
   subscriptions: {
-    documentTitle: 'תוכניות ומנוי / Plans & subscription — FieldSync',
+    documentTitle: 'תוכניות ומנוי / Plans & subscription — Blokta',
     title: 'Plans & subscription',
     lede: 'Choose the plan that fits how you work. Upgrade, downgrade or cancel at any time — your projects are kept either way.',
     loading: 'Loading plans…',
@@ -1984,7 +2241,7 @@ export const en: Strings = {
   },
 
   notFound: {
-    documentTitle: 'הדף אינו זמין / Page unavailable — FieldSync',
+    documentTitle: 'הדף אינו זמין / Page unavailable — Blokta',
     code: '404',
     title: "This page isn't available",
     lede: 'The page requested could not be displayed. You can go back and carry on from there.',
@@ -1996,9 +2253,33 @@ export const en: Strings = {
     ],
     ctaHome: 'Back to Home',
   },
-
+  audit: {
+    documentTitle: 'Audit log — Blokta',
+    title: 'Platform audit log',
+    lede: 'Administrative actions, newest first. Project history has its own trail.',
+    filterAction: 'Action',
+    filterTarget: 'Target',
+    allActions: 'All actions',
+    allTargets: 'All targets',
+    loading: 'Loading the audit log…',
+    failure: 'The audit log could not be loaded.',
+    empty: 'No administrative actions have been recorded yet.',
+    loadMore: 'Load more',
+    unknownActor: 'Account no longer available',
+    actions: {
+      'report.claimed': 'Report moved to under review',
+      'report.dismissed': 'Report dismissed',
+      'report.actioned': 'Report actioned',
+      'report.note_redacted': 'Report note redacted',
+      'account.restricted': 'Account restricted',
+      'account.unrestricted': 'Restriction removed',
+      'account.deleted': 'Account deleted',
+      'account.restored': 'Account restored',
+    },
+    targets: { report: 'Report', user: 'Account' },
+  },
   notifications: {
-    documentTitle: 'Notifications — FieldSync',
+    documentTitle: 'Notifications — Blokta',
     title: 'Notifications',
     lede: 'What is waiting, and what is worth knowing.',
     empty: 'No notifications yet.',
@@ -2011,6 +2292,7 @@ export const en: Strings = {
     loading: 'Loading notifications…',
     unreadBadge: 'Unread notifications',
     blocking: 'Waiting on you',
+    resolvedBadge: 'Handled',
     nonblocking: 'For information',
     mutedNote: 'This project is muted — the notification was recorded and no email was sent.',
     open: 'Open',
@@ -2020,6 +2302,8 @@ export const en: Strings = {
     },
     types: {
       'project.invitation': 'Project invitation',
+      'project.cancelled': 'A project was cancelled before work began',
+      'company.employee_left': 'An employee left the company',
       'task.assigned': 'A task is now your responsibility',
       'task.updated': 'A task’s details were updated',
       'task.early_completion': 'Work on the project finished early',
@@ -2034,11 +2318,16 @@ export const en: Strings = {
       'responsibility.transfer_invited': 'A responsibility transfer was offered to you',
       'responsibility.transfer_accepted': 'A responsibility transfer was accepted',
       'workplan.version_added': 'A work plan version was added',
+      'message.received': 'A new message',
+      'message.request_received': 'A new message request',
+      'agreement.received': 'A work agreement was proposed',
+      'agreement.answered': 'A work agreement was answered',
+      'connection.request_received': 'A new connection request',
+      'connection.accepted': 'Your connection request was accepted',
+      'connection.declined': 'Your connection request was declined',
     },
-  },
-
-  settings: {
-    documentTitle: 'Settings — FieldSync',
+  },  settings: {
+    documentTitle: 'Settings — Blokta',
     title: 'Settings',
     lede: 'Account preferences, notifications and contact details.',
     loading: 'Loading settings…',
@@ -2072,13 +2361,38 @@ export const en: Strings = {
     contact: {
       title: 'Contact details on your profile',
       note: 'A personal phone is never displayed anywhere, and is not stored.',
-      automaticNote: 'Shared project management, and the two parties to a task, see the number either way. These settings cover everyone else.',
+      automaticNote: 'By default, shared project management and the two parties to an accepted work agreement see the number. An explicit choice here overrides that default too.',
       connectionNote: 'A network connection does not reveal a phone number.',
       email: 'Show my email address',
-      businessPhone: 'Show my business phone',
-      officePhone: 'Show the office phone',
+      businessPhone: 'Business phone visibility',
+      officePhone: 'Office phone visibility',
+      phoneChoices: {
+        default: 'By approved partnerships (the default)',
+        always: 'Visible to every profile viewer',
+        hidden: 'Hidden always, even from approved partners',
+      },
       save: 'Save visibility',
     },
+    companyMembership: {
+      title: 'Company membership',
+      ownerInactiveTitle: 'The company is currently inactive on Blokta',
+      ownerInactiveNote: 'The company owner is no longer active here, so new company activity is temporarily unavailable. Business history stays readable under the existing permissions, the personal account stays active, and leaving the company and joining another remains possible.',
+      ownerRecoveryNote: 'If the owner restores their account within the recovery window, the company returns to full activity.',
+      leaveNote: 'End the relationship with the company. Access to its work stops immediately.',
+      leave: 'Leave the company',
+      leaveConsequences: 'After leaving: company access stops immediately, tracking of commissioned work passes to the owner, and the personal account stays active. Leaving cannot be undone from here.',
+      leaveConfirm: 'Confirm leaving',
+      cancel: 'Cancel',
+      leftNote: 'Done. The account is active, with no company relationship.',
+      claimNote: 'Join an open seat the employer opened under this name. Joining awaits the owner\u2019s approval.',
+      claimCompanyLabel: 'Company name',
+      claimPositionLabel: 'Position',
+      claim: 'Join a company',
+      claimedNote: 'The request was sent and awaits the company owner\u2019s approval.',
+      claimBlocked: 'Joining is briefly unavailable until a data update completes.',
+      failed: 'The action did not complete.',
+    },
+
     mutes: {
       title: 'Muted projects',
       note: 'Muting reduces email delivery only. It changes no permission, no access, and nothing that happens on the project.',
@@ -2094,19 +2408,32 @@ export const en: Strings = {
     },
     account: {
       title: 'Account',
+      googleTitle: 'Linked Google account',
+      googleNote: 'Linking a Google account enables signing in with Google instead of a password. Linking does not change the account\u2019s email address.',
+      googleLinkedNote: 'This account is linked to Google. Google sign-in is available on the login screen.',
+      googleLinkedAs: 'Google account linked just now: {email}. From the next sign-in, Google login is available.',
+      googleLinkFailed: 'Linking the Google account did not complete. Try again.',
       deactivationTitle: 'Closing your account',
-      deactivationNote: 'A deletion request is a deactivation plus a 60-day recovery period, and shared work history is preserved.',
-      deactivationPending: 'Not available yet: how active commitments are handled is not decided.',
+      deactivationNote: 'A deletion request is an immediate deactivation plus a 60-day recovery period, and shared work history is preserved.',
+      deactivationObligations: 'Professional and contractual obligations are not cancelled by closing the account — they continue outside the platform.',
+      requestClosure: 'Request account closure',
+      confirmTitle: 'Confirm account closure',
+      confirmBody: 'The account is deactivated immediately and recoverable for 60 days. Shared work history is preserved, and professional and contractual obligations are not cancelled — they continue outside the platform.',
+      confirmAnonymization: 'Without restoration within 60 days, personal account details are anonymized. Identity details needed as business evidence — such as the performer\u2019s name — are kept in authorized historical records.',
+      confirmOwnerCompany: 'The company this account owns becomes inactive: employees keep their personal accounts and authorized read access, new company activity is blocked, and leaving for another company stays possible. The company is neither deleted nor transferred automatically.',
+      confirmAction: 'Close the account',
+      closureDone: 'The closure request was received and the account is deactivated.',
+      blockedInCompany: 'The account cannot close during an active company membership. Leaving the company is done in the membership section on this page.',
+      closureCancel: 'Cancel',
+      closureFailed: 'The request did not complete. Try again.',
     },
     errors: {
       load: 'We could not load your settings.',
       save: 'We could not save that change.',
       network: 'We could not reach the server. Check the connection and try again.',
     },
-  },
-
-  scheduleExceptions: {
-    documentTitle: 'Schedule exceptions — FieldSync',
+  },  scheduleExceptions: {
+    documentTitle: 'Schedule exceptions — Blokta',
     title: 'Schedule exceptions',
     lede: 'One-off dates that fall outside the ordinary week, in both directions.',
     noHolidayNote: 'There is no approved holiday data source, so no date is added automatically. Every row here was asked for by a person and approved by somebody with the authority.',
@@ -2162,9 +2489,7 @@ export const en: Strings = {
       projectScope: 'A project-wide exception is not a request for yourself, so it needs the approval grant.',
       network: 'We could not reach the server. Check the connection and try again.',
     },
-  },
-
-  editTask: {
+  },  editTask: {
     title: 'Edit task',
     lede: 'Change the details of the work. Dates are coordinated separately.',
     loading: 'Loading…',
@@ -2192,4 +2517,103 @@ export const en: Strings = {
       network: 'We could not reach the server. Check the connection and try again.',
     },
   },
+  messaging: {
+    documentTitle: 'Messages — Blokta',
+    title: 'Messages',
+    lede: 'Private conversations and project rooms.',
+    inbox: 'Inbox',
+    requests: 'Requests',
+    sentRequests: 'Sent requests',
+    loading: 'Loading conversations…',
+    failure: 'The conversations could not be loaded.',
+    emptyInbox: 'No conversations yet.',
+    emptyRequests: 'No requests waiting for an answer.',
+    emptySent: 'No sent requests are awaiting an answer.',
+    pickConversation: 'Choose a conversation from the list.',
+    projectRoom: 'Project room',
+    pendingRequest: 'Request waiting for an answer',
+    accept: 'Accept',
+    decline: 'Decline',
+    loadOlder: 'Load earlier messages',
+    removedMessage: 'This message was removed',
+    composerPlaceholder: 'Write a message',
+    send: 'Send',
+    report: 'Report',
+    reported: 'Report sent',
+    cancel: 'Cancel',
+    reportReasons: { spam: 'Spam', harassment: 'Harassment', impersonation: 'Impersonation', other: 'Other' },
+    muteConversation: 'Mute conversation',
+    unmuteConversation: 'Unmute conversation',
+    muteContractor: 'Mute this contact',
+    unmuteContractor: 'Unmute this contact',
+    deleteChat: 'Delete chat',
+    newMessage: 'New message',
+    chooseRecipient: 'Pick a recipient from your approved connections',
+    noConnections: 'No approved connections yet. A conversation can also be opened from a public profile.',
+    recipientsFailure: 'The connections list could not be loaded.',
+    startErrors: {
+      self: 'You cannot message yourself.',
+      noContact: 'A conversation cannot be opened with this user.',
+      awaiting: 'A message request is already awaiting their answer.',
+      notFound: 'This user is not available.',
+      network: 'We could not reach the server. Check the connection and try again.',
+      unknown: 'The message was not sent. Please try again.',
+    },
+    deletedMessage: 'This message was deleted',
+    deletedByMessage: 'This message was deleted by {name}',
+    removedByRoleMessage: 'This message was deleted by {role}',
+    removedByRoles: {
+      main_contractor: 'the main contractor',
+      subcontractor: 'the subcontractor',
+      professional: 'the professional',
+      supplier: 'the supplier',
+      viewer: 'the viewing participant',
+    },
+    deleteMessage: 'Delete message',
+    deleteForEveryone: 'The message will be deleted for all participants.',
+    confirmDelete: 'Delete',
+    removeMessage: 'Remove message',
+    keepMessage: 'Keep message',
+    keptBadge: 'Preserved message',
+    actionFailed: 'The action could not be completed. Please try again.',
+    attach: 'Attach file',
+    attachRemove: 'Remove attachment',
+    attachTooLarge: 'The file is too large. Images up to 5MB, PDF up to 30MB.',
+    attachUnsupported: 'Only an image (JPG, PNG, WebP) or a PDF can be attached.',
+    attachFailed: 'The file could not be uploaded. Please try again.',
+    download: 'Download',
+    proposeAgreement: 'Propose work agreement',
+    sendFailed: 'The message was not sent. Please try again.',
+    sendAwaitingRequest: 'This conversation awaits the message request\u2019s approval; nothing can be sent until then.',
+    requestPendingNotice: 'The message request was sent. The conversation continues once the recipient approves it.',
+    requestAnswerFirst: 'A message request awaits your decision.',
+    requestSent: 'Sent',
+    requestSentNote: 'The message request was sent. The conversation continues once the recipient approves it.',
+    openThread: 'Open the conversation',
+    closeDialog: 'Close',
+    hideForMe: 'Hide for me',
+    hideForMeNote: 'The message will be hidden for you alone.',
+    confirmHide: 'Hide',
+    requestIncomingTag: 'Awaiting your decision',
+    requestOutgoingTag: 'Awaiting the recipient',
+    requestsBadgeLabel: 'Requests awaiting your decision',
+    agreementForm: {
+      title: 'Propose a work agreement',
+      titleLabel: 'Agreement title',
+      descriptionLabel: 'Description (optional)',
+      startLabel: 'Start date',
+      dueLabel: 'Due date',
+      submit: 'Send the proposal',
+      failed: 'The proposal was not sent. Check the details and try again.',
+    },
+    acceptAgreement: 'Accept agreement',
+    declineAgreement: 'Decline agreement',
+    agreementStates: {
+      proposed: 'Waiting for an answer',
+      accepted: 'Accepted, and a task was opened',
+      declined: 'Declined',
+      withdrawn: 'Withdrawn',
+    },
+  },
+  contractorCategories: { main_contractor: 'Main Execution Contractor', subcontractor: 'Subcontractor' },
 };

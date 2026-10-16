@@ -4,49 +4,60 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { AuthShell } from '../../components/AuthShell';
 import { FormAlert } from '../../components/FormAlert';
 import { GoogleSignInButton } from '../../components/GoogleSignInButton';
+import { destinationFor } from '../../auth/destination';
+import { useAuth } from '../../auth/useAuth';
 import { useGoogleAuth } from '../../auth/useGoogleAuth';
 import { useLanguage } from '../../i18n/useLanguage';
 import { useDocumentTitle } from '../../routes/useDocumentTitle';
 import { useScreenStylesheet } from '../../styles/useScreenStylesheet';
 import { RegisterForm } from './RegisterForm';
 import { useRegisterForm, type GoogleRegistration } from './useRegisterForm';
+import type { LoginResponse } from '../../api/types';
 import registerCss from './register.css?inline';
 import placeCss from '../../location/place.css?inline';
 
 /**
  * The Register screen: the brand panel, the card, and the form.
  *
- * **Creating an account does not sign anyone in.** The approved flow is
- * `Register → Login → Personal dashboard`, and Login is the authentication boundary, so a
- * successful registration navigates to Login and stores nothing. The success panel this screen
- * used to end on is gone with the behaviour it described — it told the person they were already
- * signed in, which the flow no longer makes true.
+ * **A password registration does not sign anyone in** — that flow stays
+ * `Register → Login → Personal dashboard`, with Login as the authentication boundary (D30). The
+ * approved exception is a registration completing a verified Google identity: the server answers
+ * it with a session, and this screen stores it and lands on the account's own destination, the
+ * same way Login does.
  *
- * `replace` keeps Register out of the history stack: pressing Back from Login should not return
- * to a filled-in signup form for an account that now exists.
+ * `replace` keeps Register out of the history stack: pressing Back afterwards should not return
+ * to a filled-in signup form for an account that now exists — and it is also what lets go of the
+ * Google credential that travelled here in navigation state.
  */
 export const RegisterPage = () => {
-  const { t } = useLanguage();
+  const { t, setLang } = useLanguage();
+  const { signIn } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   useScreenStylesheet(
     { id: 'register.css', css: registerCss },
     { id: 'place.css', css: placeCss },
   );
-  useDocumentTitle('יצירת חשבון / Create account — FieldSync');
-
-  const onSuccess = useCallback((): void => {
-    navigate('/login', { replace: true });
-  }, [navigate]);
+  useDocumentTitle('יצירת חשבון / Create account — Blokta');
 
   /**
-   * Set by Login when Google verified somebody who has no FieldSync account yet. It carries the
+   * Set by Login when Google verified somebody who has no Blokta account yet. It carries the
    * identity and the credential, and nothing about their trade or their business: those are this
    * screen's own questions and are still asked.
    */
   const google = (location.state as { google?: GoogleRegistration } | null)?.google ?? null;
 
-  const form = useRegisterForm(onSuccess, google);
+  const onComplete = useCallback((session: LoginResponse | null): void => {
+    if (session === null) {
+      navigate('/login', { replace: true });
+      return;
+    }
+    signIn(session);
+    setLang(session.user.language);
+    navigate(destinationFor(session.user), { replace: true });
+  }, [navigate, signIn, setLang]);
+
+  const form = useRegisterForm(onComplete, google);
   const googleAuth = useGoogleAuth();
 
   return (

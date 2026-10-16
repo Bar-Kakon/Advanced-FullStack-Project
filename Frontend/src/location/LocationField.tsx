@@ -41,7 +41,7 @@ export const LocationField = ({
         <label className="field-label" htmlFor="city">{label}</label>
         <div className="input-wrapper">
           <input
-            className={`form-input${invalid ? ' touched' : ''}`}
+            className={`form-input${invalid ? ' touched is-invalid' : ''}`}
             id="city"
             name="city"
             type="text"
@@ -52,7 +52,9 @@ export const LocationField = ({
             required={required}
             aria-invalid={invalid}
           />
-          {required ? <InputWarning /> : null}
+          {/* Tied to the error state, never to `required`: a field that has not been answered yet
+              is not a field somebody got wrong. */}
+          {invalid ? <InputWarning /> : null}
         </div>
         {invalid && error ? (
           <p className="field-error field-error--visible" aria-live="polite">{error}</p>

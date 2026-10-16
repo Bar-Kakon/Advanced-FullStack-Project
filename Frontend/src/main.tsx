@@ -1,7 +1,10 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 
+import { Provider } from 'react-redux';
+
 import { App } from './App';
+import { store } from './store/store';
 
 /**
  * The single point where React takes over a piece of the page: it finds the empty `<div id="root">`
@@ -16,6 +19,8 @@ if (!container) throw new Error('index.html is missing <div id="root">.');
 
 createRoot(container).render(
   <StrictMode>
-    <App />
+    <Provider store={store}>
+      <App />
+    </Provider>
   </StrictMode>,
 );

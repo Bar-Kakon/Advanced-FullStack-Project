@@ -62,6 +62,7 @@ import {
   beyondProjectCeiling,
   calendarHasNoWorkingDays,
   changeIsEmpty,
+  taskNotInProject,
   counterNeedsDates,
   handoffAlreadyOpen,
   handoffNeedsCompletionRecord,
@@ -492,6 +493,15 @@ export const createCoordinationService = ({
     return task;
   };
 
+  /** The request entry answers a standalone task with the RULE, never with not-found. */
+  const loadTaskForChange = async (taskId: string): Promise<TaskRecord> => {
+    if (!Types.ObjectId.isValid(taskId)) throw proposalNotFound();
+    const task = await TaskModel.findById(new Types.ObjectId(taskId)).lean<TaskRecord>().exec();
+    if (task === null) throw proposalNotFound();
+    if (task.project === undefined) throw taskNotInProject();
+    return task;
+  };
+
   const guardCalendar = <T>(work: () => T): T => {
     try {
       return work();
@@ -709,7 +719,7 @@ export const createCoordinationService = ({
     async preview(userId, taskId, changes) {
       if (isEmptyChange(changes)) throw changeIsEmpty();
 
-      const task = await loadTask(taskId);
+      const task = await loadTaskForChange(taskId);
       const { project, viewer } = await reach(userId, (task.project as Types.ObjectId).toString());
       if (!mayRequestChange(viewer, task)) throw notPermittedToRequest();
 
@@ -723,7 +733,7 @@ export const createCoordinationService = ({
     async request(userId, taskId, input) {
       if (isEmptyChange(input.changes)) throw changeIsEmpty();
 
-      const task = await loadTask(taskId);
+      const task = await loadTaskForChange(taskId);
       const { project, viewer } = await reach(userId, (task.project as Types.ObjectId).toString());
       if (!mayRequestChange(viewer, task)) throw notPermittedToRequest();
 

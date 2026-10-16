@@ -11,12 +11,14 @@ import {
 } from './auth.errors.js';
 import { currentTokenVersion, isSessionPermitted } from './auth.service.js';
 import { toSessionUser, type SessionUser } from './authenticatedUser.mapper.js';
+import type { RegisterBody } from './auth.validation.js';
 import type { GoogleIdentityService } from './googleIdentity.service.js';
+import type { RegistrationService } from './registration.service.js';
 import type { TokenPair, TokenPairService } from './tokens/tokenPair.service.js';
 
 /**
  * What Google could tell us about a first-time visitor. It is never enough to open an account:
- * FieldSync needs a registration category, a specialty, a business and a location, and Google
+ * Blokta needs a registration category, a specialty, a business and a location, and Google
  * knows none of them. So this is carried back to the client to pre-fill Register, and nothing is
  * written until the person completes it.
  */
@@ -34,8 +36,15 @@ export interface GoogleLinkResult {
   readonly linkedEmail: string;
 }
 
+export type GoogleSignUpResult = { readonly user: SessionUser } & TokenPair;
+
 export interface GoogleAuthService {
   signIn(idToken: string): Promise<GoogleSignInResult>;
+  /**
+   * The approved D30 exception: a registration completing a verified Google identity ends signed
+   * in, because the identity Login would re-verify was just verified inside the same request.
+   */
+  signUp(input: RegisterBody): Promise<GoogleSignUpResult>;
   /** Attaches Google to the account already holding this session. */
   link(userId: string, idToken: string): Promise<GoogleLinkResult>;
 }
@@ -45,6 +54,7 @@ export interface GoogleAuthDependencies {
   readonly googleIdentity: GoogleIdentityService;
   readonly tokenPair: TokenPairService;
   readonly companyContext: CompanyContextService;
+  readonly registration: RegistrationService;
 }
 
 export const createGoogleAuthService = ({
@@ -52,6 +62,7 @@ export const createGoogleAuthService = ({
   googleIdentity,
   tokenPair,
   companyContext,
+  registration,
 }: GoogleAuthDependencies): GoogleAuthService => {
   const verified = async (idToken: string) => {
     const identity = await googleIdentity.verify(idToken);
@@ -102,11 +113,22 @@ export const createGoogleAuthService = ({
       };
     },
 
+    async signUp(input) {
+      const { record } = await registration.register(input);
+      const userId = record._id.toString();
+      const tokens = await tokenPair.issue({
+        userId,
+        tokenVersion: currentTokenVersion(record),
+      });
+
+      return { ...tokens, user: toSessionUser(record, await companyContext.forUser(userId)) };
+    },
+
     /**
-     * The session proves the FieldSync account, and the credential proves the Google one. Both
+     * The session proves the Blokta account, and the credential proves the Google one. Both
      * halves are established before anything is written, which is what the link is for.
      *
-     * The two email addresses are deliberately not required to match. A contractor's FieldSync
+     * The two email addresses are deliberately not required to match. A contractor's Blokta
      * account is often a business address and their Google account a personal one, and requiring
      * a match would refuse that without protecting anything: whoever is holding both credentials
      * at this point already controls both accounts.

@@ -13,6 +13,9 @@ import { createAuthService } from './auth.service.js';
 import { createGoogleAuthService } from './googleAuth.service.js';
 import { createGoogleIdentityService } from './googleIdentity.service.js';
 import { passwordService } from './password.service.js';
+import { createAccountRecoveryService } from './accountRecovery.service.js';
+import { accountRecoveryTokenRepository } from './accountRecoveryToken.repository.js';
+import { platformAuditService } from '../moderation/platformAudit.instance.js';
 import { createPasswordResetService } from './passwordReset.service.js';
 import { passwordResetTokenRepository } from './passwordResetToken.repository.js';
 import { refreshTokenRepository } from './refreshToken.repository.js';
@@ -88,7 +91,22 @@ export const createAuthModule = (config: AppConfig): AuthModule => {
   const googleAuthService =
     googleIdentity === null
       ? null
-      : createGoogleAuthService({ users: userRepository, googleIdentity, tokenPair, companyContext });
+      : createGoogleAuthService({
+          users: userRepository,
+          googleIdentity,
+          tokenPair,
+          companyContext,
+          registration: registrationService,
+        });
+
+  const accountRecoveryService = createAccountRecoveryService({
+    users: userRepository,
+    recoveryTokens: accountRecoveryTokenRepository,
+    audit: platformAuditService,
+    mailer: createMailer(config.mail),
+    frontendUrl: config.frontendUrl,
+    transactions: { run: runInTransaction },
+  });
 
   const passwordResetService = createPasswordResetService({
     users: userRepository,
@@ -109,6 +127,7 @@ export const createAuthModule = (config: AppConfig): AuthModule => {
         authService,
         registrationService,
         passwordResetService,
+        accountRecoveryService,
         cookie,
         googleAuthService,
       }),

@@ -263,7 +263,7 @@ const run = async (): Promise<void> => {
   const email = `flex-${stamp}@example.com`;
   const created = await request(baseUrl, 'POST', '/api/auth/register', {
     json: {
-      firstName: 'Flex', lastName: 'Verify', standing: 'owner',
+      firstName: 'Flex', lastName: 'Verify', standing: 'owner', contractorCategory: 'subcontractor',
       companyName: `Flex ${stamp} Ltd`, email,
       password: 'CorrectHorse42!', confirmPassword: 'CorrectHorse42!',
       registrationCategory: 'contractor', specialty: 'electrical',

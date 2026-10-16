@@ -21,6 +21,9 @@ export interface NotificationDto {
   readonly taskId: string | null;
   readonly proposalId: string | null;
   readonly scheduleExceptionId: string | null;
+  readonly conversationId: string | null;
+  /** The row's CURRENT standing, re-derived from the authoritative entity on every read. */
+  readonly action: 'required' | 'resolved' | 'none' | null;
   readonly payload: NotificationPayload;
   /** True when the project was muted for this person as the event happened. */
   readonly muted: boolean;

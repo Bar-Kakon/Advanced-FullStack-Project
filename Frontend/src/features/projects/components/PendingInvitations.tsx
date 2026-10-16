@@ -1,17 +1,10 @@
 import { ButtonSpinner } from '../../../components/ButtonSpinner';
 import { FormAlert } from '../../../components/FormAlert';
 import { useLanguage } from '../../../i18n/useLanguage';
+import { formatCalendarDate } from '../../../i18n/dateFormat';
 import type { ProjectInvitation } from '../../../api/members.types';
 import type { MembersFailure } from '../../../api/members.api';
 
-const displayDate = (iso: string, lang: 'he' | 'en'): string => {
-  const [year, month, day] = iso.split('-').map(Number);
-  if (!year || !month || !day) return iso;
-  return new Date(Date.UTC(year, month - 1, day)).toLocaleDateString(
-    lang === 'he' ? 'he-IL' : 'en-GB',
-    { year: 'numeric', month: 'short', day: 'numeric', timeZone: 'UTC' },
-  );
-};
 
 export interface PendingInvitationsProps {
   readonly invitations: readonly ProjectInvitation[];
@@ -60,8 +53,8 @@ export const PendingInvitations = ({
                 <span dir="auto">{invitation.city ?? t.projects.card.noLocation}</span>
                 <span>
                   {t.members.incoming.dates
-                    .replace('{start}', displayDate(invitation.startDate, lang))
-                    .replace('{target}', displayDate(invitation.targetEndDate, lang))}
+                    .replace('{start}', formatCalendarDate(invitation.startDate, lang))
+                    .replace('{target}', formatCalendarDate(invitation.targetEndDate, lang))}
                 </span>
               </p>
 

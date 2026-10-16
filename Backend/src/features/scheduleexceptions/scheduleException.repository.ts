@@ -1,5 +1,7 @@
 import { Types } from 'mongoose';
 
+import type { DbSession } from '../../db/mongoose.js';
+
 import {
   ScheduleExceptionModel,
   type ExceptionHistoryEntry,
@@ -20,6 +22,8 @@ export interface NewScheduleException {
 }
 
 export interface ScheduleExceptionRepository {
+  /** PRJ-07: exception requests of a cancelled project go with it. */
+  deleteByProject(project: Types.ObjectId, session?: DbSession): Promise<number>;
   create(input: NewScheduleException): Promise<ScheduleExceptionRecord>;
   findById(id: string): Promise<ScheduleExceptionRecord | null>;
   listForProject(
@@ -53,6 +57,13 @@ export interface ScheduleExceptionRepository {
 }
 
 export const scheduleExceptionRepository: ScheduleExceptionRepository = {
+  async deleteByProject(project, session) {
+    const query = ScheduleExceptionModel.deleteMany({ project });
+    if (session) query.session(session);
+    const result = await query.exec();
+    return result.deletedCount;
+  },
+
   async create(input) {
     const created = new ScheduleExceptionModel({
       ...input,
@@ -113,7 +124,7 @@ export const scheduleExceptionRepository: ScheduleExceptionRepository = {
     return ScheduleExceptionModel.findOneAndUpdate(
       { _id: id },
       { $set: patch, $push: { history: entry } },
-      { new: true },
+      { returnDocument: 'after' },
     )
       .lean<ScheduleExceptionRecord>()
       .exec();

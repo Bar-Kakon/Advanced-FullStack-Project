@@ -16,7 +16,7 @@ import type { StructuredPlace } from '../../location/place.types';
  * Everything Edit profile holds while it is being edited.
  *
  * There is deliberately **no `phone` field**. The personal / login number is never professional
- * profile-display data (D15), Register has never asked for it, and the prototype's `phone` box —
+ * profile-display data (D15), Register has never asked for it, and the earlier screen's `phone` box —
  * with its hint saying it was shown to connections — described a rule the product no longer has.
  * `officePhone` and `businessPhone` replace it as two independent optional values on two
  * different documents, with no fallback between them in either direction.

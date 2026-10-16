@@ -7,7 +7,7 @@ import type { ApiErrorBody, LoginResponse } from './types';
  * What the server answers a Google credential with.
  *
  * `onboarding_required` is not a failure. Google can prove who somebody is and nothing else, so a
- * first-time visitor is sent through FieldSync's own registration with the verified identity in
+ * first-time visitor is sent through Blokta's own registration with the verified identity in
  * hand — the trade, the business and the location are still asked for.
  */
 export interface GoogleOnboardingProfile {

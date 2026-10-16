@@ -8,7 +8,9 @@ import {
   googleCredentialBodySchema,
   loginBodySchema,
   registerBodySchema,
+  recoverAccountBodySchema,
   resetPasswordBodySchema,
+  restoreAccountBodySchema,
 } from './auth.validation.js';
 
 /**
@@ -58,7 +60,7 @@ export const createAuthRouter = (
     controller.handleGoogleSignIn,
   );
 
-  // Authenticated: linking requires proving the FieldSync account first, which is what makes the
+  // Authenticated: linking requires proving the Blokta account first, which is what makes the
   // link safe on an email registration never verified.
   router.post(
     '/google/link',
@@ -81,6 +83,20 @@ export const createAuthRouter = (
     createAuthRateLimiter('resetPassword'),
     validateRequest({ body: resetPasswordBodySchema }),
     controller.handleResetPassword,
+  );
+
+  // Self-service D8 recovery: both unauthenticated, both enumeration-safe, both rate-limited.
+  router.post(
+    '/recover-account',
+    createAuthRateLimiter('recoverAccount'),
+    validateRequest({ body: recoverAccountBodySchema }),
+    controller.handleRecoverAccount,
+  );
+  router.post(
+    '/restore-account',
+    createAuthRateLimiter('restoreAccount'),
+    validateRequest({ body: restoreAccountBodySchema }),
+    controller.handleRestoreAccount,
   );
 
   return router;

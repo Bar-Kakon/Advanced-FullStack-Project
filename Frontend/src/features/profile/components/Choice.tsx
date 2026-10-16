@@ -4,7 +4,7 @@ import type { ReactNode } from 'react';
  * One box in a choice grid — a specialty checkbox, an availability radio, an equipment checkbox.
  *
  * The real control is visually hidden and the drawn square beside it is what a person sees, which
- * is how the prototype did it too. The input is still a real input inside a real `<label>`, so it
+ * is how the earlier screen did it too. The input is still a real input inside a real `<label>`, so it
  * keeps its keyboard behaviour, its focus ring and its announcement; only the painting is custom.
  */
 export const Choice = ({

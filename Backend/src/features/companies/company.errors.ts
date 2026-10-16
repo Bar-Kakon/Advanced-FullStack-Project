@@ -23,3 +23,23 @@ export const nothingToCancel = (): AppError =>
 /** The Main Contractor job is already held, so a second seat for it may not be opened. */
 export const mainContractorSeatTaken = (): AppError =>
   new AppError('This company already has a Main Contractor', 409, 'MAIN_CONTRACTOR_SEAT_TAKEN');
+
+/** Granting authority is the owner's alone — never a job title, never another permission. */
+export const notPermittedToManagePermissions = (): AppError =>
+  new AppError('Only the company owner may manage employee permissions', 403, 'COMPANY_PERMISSION_DENIED');
+
+/** The membership named is not an active employee seat of this company. */
+export const permissionsTargetNotFound = (): AppError =>
+  new AppError('No active employee matched', 404, 'ACTIVE_EMPLOYEE_NOT_FOUND');
+
+/** The business needs an owner; leaving is the employee flow and ownership transfer is not built. */
+export const ownerCannotLeave = (): AppError =>
+  new AppError('A company owner cannot leave through this flow', 403, 'OWNER_CANNOT_LEAVE');
+
+/** The rejoining safeguard: no new membership period before the attribution backfill completes. */
+export const claimBlockedByMigration = (): AppError =>
+  new AppError('Joining is briefly unavailable until a data migration completes', 409, 'CLAIM_BLOCKED_BY_MIGRATION');
+
+/** Company writes wait while the company has no active owner; reads and departures do not. */
+export const companyOwnerInactive = (): AppError =>
+  new AppError('This company has no active owner right now.', 409, 'COMPANY_OWNER_INACTIVE');

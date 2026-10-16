@@ -76,7 +76,7 @@ const run = async () => {
     (await page.evaluate(() => localStorage.getItem('fieldsync-access-token'))) === null);
   check('the code is shown as 404', (await page.locator('.err__code').innerText()).trim() === '404');
   check('the tab title names the screen, not the address',
-    (await page.title()).includes('FieldSync') && !(await page.title()).includes('nonsense'), await page.title());
+    (await page.title()).includes('Blokta') && !(await page.title()).includes('nonsense'), await page.title());
   check('the page is marked noindex',
     (await page.locator('meta[name="robots"]').getAttribute('content')) === 'noindex');
 

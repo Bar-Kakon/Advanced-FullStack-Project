@@ -1,5 +1,6 @@
 import { ButtonSpinner } from '../../../components/ButtonSpinner';
 import { useLanguage } from '../../../i18n/useLanguage';
+import { localeOf } from '../../../i18n/dateFormat';
 import type { NetworkTab } from '../../../api/network.types';
 import type { NetworkAction, Row } from '../useMyNetwork';
 
@@ -9,6 +10,8 @@ export interface NetworkRowProps {
   readonly pending: boolean;
   readonly onAct: (action: NetworkAction, userId: string) => void;
   readonly onViewProfile: (userId: string) => void;
+  /** Navigation, not a mutation: it opens the messaging flow for this person. */
+  readonly onMessage: (userId: string, name: string) => void;
 }
 
 const ACTIONS: Record<NetworkTab, readonly NetworkAction[]> = {
@@ -26,7 +29,7 @@ const TONE: Record<NetworkAction, string> = {
   unblock: 'btn--primary',
 };
 
-export const NetworkRow = ({ row, tab, pending, onAct, onViewProfile }: NetworkRowProps) => {
+export const NetworkRow = ({ row, tab, pending, onAct, onViewProfile, onMessage }: NetworkRowProps) => {
   const { t, lang } = useLanguage();
   const { person } = row;
   const name = `${person.firstName} ${person.lastName}`.trim();
@@ -34,7 +37,7 @@ export const NetworkRow = ({ row, tab, pending, onAct, onViewProfile }: NetworkR
   const date = new Date(row.at);
   const when = Number.isNaN(date.getTime())
     ? null
-    : date.toLocaleDateString(lang === 'he' ? 'he-IL' : 'en-GB', {
+    : date.toLocaleDateString(localeOf(lang), {
         year: 'numeric',
         month: 'long',
         day: 'numeric',
@@ -66,6 +69,16 @@ export const NetworkRow = ({ row, tab, pending, onAct, onViewProfile }: NetworkR
             {t.network.actions.viewProfile}
           </button>
         )}
+
+        {tab === 'connected' ? (
+          <button
+            type="button"
+            className="btn btn--primary btn--sm"
+            onClick={() => onMessage(person.userId, name)}
+          >
+            {t.network.actions.message}
+          </button>
+        ) : null}
 
         {ACTIONS[tab].map((action) => (
           <button

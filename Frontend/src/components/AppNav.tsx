@@ -1,16 +1,19 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 
 import { fetchUnreadCount } from '../api/notifications.api';
+
 import { useAuth } from '../auth/useAuth';
 import { useLanguage } from '../i18n/useLanguage';
 import { AccountMenu } from './AccountMenu';
 import { LanguageSwitch } from './LanguageSwitch';
+import { useAppDispatch, useAppSelector } from '../store/hooks';
+import { unreadNotificationsSet } from '../store/sessionSlice';
 
 /**
  * The application navbar every authenticated screen carries.
  *
- * The static prototypes each held their own copy of this markup, and the source-of-truth document
+ * The earlier static screens each held their own copy of this markup, and the source-of-truth document
  * records that the copies had already drifted three rules apart. This is the single component
  * those notes said the drift collapses into, so the fixes that had landed on only some copies —
  * the 800px link wrap and the logical chip padding — are simply what the component does.
@@ -20,23 +23,27 @@ import { LanguageSwitch } from './LanguageSwitch';
  */
 export const AppNav = ({ name, initials }: { name: string; initials: string }) => {
   const { t } = useLanguage();
-  const { user } = useAuth();
-  const [unreadCount, setUnreadCount] = useState(0);
+  // The count lives in the store, so every screen's navbar renders the same number rather than
+  // each one keeping its own. Fetched once per mount: real-time delivery is out of scope, and
+  // polling would cost a request a second for a value that changes rarely.
+  const unread = useAppSelector((state) => state.session.unreadNotifications);
+  const dispatch = useAppDispatch();
 
-  /**
-   * Fetched once when a screen mounts. Real-time delivery is explicitly out of scope, and polling
-   * would cost a request a second for a number that changes rarely — so the count is as fresh as
-   * the screen the person just opened.
-   */
   useEffect(() => {
-    const controller = new AbortController();
-    fetchUnreadCount(controller.signal)
-      .then(setUnreadCount)
+    let current = true;
+    void fetchUnreadCount()
+      .then((count) => {
+        if (current) dispatch(unreadNotificationsSet(count));
+      })
       .catch(() => {
-        // A marker nobody can read is not worth an error state; the centre itself reports failure.
+        // A failed count must never stop the navbar rendering.
       });
-    return () => controller.abort();
-  }, []);
+
+    return () => {
+      current = false;
+    };
+  }, [dispatch]);
+  const { user } = useAuth();
 
   // Hiding is a courtesy; the API refuses either way.
   const showEmployees =
@@ -57,7 +64,7 @@ export const AppNav = ({ name, initials }: { name: string; initials: string }) =
               <line x1="32" y1="14" x2="32" y2="26" stroke="rgba(255,253,248,0.40)" strokeWidth="1.5" strokeDasharray="3 2" />
             </svg>
           </span>
-          <span className="app-nav__name">FieldSync</span>
+          <span className="app-nav__name">Blokta</span>
         </Link>
 
         <nav className="app-nav__links" aria-label={t.nav.label}>
@@ -65,6 +72,7 @@ export const AppNav = ({ name, initials }: { name: string; initials: string }) =
           <Link to="/network" className="app-nav__link">{t.nav.network}</Link>
           <Link to="/projects" className="app-nav__link">{t.nav.projects}</Link>
           <Link to="/tasks" className="app-nav__link">{t.nav.myTasks}</Link>
+          <Link to="/messages" className="app-nav__link">{t.nav.messages}</Link>
           {showEmployees ? (
             <Link to="/employees" className="app-nav__link">{t.nav.employees}</Link>
           ) : null}
@@ -76,16 +84,12 @@ export const AppNav = ({ name, initials }: { name: string; initials: string }) =
 
         <div className="app-nav__actions">
           <Link to="/notifications" className="nav-icon-btn" aria-label={t.nav.notifications}>
+            {unread > 0 ? <span className="nav-icon-btn__badge">{unread}</span> : null}
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                  strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
               <path d="M13.73 21a2 2 0 0 1-3.46 0" />
             </svg>
-            {unreadCount > 0 ? (
-              <span className="nav-badge" aria-label={t.notifications.unreadBadge}>
-                {unreadCount > 99 ? '99+' : unreadCount}
-              </span>
-            ) : null}
           </Link>
 
           <AccountMenu name={name} initials={initials} />

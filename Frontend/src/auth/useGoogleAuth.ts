@@ -13,7 +13,7 @@ import { useAuth } from './useAuth';
  * which it is. A recognised account ends exactly where password login ends — the same session, the
  * same stored identity, the same destination — and a first-time visitor is carried to Register
  * with the verified identity, because Google cannot supply the trade, the business or the location
- * FieldSync needs and nothing here invents them.
+ * Blokta needs and nothing here invents them.
  */
 export const useGoogleAuth = (from?: string) => {
   const { t, setLang } = useLanguage();

@@ -4,6 +4,7 @@ import { getAuthenticatedUserId } from '../auth/requireAccessToken.middleware.js
 import type { StoredUpload } from '../files/fileAsset.service.js';
 import { getValidated } from '../../middleware/validateRequest.js';
 import { fileNotAvailable } from '../files/file.errors.js';
+import type { AccountLifecycleService } from './accountLifecycle.service.js';
 import type { ProfileService } from './profile.service.js';
 import type {
   CompanyUpdateBody,
@@ -22,10 +23,12 @@ export interface ProfileController {
   readonly handleSetAvatar: RequestHandler;
   readonly handleRemoveAvatar: RequestHandler;
   readonly handleGetAsset: RequestHandler;
+  readonly handleDeleteMe: RequestHandler;
 }
 
 export interface ProfileControllerDependencies {
   readonly profiles: ProfileService;
+  readonly lifecycle: AccountLifecycleService;
 }
 
 /** What Multer stored, if this request carried a file at all. */
@@ -49,9 +52,15 @@ const readUpload = (req: Request): StoredUpload | null => {
  */
 export const createProfileController = ({
   profiles,
+  lifecycle,
 }: ProfileControllerDependencies): ProfileController => ({
   handleGetMe: async (_req: Request, res: Response) => {
     res.json({ user: await profiles.get(getAuthenticatedUserId(res)) });
+  },
+
+  handleDeleteMe: async (_req: Request, res: Response) => {
+    await lifecycle.deleteOwn(getAuthenticatedUserId(res));
+    res.status(204).end();
   },
 
   handleUpdateMe: async (_req: Request, res: Response) => {

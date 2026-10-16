@@ -14,7 +14,8 @@ import { InputWarning } from './InputWarning';
  */
 export const TextField = ({
   id, label, value, onChange, onBlur, placeholder, type = 'text', autoComplete, maxLength,
-  required = false, dir, optionalText, hint, error, touched = false, className = '', withWarning = false,
+  required = false, dir, optionalText, hint, error, touched = false, className = '',
+  withWarning = false, invalid = false, readOnly = false,
 }: {
   id: string;
   label: string;
@@ -35,10 +36,19 @@ export const TextField = ({
   className?: string;
   /** Wraps the box so the in-field hard-hat can be positioned against it. Auth screens only. */
   withWarning?: boolean;
+  /** A value the person may read but not change — the Google-verified email address. */
+  readOnly?: boolean;
+  /**
+   * A rule this field is breaking that the browser cannot see — a name carrying digits, a phone
+   * that is not a number. `:invalid` covers the native cases; this covers the rest, so one class
+   * paints both and a field that is valid again loses the red state on the same keystroke.
+   */
+  invalid?: boolean;
 }) => {
   const box = (
     <input
-      className={`form-input${touched ? ' touched' : ''}`}
+      className={`form-input${touched ? ' touched' : ''}${invalid ? ' is-invalid' : ''}`}
+      aria-invalid={invalid}
       id={id}
       name={id}
       type={type}
@@ -49,6 +59,7 @@ export const TextField = ({
       {...(autoComplete ? { autoComplete } : {})}
       {...(maxLength ? { maxLength } : {})}
       {...(dir ? { dir } : {})}
+      {...(readOnly ? { readOnly: true } : {})}
       required={required}
     />
   );

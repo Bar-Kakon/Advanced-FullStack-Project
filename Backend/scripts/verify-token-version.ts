@@ -45,7 +45,7 @@ const registerAccount = async (baseUrl: string, index: number, email: string): P
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      firstName: 'Version', lastName: `Tester${index}`, standing: 'owner',
+      firstName: 'Version', lastName: `Tester${index}`, standing: 'owner', contractorCategory: 'subcontractor',
       companyName: `${MARKER} ${index} ${Date.now()} Ltd`,
       email, password: OLD_PASSWORD, confirmPassword: OLD_PASSWORD,
       registrationCategory: 'contractor', specialty: 'electrical', city: 'חיפה', region: 'haifa',

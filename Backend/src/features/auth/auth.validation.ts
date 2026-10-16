@@ -1,8 +1,14 @@
 import Joi from 'joi';
 
 import { structuredPlaceSchema, type StructuredPlaceBody } from '../location/place.validation.js';
+import { password, phone, prose } from '../../shared/fieldRules.js';
 
-import { AVAILABILITY_STATUSES, type Availability } from '../companies/company.model.js';
+import {
+  AVAILABILITY_STATUSES,
+  CONTRACTOR_CATEGORIES,
+  type Availability,
+  type ContractorCategory,
+} from '../companies/company.model.js';
 import {
   COMPANY_POSITIONS,
   COMPANY_STANDINGS,
@@ -51,6 +57,8 @@ export interface RegisterBody {
   readonly companyName: string;
   /** Employee only. Part of what identifies the seat being claimed. */
   readonly companyPosition?: CompanyPosition;
+  /** Owner only. The business classification, which an employee inherits from their company. */
+  readonly contractorCategory?: ContractorCategory;
   readonly email: string;
   /** Both absent on the Google path: that account is opened with no local password at all. */
   readonly password?: string;
@@ -86,8 +94,6 @@ const MAX_NAME_LENGTH = 100;
 const MAX_COMPANY_NAME_LENGTH = 120;
 const MAX_CITY_LENGTH = 80;
 const MAX_SPECIALTY_OTHER_LENGTH = 60;
-/** A bound, not a format. What counts as a valid number here has never been approved — see D27. */
-const MAX_PHONE_LENGTH = 30;
 /** The issued token is 64 hex characters; the bound is slack, not a format check. */
 const MAX_RESET_TOKEN_LENGTH = 200;
 /** A signed JWT with a certificate chain behind it. Bounded so nothing unbounded reaches Google. */
@@ -107,6 +113,20 @@ export const loginBodySchema = Joi.object<LoginBody>({
 
 export const forgotPasswordBodySchema = Joi.object<ForgotPasswordBody>({ email });
 
+export interface RecoverAccountBody {
+  readonly email: string;
+}
+
+export const recoverAccountBodySchema = Joi.object<RecoverAccountBody>({ email });
+
+export interface RestoreAccountBody {
+  readonly token: string;
+}
+
+export const restoreAccountBodySchema = Joi.object<RestoreAccountBody>({
+  token: Joi.string().trim().min(1).max(MAX_RESET_TOKEN_LENGTH).required(),
+});
+
 /**
  * Bounded but not shape-checked, for the reason the reset token is not: a malformed credential and
  * a forged one are the same event to the person holding it, and both take the same 401.
@@ -123,7 +143,7 @@ export const googleCredentialBodySchema = Joi.object<GoogleCredentialBody>({
  */
 export const resetPasswordBodySchema = Joi.object<ResetPasswordBody>({
   token: Joi.string().trim().min(1).max(MAX_RESET_TOKEN_LENGTH).required(),
-  password: Joi.string().min(MIN_PASSWORD_LENGTH).max(MAX_PASSWORD_LENGTH).required(),
+  password: password(MIN_PASSWORD_LENGTH, MAX_PASSWORD_LENGTH).required(),
 });
 
 /**
@@ -135,8 +155,8 @@ export const resetPasswordBodySchema = Joi.object<ResetPasswordBody>({
  * likewise not stored: D25 has not settled whether the documents it refers to will exist.
  */
 export const registerBodySchema = Joi.object<RegisterBody>({
-  firstName: Joi.string().trim().min(1).max(MAX_NAME_LENGTH).required(),
-  lastName: Joi.string().trim().min(1).max(MAX_NAME_LENGTH).required(),
+  firstName: prose(MAX_NAME_LENGTH).required(),
+  lastName: prose(MAX_NAME_LENGTH).required(),
 
   // Required, and deliberately not defaulted. It decides which of two registrations this is, and a
   // request that does not say should be answered rather than guessed at.
@@ -149,7 +169,7 @@ export const registerBodySchema = Joi.object<RegisterBody>({
    * are creating. An employee names the one that invited them — and it is MATCHED, never trusted:
    * on its own it proves nothing, it only narrows the search for a seat somebody already opened.
    */
-  companyName: Joi.string().trim().min(1).max(MAX_COMPANY_NAME_LENGTH).required(),
+  companyName: prose(MAX_COMPANY_NAME_LENGTH).required(),
 
   // The employee's job, and one of the three values their invitation is matched on. It describes
   // the role and grants nothing: capabilities come only from `permissions`.
@@ -158,6 +178,23 @@ export const registerBodySchema = Joi.object<RegisterBody>({
     then: Joi.string()
       .valid(...COMPANY_POSITIONS)
       .required(),
+    otherwise: Joi.any().forbidden(),
+  }),
+
+  // The owner classifies the business they are creating. An employee is refused it rather than
+  // ignored: their classification is the company's, and a claimed one would be trusted input.
+  // Contractor route only. `קבלן ביצוע ראשי` / `קבלן משנה` classifies a CONTRACTING business, so a
+  // supplier or an architectural professional is refused it rather than asked to pick one — and it
+  // is refused rather than ignored, so no account is silently classified as something it is not.
+  contractorCategory: Joi.when('standing', {
+    is: 'owner',
+    then: Joi.when('registrationCategory', {
+      is: 'contractor',
+      then: Joi.string()
+        .valid(...CONTRACTOR_CATEGORIES)
+        .required(),
+      otherwise: Joi.any().forbidden(),
+    }),
     otherwise: Joi.any().forbidden(),
   }),
 
@@ -174,7 +211,7 @@ export const registerBodySchema = Joi.object<RegisterBody>({
   password: Joi.when('googleIdToken', {
     is: Joi.exist(),
     then: Joi.any().forbidden(),
-    otherwise: Joi.string().min(MIN_PASSWORD_LENGTH).max(MAX_PASSWORD_LENGTH).required(),
+    otherwise: password(MIN_PASSWORD_LENGTH, MAX_PASSWORD_LENGTH).required(),
   }),
   confirmPassword: Joi.when('googleIdToken', {
     is: Joi.exist(),
@@ -207,7 +244,7 @@ export const registerBodySchema = Joi.object<RegisterBody>({
     is: Joi.string()
       .valid(...OTHER_SPECIALTIES)
       .required(),
-    then: Joi.string().trim().min(1).max(MAX_SPECIALTY_OTHER_LENGTH).required(),
+    then: prose(MAX_SPECIALTY_OTHER_LENGTH).required(),
     otherwise: Joi.any().forbidden(),
   }),
 
@@ -221,7 +258,7 @@ export const registerBodySchema = Joi.object<RegisterBody>({
     otherwise: Joi.any().forbidden(),
   }),
 
-  city: Joi.string().trim().min(1).max(MAX_CITY_LENGTH).required(),
+  city: prose(MAX_CITY_LENGTH).required(),
   region: Joi.string()
     .valid(...REGIONS)
     .required(),
@@ -240,9 +277,9 @@ export const registerBodySchema = Joi.object<RegisterBody>({
   officePhone: Joi.when('standing', {
     is: 'employee',
     then: Joi.any().forbidden(),
-    otherwise: Joi.string().trim().max(MAX_PHONE_LENGTH).optional(),
+    otherwise: phone().optional(),
   }),
-  businessPhone: Joi.string().trim().max(MAX_PHONE_LENGTH).optional(),
+  businessPhone: phone().optional(),
   place: structuredPlaceSchema.optional(),
 
   /*

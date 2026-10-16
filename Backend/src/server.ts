@@ -9,6 +9,23 @@ import { buildCoordinationService } from './features/coordination/coordination.m
 import { createTransferWorker } from './features/coordination/responsibilityTransfer.worker.js';
 import { buildEntitlementService } from './features/billing/billing.module.js';
 import { createDigestWorker } from './features/notifications/digest.worker.js';
+import { createAccountAnonymizationService } from './features/users/accountAnonymization.service.js';
+import { createProjectCancellationService } from './features/projects/projectCancellation.service.js';
+import { createProjectCancellationWorker } from './features/projects/projectCancellation.worker.js';
+import { projectRepository } from './features/projects/project.repository.js';
+import { projectAccessRepository } from './features/projectaccess/projectAccess.repository.js';
+import { projectGrantRepository } from './features/projectaccess/projectGrant.repository.js';
+import { proposalRepository } from './features/coordination/proposal.repository.js';
+import { scheduleExceptionRepository } from './features/scheduleexceptions/scheduleException.repository.js';
+import { taskRepository } from './features/tasks/task.repository.js';
+import { taskExecutionAdapter } from './features/tasks/taskExecution.adapter.js';
+import { buildNotificationDispatchService } from './features/notifications/notifications.module.js';
+import { runInTransaction } from './db/mongoose.js';
+import { createAccountAnonymizationWorker } from './features/users/accountAnonymization.worker.js';
+import { platformAuditService } from './features/moderation/platformAudit.instance.js';
+import { fileAssetRepository } from './features/files/fileAsset.repository.js';
+import { createFileAssetService } from './features/files/fileAsset.service.js';
+import { userRepository } from './features/users/user.repository.js';
 import { notificationRepository } from './features/notifications/notification.repository.js';
 import { createNotificationEmailWorker } from './features/notifications/notificationEmail.worker.js';
 import { queuedEmailRepository } from './features/notifications/queuedEmail.repository.js';
@@ -89,6 +106,29 @@ const startServer = async (): Promise<void> => {
       mailer,
       frontendUrl: config.frontendUrl,
     }),
+    createAccountAnonymizationWorker(
+      createAccountAnonymizationService({
+        users: userRepository,
+        audit: platformAuditService,
+        assets: fileAssetRepository,
+        files: createFileAssetService(fileAssetRepository),
+      }),
+    ),
+    createProjectCancellationWorker(
+      createProjectCancellationService({
+        projects: projectRepository,
+        access: projectAccessRepository,
+        grants: projectGrantRepository,
+        tasks: taskRepository,
+        proposals: proposalRepository,
+        exceptions: scheduleExceptionRepository,
+        notificationRows: notificationRepository,
+        notifications: buildNotificationDispatchService(),
+        execution: taskExecutionAdapter,
+        users: userRepository,
+        transactions: { run: runInTransaction },
+      }),
+    ),
   ];
   for (const worker of workers) worker.start();
 

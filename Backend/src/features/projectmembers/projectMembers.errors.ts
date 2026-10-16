@@ -22,3 +22,11 @@ export const participantNotFound = (): AppError =>
  */
 export const membershipNotFound = (): AppError =>
   new AppError('Membership not found.', 404, 'MEMBERSHIP_NOT_FOUND');
+
+/** Removing an active member asks the question; it is never answered automatically. */
+export const roomMessagesDecisionRequired = (): AppError =>
+  new AppError(
+    'Choose whether the room messages are kept or deleted.',
+    400,
+    'ROOM_MESSAGES_DECISION_REQUIRED',
+  );

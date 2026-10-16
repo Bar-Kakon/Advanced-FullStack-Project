@@ -117,6 +117,9 @@ export const TrustPanel = ({
                 </span>
               </div>
               <p className="metric__foot metric__foot--score">
+                {t.profile.flexibility.category[schedule.category]}
+              </p>
+              <p className="metric__foot metric__foot--score">
                 {t.profile.flexibility.foot.replace('{count}', String(schedule.context.events))}
               </p>
               {/* This contractor's own aggregate pattern, in counts. No name, project, date or
@@ -144,6 +147,9 @@ export const TrustPanel = ({
                     {t.profile.flexibility.context.justified
                       .replace('{count}', String(schedule.context.justifiedDeclines))}
                   </li>
+                ) : null}
+                {schedule.includesOlderHistory ? (
+                  <li className="flex-context__item">{t.profile.flexibility.context.history}</li>
                 ) : null}
               </ul>
             </>

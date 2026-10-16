@@ -1,5 +1,7 @@
 import { Types } from 'mongoose';
 
+import { ConversationModel } from '../src/features/messaging/conversation.model.js';
+import { MessageModel } from '../src/features/messaging/message.model.js';
 import { MuteModel } from '../src/features/mutes/mute.model.js';
 import { notificationPreferencePort } from '../src/features/mutes/notificationPreference.port.js';
 import { ProjectMembershipModel } from '../src/features/projectaccess/projectMembership.model.js';
@@ -144,6 +146,95 @@ const run = async (): Promise<void> => {
   check(unique?.unique === true,
     'and the unique index is what makes muting twice a no-op rather than a second row');
 
+  section('Conversation mute — the caller\'s own delivery preference');
+  const other = await createAccount(baseUrl, MARKER, 90);
+  const opened = await post(`/api/conversations/direct/${other.userId.toString()}`, gc.token, {
+    body: 'שלום',
+  });
+  check(opened.status === 201, 'a conversation exists to mute', opened.status);
+  const conversationId = (opened.body as unknown as { conversation: { id: string } }).conversation.id;
+
+  // Accepted first: a pending request refuses further messages, which would mask the point below.
+  const acceptedRequest = await post(`/api/conversations/${conversationId}/accept`, other.token);
+  check(acceptedRequest.status === 204, 'the recipient accepts the request', acceptedRequest.status);
+
+  const beforeMute = await get(`/api/mutes/conversations/${conversationId}`, gc.token);
+  check(beforeMute.status === 200, 'the conversation mute is readable', beforeMute.status);
+  check(
+    (beforeMute.body as unknown as { mute: { muted: boolean } }).mute.muted === false,
+    'and starts unmuted',
+  );
+
+  const muteOn = await request(baseUrl, 'PUT', `/api/mutes/conversations/${conversationId}`, {
+    token: gc.token,
+    json: { muted: true },
+  });
+  check(muteOn.status === 200, 'it can be muted', muteOn.status);
+  check(
+    (await MuteModel.findOne({ user: gc.userId, scope: 'conversation' }).lean().exec()) !== null,
+    'on the canonical mute model, under the conversation scope',
+  );
+
+  const stillReadable = await get(`/api/conversations/${conversationId}/messages`, gc.token);
+  check(stillReadable.status === 200, 'muting changes NO access — the thread still reads', stillReadable.status);
+  const stillSendable = await post(`/api/conversations/${conversationId}/messages`, other.token, {
+    body: 'עדיין מגיע',
+  });
+  check(stillSendable.status === 201, 'and messages still arrive: mute is delivery, not domain state');
+  check(
+    (await MessageModel.countDocuments({ conversation: new Types.ObjectId(conversationId) }).exec()) === 2,
+    'the message was written despite the mute',
+  );
+
+  const stranger = await createAccount(baseUrl, MARKER, 91);
+  const foreignMute = await request(baseUrl, 'PUT', `/api/mutes/conversations/${conversationId}`, {
+    token: stranger.token,
+    json: { muted: true },
+  });
+  check(foreignMute.status === 404, 'somebody outside the conversation cannot mute it', foreignMute.status);
+
+  const muteOff = await request(baseUrl, 'PUT', `/api/mutes/conversations/${conversationId}`, {
+    token: gc.token,
+    json: { muted: false },
+  });
+  check(muteOff.status === 200, 'and it can be unmuted', muteOff.status);
+  check(
+    (await MuteModel.findOne({ user: gc.userId, scope: 'conversation' }).lean().exec()) === null,
+    'which removes the row rather than flagging it',
+  );
+
+  section('Contractor mute — a preference, and never a block');
+  const contractorBefore = await get(`/api/mutes/contractors/${other.userId.toString()}`, gc.token);
+  check(contractorBefore.status === 200, 'the contractor mute is readable', contractorBefore.status);
+
+  const contractorOn = await request(baseUrl, 'PUT', `/api/mutes/contractors/${other.userId.toString()}`, {
+    token: gc.token,
+    json: { muted: true },
+  });
+  check(contractorOn.status === 200, 'a contractor can be muted', contractorOn.status);
+  check(
+    (await MuteModel.findOne({ user: gc.userId, scope: 'contractor' }).lean().exec()) !== null,
+    'under the contractor scope on the same canonical model',
+  );
+
+  const profileStillVisible = await get(
+    `/api/browse/contractors/${other.userId.toString()}`,
+    gc.token,
+  );
+  check(profileStillVisible.status === 200, 'muting is not blocking — the profile still resolves', profileStillVisible.status);
+  const theirs = await get(`/api/mutes/contractors/${gc.userId.toString()}`, other.token);
+  check(
+    (theirs.body as unknown as { mute: { muted: boolean } }).mute.muted === false,
+    'and it is one-sided: the muted person has muted nobody',
+  );
+
+  await request(baseUrl, 'PUT', `/api/mutes/contractors/${other.userId.toString()}`, {
+    token: gc.token,
+    json: { muted: false },
+  });
+
+  await ConversationModel.deleteMany({}).exec();
+  await MessageModel.deleteMany({}).exec();
   await MuteModel.deleteMany({}).exec();
   await TaskModel.deleteMany({ project }).exec();
   await ProjectStageModel.deleteMany({ project }).exec();

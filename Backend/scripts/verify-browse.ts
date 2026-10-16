@@ -49,6 +49,7 @@ const makeAccount = async (
   const email = `${MARKER}-${first}-${last}@example.com`.toLowerCase();
   const registered = await send('POST', '/auth/register', {
     firstName: first, lastName: last, standing: 'owner', companyName: company,
+    contractorCategory: 'subcontractor',
     email, password: PASSWORD, confirmPassword: PASSWORD,
     registrationCategory: 'contractor', specialty: 'electrical', city: 'חיפה', region: 'haifa',
     availability: 'open', acceptedTerms: true, operationalEmail: true, ...extra,

@@ -1,6 +1,7 @@
 import { Types } from 'mongoose';
 
 import type { BlocksService } from '../blocks/blocks.service.js';
+import type { FlexibilityService } from '../flexibility/flexibility.service.js';
 import type { RelationshipService } from '../connections/relationship.service.js';
 import type { RatingRepository } from '../ratings/rating.repository.js';
 import type { RoutesAdapter } from '../location/routes.adapter.js';
@@ -39,6 +40,7 @@ export interface BrowseDependencies {
   readonly relationships: RelationshipService;
   readonly ratings: RatingRepository;
   readonly routes: RoutesAdapter;
+  readonly flexibility: FlexibilityService;
 }
 
 /** Fetched a little wider than the page, so a distance filter can drop rows and still fill it. */
@@ -53,6 +55,7 @@ export const createBrowseService = ({
   relationships,
   ratings,
   routes,
+  flexibility,
 }: BrowseDependencies): BrowseService => ({
   async search(viewerId, filters) {
     // One indexed read resolves every person hidden from this viewer, in either direction.
@@ -106,9 +109,15 @@ export const createBrowseService = ({
     const hasMore = !exhausted || eligible.length > filters.limit;
 
     const ids = page.map((candidate) => candidate._id);
-    const [relationshipStates, ratingSummaries] = await Promise.all([
+    const [relationshipStates, ratingSummaries, flexibilityViews] = await Promise.all([
       relationships.forCandidates(viewerId, ids),
       ratedSummaries ?? ratings.summaryForMany(ids),
+      Promise.all(
+        ids.map(async (candidateId) => {
+          const id = candidateId.toString();
+          return [id, await flexibility.forUser(id)] as const;
+        }),
+      ).then((pairs) => new Map(pairs)),
     ]);
 
     const contractors: ContractorSummaryDto[] = page.map((candidate) => {
@@ -129,7 +138,7 @@ export const createBrowseService = ({
         availability: candidate.availability,
         relationship: relationshipStates.get(id) ?? 'none',
         rating: summary ? { average: summary.average, count: summary.count } : null,
-        flexibility: null,
+        flexibility: flexibilityViews.get(id) ?? null,
         drivingDistanceMeters: distances.get(id) ?? null,
       };
     });

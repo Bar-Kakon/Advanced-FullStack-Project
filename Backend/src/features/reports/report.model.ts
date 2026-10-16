@@ -11,11 +11,11 @@ export type ReportReason = (typeof REPORT_REASONS)[number];
  * Leaf-only and polymorphic, the same pattern as `mutes`. Only `user` is filed today; a later
  * subject type is one enum member and one resolver, never a second collection.
  */
-export const REPORT_SUBJECT_TYPES = ['user'] as const;
+export const REPORT_SUBJECT_TYPES = ['user', 'message', 'conversation'] as const;
 export type ReportSubjectType = (typeof REPORT_SUBJECT_TYPES)[number];
 
 /** Where the reporter filed from. Context for moderation, never a permission. */
-export const REPORT_SOURCES = ['public_profile'] as const;
+export const REPORT_SOURCES = ['public_profile', 'conversation'] as const;
 export type ReportSource = (typeof REPORT_SOURCES)[number];
 
 export const REPORT_STATUSES = ['open', 'under_review', 'dismissed', 'actioned'] as const;

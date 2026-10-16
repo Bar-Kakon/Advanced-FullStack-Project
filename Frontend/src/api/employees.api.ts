@@ -2,18 +2,29 @@ import { isAxiosError } from 'axios';
 
 import { api } from './client';
 import type {
+  DepartureArrangements,
+  DepartureDefaultsPayload,
+  DepartureWork,
   ApiErrorBody,
   ApprovalResponse,
+  CompanyPermission,
   CreateInvitationPayload,
   CreateInvitationResponse,
   EmployeeListResponse,
-  EmployeeMembership,
 } from './types';
 
 /** Mirrored from `companies.module.ts`. Nothing here loops one endpoint to imitate another. */
-export const listEmployees = async (): Promise<readonly EmployeeMembership[]> => {
+export const listEmployees = async (): Promise<EmployeeListResponse> => {
   const { data } = await api.get<EmployeeListResponse>('/companies/employees');
-  return data.memberships;
+  return data;
+};
+
+/** The whole set in one write: whatever is sent is the employee's permissions afterwards. */
+export const setEmployeePermissions = async (
+  membershipId: string,
+  permissions: readonly CompanyPermission[],
+): Promise<void> => {
+  await api.patch(`/companies/employees/${membershipId}/permissions`, { permissions });
 };
 
 /** Opens a seat. The 201 names the row, and the caller re-reads the list rather than trusting it. */
@@ -87,4 +98,42 @@ export const classifyEmployeeError = (error: unknown): EmployeeFailure => {
     default:
       return 'UNKNOWN';
   }
+};
+
+export const fetchDepartureWork = async (memberUserId: string): Promise<DepartureWork> => {
+  const { data } = await api.get<DepartureWork>(`/companies/departures/${memberUserId}/work`);
+  return data;
+};
+
+/** All-or-nothing on the server: a refused item applies none of the batch. */
+export const applyDepartureArrangements = async (
+  memberUserId: string,
+  arrangements: DepartureArrangements,
+): Promise<void> => {
+  await api.post(`/companies/departures/${memberUserId}/arrangements`, arrangements);
+};
+
+export const offboardEmployee = async (
+  membershipId: string,
+  arrangements: DepartureArrangements | undefined,
+): Promise<void> => {
+  await api.post(
+    `/companies/employees/${membershipId}/offboard`,
+    arrangements === undefined ? {} : { arrangements },
+  );
+};
+
+export const leaveCompany = async (): Promise<void> => {
+  await api.post('/companies/employees/me/leave');
+};
+
+export const claimCompanySeat = async (payload: {
+  companyName: string;
+  companyPosition: string;
+}): Promise<void> => {
+  await api.post('/companies/employees/claim', payload);
+};
+
+export const saveDepartureDefaults = async (payload: DepartureDefaultsPayload): Promise<void> => {
+  await api.put('/companies/departure-defaults', payload);
 };

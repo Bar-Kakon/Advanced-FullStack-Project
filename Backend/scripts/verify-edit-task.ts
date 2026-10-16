@@ -119,7 +119,7 @@ const run = async (): Promise<void> => {
 
   section('6. Authority comes from a grant, never from being on the project');
   const bySub = await patch(`/api/tasks/${taskId}`, sub.token, { title: 'שינוי מהקבלן' });
-  check(bySub.status === 403, 'the responsible party holds no task.create here, so the edit is refused',
+  check(bySub.status === 403, 'the responsible party holds no task.edit here, so the edit is refused',
     bySub.status);
   const byOutsider = await patch(`/api/tasks/${taskId}`, outsider.token, { title: 'זר' });
   check(byOutsider.status === 404 || byOutsider.status === 403,
@@ -132,16 +132,16 @@ const run = async (): Promise<void> => {
 
   await ProjectMembershipModel.updateOne(
     { project, user: sub.userId },
-    { $set: { permissions: ['task.create'], fullAuthority: false } },
+    { $set: { permissions: ['task.edit'], fullAuthority: false } },
   ).exec();
   const subEdits = await patch(`/api/tasks/${taskId}`, sub.token, { title: 'עם ההרשאה' });
-  check(subEdits.status === 200, 'granting task.create is what opens the edit', subEdits.status);
+  check(subEdits.status === 200, 'granting task.edit is what opens the edit', subEdits.status);
 
   const subMovesStage = await patch(`/api/tasks/${taskId}`, sub.token, {
     stageId: stage._id.toString(),
   });
   check(subMovesStage.status === 403,
-    'but task.create is not sequencing authority, so the stage move is still refused',
+    'but task.edit is not sequencing authority, so the stage move is still refused',
     subMovesStage.status);
 
   section('8. Standalone work has no other professional, so its dates are its owner’s');

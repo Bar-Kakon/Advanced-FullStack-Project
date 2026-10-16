@@ -3,7 +3,7 @@ import type { Request, RequestHandler, Response } from 'express';
 import { getAuthenticatedUserId } from '../auth/requireAccessToken.middleware.js';
 import { getValidated } from '../../middleware/validateRequest.js';
 import type { EmployeeManagementService } from './employeeManagement.service.js';
-import type { CreateInvitationBody } from './employeeManagement.validation.js';
+import type { CreateInvitationBody, SetPermissionsBody } from './employeeManagement.validation.js';
 
 export interface EmployeeManagementController {
   readonly handleInvite: RequestHandler;
@@ -12,6 +12,7 @@ export interface EmployeeManagementController {
   readonly handleApproveAll: RequestHandler;
   readonly handleCancelInvitation: RequestHandler;
   readonly handleCompleteSetup: RequestHandler;
+  readonly handleSetPermissions: RequestHandler;
 }
 
 /** Reads who is calling, calls one use case, and places the result in a response. Nothing else. */
@@ -26,7 +27,7 @@ export const createEmployeeManagementController = (
   },
 
   handleList: async (req: Request, res: Response) => {
-    const memberships = await service.list(getAuthenticatedUserId(res));
+    const { memberships, canManagePermissions } = await service.list(getAuthenticatedUserId(res));
 
     res.json({
       memberships: memberships.map((membership) => ({
@@ -36,7 +37,9 @@ export const createEmployeeManagementController = (
         invitedFullName: membership.invitedFullName ?? null,
         companyPosition: membership.companyPosition ?? null,
         userId: membership.user?.toString() ?? null,
+        permissions: membership.permissions,
       })),
+      viewer: { canManagePermissions },
     });
   },
 
@@ -65,6 +68,18 @@ export const createEmployeeManagementController = (
     const approved = await service.approveAllPending(getAuthenticatedUserId(res));
 
     res.json({ approved });
+  },
+
+  handleSetPermissions: async (req: Request, res: Response) => {
+    const membershipId = req.params['membershipId'];
+    const { permissions } = getValidated<SetPermissionsBody>(res, 'body');
+    await service.setEmployeePermissions(
+      getAuthenticatedUserId(res),
+      typeof membershipId === 'string' ? membershipId : '',
+      permissions,
+    );
+
+    res.json({ permissions });
   },
 
   /** Idempotent, so a client that repeats it after a dropped response is not an error case. */

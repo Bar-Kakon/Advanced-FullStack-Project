@@ -34,6 +34,7 @@ const run = async (): Promise<never> => {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       firstName: 'Logout', lastName: 'Tester', standing: 'owner', companyName,
+      contractorCategory: 'subcontractor',
       email, password: PASSWORD, confirmPassword: PASSWORD,
       registrationCategory: 'contractor', specialty: 'electrical', city: 'חיפה', region: 'haifa',
       availability: 'open', acceptedTerms: true, operationalEmail: true,

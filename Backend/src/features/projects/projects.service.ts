@@ -6,6 +6,7 @@ import { configOrDefault } from '../calendar/companyCalendar.repository.js';
 import { resolveEffectiveCalendar, type WorkingCalendarConfig } from '../calendar/workingCalendar.types.js';
 import type { ProjectAccessRepository } from '../projectaccess/projectAccess.repository.js';
 import type { ProjectGrantRepository } from '../projectaccess/projectGrant.repository.js';
+import type { ProjectCancellationService } from './projectCancellation.service.js';
 import {
   mayManage,
   requireActiveCompany,
@@ -63,6 +64,7 @@ export interface ProjectsDependencies {
   readonly grants: ProjectGrantRepository;
   readonly pendingActions: PendingActionsPort;
   readonly planCapacity: PlanCapacityPort;
+  readonly cancellation: Pick<ProjectCancellationService, 'complete'>;
 }
 
 const encodeCursor = ({ createdAt, id }: ProjectCursor): string =>
@@ -90,6 +92,7 @@ export const createProjectsService = ({
   grants,
   pendingActions,
   planCapacity,
+  cancellation,
 }: ProjectsDependencies): ProjectsService => {
   /** The caller's company is read from their session, never from the request body. */
   const contextFor = async (userId: string) => {
@@ -319,19 +322,35 @@ export const createProjectsService = ({
       return projects.countOnOutdatedCalendar(company, current._id);
     },
 
+    /**
+     * PRJ-07. Before work begins only («אחרי תחילת עבודה לא»), and then the project disappears
+     * («נעלם כאילו לא היה»): its row, memberships, invitations, grants, planned tasks, proposals,
+     * exceptions and notification rows go together in one transaction. What is NOT deleted is the
+     * preserved-but-inaccessible layer — the room's messages, attachments and every audit entry —
+     * which no one can reach once the memberships are gone, and which the moderation, reported-
+     * content and audit decisions require to survive.
+     *
+     * The race with a first task starting closes in two steps: the `cancellingAt` stamp refuses
+     * every later task start, and the re-check behind the stamp catches every earlier one.
+     */
     async cancel(userId, projectId) {
       const { project, resolved } = await load(userId, projectId);
       requireProjectPermission(resolved, 'project.cancel');
 
-      // Pre-start only (D24), against the same closed rule the status derives from.
       if (!isCancellable(project, await execution.hasFirstTaskStarted(projectId))) {
+        if (project.cancellingAt === undefined) throw projectAlreadyStarted();
+      }
+
+      if (!(await projects.markCancelling(projectId, project.company, new Types.ObjectId(userId)))) {
+        throw projectNotFound();
+      }
+
+      if (await execution.hasFirstTaskStarted(projectId)) {
+        await projects.clearCancelling(projectId);
         throw projectAlreadyStarted();
       }
 
-      const removed = await projects.deleteOwnedById(projectId, project.company);
-      if (!removed) throw projectNotFound();
-
-      await grants.deleteByProject(project._id);
+      await cancellation.complete({ ...project, cancellingBy: new Types.ObjectId(userId) });
     },
   };
 };

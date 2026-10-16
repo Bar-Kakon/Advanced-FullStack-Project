@@ -6,9 +6,11 @@
  * that will feed it is still unbuilt.
  */
 
-/** גמישות בזמנים and גמישות בסדר גודל של העבודה. They are scored separately, never merged. */
-export const FLEXIBILITY_DIMENSIONS = ['schedule', 'scope'] as const;
-export type FlexibilityDimension = (typeof FLEXIBILITY_DIMENSIONS)[number];
+/**
+ * The score measures flexibility in WORK SCHEDULING alone (owner decision 2026-10-13, superseding
+ * the two-dimension reading): accepting, declining, referring or delegating ADDITIONAL work never
+ * moves it, so no scope dimension exists here at all.
+ */
 
 /**
  * How one coordination event actually ended. Only resolved outcomes exist here — a proposal still
@@ -48,13 +50,44 @@ export const isScoreRelevant = (outcome: CoordinationOutcome): boolean =>
   outcome !== 'declined_justified';
 
 export interface CoordinationEvent {
-  readonly dimension: FlexibilityDimension;
   readonly outcome: CoordinationOutcome;
+  /** When the outcome became final — the authoritative timestamp the history window is measured on. */
+  readonly resolvedAt: Date;
   /** Context only. It never changes the arithmetic. */
   readonly requestedByCounterparty: boolean;
   /** Days of warning before the affected date. `null` when the source cannot say. Context only. */
   readonly noticeDays: number | null;
 }
+
+export const HISTORY_WINDOW_YEARS = 5;
+
+/** Calendar-aware: five years back from the day the score is read, so leap years cannot drift it. */
+const windowStart = (asOf: Date): Date => {
+  const start = new Date(asOf);
+  start.setFullYear(start.getFullYear() - HISTORY_WINDOW_YEARS);
+  return start;
+};
+
+/**
+ * The owner's final historical rule (2026-10-13). Events inside the rolling five-year window always
+ * count, an event exactly five years old included. Older events count only while at least one
+ * substantiated negative outcome sits inside the window — and then ALL of them return, positive and
+ * negative alike, so history can never be mined for its negatives alone. A justified refusal is not
+ * negative evidence and establishes nothing.
+ */
+export const eligibleEvents = (
+  events: readonly CoordinationEvent[],
+  asOf: Date,
+): { readonly events: readonly CoordinationEvent[]; readonly includesOlderHistory: boolean } => {
+  const start = windowStart(asOf).getTime();
+  const recent = events.filter((event) => event.resolvedAt.getTime() >= start);
+  const continuity = recent.some((event) => event.outcome === 'unresolved_replaced');
+
+  if (!continuity || recent.length === events.length) {
+    return { events: recent, includesOlderHistory: false };
+  }
+  return { events, includesOlderHistory: true };
+};
 
 /**
  * Counts, and nothing else. Every field is an integer describing this contractor's own aggregate
@@ -76,14 +109,22 @@ export interface FlexibilityContextCounts {
 export interface FlexibilityDimensionScore {
   readonly score: number;
   readonly context: FlexibilityContextCounts;
+  /** True when continued negative conduct pulled pre-window history back into the calculation. */
+  readonly includesOlderHistory: boolean;
 }
 
 export interface FlexibilityScore {
   /** `null` when no resolved score-relevant event exists. Never zero, which would be a claim. */
   readonly schedule: FlexibilityDimensionScore | null;
-  /** `null` while no scope-change evidence exists in the model at all. */
-  readonly scope: FlexibilityDimensionScore | null;
 }
+
+/** The three approved verbal categories, inclusive ranges fixed by the owner: 75–100, 40–74, 0–39. */
+export const FLEXIBILITY_CATEGORIES = ['high', 'medium', 'low'] as const;
+export type FlexibilityCategory = (typeof FLEXIBILITY_CATEGORIES)[number];
+
+/** Classifies the FINAL rounded integer score, never an intermediate value. */
+export const classifyFlexibility = (score: number): FlexibilityCategory =>
+  score >= 75 ? 'high' : score >= 40 ? 'medium' : 'low';
 
 const SCORE_SCALE = 100;
 
@@ -114,17 +155,24 @@ const countsFor = (events: readonly CoordinationEvent[]): FlexibilityContextCoun
  * or rolling window: the number moves when new resolved behaviour is recorded, never because time
  * passed.
  */
-const scoreFor = (events: readonly CoordinationEvent[]): FlexibilityDimensionScore | null => {
+const scoreFor = (
+  events: readonly CoordinationEvent[],
+  includesOlderHistory: boolean,
+): FlexibilityDimensionScore | null => {
   const context = countsFor(events);
   if (context.events === 0) return null;
 
   return {
     score: Math.round((SCORE_SCALE * context.workableResolutions) / context.events),
     context,
+    includesOlderHistory,
   };
 };
 
-export const computeFlexibility = (events: readonly CoordinationEvent[]): FlexibilityScore => ({
-  schedule: scoreFor(events.filter((event) => event.dimension === 'schedule')),
-  scope: scoreFor(events.filter((event) => event.dimension === 'scope')),
-});
+export const computeFlexibility = (
+  events: readonly CoordinationEvent[],
+  asOf: Date = new Date(),
+): FlexibilityScore => {
+  const eligible = eligibleEvents(events, asOf);
+  return { schedule: scoreFor(eligible.events, eligible.includesOlderHistory) };
+};

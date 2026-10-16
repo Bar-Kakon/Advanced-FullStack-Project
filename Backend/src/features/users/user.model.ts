@@ -5,6 +5,9 @@ import { PLAN_CODES, type PlanCode } from '../billing/plan.model.js';
 export type UserStatus = 'active' | 'restricted' | 'deactivated' | 'banned' | 'deleted';
 export type UserLanguage = 'he' | 'en';
 
+/** D8: how long a deleted account may be restored, measured from its `deletedAt`. */
+export const RECOVERY_WINDOW_DAYS = 60;
+
 export const REGISTRATION_CATEGORIES = ['contractor', 'architectural', 'supplier'] as const;
 export type RegistrationCategory = (typeof REGISTRATION_CATEGORIES)[number];
 
@@ -163,17 +166,30 @@ export interface NotificationPreferences {
  * decide. It never widens the automatic cases, and it never reaches a personal phone, which this
  * model does not store at all.
  */
+/**
+ * The tri-state choice D15 needs: `default` lets the approved relationship cases decide, `always`
+ * publishes to every profile view, and `hidden` withholds the number even from an authorized
+ * project role or a recognized Work Commitment. The explicit choice always wins over a default.
+ */
+export const CONTACT_VISIBILITY_CHOICES = ['default', 'always', 'hidden'] as const;
+export type ContactVisibilityChoice = (typeof CONTACT_VISIBILITY_CHOICES)[number];
+
 export interface ContactVisibility {
   readonly email: boolean;
-  readonly businessPhone: boolean;
-  readonly officePhone: boolean;
+  /** Documents written before 2026-10-12 hold booleans; `normalizeVisibilityChoice` reads both. */
+  readonly businessPhone: ContactVisibilityChoice | boolean;
+  readonly officePhone: ContactVisibilityChoice | boolean;
 }
 
-/** A profile shows the email; the two business numbers start withheld, which is the safe way. */
+/** The stored legacy booleans map onto the tri-state without a migration: true was "publish". */
+export const normalizeVisibilityChoice = (value: unknown): ContactVisibilityChoice =>
+  value === true || value === 'always' ? 'always' : value === 'hidden' ? 'hidden' : 'default';
+
+/** A profile shows the email; the two business numbers start on the relationship defaults. */
 export const DEFAULT_CONTACT_VISIBILITY: ContactVisibility = {
   email: true,
-  businessPhone: false,
-  officePhone: false,
+  businessPhone: 'default',
+  officePhone: 'default',
 };
 
 /**
@@ -235,7 +251,7 @@ export const AUTH_PROVIDERS = ['google'] as const;
 export type AuthProvider = (typeof AUTH_PROVIDERS)[number];
 
 /**
- * One link between a FieldSync account and an external provider. `subject` is the provider's own
+ * One link between a Blokta account and an external provider. `subject` is the provider's own
  * stable identifier for the person, never their email — an email can be reassigned, a subject
  * cannot.
  */
@@ -249,6 +265,10 @@ export interface UserRecord {
   readonly _id: Types.ObjectId;
   readonly email: string;
   readonly status: UserStatus;
+  /** When the deletion request was made. The 60-day recovery window is measured from it. */
+  readonly deletedAt?: Date;
+  /** Set exactly once, by the anonymization sweep. Its presence is what refuses restoration. */
+  readonly anonymizedAt?: Date;
   readonly isAdmin: boolean;
   readonly firstName: string;
   readonly lastName: string;
@@ -357,6 +377,8 @@ const userSchema = new Schema(
     // account starts, and it is a product state rather than the absence of one.
     planCode: { type: String, enum: PLAN_CODES, default: 'free', required: true, index: true },
     status: { type: String, enum: USER_STATUSES, default: 'active', required: true, index: true },
+    deletedAt: { type: Date },
+    anonymizedAt: { type: Date },
 
     // The only global role in the system. It gates platform moderation and nothing else — no
     // project role, no company position and no granted project authority can stand in for it.
@@ -410,8 +432,10 @@ const userSchema = new Schema(
     // field on this document, by design.
     contactVisibility: {
       email: { type: Boolean, default: true },
-      businessPhone: { type: Boolean, default: false },
-      officePhone: { type: Boolean, default: false },
+      // Mixed, because documents written before the tri-state hold booleans and both shapes must
+      // read without casting. The settings route validates every write against the choice enum.
+      businessPhone: { type: Schema.Types.Mixed, default: 'default' },
+      officePhone: { type: Schema.Types.Mixed, default: 'default' },
     },
 
     // The individual's own business number. Never a fallback for the company office number, which

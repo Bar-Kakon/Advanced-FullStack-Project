@@ -39,6 +39,7 @@ const body: RegisterBody = {
   firstName: 'Txn',
   lastName: 'Verify',
   standing: 'owner',
+  contractorCategory: 'subcontractor',
   companyName: COMPANY,
   email: EMAIL,
   password: 'CorrectHorse42!',

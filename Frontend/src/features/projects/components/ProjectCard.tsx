@@ -1,17 +1,9 @@
 import { Link } from 'react-router-dom';
 
 import { useLanguage } from '../../../i18n/useLanguage';
+import { formatCalendarDate } from '../../../i18n/dateFormat';
 import type { Project } from '../../../api/projects.types';
 
-const displayDate = (iso: string, lang: 'he' | 'en'): string => {
-  const [year, month, day] = iso.split('-').map(Number);
-  if (!year || !month || !day) return iso;
-  // Built from the parts rather than parsed, so no timezone can shift the day.
-  return new Date(Date.UTC(year, month - 1, day)).toLocaleDateString(
-    lang === 'he' ? 'he-IL' : 'en-GB',
-    { year: 'numeric', month: 'short', day: 'numeric', timeZone: 'UTC' },
-  );
-};
 
 export const ProjectCard = ({ project }: { project: Project }) => {
   const { t, lang } = useLanguage();
@@ -50,15 +42,15 @@ export const ProjectCard = ({ project }: { project: Project }) => {
         <span dir="auto">{project.size}</span>
         <span>
           {t.projects.card.dates
-            .replace('{start}', displayDate(dates.startDate, lang))
-            .replace('{target}', displayDate(dates.targetEndDate, lang))}
+            .replace('{start}', formatCalendarDate(dates.startDate, lang))
+            .replace('{target}', formatCalendarDate(dates.targetEndDate, lang))}
         </span>
       </p>
 
       {/* The original promise is shown only once the target has actually moved away from it. */}
       {moved ? (
         <p className="project-card__overrun">
-          <span>{t.projects.card.originalTarget.replace('{date}', displayDate(dates.originalTargetEndDate, lang))}</span>
+          <span>{t.projects.card.originalTarget.replace('{date}', formatCalendarDate(dates.originalTargetEndDate, lang))}</span>
           <span>{t.projects.card.overrun.replace('{days}', String(dates.overrunDaysFromOriginal))}</span>
         </p>
       ) : null}

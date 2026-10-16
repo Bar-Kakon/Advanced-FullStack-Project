@@ -24,10 +24,19 @@ export interface RatingEligibilityPort {
   hasAnyWorkEvidence(raterId: string, rateeId: string): Promise<boolean>;
   /** Whether a completed Task already represents work between the pair inside one project. */
   hasCompletedTaskWorkIn(raterId: string, rateeId: string, projectId: string): Promise<boolean>;
+  /** Every completed piece of work between the pair that could carry a rating — the form's list. */
+  listWorkEvidence(
+    raterId: string,
+    rateeId: string,
+  ): Promise<readonly { id: string; title: string; completedAt: Date }[]>;
 }
 
 export interface RatingsService {
   rate(actorId: string, input: CreateRatingBody): Promise<void>;
+  eligibleWorks(
+    actorId: string,
+    rateeUserId: string,
+  ): Promise<readonly { id: string; title: string; completedAt: string }[]>;
 }
 
 export interface RatingsDependencies {
@@ -41,6 +50,16 @@ export const createRatingsService = ({
   users,
   eligibility,
 }: RatingsDependencies): RatingsService => ({
+  async eligibleWorks(actorId, rateeUserId) {
+    if (actorId === rateeUserId) return [];
+    const works = await eligibility.listWorkEvidence(actorId, rateeUserId);
+    return works.map((work) => ({
+      id: work.id,
+      title: work.title,
+      completedAt: work.completedAt.toISOString(),
+    }));
+  },
+
   async rate(actorId, { rateeUserId, workId, score, comment }) {
     // First, and before anything that could be satisfied another way.
     if (actorId === rateeUserId) throw cannotRateSelf();

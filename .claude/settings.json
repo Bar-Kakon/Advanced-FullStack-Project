@@ -1,0 +1,38 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git grep *)",
+      "Bash(npx vite *)",
+      "Bash(grep -n '^\\\\- `\\\\[20' PROJECT_DECISIONS.md)",
+      "Bash(grep -oE '^[0-9]+:- `\\\\[[0-9-]+\\\\]` \\\\*\\\\*[^.*]{0,120}')",
+      "Bash(grep -oE '^[0-9]+:- `\\\\[[0-9-]+\\\\]` \\\\*\\\\*[^.*]{0,100}' \"/Users/barrebeccakakon/.claude/projects/-Users-barrebeccakakon-Desktop-Advanced-FullStack-Project/5b0e6654-4b65-48f7-bea2-a4a2368ccd3e/tool-results/bykp70t5m.txt\")",
+      "Bash(curl -sS -m 60 -i \"https://blokta.onrender.com/api/health\")",
+      "Bash(curl -sS -m 30 -o /dev/null -D - -X OPTIONS \"https://blokta.onrender.com/api/auth/login\" -H \"Origin: https://blokta.vercel.app\" -H \"Access-Control-Request-Method: POST\")",
+      "Bash(curl -sS -m 30 \"https://blokta.onrender.com/api/health\")",
+      "Bash(curl -sS -m 30 -o /dev/null -w \"%{http_code}\\\\n\" \"https://blokta.onrender.com/api/billing/plans\")",
+      "Bash(curl -sS -m 30 \"https://blokta.onrender.com/api/users/me\" -w \"\\\\n%{http_code}\\\\n\")",
+      "Bash(curl -sS -m 30 -o /dev/null -w \"%{http_code} \" \"https://blokta.vercel.app/\")",
+      "Bash(curl -sS -m 30 -o /dev/null -w \"%{http_code}\\\\n\" \"https://blokta.vercel.app/login\")",
+      "Bash(curl -sS -m 30 \"https://blokta.vercel.app/assets/index-Bejp5ZuI.js\")",
+      "Bash(grep -oE 'baseURL[:=][^,]{0,60}|https?://[a-z0-9.-]*\\(onrender|localhost\\)[^\"`]{0,20}' Frontend/dist/assets/utils-DWSvkMBc.js)",
+      "Bash(curl -sS -m 30 \"https://blokta.vercel.app/assets/utils-DWSvkMBc.js\")",
+      "Bash(grep -oE 'baseURL[:=][^,]{0,60}|https?://[a-z0-9.-]*\\(onrender|localhost\\)[^\"`]{0,20}')",
+      "Bash(grep -oE 'accounts[^\"`]{0,30}' Frontend/dist/assets/index-DBVE2LYo.js)",
+      "Bash(node -e \"const fs=require\\('fs'\\);const s=fs.readFileSync\\('Frontend/dist/assets/index-DBVE2LYo.js','utf8'\\);const i=s.indexOf\\('gsi'\\);console.log\\('gsi idx:',i\\); const j=s.indexOf\\('google'\\);console.log\\('google idx:',j, j>=0?s.slice\\(j-60,j+60\\):''\\)\")",
+      "Bash(node -e ' *)",
+      "Bash(curl -sS -m 30 -X POST \"https://blokta.onrender.com/api/auth/google\" -H \"Content-Type: application/json\" -d '{}' -w \"\\\\n%{http_code}\\\\n\")",
+      "Bash(curl -sS -m 30 -X POST \"https://blokta.onrender.com/api/auth/google\" -H \"Content-Type: application/json\" -d '{\"idToken\":\"x\"}' -w \"\\\\n%{http_code}\\\\n\")",
+      "Bash(curl -sS -m 30 \"https://blokta.onrender.com/api/billing/plans\")",
+      "Bash(curl -sS -m 30 \"https://blokta.onrender.com/api/nonexistent\" -w \"\\\\n%{http_code}\\\\n\")",
+      "Bash(curl -sS -m 30 -D - -X POST \"https://blokta.onrender.com/api/auth/login\" -H \"Content-Type: application/json\" -H \"Origin: https://blokta.vercel.app\" -d '{\"email\":\"audit-nonexistent@example.com\",\"password\":\"wrongpass1\"}')",
+      "Bash(awk '$1==\"A\"{print $2}')",
+      "Bash(grep -rn \"blockUser\\\\|put\\(\\\\`/blocks\" Frontend/src --include=\"*.ts*\")",
+      "Bash(echo \"exit: $?\")",
+      "Bash(curl -s -o /dev/null http://localhost:3000/api/health)",
+      "Bash(curl -s http://localhost:3000/api/health)",
+      "Bash(curl -s -o /dev/null -w \"frontend: %{http_code}\\\\n\" http://localhost:5173/)",
+      "Bash(curl -s -X POST http://localhost:3000/api/auth/register -H 'Content-Type: application/json' -d '{\"firstName\":\"גיל\",\"lastName\":\"זר\",\"standing\":\"owner\",\"companyName\":\"גיל גבס בעמ\",\"registrationCategory\":\"contractor\",\"contractorCategory\":\"subcontractor\",\"email\":\"closure.c@example.com\",\"operationalEmail\":true,\"password\":\"CorrectHorse42!\",\"confirmPassword\":\"CorrectHorse42!\",\"specialty\":\"drywall\",\"city\":\"חיפה\",\"region\":\"haifa\",\"availability\":\"open\",\"acceptedTerms\":true}')",
+      "Bash(grep -E '\"level\":\"\\(warn|error\\)\"' __TRACKED_VAR__/backend2.log)"
+    ]
+  }
+}

@@ -28,7 +28,7 @@ export const WaitingForApprovalPage = () => {
     { id: 'profile.css', css: profileCss },
     { id: 'employees.css', css: employeesCss },
   );
-  useDocumentTitle('ההרשמה הושלמה / Registration complete — FieldSync');
+  useDocumentTitle('ההרשמה הושלמה / Registration complete — Blokta');
 
   const check = useCallback(async (): Promise<void> => {
     if (checking) return;
@@ -59,7 +59,7 @@ export const WaitingForApprovalPage = () => {
     <div className="app">
       <header className="app-nav">
         <div className="app-nav__inner">
-          <span className="app-nav__name">FieldSync</span>
+          <span className="app-nav__name">Blokta</span>
           <LanguageSwitch />
         </div>
       </header>

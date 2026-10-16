@@ -2,17 +2,9 @@ import { Link } from 'react-router-dom';
 
 import { ButtonSpinner } from '../../../components/ButtonSpinner';
 import { useLanguage } from '../../../i18n/useLanguage';
+import { formatCalendarDate } from '../../../i18n/dateFormat';
 import type { MyTask } from '../../../api/tasks.types';
 
-const displayDate = (iso: string, lang: 'he' | 'en'): string => {
-  const [year, month, day] = iso.split('-').map(Number);
-  if (!year || !month || !day) return iso;
-  // Built from the parts rather than parsed, so no timezone can shift the day.
-  return new Date(Date.UTC(year, month - 1, day)).toLocaleDateString(
-    lang === 'he' ? 'he-IL' : 'en-GB',
-    { year: 'numeric', month: 'short', day: 'numeric', timeZone: 'UTC' },
-  );
-};
 
 export interface TaskRowProps {
   readonly task: MyTask;
@@ -37,7 +29,9 @@ export const TaskRow = ({ task, busy, busyId, onStart, onComplete }: TaskRowProp
       <div className="task-row__head">
         <h3 className="task-row__title" dir="auto">{task.title}</h3>
         <span className="task-row__badges">
-          <span className={`task-chip task-chip--${task.kind}`}>{t.tasks.kind[task.kind]}</span>
+          <span className={`task-chip task-chip--${task.kind}`}>
+            {task.fromAgreement ? t.tasks.kind.agreement : t.tasks.kind[task.kind]}
+          </span>
           <span className={`task-chip task-chip--${task.state}`}>{t.tasks.state[task.state]}</span>
           {task.overdue ? <span className="task-chip task-chip--overdue">{t.tasks.overdue}</span> : null}
           {task.pendingProposal === true ? (
@@ -55,19 +49,26 @@ export const TaskRow = ({ task, busy, busyId, onStart, onComplete }: TaskRowProp
         <span dir="auto">{task.project ? task.project.name : t.tasks.row.noProject}</span>
         <span>
           {task.completedAt !== null
-            ? t.tasks.row.completedOn.replace('{date}', displayDate(task.completedAt.slice(0, 10), lang))
-            : t.tasks.row.due.replace('{date}', displayDate(task.dueDate, lang))}
+            ? t.tasks.row.completedOn.replace('{date}', formatCalendarDate(task.completedAt.slice(0, 10), lang))
+            : t.tasks.row.due.replace('{date}', formatCalendarDate(task.dueDate, lang))}
         </span>
         {task.overdue ? <span className="task-row__late">{lateness}</span> : null}
       </p>
 
       {/* The counterparty is resolved per viewer. `null` means nobody, and the row says so. */}
       <p className="task-row__meta">
-        <span dir="auto">
-          {task.counterparty === null
-            ? t.tasks.row.selfOpened
-            : t.tasks.row.from.replace('{name}', task.counterparty.name)}
-        </span>
+        {task.fromAgreement && task.counterparty !== null ? (
+          <>
+            <span dir="auto">{t.tasks.row.workOwner.replace('{name}', task.counterparty.name)}</span>
+            <span>{t.tasks.row.performerSelf}</span>
+          </>
+        ) : (
+          <span dir="auto">
+            {task.counterparty === null
+              ? t.tasks.row.selfOpened
+              : t.tasks.row.from.replace('{name}', task.counterparty.name)}
+          </span>
+        )}
         {task.viewerIsDelegate ? (
           <span className="task-row__note">{t.tasks.row.performing}</span>
         ) : task.delegated ? (

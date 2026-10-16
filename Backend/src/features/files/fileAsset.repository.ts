@@ -16,7 +16,12 @@ export interface FileAssetRepository {
   /** Scoped by owner in the query itself, so a wrong id and a wrong owner fail the same way. */
   findOwnedById(id: string, owner: Types.ObjectId): Promise<FileAssetRecord | null>;
   deleteById(id: Types.ObjectId): Promise<void>;
+  /** Every current asset this owner holds under one scope type — the avatar cleanup's question. */
+  listByOwnerAndScopeType(owner: Types.ObjectId, scopeType: FileScope): Promise<FileAssetRecord[]>;
   attachToScopeId(id: Types.ObjectId, scopeId: Types.ObjectId): Promise<void>;
+  /** A message attachment, found only inside the conversation it was uploaded for. */
+  findMessageScoped(id: string, conversation: Types.ObjectId): Promise<FileAssetRecord | null>;
+  listByIds(ids: readonly Types.ObjectId[]): Promise<FileAssetRecord[]>;
 }
 
 /** Everything except a work plan, whose history is append-only and whose reads have their own rules. */
@@ -40,7 +45,30 @@ export const fileAssetRepository: FileAssetRepository = {
     await FileAssetModel.deleteOne({ _id: id, ...UNVERSIONED }).exec();
   },
 
+  async listByOwnerAndScopeType(owner, scopeType) {
+    return FileAssetModel.find({ owner, 'scope.type': scopeType })
+      .lean<FileAssetRecord[]>()
+      .exec();
+  },
+
   async attachToScopeId(id, scopeId) {
     await FileAssetModel.updateOne({ _id: id }, { $set: { 'scope.id': scopeId } }).exec();
+  },
+
+  async findMessageScoped(id, conversation) {
+    if (!Types.ObjectId.isValid(id)) return null;
+
+    return FileAssetModel.findOne({
+      _id: new Types.ObjectId(id),
+      'scope.type': 'message',
+      'scope.id': conversation,
+    })
+      .lean<FileAssetRecord>()
+      .exec();
+  },
+
+  async listByIds(ids) {
+    if (ids.length === 0) return [];
+    return FileAssetModel.find({ _id: { $in: ids } }).lean<FileAssetRecord[]>().exec();
   },
 };

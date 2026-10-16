@@ -9,7 +9,7 @@ import type {
   CompanyMembershipRepository,
   NewCompanyMembership,
 } from '../companies/companyMembership.repository.js';
-import type { Availability } from '../companies/company.model.js';
+import type { Availability, ContractorCategory } from '../companies/company.model.js';
 import type { CompanyPosition } from '../companies/companyMembership.model.js';
 import type { CompanyRepository, NewCompany } from '../companies/company.repository.js';
 import type { ProviderIdentity, UserRecord } from '../users/user.model.js';
@@ -27,17 +27,29 @@ import {
 import type { GoogleIdentityService } from './googleIdentity.service.js';
 import type { RegisterBody } from './auth.validation.js';
 
-/** What the schema guarantees once `standing` is `owner`: the owner-only fields are present. */
-type OwnerRegisterBody = RegisterBody & { readonly availability: Availability };
+/**
+ * What the schema guarantees once `standing` is `owner`: the owner-only fields are present.
+ * `contractorCategory` stays optional, because only the contractor route carries one — a supplier
+ * and an architectural professional create an unclassified company, which every eligibility check
+ * already reads as not eligible.
+ */
+type OwnerRegisterBody = RegisterBody & {
+  readonly availability: Availability;
+  readonly contractorCategory?: ContractorCategory;
+};
 
 /** And once it is `employee`: the two values their invitation is matched on. */
 type EmployeeRegisterBody = RegisterBody & { readonly companyPosition: CompanyPosition };
 import { toAuthenticatedUser, type AuthenticatedUser } from './authenticatedUser.mapper.js';
 import type { PasswordService } from './password.service.js';
 
-/** No tokens. Register creates an account; Login is the only thing that opens a session. */
+/**
+ * No tokens here. Password registration stays unauthenticated (D30); the approved Google
+ * exception issues its session in `googleAuth.signUp`, over the `record` this result carries.
+ */
 export interface RegistrationResult {
   readonly user: AuthenticatedUser;
+  readonly record: UserRecord;
 }
 
 export interface RegistrationService {
@@ -97,6 +109,7 @@ const isDuplicateEmailError = (error: unknown): boolean => {
 const toNewCompany = (input: OwnerRegisterBody): NewCompany => ({
   name: input.companyName,
   availability: input.availability,
+  ...(input.contractorCategory === undefined ? {} : { contractorCategory: input.contractorCategory }),
   ...(input.officePhone === undefined ? {} : { officePhone: input.officePhone }),
 });
 
@@ -256,7 +269,7 @@ export const createRegistrationService = ({
         return created;
       });
 
-      return { user: toAuthenticatedUser(user) };
+      return { user: toAuthenticatedUser(user), record: user };
     } catch (error) {
       throw isDuplicateEmailError(error) ? emailAlreadyRegistered() : error;
     }

@@ -105,7 +105,7 @@ export const createStagesService = (): StagesService => ({
           ...(edit.order === undefined ? {} : { order: edit.order }),
         },
       },
-      { new: true },
+      { returnDocument: 'after' },
     )
       .lean<ProjectStageRecord>()
       .exec();
@@ -141,7 +141,7 @@ export const createStagesService = (): StagesService => ({
     const updated = await ProjectStageModel.findByIdAndUpdate(
       stage._id,
       { $set: { dependsOn: dependsOn.map((id) => new Types.ObjectId(id)) } },
-      { new: true },
+      { returnDocument: 'after' },
     )
       .lean<ProjectStageRecord>()
       .exec();

@@ -74,6 +74,7 @@ export const useProjectMembers = (projectId: string) => {
     invite: (payload: InvitePayload) => run('invite', () => inviteMember(projectId, payload)),
     changeRole: (membershipId: string, projectRole: ProjectRole) =>
       run(membershipId, () => setMemberRole(projectId, membershipId, projectRole)),
-    remove: (membershipId: string) => run(membershipId, () => removeMember(projectId, membershipId)),
+    remove: (membershipId: string, roomMessages?: 'keep' | 'delete') =>
+      run(membershipId, () => removeMember(projectId, membershipId, roomMessages)),
   };
 };

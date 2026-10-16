@@ -153,9 +153,10 @@ export const createTaskEditService = ({
   /**
    * What this viewer may edit.
    *
-   * On project work, the authority to define a piece of work is the same grant that opens one —
-   * `task.create` — plus Full Authority through the existing flag. Nothing branches on a project
-   * role or a company position, which are descriptive and never read.
+   * On project work the authority is `task.edit`, plus Full Authority through the existing flag.
+   * It is deliberately NOT `task.create`: opening new work and changing work that already exists
+   * are different capabilities, and one grant must not imply the other. Nothing branches on a
+   * project role or a company position, which are descriptive and never read.
    *
    * On standalone work there is no project and no grant to hold: it is the owner's own, and the
    * owner is the only person who may touch it.
@@ -178,7 +179,7 @@ export const createTaskEditService = ({
     const { resolved } = await reachProject(userId, task.project);
 
     return {
-      canEditDetails: hasProjectPermission(resolved, 'task.create'),
+      canEditDetails: hasProjectPermission(resolved, 'task.edit'),
       canMoveStage: hasProjectPermission(resolved, 'project.stage.manage'),
       canEditDatesDirectly: false,
       datesGoThroughProposal: true,
@@ -240,7 +241,7 @@ export const createTaskEditService = ({
           ...(Object.keys($set).length === 0 ? {} : { $set }),
           ...(Object.keys($unset).length === 0 ? {} : { $unset }),
         },
-        { new: true },
+        { returnDocument: 'after' },
       )
         .lean<TaskRecord>()
         .exec();

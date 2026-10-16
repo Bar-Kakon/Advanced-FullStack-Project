@@ -6,7 +6,7 @@ import { useLanguage } from '../i18n/useLanguage';
 /**
  * Google's own button, rendered by Google's script.
  *
- * It is not styled as a FieldSync control on purpose: Google's branding guidelines govern how a
+ * It is not styled as a Blokta control on purpose: Google's branding guidelines govern how a
  * "Sign in with Google" affordance may look, and a hand-drawn imitation would be both a guideline
  * breach and a control whose behaviour we would then have to reproduce. Everything around it — the
  * divider, the spacing, the error region — is the product's own design system.

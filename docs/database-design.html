@@ -359,8 +359,8 @@ footer.foot { margin-top: 56px; padding-top: 22px; border-top: 1px solid var(--p
       <span class="meta-chip">Database <b>MongoDB + Mongoose</b></span>
       <span class="meta-chip">Collections <b id="stat-collections">—</b></span>
       <span class="meta-chip">Relations <b id="stat-relations">—</b></span>
-      <span class="meta-chip">Source of truth <b>Contractor Coordination Platform — Pro.md</b></span>
-      <span class="meta-chip">Updated <b id="stat-updated">2026-08-31</b></span>
+      <span class="meta-chip">Source of truth <b>PROJECT_DECISIONS.md</b></span>
+      <span class="meta-chip">Updated <b id="stat-updated">2026-10-13</b></span>
     </div>
   </div>
 </header>
@@ -621,7 +621,7 @@ footer.foot { margin-top: 56px; padding-top: 22px; border-top: 1px solid var(--p
 
   <footer class="foot">
     Generated for the Advanced Full Stack final project. This file is the visual companion to
-    <b>Contractor Coordination Platform — Pro.md</b>; when the schema changes there, it changes here.
+    <b>PROJECT_DECISIONS.md</b>; when the schema changes there, it changes here.
   </footer>
 </main>
 
@@ -655,6 +655,8 @@ const COLLECTIONS = [
     { name: 'email', type: 'String', req: true, uniq: true, idx: true, note: 'Lowercased and trimmed before save. The unique index is what actually prevents duplicate accounts — an application-level check alone has a race condition between two concurrent signups.' },
     { name: 'passwordHash', type: 'String', req: true, select: true, note: 'bcrypt, cost 12. `select: false` means it is excluded from every query unless explicitly asked for, so an accidental `res.json(user)` cannot leak it.' },
     { name: 'status', type: "'active' | 'restricted' | 'deactivated' | 'banned' | 'deleted'", req: true, idx: true, note: '**`restricted` added 2026-08-31** — the ban sheet\'s approved *restricted-only* enforcement, in the same enum rather than a second status system. A restricted account **keeps its session, its dashboard and its committed work**: restriction removes discovery, new connections and new projects, and leaves existing commitments to run to completion, because the platform has no standing to void a commercial commitment. `PARTICIPATING_STATUSES = [active, restricted]` is the single predicate every session check reads. The terminal ban is deliberately not implemented — see D31.' },
+    { name: 'deletedAt', type: 'Date', note: '**Built 2026-10-13.** Stamped by the deletion request itself — one write moves the status and starts the clock. The D8 window is measured from it: restoration is refused once 60 days pass (`ACCOUNT_RESTORE_EXPIRED`), and the anonymization sweep selects on it. Unset again by a restoration inside the window.' },
+    { name: 'anonymizedAt', type: 'Date', note: '**Built 2026-10-13.** Written exactly once, by the hourly anonymization sweep, inside the same guarded update that removes the PII — tombstone email, password hash, provider identities, phones, bio, location, travel lists, scheduling preferences, avatar reference, notification preferences — and advances `security.tokenVersion`. **The name AND the profession stay** (`firstName`/`lastName`, `specialties`/`specialtyOther`), by explicit owner decision: historical business records keep identifying who performed the work and in which field, while the public profile answers 404 and nothing interactive survives. **The avatar\u2019s physical file is removed too** — the cleanup keys on the asset\u2019s own owner + scope, never the unset reference, so interrupted runs retry themselves. Its presence is what refuses restoration for ever, and what makes a second sweep a no-op.' },
     { name: 'isAdmin', type: 'Boolean', idx: false, note: '**Built 2026-08-31** (`feature/admin-moderation-reports`, not merged). The only global role in the system, and it now gates a real admin module. `default: false`, `required`. **It is never settable through a request body** — the write allowlists do not name it and `stripUnknown` removes it before any service sees it — so the only writer is a database script (`npm run admin:grant`). There is deliberately no endpoint that can grant it. It is read **from the account on every moderation request** rather than carried in the Access Token, so revoking it takes effect on the next call instead of when a token expires. Nothing derives it from a project grant, a company position or `projectRole`: platform authority and project authority are different questions.' },
     { name: 'profileComplete', type: 'Boolean', note: 'Set true when the 3-step onboarding wizard finishes. Drives the profile-incomplete nag.' },
     { name: 'security', type: '{ emailVerifiedAt, passwordChangedAt, tokenVersion }', select: true, note: 'Embedded 1:1. **Revised 2026-08-30:** `tokenVersion` is now the authoritative answer to *is this Access Token still valid*. It is an integer, default `0`, advanced by `$inc` inside the password-reset transaction; every Access Token carries the version it was minted at, and the auth middleware accepts a request only on **exact equality**. That replaces the old timestamp comparison, which asked whether `iat` predated `passwordChangedAt` and could not decide a tie — a token minted in the same whole second as a reset was not `<` it and survived, because JWT `iat` has no sub-second resolution. `passwordChangedAt` is **retained as security history and is no longer consulted for token validity**, so it is no longer truncated to a whole second. **Revised 2026-08-29:** `resetTokenHash` and `resetTokenExpiresAt` were **moved out** to the [[passwordresettokens]] collection, because a hash-plus-expiry pair cannot tell a spent link from an absent one or record that a newer request replaced an older one. `emailVerifiedAt` is designed and not built. The reset token is still stored **hashed**, with the raw value only ever in the email.' },
@@ -662,7 +664,7 @@ const COLLECTIONS = [
     { group: 'Identity & discovery', groupNote: 'the fields `browse contractors` searches and filters on' },
     { name: 'firstName', type: 'String', req: true, note: '' },
     { name: 'lastName', type: 'String', req: true, note: '' },
-    { name: 'phone', type: 'String — DESIGNED, NEVER BUILT', note: '**D15 closed as policy, and this field was never added (2026-08-31).** The first part of the closed policy is that the **personal phone is never displayed anywhere**, and the cleanest enforcement turned out to be that there is nothing to display: `users.phone` does not exist in the schema, in any projection, or in any DTO. `verify:phone-visibility` asserts its absence on the document and on the public payload rather than asserting that a filter removes it. The onboarding step that would have collected it does not. What a profile may publish is the **email plus `businessPhone` and/or `companies.officePhone`**, each governed by `contactVisibility` below. Reinstating a personal number would reopen D15 part (1), so this row stays as a record of the decision rather than as a plan.' },
+    { name: 'phone', type: 'String', note: 'Collected in onboarding step 3. **Whether the public profile shows it, or withholds it until a connection is accepted, is an open decision (D15, reopened 2026-08-20; renumbered from D13, which was already taken)** — briefly recorded as a rule and reopened by the owner before it was settled. The argument for gating: the [[connections]] gate exists so the platform does not become a sales-spam channel, and a number printed on every profile would make that gate decorative. The argument against: a phone number on a profile is how contractors actually reach each other on a site. **The serializer must not assume either** until D15 closes; the prototype currently shows the number as a placeholder.' },
     { name: 'bio', type: 'String', note: 'Max 600 characters.' },
     { name: 'avatar', type: '{ fileId: ObjectId }', ref: 'fileassets', note: 'Embedded 1:1 pointer, **and a pointer only. Built 2026-08-29, and the denormalised `url` this row used to carry was removed rather than implemented.** A stored URL is a second source of truth for the same file: it goes stale the moment the serving path changes, it has to be rewritten on every avatar replacement, and it leaks the storage layout to the client. The API instead derives the address at response time — `avatarUrl` on the profile payload is `/api/users/me/assets/<fileId>`, built from this id — so there is nothing to keep in step and the byte store stays private. The sub-object is kept rather than collapsed to a bare `fileId` so a later per-avatar attribute has somewhere to live.' },
     { name: 'registrationCategory', type: "String — 'contractor' | 'architectural' | 'supplier'", req: true, idx: true, note: '**Added 2026-08-30 with the Register rework, and stored explicitly rather than derived.** It records which of the three approved registration routes opened the account — `קבלנים / בעלי מקצוע מבצעים`, `קטגוריה אדריכלית / בעלי מקצוע`, `ספקים`. It could in principle be inferred from `specialties`, because the three lists do not overlap; it is stored anyway, on an explicit owner decision, so that Browse can filter on it, so route-specific behaviour has somewhere to hang, and so a specialty edit can never silently move an account between routes. **It decides which taxonomy the account may hold, for the life of the account:** registration accepts only that route\'s codes, and the profile service answers `SPECIALTY_OUTSIDE_CATEGORY` (422) to any patch that names a specialty from another one. **It is not a project role, not a company position, and it grants nothing** — no permission anywhere reads it.' },
@@ -673,8 +675,7 @@ const COLLECTIONS = [
     { name: 'approvedTravelLocations', type: '[{ placeId, displayName, latitude, longitude, city?, adminArea?, source, approvedAt, drivingDistanceMeters? }]', idx: true, note: '**Added 2026-08-29, and it settled the placement question this page had left open: it is a top-level array on the user, not nested inside `location`.** It is the authoritative list of places the contractor has explicitly said they will work in — a different question from how far they will drive. `source` is `suggested` or `manual`. **Nothing recomputes it on save**, which is what makes a removal stick and a manually added place outside the radius stay approved. A multikey index on `approvedTravelLocations.placeId` serves the explicit-place browse filter.' },
     { name: 'excludedTravelLocations', type: '[{ placeId, displayName, excludedAt }]', note: '**Added 2026-08-29.** A removal from the radius proposal is a **standing decision, not a dismissal**. The proposal reads this list and never suggests those places again at any radius; Google may rediscover one, and it is returned in a separate `previouslyRemoved` bucket so the proposal is not silently lossy. **Approving beats excluding** — naming a place in `approvedTravelLocations` clears its exclusion, which makes an explicit manual re-add the one way back. `displayName` is kept so the editor can show the decision back without another Google call. **Private to the person: it is in no public projection.** No index — it is only ever read for its own owner by `_id`.' },
     { name: 'drillingTypes', type: '[String] — enum of drilling subtypes', note: '**Added 2026-08-30.** It refines the `drilling` profession exactly the way `heavyEquipment` refines `heavy_equipment`: the father\'s taxonomy nests `קידוחי החדרה וצנרת PVC` (`injection_pvc`) *under* קבלן קידוחים rather than listing it as a profession of its own, and this is where that nesting lives. **One code today, and the array is the point** — a nested subtype list extends without a schema change. **It cannot outlive the profession that carries it:** the service clears it whenever the specialties a patch leaves behind do not include `drilling`. **Not indexed and not a Browse filter** — no filter on it has been approved.' },
-    { name: 'notificationPreferences', type: '{ operationalEmail, timing?: [{ notificationClass, quietFromMinute, quietToMinute }], digestHour? }', note: '**Added 2026-08-30 as Step 2 of Register; extended and made writable 2026-08-31 by the Settings screen.** `operationalEmail` is whether FieldSync may send operational messages by email. **Required with no default, and that is the whole design:** the person must actively choose, so neither answer may be assumed from silence. **Declining removes nothing** — it never blocks registration, never disables the platform, and never withholds an in-app notification; a blocking notice still appears immediately on every plan. The email is a delivery channel only, never an approval or a rejection. **It is not a marketing subscription and is never treated as one.** `timing` and `digestHour` are the **Premium** controls, and they move WHEN a delivery goes out rather than WHETHER: a quiet window delays the email that follows a blocking notice and never suppresses the notice. **The entitlement is re-read on every write and on every read** — `PUT /api/settings/notifications` silently drops the timing fields for a tier that does not carry them rather than refusing the whole request, so a Free account editing its opt-in in the same call still succeeds, and a client cannot grant itself a paid control. The rows **survive a downgrade** rather than being deleted, and simply stop being applied.' },
-    { name: 'contactVisibility', type: '{ email: Boolean, businessPhone: Boolean, officePhone: Boolean }', note: '**Added 2026-08-31 — the self-controlled half of the closed phone-visibility policy (D15 part 4).** The two automatic cases decide themselves and this never narrows them: a viewer holding `schedule.change.manage` on a shared project, and the two parties to a real work commitment, see the numbers whatever is set here. Everything else is the professional\'s own call. **Defaults are `email: true` and both numbers `false`** — the profile publishes the email, which is what part (1) states, and a number stays withheld until its owner says otherwise. The two numbers are **separate answers with no fallback between them**, matching the two fields they govern. Nothing here can reach a personal phone, because none is stored. Written only through `PUT /api/settings/contact-visibility`, which acts on the account behind the Access Token and takes no user id.' },
+    { name: 'notificationPreferences', type: '{ operationalEmail: Boolean }', note: '**Added 2026-08-30 as Step 2 of the two-step Register flow.** Whether FieldSync may send operational messages by email. **Required with no default, and that is the whole design:** the owner decision is that the person must actively choose, so neither answer may be assumed from silence — the Joi schema has no `default()` and the Mongoose path is `required`. **Declining removes nothing**: it never blocks registration, never disables the platform, and never withholds an in-app notification. The email is a delivery channel only; it is never an approval, a rejection or any other response. **Read-only on the wire today** — the profile DTO reports it, and the Notification Settings screen that would change it does not exist yet.' },
     { name: 'specialtyOther', type: 'String', note: 'Free text, max 60 characters, required exactly when `specialties` contains the account\'s **own route\'s** `other` code — `contractor_other`, `architectural_other` or `supplier_other` — and refused otherwise. **There is deliberately no route-neutral `other` (2026-08-30):** a registrant belongs to exactly one of the three categories, and the free text refines a choice already made inside it rather than replacing that choice, so it can never be used to avoid picking a route — so the enum and the free text can never describe two different things. **Descriptive only:** it never becomes a browse filter value, because `specialties` stays the indexed enum. Written by Register and editable on Edit profile.' },
     { name: 'heavyEquipment', type: '[String] — enum of ten machine codes', note: '**Added 2026-08-29, and it is the first half of [[D14]]\'s heavy-equipment question to be built.** It refines the `heavy_equipment` trade exactly the way `specialtyOther` refines `other`: a contractor operates part of that category rather than all of it, so the category alone does not say what they can actually do. The ten codes are the ones the approved profile screens have always offered — `excavator`, `backhoe`, `drill_rig`, `mini_excavator`, `crawler`, `jcb`, `wheel_loader`, `bobcat`, `bulldozer`, `hooklift_truck` — and they are **codes, never labels**, because the picker is bilingual. **An empty array is a real answer** and means the trade is held with no machine named yet. **The list cannot outlive the trade that carries it:** the service clears it whenever the specialties the patch leaves behind do not include `heavy_equipment`, so the two can never disagree however the values arrive. **Not indexed and not a Browse filter** — no filter on it has been approved. **The shape is an implementation choice, not a closed decision:** D14 named three candidates and this is the narrowest of them, the plain array, chosen because it mirrors `specialtyOther`. It awaits owner ratification.' },
     { name: 'businessPhone', type: 'String', note: 'The individual\'s own business number, editable on Edit profile (**D27**). It is **not** the company office number — that is `companies.officePhone` on a different document — and neither is a fallback for the other. It is also not `phone` above, which is the personal/login number D15 governs. Three separate concepts, deliberately.' },
@@ -689,7 +690,7 @@ const COLLECTIONS = [
 
     { group: 'Preferences' },
     { name: 'language', type: "'he' | 'en'", req: true, note: "UI language, **default `he`**. Hebrew is RTL and English is LTR, so this value also selects the page direction. Stored on the account because `localStorage` is per-device — switching to English on the site-office desktop should not leave the phone in Hebrew. localStorage remains the pre-login default only." },
-    { name: 'notificationPrefs', type: 'Map<String, Boolean> — DESIGNED, NEVER BUILT', note: '**Superseded 2026-08-31 by `notificationPreferences` above.** A per-type toggle map was the design; what shipped is a per-CLASS model, because the closed rules are stated per class — blocking is immediate in-app on every plan and may not be switched off, non-blocking aggregates into the digest. A map keyed by type would have offered a switch for exactly the notices that may not be withheld. Nothing reads this row.' },
+    { name: 'notificationPrefs', type: 'Map<String, Boolean>', note: 'Per-notification-type toggles. A `Map` rather than fixed fields so a new notification type does not require a migration.' },
     { name: 'createdAt / updatedAt', type: 'Date', note: 'Mongoose `timestamps: true`.' }
   ],
   indexes: [
@@ -1483,6 +1484,42 @@ const deriveState = (t) => t.completedAt ? 'completed' : t.startedAt ? 'in_progr
 projectStageSchema.index({ project: 1, order: 1 });`
 },
 
+/* ─────────── agreementdocumentgrants ─────────── */
+{
+  id: 'agreementdocumentgrants', model: 'AgreementDocumentGrant', domain: 'work', stage: 6,
+  tag: 'an explicit, revocable window onto one agreement\'s documents',
+  pos: { x: 320, y: 530 },
+  purpose: 'One person explicitly allowed to READ the documents of one accepted work agreement, scoped to the task that agreement created. <strong>Built 2026-10-13</strong>, closing the owner\'s final document-access rule: the agreement\'s two parties, the project initiator and the project\'s full-authority principal hold access by relationship; everyone else needs a row here.',
+  fields: [
+    { name: '_id', type: 'ObjectId', note: '' },
+    { name: 'task', type: 'ObjectId', ref: 'tasks', req: true, idx: true, note: 'The agreement-born task whose documents are opened. The documents themselves stay on the agreement message — nothing is copied here.' },
+    { name: 'grantedTo', type: 'ObjectId', ref: 'users', req: true, note: 'The viewer. The grant gives metadata and bytes of the agreement\'s own files, and nothing else: no conversation history, no task authority, no scheduling or project permission.' },
+    { name: 'grantedBy', type: 'ObjectId', ref: 'users', req: true, note: 'Who issued it — always a relationship-holder (party, initiator or principal). A grantee cannot pass access on.' },
+    { name: 'revokedAt', type: 'Date', note: 'Soft revocation. The row stays as the audit line of the grant\'s life; re-granting revives the same row.' },
+    { name: 'revokedBy', type: 'ObjectId', ref: 'users', note: '' },
+    { name: 'createdAt / updatedAt', type: 'Date', note: '' }
+  ],
+  indexes: [
+    { def: '{ task: 1, grantedTo: 1 }', opts: 'unique', serves: 'One grant row per viewer per task', why: 'Grant, revoke and re-grant are one row\'s lifecycle, so the history cannot fork into contradictory rows.' }
+  ],
+  why: [
+    '**Tracking work and viewing agreement documents are distinct permissions (owner, 2026-10-13).** A commissioned-work trackee or a company employee sees rows about the work; neither relationship reaches the agreement\'s evidence. This collection is the one way in for anyone outside the four contextual roles.',
+    '**A separate collection, not a field on the task or message**, because a grant has its own lifecycle (issued, revoked, re-issued, audited) and belongs to neither document\'s immutable history.',
+    '**Authorization is re-derived on every read**: the byte route asks the standing question each time, so a revocation takes effect on the next request with no cache to invalidate.'
+  ],
+  relations: [
+    { to: 'tasks', via: 'task', store: 'ref', card: 'N:1', why: 'The scope of the grant.' },
+    { to: 'users', via: 'grantedTo / grantedBy', store: 'junction', card: 'N:M', why: 'Who may look, and who answered for letting them.' }
+  ],
+  sample: `{
+  _id: ObjectId("68ec1a00c2b9e30012af9001"),
+  task: ObjectId("68eb77f1c2b9e30012af8b10"),      // the agreement-born task
+  grantedTo: ObjectId("6650a9d2c2b9e30012af0b44"), // the explicit viewer
+  grantedBy: ObjectId("6650a0b0c2b9e30012af0b10"), // the commissioning party
+  createdAt: ISODate("2026-10-13T16:40:00Z")
+}`
+},
+
 /* ─────────── privateworkitems ─────────── */
 {
   id: 'privateworkitems', model: 'PrivateWorkItem', domain: 'work', stage: 3,
@@ -1544,9 +1581,9 @@ privateWorkItemSchema.index({ task: 1, owner: 1, order: 1 });`
     { group: 'Built 2026-08-29', groupNote: 'these fields exist in `fileAsset.model.ts` and are written by the profile upload routes' },
     { name: '_id', type: 'ObjectId', note: 'The id the client is given — as `/api/users/me/assets/<_id>`, never a storage path. **Knowing it grants nothing:** every lookup filters on `_id` **and** `owner` together, so another person asset answers exactly as a missing one does.' },
     { name: 'owner', type: 'ObjectId', ref: 'users', req: true, idx: true, note: 'Who uploaded it, taken from the verified Access Token and **never from the request body**. It is the authorization key for reading, replacing and deleting the file.' },
-    { name: 'scope', type: "{ type: 'avatar'|'work_entry', id: ObjectId | null }", req: true, idx: true, note: 'What the file is attached to. Polymorphic — acceptable precisely because nothing ever joins *through* this field; it is only ever filtered on. **2026-08-30: `task` and `project` joined it** with the versioned work plans, leaving `message` as the one designed scope still unbuilt. The enum lists what is actually uploadable today, and `message` return when Stage 3 and Stage 6 build them. **`id` is nullable**, which the design did not allow: an avatar has no second document to point at, and a Completed Work photo is uploaded in the same request that creates the entry, so the id does not exist yet at insert time.' },
+    { name: 'scope', type: "{ type: 'avatar'|'work_entry'|'task'|'project'|'message', id: ObjectId | null }", req: true, idx: true, note: 'What the file is attached to. Polymorphic — acceptable precisely because nothing ever joins *through* this field; it is only ever filtered on. **2026-08-30: `task` and `project` joined it** with the versioned work plans, and **2026-10-12: `message` joined** with conversation attachments — every designed scope is now built. A `message` row carries the conversation id, and reading its bytes is **conversation membership**, never ownership alone. **`id` is nullable**, which the design did not allow: an avatar has no second document to point at, and a Completed Work photo is uploaded in the same request that creates the entry, so the id does not exist yet at insert time.' },
     { name: 'filename', type: 'String', req: true, note: 'Original name as uploaded, for the download header. Kept as metadata only — it is never used to decide anything, because a filename is whatever the uploader typed.' },
-    { name: 'mimeType', type: 'String', req: true, note: 'Validated against an allow-list **before the bytes are stored**, and on the declared MIME type rather than the extension. There are now **two** lists, and they never merge: the image routes accept `image/jpeg`, `image/png`, `image/webp` at 5 MB, and the work-plan routes accept `application/pdf` alone at 30 MB. A PDF on the avatar route and an image on the work-plan route are both refused, which is asserted rather than assumed.' },
+    { name: 'mimeType', type: 'String', req: true, note: 'Validated against an allow-list **before the bytes are stored**, and on the declared MIME type rather than the extension. There are now **two** lists, and they never merge: the image routes accept `image/jpeg`, `image/png`, `image/webp` at 5 MB, and the work-plan routes accept `application/pdf` alone at 30 MB. A PDF on the avatar route and an image on the work-plan route are both refused, which is asserted rather than assumed. **2026-10-12: the message-attachment route accepts both lists under one field** — images at 5 MB and PDF at 30 MB, each held to its own ceiling.' },
     { name: 'sizeBytes', type: 'Number', req: true, note: '**Counted by the store as the bytes land**, never read from a client-supplied header. The upload is also capped at 5 MB by Multer own limit on these routes, well inside the ~30 MB the product allows.' },
     { name: 'storage', type: "{ driver: String, fileId: ObjectId }", req: true, note: 'Points at where the bytes actually live. **`driver` now reads `"gridfs"` (D1, closed 2026-08-29)** and `fileId` is the `uploads.files` document id. The sub-object is kept exactly as designed, because its whole purpose was to survive this decision: a later move to another store changes one recorded value rather than the collection.' },
     { name: 'uploadedAt', type: 'Date', req: true, note: 'Defaults to now on insert. `timestamps: true` is also on, so `createdAt` / `updatedAt` exist alongside it.' },
@@ -2046,15 +2083,24 @@ module.exports = mongoose.model('Thread', threadSchema);`
     { name: 'thread', type: 'ObjectId', ref: 'threads', req: true, idx: true, note: '' },
     { name: 'sender', type: 'ObjectId', ref: 'users', req: true, note: '' },
     { name: 'body', type: 'String', note: '' },
-    { name: 'attachments', type: '[ObjectId]', ref: 'fileassets', note: '' },
+    { name: 'attachments', type: '[ObjectId]', ref: 'fileassets', note: '**Built 2026-10-12** with the `message` file scope: each id is an asset the sender uploaded into this conversation, and a message may carry attachments with no text at all — at least one content element, never neither. Reading the bytes is conversation membership, not ownership.' },
     { name: 'agreementForm', type: '{ title, description, proposedStart, proposedEnd, assignee, status }', note: 'Embedded and optional. The expandable form in the inbox: fill it in, the other party accepts, and a [[tasks]] document is created pre-filled.' },
     { name: 'createdTask', type: 'ObjectId | null', ref: 'tasks', note: 'Set when the agreement form is accepted. The other half of the link that [[tasks]] `originMessage` holds — kept on both sides because both directions are needed and neither is expensive.' },
     { name: 'readBy', type: '[{ user: ObjectId, at: Date }]', note: 'Embedded. Bounded by the participant count, so it is safe to keep inline.' },
-    { name: 'createdAt', type: 'Date', req: true, idx: true, note: '' }
+    { name: 'createdAt', type: 'Date', req: true, idx: true, note: '' },
+
+    { group: 'Built 2026-10-12', groupNote: 'the deletion layer, exactly as the 2026-08-29 owner decisions named it: four concepts, four names. Every field below leaves the row and its body in place — nothing in this collection is ever erased' },
+    { name: 'removedAt / removedBy', type: 'Date / ObjectId', ref: 'users', note: 'Moderation removal by the Project-Room authority — the GC role, or an explicit `room.moderate` grant (the one unified authority: removal, preservation and the removal-time decision travel together). Readers see the attribution placeholder; the body stays in the document.' },
+    { name: 'agreement.commissioningCompany', type: 'ObjectId', ref: 'companies', note: '**Built 2026-10-13.** The company on whose behalf the work was commissioned, stamped server-side at proposal time and immutable forever — attribution never reads a membership, so moving between companies moves nothing. Legacy rows were stamped by the one-time migrate:agreement-company backfill; the claim (rejoin) endpoint refuses while any accepted agreement is unstamped.' },
+    { name: 'removedByRole', type: 'String (project role)', note: '**Built 2026-10-12.** The remover\u2019s project role, captured at the moment of the act so a later role change cannot rewrite the attribution placeholder — a delegated moderator shows their own role, never the GC\u2019s. Rows removed before this field exists render the neutral wording instead.' },
+    { name: 'deletedAt / deletedBy', type: 'Date / ObjectId', ref: 'users', note: 'Author delete-for-everyone (deletion rule b). Readers see the deletion placeholder; the stored body survives, which is what keeps the internal moderation copy for reported content (rule 3) without a snapshot.' },
+    { name: 'keptAt / keptBy', type: 'Date / ObjectId', ref: 'users', note: 'An explicit keep (rule e). It outranks the author deletion AND moderation removal, survives the removal-time delete choice (rule f), and is deliberately irreversible — no route clears it.' },
+    { name: 'hiddenFor', type: '[ObjectId]', ref: 'users', note: '**Built 2026-10-13.** Viewers who hid this one message for themselves — the owner\u2019s rule that deleting another person\u2019s message hides it for the deleter alone. The row, its body and every other participant\u2019s view are untouched, and a kept message is never matched, so preservation outranks the per-viewer hide as well.' }
   ],
   indexes: [
     { def: '{ thread: 1, createdAt: -1 }', serves: 'Paged thread view', why: 'The canonical paging index: equality on the container, descending on time. Infinite scroll reads straight out of it.' },
-    { def: "{ 'agreementForm.status': 1 }", opts: 'sparse', serves: 'Outstanding agreement forms', why: 'Sparse — almost no message carries a form, so the index only stores the ones that do.' }
+    { def: "{ 'agreementForm.status': 1 }", opts: 'sparse', serves: 'Outstanding agreement forms', why: 'Sparse — almost no message carries a form, so the index only stores the ones that do.' },
+    { def: "{ 'agreement.task': 1 }", opts: "partial: { 'agreement.task': { $exists: true } }", serves: 'Task → agreement reverse lookup (built 2026-10-12)', why: 'My Tasks attribution and Commissioned Work resolve a task back to the agreement that commissioned it; only task-creating rows are indexed. The built pair index { sender, agreement.respondedBy } (accepted only) serves the D15 Work-Commitment check the same way.' }
   ],
   why: [
     '**This is the canonical "never embed" case.** Unbounded growth, a hard 16 MB document ceiling, and a read pattern that always wants a page rather than the whole set. All three independently rule out embedding messages in the thread.',
@@ -2111,104 +2157,60 @@ module.exports = mongoose.model('Message', messageSchema);`
 /* ─────────── notifications ─────────── */
 {
   id: 'notifications', model: 'Notification', domain: 'comm', stage: 4,
-  tag: 'one row per recipient per event',
+  tag: 'per-user, disposable',
   pos: { x: 30, y: 30 },
-  purpose: 'One row per thing a person should know about. **Built 2026-08-31.** Fifteen types, each with a fixed class: `blocking` is an alert whose absence could stall work and appears in-app immediately on every plan; `nonblocking` aggregates into the daily digest. A row is written for every recipient of every event, including recipients who have muted the project — a mute changes delivery, never whether the event happened.',
-  callout: 'There is **one state, `seenAt`**, and unread is the absence of it. No second `read`, `dismissed` or `archived` concept exists on either side of the wire, so no screen can show two statuses that disagree — and seeing a row is a real action, because it is what cancels the email queued behind it.',
+  purpose: 'One row per thing a user should know about: invitations, schedule changes, approvals and counters, connection requests, ratings, delegated-task notices. Deliberately self-contained so the list renders without touching any other collection.',
   fields: [
     { name: '_id', type: 'ObjectId', note: '' },
-    { name: 'user', type: 'ObjectId', ref: 'users', req: true, idx: true, note: 'The recipient. Every read is scoped to the account behind the Access Token, so naming somebody else\'s id marks nothing.' },
-    { name: 'type', type: 'String — 15 codes', req: true, note: 'The product event. **`task.schedule_coordination` is deliberately absent**: coordinating a task\'s dates IS the proposal flow, which already has `proposal.awaiting_response` and `schedule.change_resolved`, and a third code would put two indistinguishable rows in front of the same person for one event.' },
-    { name: 'class', type: "'blocking' | 'nonblocking'", req: true, note: '**Derived from `type` through `CLASS_OF`, never passed in.** `task.early_completion` is blocking rather than informational, because the closed rule says it reaches the management side on every tier free — a digest-only delivery would withhold it from Free.' },
-    { name: 'project / task / proposal / scheduleException', type: 'ObjectId', note: 'What the row points at. The notification centre builds its destination from whichever is present, so an email and a screen land in the same place.' },
-    { name: 'payload', type: '{ projectName?, taskTitle?, actorName?, fromDate?, toDate?, count? }', req: true, note: '**A fixed, narrow set of scalars, and that IS the privacy rule.** There is no free-text field, so another professional\'s decline reason, counter dates or written response have nowhere to be stored even by mistake. `verify:notifications` asserts that no `declineReason`, `counterStart`, `counterDue`, `otherSolution` or `reason` key reaches a client.' },
-    { name: 'mutedAtCreation', type: 'Boolean', req: true, note: 'Whether the project was muted for this recipient as the event happened. The row is written either way; this records why no email followed and lets the centre say so on screen.' },
-    { name: 'seenAt', type: 'Date', note: 'The only state. Setting it cancels the queued email — see [[queuedemails]].' },
-    { name: 'dedupeKey', type: 'String', req: true, note: 'Identifies the product event. Unique per user, so emitting the same event twice writes nothing the second time and queues no second email.' },
-    { name: 'createdAt / updatedAt', type: 'Date', note: '' }
+    { name: 'recipient', type: 'ObjectId', ref: 'users', req: true, idx: true, note: '' },
+    { name: 'type', type: 'enum', req: true, idx: true, note: 'Matches the filter chips on the notifications screen and the keys in `users.notificationPrefs`. **2026-10-13:** gained the connection pair — `connection.request_received` (blocking) and the two informational outcomes `connection.accepted` / `connection.declined` — so the professional-network request loop reaches both sides.' },
+    { name: 'conversation', type: 'ObjectId', ref: 'threads', note: '**Built 2026-10-13.** The conversation a messaging or agreement notification points back into — what lets the row open the exact thread (and, for a message request, the Accept / Decline waiting there) instead of rendering with nowhere to go.' },
+    { name: 'payload', type: 'Object', denorm: true, note: 'A **frozen snapshot** of the *parts* needed to render the line — names, titles, dates. Never a pre-rendered sentence: the app is bilingual, so the client composes the wording from `type` in the reader current language.' },
+    { name: 'link', type: 'String', note: 'The in-app route this notification opens.' },
+    { name: 'readAt', type: 'Date | null', idx: true, note: 'Null means unread. Drives the navbar badge.' },
+    { name: 'createdAt', type: 'Date', req: true, idx: true, note: '' }
   ],
   indexes: [
-    { def: '{ user: 1, dedupeKey: 1 }', opts: 'unique', serves: 'One row per recipient per product event', why: 'The database enforces it rather than the emitter remembering to check. A duplicate insert is caught and answered as a no-op.' },
-    { def: '{ user: 1, createdAt: -1, _id: -1 }', serves: 'The notification centre, newest first', why: '`_id` breaks ties so a cursor never repeats or skips a row when two notifications share a millisecond.' },
-    { def: '{ user: 1, seenAt: 1, class: 1, createdAt: -1 }', serves: 'The unread count, and the digest sweep', why: 'The digest asks for unseen non-blocking rows in a window, which is exactly this key.' }
+    { def: '{ recipient: 1, readAt: 1, createdAt: -1 }', serves: 'The notifications list and the unread badge', why: 'One compound index serves both the count of unread and the paged list, because `readAt: null` is an equality match that leaves `createdAt` free to sort.' },
+    { def: '{ createdAt: 1 }', opts: 'TTL, expireAfterSeconds', serves: 'Automatic cleanup', why: 'Optional but worth knowing: a TTL index makes MongoDB delete old documents itself. Safe here precisely because notifications are disposable — never put one on [[auditentries]].' }
   ],
   why: [
-    '**Delivery is decided in one place.** `notificationDispatch.service` writes the row, consults the mute boundary, and only then decides whether to queue an email. No domain that raises an event repeats any of that reasoning.',
-    '**A mute never suppresses a blocking in-app notice.** It stops the email and keeps the row out of the digest. That line is an engineering judgement rather than a closed rule — see the open decision on class-level suppressibility.',
-    '**Nothing is real-time.** D3\'s delivery half is open and websockets are explicitly out; the navbar count is fetched once per screen mount rather than polled.'
+    '**`payload` is denormalised and allowed to go stale.** This is the same technique as `actorSnapshot` on [[auditentries]] but for the opposite reason: there, a frozen copy protects historical truth; here it just avoids joins on a screen that is read constantly. A notification about a renamed project showing the old name is acceptable — the notification is a moment, not a record.',
+    '**Preferences and mutes are applied at write time.** Checking `users.notificationPrefs` and [[mutes]] before inserting is cheaper than filtering every read, and it means a muted notification genuinely does not exist rather than merely being hidden.',
+    '**Decision D3 (fetch-on-load versus polling) does not touch this schema at all.** It changes only how often the client asks. Real-time via websockets is explicitly out of scope — worth noting that even that would not change the collection.',
+    '**`payload` holds parts, never a finished sentence — because the app is bilingual.** It would be tempting to store `message: "Dana proposed a new date for First-fix electrical"` and render it directly. That freezes the notification into whichever language the reader happened to be using when it was created, so switching to English leaves a Hebrew inbox forever. Storing `type` plus the parts lets the client build the sentence in the current language, and it is also what makes the **direction** correct: a Hebrew sentence containing an English project name needs the two runs isolated at render time, which is impossible once they are concatenated in the database.'
   ],
   relations: [
-    { to: 'users', kind: 'N:1', note: 'the recipient' },
-    { to: 'mutes', kind: 'reads', note: 'through `notificationPreferencePort`, never the collection' },
-    { to: 'queuedemails', kind: '1:1', note: 'a blocking row may have one queued email' }
-  ]
-},
+    { to: 'users', via: 'recipient', store: 'ref', card: 'N:1', why: 'The only reference. Everything else needed to render the line is snapshotted into `payload`, so the list needs no joins.' }
+  ],
+  sample: `{
+  _id: ObjectId("6690cc00c2b9e30012af1801"),
+  recipient: ObjectId("6650a3d2c2b9e30012af0b55"),
+  type: "schedule_change_proposed",
+  payload: {                                  // snapshot — no joins at render time
+    projectName: "Rothschild 42 — residential tower",
+    taskTitle:   "First-fix electrical",
+    proposerName:"Dana Aviv",
+    proposedStart: "2026-09-19", proposedEnd: "2026-09-21",
+    proposalId: "6670a0a0c2b9e30012af1401"
+  },
+  link: "/projects/6660c3d0.../proposals/6670a0a0...",
+  readAt: null,
+  createdAt: ISODate("2026-09-01T07:30:12Z")
+}`,
+  schema: `const notificationSchema = new Schema({
+  recipient: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+  type:      { type: String, required: true, enum: NOTIFICATION_TYPES },
+  payload:   { type: Schema.Types.Mixed, default: {} },   // frozen snapshot
+  link:      String,
+  readAt:    { type: Date, default: null }
+}, { timestamps: { createdAt: true, updatedAt: false } });
 
-{
-  id: 'queuedemails', model: 'QueuedEmail', domain: 'comm', stage: 4,
-  tag: 'the 90-minute grace, made a row',
-  pos: { x: 300, y: 30 },
-  purpose: 'One blocking notification\'s email, held back for the grace window. **Built 2026-08-31.** The closed rule: a blocking event appears in-app at once and does NOT email at once — it opens a **90-minute window**, and if the in-app notice is seen inside that window the queued email is cancelled. So the email is a second attempt at reaching somebody who has not looked, never a duplicate of something they already read.',
-  callout: '**Non-blocking events are never queued here at all.** They aggregate into the daily digest, which is a plan entitlement starting at Basic. Free is blocking coverage in-app, with no email channel.',
-  fields: [
-    { name: '_id', type: 'ObjectId', note: '' },
-    { name: 'notification', type: 'ObjectId', ref: 'notifications', req: true, uniq: true, note: 'Unique, so one notification can never queue two emails.' },
-    { name: 'user', type: 'ObjectId', ref: 'users', req: true, idx: true, note: 'The recipient, duplicated so the sweep can re-check the opt-in and the plan without a join.' },
-    { name: 'sendAfter', type: 'Date', req: true, note: 'When the grace closes — creation plus 90 minutes, then pushed later by a Premium quiet window if one applies. Nothing is sent before it.' },
-    { name: 'status', type: "'queued' | 'sent' | 'cancelled' | 'failed'", req: true, note: '' },
-    { name: 'cancelReason', type: "'seen' | 'opted_out' | 'not_entitled'", note: '`seen` is the rule working, not an error.' },
-    { name: 'sentAt / cancelledAt / attempts', type: 'Date / Date / Number', note: 'A send that threw is recorded rather than retried forever against a broken address.' }
-  ],
-  indexes: [
-    { def: '{ notification: 1 }', opts: 'unique', serves: 'One email per notification', why: 'Enforced rather than assumed.' },
-    { def: '{ status: 1, sendAfter: 1 }', serves: 'The worker sweep', why: 'The only query this collection serves: what is due and still queued.' }
-  ],
-  why: [
-    '**Two cancellation paths, deliberately.** Marking a notification seen cancels its queued email directly; the worker also re-checks the seen mark, the opt-in and the entitlement at send time. The direct path is the rule, the second look is what makes a cancellation that raced the sweep still hold.',
-    '**A row rather than a timer.** A timer dies with the process; a row survives a restart and can be inspected after the fact, which is what makes the grace provable rather than asserted.',
-    '**The email carries no action.** Every operational decision happens inside FieldSync, so the message holds a link back to the screen that owns it and nothing else.'
-  ],
-  relations: [
-    { to: 'notifications', kind: '1:1', note: 'the notice this email would repeat' },
-    { to: 'users', kind: 'N:1', note: 'the recipient' }
-  ]
-},
+notificationSchema.index({ recipient: 1, readAt: 1, createdAt: -1 });
+// Optional TTL — safe only because notifications are disposable
+// notificationSchema.index({ createdAt: 1 }, { expireAfterSeconds: 60 * 60 * 24 * 90 });
 
-{
-  id: 'scheduleexceptions', model: 'ScheduleException', domain: 'coord', stage: 4,
-  tag: 'the dates that are not ordinary',
-  pos: { x: 570, y: 30 },
-  purpose: 'One request to change whether a named stretch of dates is worked, and the decision on it. **Built 2026-08-31, closing the storage half of D22 and the workflow half of D23.** The weekly pattern and the project overrides answer what a normal week looks like; this answers the dates that are not normal, in **both directions** — a working day that will not be worked, and a rest day that will be.',
-  callout: '**Nothing here is derived from a holiday table.** No approved data source exists, so every row is something a person asked for and somebody with the authority approved. `verify:schedule-exceptions` asserts that every stored row carries a `requestedBy`.',
-  fields: [
-    { name: '_id', type: 'ObjectId', note: '' },
-    { name: 'project', type: 'ObjectId', ref: 'projects', req: true, idx: true, note: 'The job the exception belongs to. The calendar layer reads approved rows one project at a time.' },
-    { name: 'kind', type: "'non_working' | 'working'", req: true, note: 'The two directions the closed rule names.' },
-    { name: 'scope', type: "'project' | 'task' | 'professional'", req: true, note: 'What the request covers. **A professional-scoped request is always about the requester** — the subject is taken from the Access Token and `professionalId` is `Joi.forbidden()` in the body, so naming somebody else is answered rather than silently stripped. A **project-wide** request is not a request for oneself, so it needs `schedule.exception.approve`.' },
-    { name: 'task / professional', type: 'ObjectId', note: 'Present exactly when the scope names one. A `pre(\'validate\')` hook refuses a row whose scope and pointers describe two different things.' },
-    { name: 'fromDate / toDate', type: 'Date', req: true, note: 'The first and last date covered; a single date stores the same value in both. Bounded to a year per request.' },
-    { name: 'reason', type: 'String', note: 'Free text from the requester, max 600. It is **not** copied into any notification payload.' },
-    { name: 'status', type: "'requested' | 'approved' | 'rejected' | 'cancelled'", req: true, note: '**There is no transition out of `approved`.** An authorised approval ends the matter, and the request must not afterwards be forwarded for a second approval — the closed finality rule, enforced by the state machine rather than by convention.' },
-    { name: 'requestedBy / requestedAt', type: 'ObjectId / Date', req: true, note: '' },
-    { name: 'approvedBy / approvedAt / rejectedBy / rejectedAt / decisionNote', type: 'ObjectId / Date / String', note: 'Who ended the matter, and when.' },
-    { name: 'history', type: '[{ action, by, at, note?, fromDate?, toDate?, kind? }]', note: '**Append-only, and it travels with the request.** The closed routing rule says only the authorised approver may change a request before approving it, and that every change routes back through the submitting professional — so the change has to remain visible to them. A modification leaves the status at `requested`: it never approves in the same move.' },
-    { name: 'createdAt / updatedAt', type: 'Date', note: '' }
-  ],
-  indexes: [
-    { def: '{ project: 1, status: 1, fromDate: 1, toDate: 1 }', serves: 'The calendar read — approved rows covering a window', why: 'The one query the arithmetic makes, on every cascade and every task-date warning.' },
-    { def: '{ project: 1, status: 1, requestedAt: -1 }', serves: 'The approver\'s queue, newest first', why: '' }
-  ],
-  why: [
-    '**One canonical layer, consumed everywhere.** `ScheduleCalendar` is the weekly pattern plus the approved exceptions, and every arithmetic function takes the pair — so the cascade, the alternatives sweep and the Create/Edit Task warnings cannot disagree about whether a day is worked. `verify:schedule-exceptions` proves the pattern alone still calls the day working while the resolved calendar does not.',
-    '**Specificity decides a clash.** Where two approved rows cover the same day, the narrower wins — task over professional, professional over project — because the narrower row is the one somebody asked for about this particular work. Equal specificity is settled by approval time.',
-    '**`schedule.exception.approve` and not `schedule.partial_release.manage`.** They answer different questions, and the suite asserts that holding the partial-release grant approves nothing here.'
-  ],
-  relations: [
-    { to: 'projects', kind: 'N:1', note: 'the job' },
-    { to: 'tasks', kind: 'N:1', note: 'on a task-scoped request' },
-    { to: 'users', kind: 'N:1', note: 'the professional, the requester and the approver' },
-    { to: 'notifications', kind: 'writes', note: 'awaiting approval, modified, decided, affects you' }
-  ]
+module.exports = mongoose.model('Notification', notificationSchema);`
 },
 
 /* ─────────── companies ─────────── */
@@ -2217,6 +2219,12 @@ module.exports = mongoose.model('Message', messageSchema);`
   tag: 'the business, not the person',
   pos: { x: 1070, y: 580 },
   purpose: 'One document per contractor business. It holds what belongs to the **organization** — its name, its office number, whether it is taking new work, and whether it has been through employee setup. A person is a [[users]] document; the business they operate through is this one; and the relationship between them is a [[companymemberships]] row.',
+  // 2026-10-13: a company whose owner deleted their account is INACTIVE BY DERIVATION — no stored
+  // field, no migration. companyOwnerStateFor() reads the owner seat and the owner's account
+  // lifecycle: active / recovery (inside the 60-day window) / inactive (past it, or anonymized).
+  // While not active, companyContext empties the members' company permissions and the two direct
+  // permission readers refuse with COMPANY_OWNER_INACTIVE — reads, personal actions and the
+  // employee's self-departure stay open, and an owner restoration reactivates everything at once.
   callout: 'There is **no owner field here on purpose.** Ownership is a *relationship*, so it lives on [[companymemberships]] as `standing: "owner"`. An owner field would be a second answer to the same question, and the two would eventually disagree — the same reasoning that keeps `role` off [[users]].',
   fields: [
     { name: '_id', type: 'ObjectId', note: 'Auto-generated. Referenced by every [[companymemberships]] row.' },
@@ -2421,7 +2429,7 @@ module.exports = mongoose.model('RefreshToken', refreshTokenSchema);`
   id: 'passwordresettokens', model: 'PasswordResetToken', domain: 'identity', stage: 1,
   tag: 'one-time reset links, hashed',
   pos: { x: 30, y: 430 },
-  purpose: 'One row per issued password-reset link. Added 2026-08-29 with the reset flow, and it is where the design on this page changed: `users.security.resetTokenHash` + `resetTokenExpiresAt` were what this file specified, and the code uses a collection instead. See the why below — the pair of fields cannot express a lifecycle.',
+  purpose: 'One row per issued password-reset link. Added 2026-08-29 with the reset flow, and it is where the design on this page changed: `users.security.resetTokenHash` + `resetTokenExpiresAt` were what this file specified, and the code uses a collection instead. See the why below — the pair of fields cannot express a lifecycle. **2026-10-13: a sibling collection, `accountrecoverytokens`, carries the deleted-account self-service recovery links** — same shape (SHA-256 hash, TTL, single-use, newer-invalidates-older), deliberately a separate collection so a reset token can never restore an account and a recovery token can never reset a password, by construction rather than by a purpose flag.',
   fields: [
     { name: '_id', type: 'ObjectId', note: '' },
     { name: 'tokenHash', type: 'String', req: true, idx: true, note: 'SHA-256 of the raw token, hex. The raw value exists only in the email, so a database leak yields nothing replayable. SHA-256 rather than bcrypt for the same reason [[refreshtokens]] uses it: the input is 32 bytes of machine entropy, and there is no dictionary for bcrypt cost to defend against.' },
@@ -2599,6 +2607,64 @@ reportSchema.index(
 );
 
 module.exports = mongoose.model('Report', reportSchema);`
+},
+
+/* ─────────── contactMessages ─────────── */
+{
+  id: 'contactmessages', model: 'ContactMessage', domain: 'gov', stage: 7,
+  tag: 'public contact form',
+  pos: { x: 1070, y: 420 },
+  purpose: 'One message sent from the Landing page contact form by a signed-out visitor. It is the stored record of the submission, and the email that announces it is only a notification about this row.',
+  callout: '<strong>Built 2026-08-31</strong> alongside the Landing contact form (not merged). <strong>It was designed by no earlier version of this page</strong> — it exists because the owner decision is that Contact is a form, and that its success state must be real. A mail-only boundary would have shown a sender "sent" on a deployment with no SMTP configured, which is the one thing the decision forbids: <strong>storing the message first is what makes the acknowledgement honest.</strong> The delivery email is best-effort on top.',
+  fields: [
+    { name: '_id', type: 'ObjectId', note: 'Also the reference quoted in the notification email, so an inbox message can be traced back to its row without copying anything else out of it.' },
+    { name: 'name', type: 'String', req: true, note: 'The sender\'s name as typed, 2–100 characters. **There is no `sender` reference and there cannot be one** — the form is submitted signed out, so no account exists to point at. This and the address are the whole of the identity the platform learns.' },
+    { name: 'email', type: 'String', req: true, note: 'Where the reply goes, capped at 254 characters and lowercased on the way in. It is carried as `Reply-To` on the notification email rather than as `From`, so answering reaches the sender while the envelope stays the platform\'s. **Never verified** — a contact form cannot demand proof of an address before it will accept a question.' },
+    { name: 'topic', type: "'general' | 'support' | 'partnership' | 'other'", req: true, note: 'Storage codes, never rendered: the client holds its own HE/EN wording per code, the same rule [[reports]] `reason` follows. **The four values are engineering-provisional** — no owner decision names the topics a contact form should offer, and changing them is one enum plus a strings-file edit.' },
+    { name: 'message', type: 'String', req: true, note: 'The enquiry itself, 10–2000 characters. **The one field carrying free personal text**, and the reason the whole collection is worth a D8 note: nothing here is keyed to an account, so an anonymisation run has no reference to follow. A future retention rule for this collection is a genuine gap, recorded rather than invented.' },
+    { name: 'language', type: "'he' | 'en'", req: true, note: 'Which language the form was in, defaulted to `he` when the body omits it. It exists so a reply is written in the language the sender actually used — the same two values as `users.language`, but unrelated to it, because there is no account to read a preference from.' },
+    { name: 'status', type: "'new' | 'handled'", req: true, idx: true, note: 'The minimum a message store needs to be usable. **There is no workflow here and deliberately so** — no claim step, no `history[]`, no resolution note: this is a public inbox, not the moderation queue [[reports]] is, and nothing in the product reads or writes this field yet.' },
+    { name: 'notifiedAt', type: 'Date', note: '**Set only when the notification email really left the server**, which means only in `smtp` mode. Absent reads as *stored but nobody has been told* — the honest state on a deployment running the log mailer. The sender is never shown this: their submission succeeded either way, because the submission is this document.' },
+    { name: 'createdAt', type: 'Date', idx: true, note: 'Returned to the sender in the receipt, with the id and nothing else.' }
+  ],
+  indexes: [
+    { def: '{ status: 1, createdAt: -1 }', serves: 'The unhandled inbox, newest first', why: 'The only read this collection is shaped for. **Nothing reads it over HTTP today** — there is no list endpoint and no read endpoint, and a browser check asserts both answer 404 — so the index serves whoever opens the database, and the screen that would use it is not built.' }
+  ],
+  why: [
+    '**The stored row is the submission; the email is a notification about it.** Ordering matters and is tested: the document is written first, and a send failure is logged rather than raised. If mail were the boundary, a deployment with no SMTP would either have to lie to the sender or refuse a message it could perfectly well keep. **A fake success state is the specific thing the owner decision rules out**, and this ordering is what rules it out structurally rather than by promise.',
+    '**No account reference, because there is no account.** The Landing page is public and the endpoint is mounted without `requireAccessToken` — requiring a session would make the form unreachable by the only people it exists for. That is also why the rate limiter keys on the caller\'s IP rather than a user id, unlike [[reports]], which can charge a flood to the account that sent it.',
+    '**Submission-only, with no read path at all.** This router has one route. Nothing lists, reads, edits or resolves a message over HTTP, so no crafted request can reach another visitor\'s enquiry — there is no endpoint to craft one against.',
+    '**`status` and `notifiedAt` are storage-only.** Both are absent from the write schema and `stripUnknown` removes them, so a body claiming `status: "handled"` is accepted and ignored rather than obeyed. Tested directly.',
+    '**Kept out of [[reports]] even though both are "somebody sent something in".** A report is filed by an authenticated user about another account and has a resolution workflow and an owner; this is an anonymous question with neither. Different lifecycles, different collections — the same reasoning that keeps reports out of [[notifications]].'
+  ],
+  relations: [],
+  sample: `{
+  _id: ObjectId("66a0ee00c2b9e30012af1b77"),
+  // no sender reference: the form is submitted signed out, so there is no account to point at
+  name: "דנה לוי",
+  email: "dana@example.com",
+  topic: "support",
+  message: "שאלה על קישור בין משימות בפרויקט קיים.",
+  language: "he",
+  status: "new",
+  // notifiedAt absent: stored, but this deployment sends no mail — and the sender is not told so
+  createdAt: ISODate("2026-08-31T09:20:00Z")
+}`,
+  schema: `const contactMessageSchema = new Schema({
+  name:    { type: String, trim: true, required: true, maxlength: 100 },
+  email:   { type: String, trim: true, lowercase: true, required: true, maxlength: 254 },
+  topic:   { type: String, enum: ['general','support','partnership','other'], required: true },
+  message: { type: String, trim: true, required: true, maxlength: 2000 },
+  language: { type: String, enum: ['he','en'], required: true },
+
+  // Storage-only. Neither is in the write schema, so a crafted body cannot set them.
+  status:     { type: String, enum: ['new','handled'], default: 'new', required: true },
+  notifiedAt: { type: Date }   // set only when mail really left the server
+}, { timestamps: { createdAt: true, updatedAt: false } });
+
+contactMessageSchema.index({ status: 1, createdAt: -1 });
+
+module.exports = mongoose.model('ContactMessage', contactMessageSchema);`
 },
 
 /* ─────────── rules ─────────── */

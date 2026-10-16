@@ -1,4 +1,5 @@
 import { Router, type RequestHandler } from 'express';
+import { Types } from 'mongoose';
 
 import { getValidated, validateRequest } from '../../middleware/validateRequest.js';
 import { getAuthenticatedUserId } from '../auth/requireAccessToken.middleware.js';
@@ -6,10 +7,17 @@ import { companyCalendarRepository } from '../calendar/companyCalendar.repositor
 import { companyRepository } from '../companies/company.repository.js';
 import { companyMembershipRepository } from '../companies/companyMembership.repository.js';
 import { createCompanyContextService } from '../companies/companyContext.service.js';
+import { createContractorEligibilityService } from '../companies/contractorEligibility.js';
 import { participantRepository } from '../projectmembers/participant.repository.js';
 import { projectAccessRepository } from '../projectaccess/projectAccess.repository.js';
 import { projectRepository } from '../projects/project.repository.js';
 import { parseCalendarDate } from '../projects/projectDates.js';
+import { createAgreementOriginAdapter } from '../messaging/agreementOrigin.adapter.js';
+import { fileAssetRepository } from '../files/fileAsset.repository.js';
+import { taskNotFound } from './task.errors.js';
+import { createDocumentAccessService } from './documentAccess.service.js';
+import { openGridFsDownloadStream } from '../files/gridFs.service.js';
+import { commissionTrackingRepository } from './commissionTracking.repository.js';
 import { createMyTasksService, type MyTasksFilters } from './myTasks.service.js';
 import { createTaskCreationService, type CreateTaskInput } from './taskCreation.service.js';
 import { invalidCalendarDate } from './taskCreation.errors.js';
@@ -35,6 +43,7 @@ import {
   editTaskBodySchema,
   myTasksQuerySchema,
   privateItemBodySchema,
+  privateItemEditSchema,
   privateItemParamsSchema,
   privateToggleBodySchema,
   projectOptionsParamsSchema,
@@ -70,11 +79,24 @@ interface CreateTaskBody {
 export const createTasksModule = (requireAccessToken: RequestHandler): Router => {
   const coordination = buildCoordinationService();
 
+  const contractorEligibility = createContractorEligibilityService({
+    companies: companyRepository,
+    memberships: companyMembershipRepository,
+  });
+
+  const origins = createAgreementOriginAdapter();
+
   const myTasks = createMyTasksService({
     tasks: taskRepository,
     projects: projectRepository,
     participants: participantRepository,
     proposals: createProposalMarkerAdapter(coordination),
+    origins,
+    companyContext: createCompanyContextService({
+      memberships: companyMembershipRepository,
+      companies: companyRepository,
+    }),
+    trackings: commissionTrackingRepository,
   });
 
   const detail = createTaskDetailService({
@@ -83,6 +105,16 @@ export const createTasksModule = (requireAccessToken: RequestHandler): Router =>
     access: projectAccessRepository,
     participants: participantRepository,
     reschedule: createReschedulePortAdapter(coordination),
+    eligibility: contractorEligibility,
+    origins,
+    files: fileAssetRepository,
+  });
+
+  const documentAccess = createDocumentAccessService({
+    origins,
+    access: projectAccessRepository,
+    participants: participantRepository,
+    files: fileAssetRepository,
   });
 
   const creation = createTaskCreationService({
@@ -120,6 +152,11 @@ export const createTasksModule = (requireAccessToken: RequestHandler): Router =>
   });
 
   // Registered ahead of `/:taskId`, or the literal path would be read as an id.
+  // The commissioning party's read-only tracking. Before '/:taskId', or that route would eat it.
+  router.get('/commissioned', async (_req, res) => {
+    res.json(await myTasks.commissioned(getAuthenticatedUserId(res)));
+  });
+
   router.get('/create-options', async (req, res) => {
     res.json(await creation.options(me(res)));
   });
@@ -178,6 +215,45 @@ export const createTasksModule = (requireAccessToken: RequestHandler): Router =>
   router.get('/:taskId', params, async (req, res) => {
     const { taskId } = getValidated<{ taskId: string }>(res, 'params');
     res.json({ task: await detail.get(me(res), taskId) });
+  });
+
+  router.get('/:taskId/agreement-documents', params, async (req, res) => {
+    const { taskId } = getValidated<{ taskId: string }>(res, 'params');
+    res.json(await documentAccess.list(me(res), taskId));
+  });
+
+  router.put('/:taskId/agreement-documents/grants/:userId', params, async (req, res) => {
+    const { taskId } = getValidated<{ taskId: string }>(res, 'params');
+    await documentAccess.grant(me(res), taskId, String(req.params.userId));
+    res.status(204).end();
+  });
+
+  router.delete('/:taskId/agreement-documents/grants/:userId', params, async (req, res) => {
+    const { taskId } = getValidated<{ taskId: string }>(res, 'params');
+    await documentAccess.revoke(me(res), taskId, String(req.params.userId));
+    res.status(204).end();
+  });
+
+  router.get('/:taskId/agreement-files/:fileId', params, async (req, res) => {
+    const { taskId } = getValidated<{ taskId: string }>(res, 'params');
+    const fileId = String(req.params.fileId);
+    if (!Types.ObjectId.isValid(taskId) || !Types.ObjectId.isValid(fileId)) throw taskNotFound();
+
+    const standing = await documentAccess.standingFor(me(res), taskId);
+    if (standing === null) throw taskNotFound();
+
+    const named = standing.attachments.find((id) => id.toString() === fileId);
+    if (named === undefined) throw taskNotFound();
+
+    const [asset] = await fileAssetRepository.listByIds([named]);
+    if (asset === undefined) throw taskNotFound();
+
+    res.type(asset.mimeType);
+    res.setHeader('Content-Length', String(asset.sizeBytes));
+    res.setHeader('Cache-Control', 'private, max-age=300');
+    const stream = openGridFsDownloadStream(asset.storage.fileId);
+    stream.on('error', () => res.destroy());
+    stream.pipe(res);
   });
 
   // Answered before the form is drawn, so no control is offered that the PATCH would refuse.
@@ -254,6 +330,16 @@ export const createTasksModule = (requireAccessToken: RequestHandler): Router =>
       const { taskId, itemId } = getValidated<{ taskId: string; itemId: string }>(res, 'params');
       const { done } = getValidated<{ done: boolean }>(res, 'body');
       res.json({ item: await detail.togglePrivate(me(res), taskId, itemId, done) });
+    },
+  );
+
+  router.patch(
+    '/:taskId/private/:itemId/body',
+    validateRequest({ params: privateItemParamsSchema, body: privateItemEditSchema }),
+    async (req, res) => {
+      const { taskId, itemId } = getValidated<{ taskId: string; itemId: string }>(res, 'params');
+      const { body } = getValidated<{ body: string }>(res, 'body');
+      res.json({ item: await detail.updatePrivate(me(res), taskId, itemId, body) });
     },
   );
 

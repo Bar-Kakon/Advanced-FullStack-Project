@@ -1,8 +1,9 @@
 import { useLanguage } from '../../../i18n/useLanguage';
+import { localeOf } from '../../../i18n/dateFormat';
 import type { ProjectCalendarState } from '../../../api/projectDashboard.types';
 
 const displayDate = (iso: string, lang: 'he' | 'en'): string =>
-  new Date(iso).toLocaleDateString(lang === 'he' ? 'he-IL' : 'en-GB', {
+  new Date(iso).toLocaleDateString(localeOf(lang), {
     year: 'numeric',
     month: 'short',
     day: 'numeric',

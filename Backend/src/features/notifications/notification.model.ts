@@ -9,6 +9,7 @@ import { Schema, model, type Types } from 'mongoose';
  */
 export const NOTIFICATION_TYPES = [
   'project.invitation',
+  'project.cancelled',
   'task.assigned',
   'task.updated',
   'task.early_completion',
@@ -23,6 +24,14 @@ export const NOTIFICATION_TYPES = [
   'responsibility.transfer_invited',
   'responsibility.transfer_accepted',
   'workplan.version_added',
+  'message.received',
+  'message.request_received',
+  'agreement.received',
+  'agreement.answered',
+  'connection.request_received',
+  'connection.accepted',
+  'connection.declined',
+  'company.employee_left',
 ] as const;
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
 
@@ -35,6 +44,10 @@ export type NotificationClass = (typeof NOTIFICATION_CLASSES)[number];
  */
 export const CLASS_OF: Readonly<Record<NotificationType, NotificationClass>> = {
   'project.invitation': 'blocking',
+  // People were going to show up for this work; the news must not wait for a digest.
+  'project.cancelled': 'blocking',
+  // A departure is organizational news, not stalled work: it digests rather than interrupts.
+  'company.employee_left': 'nonblocking',
   'task.assigned': 'blocking',
   'task.updated': 'nonblocking',
   // Closed rule: early upstream completion reaches the GC on every tier, free. A digest-only
@@ -53,6 +66,15 @@ export const CLASS_OF: Readonly<Record<NotificationType, NotificationClass>> = {
   'responsibility.transfer_invited': 'blocking',
   'responsibility.transfer_accepted': 'nonblocking',
   'workplan.version_added': 'nonblocking',
+  // A message needs answering, so it is in-app immediately on every plan. Never its content.
+  'message.received': 'blocking',
+  'message.request_received': 'blocking',
+  'agreement.received': 'blocking',
+  'agreement.answered': 'blocking',
+  // An incoming connection request waits on this person; the two outcomes only inform.
+  'connection.request_received': 'blocking',
+  'connection.accepted': 'nonblocking',
+  'connection.declined': 'nonblocking',
 };
 
 /**
@@ -80,6 +102,9 @@ export interface NotificationRecord {
   readonly task?: Types.ObjectId;
   readonly proposal?: Types.ObjectId;
   readonly scheduleException?: Types.ObjectId;
+  readonly conversation?: Types.ObjectId;
+  /** The user whose act raised this row, where current actionability must be re-derived from it. */
+  readonly actor?: Types.ObjectId;
   readonly payload: NotificationPayload;
   /**
    * Whether the project was muted for this recipient when the event happened. The row is written
@@ -116,6 +141,8 @@ const notificationSchema = new Schema(
     task: { type: Schema.Types.ObjectId, ref: 'Task' },
     proposal: { type: Schema.Types.ObjectId, ref: 'RescheduleProposal' },
     scheduleException: { type: Schema.Types.ObjectId, ref: 'ScheduleException' },
+    conversation: { type: Schema.Types.ObjectId, ref: 'Conversation' },
+    actor: { type: Schema.Types.ObjectId, ref: 'User' },
 
     payload: { type: payloadSchema, required: true, default: () => ({}) },
     mutedAtCreation: { type: Boolean, required: true, default: false },

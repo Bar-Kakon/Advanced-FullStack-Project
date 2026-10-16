@@ -1,15 +1,24 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 import { AppNav } from '../../components/AppNav';
 import { ButtonSpinner } from '../../components/ButtonSpinner';
 import { FormAlert } from '../../components/FormAlert';
+import { GoogleSignInButton } from '../../components/GoogleSignInButton';
+import { googleClientId } from '../../auth/googleIdentity';
+import { classifyGoogleError, linkGoogleAccount, type GoogleFailure } from '../../api/google.api';
 import { useAuth } from '../../auth/useAuth';
 import { useLanguage } from '../../i18n/useLanguage';
 import { useDocumentTitle } from '../../routes/useDocumentTitle';
 import { useScreenStylesheet } from '../../styles/useScreenStylesheet';
 import { initialsOf } from '../profile/profileModel';
+import { CompanyMembershipSection } from './CompanyMembershipSection';
 import { useSettings } from './useSettings';
+import {
+  classifyAccountClosureError,
+  requestAccountClosure,
+  type AccountClosureFailure,
+} from '../../api/settings.api';
 import type { SettingsLanguage } from '../../api/settings.types';
 import profileCss from '../profile/profile.css?inline';
 import settingsCss from './settings.css?inline';
@@ -25,7 +34,8 @@ const HOURS = Array.from({ length: 24 }, (_, hour) => hour);
  */
 export const SettingsPage = () => {
   const { t, setLang } = useLanguage();
-  const { user } = useAuth();
+  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
   const {
     settings, loading, busy, savedSection, failure,
     setLanguage, setNotifications, setContactVisibility, unmuteProject,
@@ -38,6 +48,12 @@ export const SettingsPage = () => {
   useDocumentTitle(t.settings.documentTitle);
 
   const [digestHour, setDigestHour] = useState(18);
+  const [confirmingClosure, setConfirmingClosure] = useState(false);
+  const [closing, setClosing] = useState(false);
+  const [closureFailure, setClosureFailure] = useState<AccountClosureFailure | null>(null);
+  const [linking, setLinking] = useState(false);
+  const [linkedEmail, setLinkedEmail] = useState<string | null>(null);
+  const [linkFailure, setLinkFailure] = useState<GoogleFailure | null>(null);
   useEffect(() => {
     if (settings?.notifications.digestHour !== null && settings?.notifications.digestHour !== undefined) {
       setDigestHour(settings.notifications.digestHour);
@@ -53,6 +69,46 @@ export const SettingsPage = () => {
     setLang(language);
     void setLanguage(language);
   };
+
+  const requestClosure = async (): Promise<void> => {
+    setClosing(true);
+    setClosureFailure(null);
+    try {
+      await requestAccountClosure();
+      await signOut();
+      navigate('/login');
+    } catch (error) {
+      setClosureFailure(classifyAccountClosureError(error));
+      setConfirmingClosure(false);
+    } finally {
+      setClosing(false);
+    }
+  };
+
+  const closureMessage =
+    closureFailure === 'IN_COMPANY' ? t.settings.account.blockedInCompany
+    : closureFailure !== null ? t.settings.account.closureFailed
+    : null;
+
+  const linkGoogle = async (credential: string): Promise<void> => {
+    setLinking(true);
+    setLinkFailure(null);
+    try {
+      const { linkedEmail: email } = await linkGoogleAccount(credential);
+      setLinkedEmail(email);
+    } catch (error) {
+      setLinkFailure(classifyGoogleError(error));
+    } finally {
+      setLinking(false);
+    }
+  };
+
+  const linkMessage =
+    linkFailure === 'IDENTITY_CLAIMED' ? t.login.googleErrors.identityClaimed
+    : linkFailure === 'CREDENTIAL' ? t.login.googleErrors.credential
+    : linkFailure === 'NETWORK' ? t.settings.errors.network
+    : linkFailure !== null ? t.settings.account.googleLinkFailed
+    : null;
 
   const savedIn = (section: string) =>
     savedSection === section ? <span className="settings-saved">{t.settings.saved}</span> : null;
@@ -183,22 +239,38 @@ export const SettingsPage = () => {
               <p className="settings-section__note">{t.settings.contact.automaticNote}</p>
               <p className="settings-section__note">{t.settings.contact.connectionNote}</p>
 
+              <label className="settings-choice">
+                <input
+                  type="checkbox"
+                  checked={settings.contactVisibility.email}
+                  onChange={(event) => void setContactVisibility({ email: event.target.checked })}
+                />
+                <span className="settings-choice__label">{t.settings.contact.email}</span>
+              </label>
+
               {(
                 [
-                  ['email', t.settings.contact.email],
                   ['businessPhone', t.settings.contact.businessPhone],
                   ['officePhone', t.settings.contact.officePhone],
                 ] as const
               ).map(([field, label]) => (
-                <label className="settings-choice" key={field}>
-                  <input
-                    type="checkbox"
-                    checked={settings.contactVisibility[field]}
-                    onChange={(event) =>
-                      void setContactVisibility({ [field]: event.target.checked })
-                    }
-                  />
+                <label className="settings-choice settings-choice--stack" key={field}>
                   <span className="settings-choice__label">{label}</span>
+                  <select
+                    className="form-input"
+                    value={settings.contactVisibility[field]}
+                    onChange={(event) =>
+                      void setContactVisibility({
+                        [field]: event.target.value as 'default' | 'always' | 'hidden',
+                      })
+                    }
+                  >
+                    {(['default', 'always', 'hidden'] as const).map((choice) => (
+                      <option key={choice} value={choice}>
+                        {t.settings.contact.phoneChoices[choice]}
+                      </option>
+                    ))}
+                  </select>
                 </label>
               ))}
               {savedIn('contact')}
@@ -247,15 +319,91 @@ export const SettingsPage = () => {
               </div>
             </section>
 
+            <CompanyMembershipSection />
+
             <section className="settings-section" aria-labelledby="settings-account">
               <h2 className="settings-section__title" id="settings-account">
                 {t.settings.account.title}
               </h2>
+
+              {googleClientId() === undefined ? null : (
+                <>
+                  <h3 className="settings-section__title">{t.settings.account.googleTitle}</h3>
+                  {linkedEmail !== null ? (
+                    <p className="settings-section__note">
+                      {t.settings.account.googleLinkedAs.replace('{email}', linkedEmail)}
+                    </p>
+                  ) : settings.googleLinked ? (
+                    <p className="settings-section__note">{t.settings.account.googleLinkedNote}</p>
+                  ) : (
+                    <>
+                      <p className="settings-section__note">{t.settings.account.googleNote}</p>
+                      {linkMessage === null ? null : <FormAlert message={linkMessage} />}
+                      <div className="settings-google">
+                        <GoogleSignInButton
+                          onCredential={(credential) => void linkGoogle(credential)}
+                          text="continue_with"
+                          disabled={linking}
+                        />
+                      </div>
+                    </>
+                  )}
+                </>
+              )}
+
               <h3 className="settings-section__title">{t.settings.account.deactivationTitle}</h3>
               <p className="settings-section__note">{t.settings.account.deactivationNote}</p>
-              {/* Stated rather than drawn as a disabled control: the lifecycle is closed but how
-                  active commitments are handled is not, so there is nothing here to press yet. */}
-              <p className="settings-locked">{t.settings.account.deactivationPending}</p>
+              <p className="settings-section__note">{t.settings.account.deactivationObligations}</p>
+
+              {closureMessage === null ? null : <FormAlert message={closureMessage} />}
+
+              <button
+                type="button"
+                className="btn btn--ghost settings-closure__open"
+                onClick={() => setConfirmingClosure(true)}
+              >
+                {t.settings.account.requestClosure}
+              </button>
+
+              {confirmingClosure ? (
+                <div className="settings-confirm__overlay" role="presentation">
+                  <div
+                    className="settings-confirm"
+                    role="alertdialog"
+                    aria-modal="true"
+                    aria-labelledby="closure-confirm-title"
+                  >
+                    <h4 className="settings-confirm__title" id="closure-confirm-title">
+                      {t.settings.account.confirmTitle}
+                    </h4>
+                    <p className="settings-section__note">{t.settings.account.confirmBody}</p>
+                    <p className="settings-section__note">{t.settings.account.confirmAnonymization}</p>
+                    {user?.company?.standing === 'owner' ? (
+                      <p className="settings-section__note">{t.settings.account.confirmOwnerCompany}</p>
+                    ) : null}
+                    <div className="settings-confirm__actions">
+                      <button
+                        type="button"
+                        className="btn btn--primary"
+                        disabled={closing}
+                        aria-busy={closing}
+                        onClick={() => void requestClosure()}
+                      >
+                        {t.settings.account.confirmAction}
+                        {closing ? <ButtonSpinner /> : null}
+                      </button>
+                      <button
+                        type="button"
+                        className="btn btn--ghost"
+                        disabled={closing}
+                        onClick={() => setConfirmingClosure(false)}
+                      >
+                        {t.settings.account.closureCancel}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ) : null}
             </section>
           </div>
         )}

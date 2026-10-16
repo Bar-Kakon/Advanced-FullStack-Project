@@ -8,10 +8,15 @@ import { companyMembershipRepository } from '../companies/companyMembership.repo
 import { createCompanyContextService } from '../companies/companyContext.service.js';
 import { projectAccessRepository } from '../projectaccess/projectAccess.repository.js';
 import { projectRepository } from '../projects/project.repository.js';
+import { muteConversationReader } from './muteConversation.adapter.js';
 import { muteRepository } from './mute.repository.js';
 import { createMuteService, type MuteService } from './mute.service.js';
 
 const projectParamsSchema = Joi.object({ projectId: Joi.string().hex().length(24).required() });
+const conversationParamsSchema = Joi.object({
+  conversationId: Joi.string().hex().length(24).required(),
+});
+const contractorParamsSchema = Joi.object({ userId: Joi.string().hex().length(24).required() });
 const muteBodySchema = Joi.object({ muted: Joi.boolean().required() });
 
 export const buildMuteService = (): MuteService =>
@@ -23,6 +28,7 @@ export const buildMuteService = (): MuteService =>
       memberships: companyMembershipRepository,
       companies: companyRepository,
     }),
+    conversations: muteConversationReader,
   });
 
 export const createMutesModule = (
@@ -44,6 +50,50 @@ export const createMutesModule = (
       const { projectId } = getValidated<{ projectId: string }>(res, 'params');
       const { muted } = getValidated<{ muted: boolean }>(res, 'body');
       res.json({ mute: await service.setProjectMute(getAuthenticatedUserId(res), projectId, muted) });
+    },
+  );
+
+  /**
+   * Conversation and contractor mute. Both are the caller's OWN delivery preference: neither
+   * changes access, authority or domain state, and neither is a block.
+   */
+  router.get(
+    '/conversations/:conversationId',
+    validateRequest({ params: conversationParamsSchema }),
+    async (req, res) => {
+      const { conversationId } = getValidated<{ conversationId: string }>(res, 'params');
+      res.json({ mute: await service.conversationMute(getAuthenticatedUserId(res), conversationId) });
+    },
+  );
+
+  router.put(
+    '/conversations/:conversationId',
+    validateRequest({ params: conversationParamsSchema, body: muteBodySchema }),
+    async (req, res) => {
+      const { conversationId } = getValidated<{ conversationId: string }>(res, 'params');
+      const { muted } = getValidated<{ muted: boolean }>(res, 'body');
+      res.json({
+        mute: await service.setConversationMute(getAuthenticatedUserId(res), conversationId, muted),
+      });
+    },
+  );
+
+  router.get(
+    '/contractors/:userId',
+    validateRequest({ params: contractorParamsSchema }),
+    async (req, res) => {
+      const { userId } = getValidated<{ userId: string }>(res, 'params');
+      res.json({ mute: await service.contractorMute(getAuthenticatedUserId(res), userId) });
+    },
+  );
+
+  router.put(
+    '/contractors/:userId',
+    validateRequest({ params: contractorParamsSchema, body: muteBodySchema }),
+    async (req, res) => {
+      const { userId } = getValidated<{ userId: string }>(res, 'params');
+      const { muted } = getValidated<{ muted: boolean }>(res, 'body');
+      res.json({ mute: await service.setContractorMute(getAuthenticatedUserId(res), userId, muted) });
     },
   );
 

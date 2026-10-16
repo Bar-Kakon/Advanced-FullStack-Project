@@ -51,6 +51,10 @@ export interface ProjectRecord {
   readonly proposalResponseHours?: number;
   readonly completedAt?: Date;
   readonly pausedAt?: Date;
+  /** The cancellation's two-phase stamp: set, re-checked against task starts, then the row goes. */
+  readonly cancellingAt?: Date;
+  /** Who asked, so a recovery that resumes the cancellation still attributes the notice. */
+  readonly cancellingBy?: Types.ObjectId;
   readonly createdAt: Date;
   readonly updatedAt: Date;
 }
@@ -153,6 +157,8 @@ const projectSchema = new Schema(
 
     completedAt: { type: Date },
     pausedAt: { type: Date },
+    cancellingAt: { type: Date },
+    cancellingBy: { type: Schema.Types.ObjectId, ref: 'User' },
   },
   { timestamps: true },
 );

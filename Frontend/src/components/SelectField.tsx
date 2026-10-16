@@ -9,7 +9,8 @@ import { Chevron } from './Chevron';
  * border still works with no change to the stylesheet.
  */
 export const SelectField = <T extends string>({
-  id, label, value, onChange, onBlur, placeholder, options, required = false, hint, error, children, className = '', touched = false,
+  id, label, value, onChange, onBlur, placeholder, options, required = false, hint, error, children,
+  className = '', touched = false, invalid = false,
 }: {
   id: string;
   label: string;
@@ -25,12 +26,15 @@ export const SelectField = <T extends string>({
   children?: React.ReactNode;
   className?: string;
   touched?: boolean;
+  /** Carries the red state for a rule the browser cannot see, alongside the native `:invalid`. */
+  invalid?: boolean;
 }) => (
   <div className={`form-group ${className}`.trim()}>
     <FieldLabel htmlFor={id} text={label} />
     <div className="select-wrap">
       <select
-        className={`form-select${touched ? ' touched' : ''}`}
+        className={`form-select${touched ? ' touched' : ''}${invalid ? ' is-invalid' : ''}`}
+        aria-invalid={invalid}
         id={id}
         name={id}
         value={value}

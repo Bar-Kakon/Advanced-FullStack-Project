@@ -35,6 +35,8 @@ export interface ItemDecision {
 }
 
 export interface ProposalRepository {
+  /** PRJ-07: negotiation artifacts of a cancelled project go with it. */
+  deleteByProject(project: Types.ObjectId, session?: DbSession): Promise<number>;
   create(proposal: NewProposal): Promise<ProposalRecord>;
   findById(id: string): Promise<ProposalRecord | null>;
   listOpenForRespondent(respondent: Types.ObjectId): Promise<ProposalRecord[]>;
@@ -82,6 +84,13 @@ const CANCELLABLE: readonly ProposalStatus[] = ['requested', 'open', 'expired'];
 const ADJUSTABLE: readonly ProposalStatus[] = ['requested', 'open', 'expired'];
 
 export const proposalRepository: ProposalRepository = {
+  async deleteByProject(project, session) {
+    const query = RescheduleProposalModel.deleteMany({ project });
+    if (session) query.session(session);
+    const result = await query.exec();
+    return result.deletedCount;
+  },
+
   async create(proposal) {
     const created = new RescheduleProposalModel({
       ...proposal,
@@ -133,7 +142,7 @@ export const proposalRepository: ProposalRepository = {
     return RescheduleProposalModel.findOneAndUpdate(
       { _id: id, status: 'requested' },
       { $set: { status: 'open', launchedBy: by, launchedAt: new Date(), expiresAt } },
-      { new: true },
+      { returnDocument: 'after' },
     )
       .lean<ProposalRecord>()
       .exec();
@@ -143,7 +152,7 @@ export const proposalRepository: ProposalRepository = {
     return RescheduleProposalModel.findOneAndUpdate(
       { _id: id, status: 'open', expiresAt: { $lte: at } },
       { $set: { status: 'expired', expiredAt: at } },
-      { new: true },
+      { returnDocument: 'after' },
     )
       .lean<ProposalRecord>()
       .exec();
@@ -153,7 +162,7 @@ export const proposalRepository: ProposalRepository = {
     return RescheduleProposalModel.findOneAndUpdate(
       { _id: id, status: { $in: [...CANCELLABLE] } },
       { $set: { status: 'cancelled', cancelledBy: by, cancelledAt: at } },
-      { new: true },
+      { returnDocument: 'after' },
     )
       .lean<ProposalRecord>()
       .exec();
@@ -186,7 +195,7 @@ export const proposalRepository: ProposalRepository = {
       },
       { $set: set, ...(Object.keys(unset).length > 0 ? { $unset: unset } : {}) },
       {
-        new: true,
+        returnDocument: 'after',
         arrayFilters: [
           { 'row._id': itemId, 'row.respondent': respondent, 'row.response': 'pending', 'row.excluded': false },
         ],
@@ -200,7 +209,7 @@ export const proposalRepository: ProposalRepository = {
     return RescheduleProposalModel.findOneAndUpdate(
       { _id: id, status: 'requested' },
       { $set: { alternativesContext: context } },
-      { new: true },
+      { returnDocument: 'after' },
     )
       .lean<ProposalRecord>()
       .exec();
@@ -210,7 +219,7 @@ export const proposalRepository: ProposalRepository = {
     return RescheduleProposalModel.findOneAndUpdate(
       { _id: id, status: 'requested' },
       { $set: { changes, items: [...items], selectedAlternative } },
-      { new: true },
+      { returnDocument: 'after' },
     )
       .lean<ProposalRecord>()
       .exec();
@@ -220,7 +229,7 @@ export const proposalRepository: ProposalRepository = {
     return RescheduleProposalModel.findOneAndUpdate(
       { _id: id, status: { $in: [...ADJUSTABLE] }, items: { $elemMatch: { _id: itemId } } },
       { $set: { 'items.$[row].excluded': excluded, 'items.$[row].excludedBy': by } },
-      { new: true, arrayFilters: [{ 'row._id': itemId }] },
+      { returnDocument: 'after', arrayFilters: [{ 'row._id': itemId }] },
     )
       .lean<ProposalRecord>()
       .exec();
@@ -243,7 +252,7 @@ export const proposalRepository: ProposalRepository = {
       { _id: id, status: { $in: [...RESOLVABLE] } },
       { $set: set },
       {
-        new: true,
+        returnDocument: 'after',
         ...(filters.length > 0 ? { arrayFilters: filters } : {}),
         ...(session ? { session } : {}),
       },

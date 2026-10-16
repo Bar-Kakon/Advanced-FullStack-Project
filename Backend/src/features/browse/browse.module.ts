@@ -8,6 +8,7 @@ import { companyMembershipRepository } from '../companies/companyMembership.repo
 import { fileAssetRepository } from '../files/fileAsset.repository.js';
 import { createFileAssetService } from '../files/fileAsset.service.js';
 import type { RoutesAdapter } from '../location/routes.adapter.js';
+import { projectAccessRepository } from '../projectaccess/projectAccess.repository.js';
 import { ratingRepository } from '../ratings/rating.repository.js';
 import { userRepository } from '../users/user.repository.js';
 import { workEntryRepository } from '../workentries/workEntry.repository.js';
@@ -19,6 +20,7 @@ import {
   contractorParamsSchema,
   workImageParamsSchema,
 } from './browse.validation.js';
+import { createWorkCommitmentAdapter } from '../messaging/workCommitment.adapter.js';
 import { createPhoneVisibilityService } from './phoneVisibility.service.js';
 import { createCoordinationOutcomeAdapter } from '../coordination/coordinationOutcome.adapter.js';
 import { handoffRepository } from '../coordination/handoff.repository.js';
@@ -40,6 +42,10 @@ export const createBrowseModule = ({
   relationships,
   routes,
 }: BrowseModuleDependencies): Router => {
+  const flexibilityService = createFlexibilityService(
+    createCoordinationOutcomeAdapter(proposalRepository, handoffRepository),
+  );
+
   const controller = createBrowseController(
     createBrowseService({
       browse: browseRepository,
@@ -47,6 +53,7 @@ export const createBrowseModule = ({
       relationships,
       ratings: ratingRepository,
       routes,
+      flexibility: flexibilityService,
     }),
     createPublicProfileService({
       users: userRepository,
@@ -55,10 +62,14 @@ export const createBrowseModule = ({
       workEntries: workEntryRepository,
       ratings: ratingRepository,
       eligibility: workEvidenceAdapter,
-      flexibility: createFlexibilityService(createCoordinationOutcomeAdapter(proposalRepository, handoffRepository)),
+      flexibility: flexibilityService,
       relationships,
       blocks,
-      phones: createPhoneVisibilityService(),
+      phones: createPhoneVisibilityService({
+        access: projectAccessRepository,
+        memberships: companyMembershipRepository,
+        commitments: createWorkCommitmentAdapter(),
+      }),
       files: createFileAssetService(fileAssetRepository),
     }),
   );

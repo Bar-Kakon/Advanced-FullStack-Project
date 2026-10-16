@@ -2,7 +2,7 @@
  * Proves the Completed Work rules over real HTTP.
  *
  * The rules under test: an entry belongs to the person who created it and nobody else can read or
- * delete it, the `Completed on FieldSync` badge is server-derived and cannot be claimed by a
+ * delete it, the `Completed on Blokta` badge is server-derived and cannot be claimed by a
  * client, and a link to work the server cannot verify is refused rather than silently dropped.
  *
  *   npm run verify:completed-work

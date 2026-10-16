@@ -1,6 +1,7 @@
 import Joi from 'joi';
 
 import { structuredPlaceSchema, type StructuredPlaceBody } from '../location/place.validation.js';
+import { phone, prose } from '../../shared/fieldRules.js';
 
 import {
   DRILLING_TYPES,
@@ -19,12 +20,14 @@ const MAX_NAME_LENGTH = 100;
 const MAX_BIO_LENGTH = 600;
 const MAX_CITY_LENGTH = 80;
 const MAX_SPECIALTY_OTHER_LENGTH = 60;
-/** A bound, not a format. What counts as a valid number here has never been approved — D27. */
-const MAX_PHONE_LENGTH = 30;
 const MAX_COMPANY_NAME_LENGTH = 120;
 
-/** `null` clears an optional value; omitting the key leaves it untouched. */
-const clearableString = (max: number) => Joi.string().trim().min(1).max(max).allow(null);
+/**
+ * The same rules Register applies, so one screen cannot accept what the other refuses. `null`
+ * clears an optional value; omitting the key leaves it untouched.
+ */
+const clearablePhone = () => phone().allow(null);
+const clearableProse = (max: number) => prose(max).allow(null);
 
 export interface ProfileUpdateBody {
   readonly firstName?: string;
@@ -49,8 +52,8 @@ export interface ProfileUpdateBody {
  * and `min(1)` on the object means an empty patch is refused rather than silently doing nothing.
  */
 export const profileUpdateBodySchema = Joi.object<ProfileUpdateBody>({
-  firstName: Joi.string().trim().min(1).max(MAX_NAME_LENGTH),
-  lastName: Joi.string().trim().min(1).max(MAX_NAME_LENGTH),
+  firstName: prose(MAX_NAME_LENGTH),
+  lastName: prose(MAX_NAME_LENGTH),
   bio: Joi.string().trim().allow('').max(MAX_BIO_LENGTH),
 
   // The route the account was opened through is not editable here, and the service refuses any
@@ -62,15 +65,15 @@ export const profileUpdateBodySchema = Joi.object<ProfileUpdateBody>({
     // `required()` is what makes an absent `specialties` fail the condition rather than match it.
     is: Joi.array().items(Joi.string()).has(Joi.string().valid(...OTHER_SPECIALTIES)).required(),
     then: Joi.string().trim().min(1).max(MAX_SPECIALTY_OTHER_LENGTH).required(),
-    otherwise: clearableString(MAX_SPECIALTY_OTHER_LENGTH),
+    otherwise: clearableProse(MAX_SPECIALTY_OTHER_LENGTH),
   }),
 
   heavyEquipment: Joi.array().items(Joi.string().valid(...HEAVY_EQUIPMENT)).unique(),
   drillingTypes: Joi.array().items(Joi.string().valid(...DRILLING_TYPES)).unique(),
 
-  businessPhone: clearableString(MAX_PHONE_LENGTH),
+  businessPhone: clearablePhone(),
 
-  city: Joi.string().trim().min(1).max(MAX_CITY_LENGTH),
+  city: prose(MAX_CITY_LENGTH),
   region: Joi.string().valid(...REGIONS),
   place: structuredPlaceSchema,
   travelRadiusKm: Joi.number().integer().min(0).max(500),
@@ -87,8 +90,8 @@ export interface CompanyUpdateBody {
 
 /** The three company-level values the profile screens show. Guarded by `company.manage`. */
 export const companyUpdateBodySchema = Joi.object<CompanyUpdateBody>({
-  name: Joi.string().trim().min(1).max(MAX_COMPANY_NAME_LENGTH),
-  officePhone: clearableString(MAX_PHONE_LENGTH),
+  name: prose(MAX_COMPANY_NAME_LENGTH),
+  officePhone: clearablePhone(),
   availability: Joi.string().valid(...AVAILABILITY_STATUSES),
 }).min(1);
 

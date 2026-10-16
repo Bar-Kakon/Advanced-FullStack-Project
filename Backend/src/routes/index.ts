@@ -6,6 +6,7 @@ import { createBillingModule } from '../features/billing/billing.module.js';
 import { createBlocksModule } from '../features/blocks/blocks.module.js';
 import { createBrowseModule } from '../features/browse/browse.module.js';
 import { createCompaniesModule } from '../features/companies/companies.module.js';
+import { createContactModule } from '../features/contact/contact.module.js';
 import { createConnectionsModule } from '../features/connections/connections.module.js';
 import { createDashboardModule } from '../features/dashboard/dashboard.module.js';
 import { createLocationModule } from '../features/location/location.module.js';
@@ -30,6 +31,7 @@ import {
 } from '../features/coordination/coordination.module.js';
 import { responsibilityTransferListener } from '../features/coordination/membershipOutcome.adapter.js';
 import { createMutesModule } from '../features/mutes/mutes.module.js';
+import { createMessagingModule } from '../features/messaging/messaging.module.js';
 import { createNotificationsModule } from '../features/notifications/notifications.module.js';
 import { createScheduleExceptionsModule } from '../features/scheduleexceptions/scheduleExceptions.module.js';
 import { createSettingsModule } from '../features/settings/settings.module.js';
@@ -56,6 +58,8 @@ export const createApiRouter = (config: AppConfig): Router => {
   router.use('/health', createHealthRouter());
   router.use('/health-auth', createHealthAuthRouter(auth.requireAccessToken));
   router.use('/auth', auth.router);
+  // Public, like the Landing page it is submitted from: there is no session to require.
+  router.use('/contact', createContactModule(config).router);
   router.use('/users', users.router);
   router.use('/companies', createCompaniesModule(auth.requireAccessToken, users.companyProfileRoutes));
   router.use('/blocks', blocks.router);
@@ -72,6 +76,7 @@ export const createApiRouter = (config: AppConfig): Router => {
   router.use('/work-plans', createWorkPlansModule(auth.requireAccessToken));
   router.use('/coordination', createCoordinationModule(auth.requireAccessToken, coordination));
   router.use('/mutes', createMutesModule(auth.requireAccessToken));
+  router.use('/conversations', createMessagingModule(auth.requireAccessToken));
   router.use('/notifications', createNotificationsModule(auth.requireAccessToken));
   router.use('/schedule-exceptions', createScheduleExceptionsModule(auth.requireAccessToken));
   router.use('/settings', createSettingsModule(auth.requireAccessToken));

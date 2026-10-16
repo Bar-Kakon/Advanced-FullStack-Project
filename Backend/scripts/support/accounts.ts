@@ -1,7 +1,7 @@
 /** Builds real accounts through the real Register and Login endpoints, and removes them afterwards. */
 import { Types } from 'mongoose';
 
-import { CompanyModel } from '../../src/features/companies/company.model.js';
+import { CompanyModel, type ContractorCategory } from '../../src/features/companies/company.model.js';
 import { CompanyMembershipModel } from '../../src/features/companies/companyMembership.model.js';
 import { FileAssetModel } from '../../src/features/files/fileAsset.model.js';
 import { UserModel } from '../../src/features/users/user.model.js';
@@ -15,7 +15,12 @@ export interface Account {
   readonly companyId: Types.ObjectId;
 }
 
-export const createAccount = async (baseUrl: string, marker: string, index: number): Promise<Account> => {
+export const createAccount = async (
+  baseUrl: string,
+  marker: string,
+  index: number,
+  options: { readonly contractorCategory?: ContractorCategory } = {},
+): Promise<Account> => {
   const email = `${marker}.${index}.${Date.now()}@example.com`;
   const companyName = `${marker} ${index} ${Date.now()} Ltd`;
 
@@ -25,6 +30,7 @@ export const createAccount = async (baseUrl: string, marker: string, index: numb
       lastName: `Account${index}`,
       standing: 'owner',
       companyName,
+      contractorCategory: options.contractorCategory ?? 'subcontractor',
       email,
       password: 'CorrectHorse42!',
       confirmPassword: 'CorrectHorse42!',

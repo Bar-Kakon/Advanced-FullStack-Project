@@ -4,7 +4,7 @@
  * compile error. That direction is why this file imports nothing — importing the type it
  * defines would be circular.
  *
- * Every string here is lifted verbatim from `screens/register.html`. Nothing was reworded in the
+ * Every string here is lifted verbatim from the approved Register screen. Nothing was reworded in the
  * migration — the copy on this screen has been reviewed and some Hebrew/English pairs deliberately
  * differ, which is recorded in the source-of-truth document.
  */
@@ -12,9 +12,56 @@ export const he = {
   langName: 'עב',
   otherLangName: 'EN',
   langSwitchLabel: 'Language / שפה',
+  routeLoading: 'טוען…',
+
+  timeline: {
+    documentTitle: 'ציר הזמן — Blokta',
+    title: 'ציר הזמן של הפרויקט',
+    lede: 'ההתקדמות הכרונולוגית, השלבים והתלויות — לקריאה בלבד.',
+    back: 'חזרה לפרויקט',
+    loading: 'טעינת ציר הזמן…',
+    failed: 'לא ניתן לטעון את ציר הזמן.',
+    empty: 'אין עדיין שלבים או משימות עם תאריכים להצגה.',
+    stageEmpty: 'אין משימות מתוזמנות בשלב הזה.',
+    noStage: 'ללא שלב',
+    dependsOn: 'תלוי ב',
+    gate: 'שער',
+    today: 'היום',
+    planned: 'מתוכנן',
+    inProgress: 'בביצוע',
+    completed: 'הושלם',
+    overdue: 'באיחור',
+    open: 'ציר הזמן',
+  },
+
+  rating: {
+    title: 'דירוג בעל המקצוע',
+    workLabel: 'העבודה המשותפת שעליה הדירוג',
+    workPlaceholder: 'בחירת עבודה שהושלמה',
+    scoreLabel: 'ציון (1–5)',
+    commentLabel: 'חוות דעת (לא חובה)',
+    submit: 'שליחת הדירוג',
+    success: 'הדירוג נשלח. תודה!',
+    close: 'סגירה',
+    cancel: 'ביטול',
+    loading: 'טעינת העבודות המשותפות…',
+    errors: {
+      notEligible: 'דירוג אפשרי רק לאחר עבודה משותפת שהושלמה במערכת.',
+      alreadyRated: 'כבר נשלח דירוג על העבודה הזו.',
+      superseded: 'ההקשר של הדירוג השתנה. כדאי לרענן ולנסות שוב.',
+      network: 'לא הצלחנו להגיע לשרת. כדאי לבדוק את החיבור ולנסות שוב.',
+      generic: 'הדירוג לא נשלח. כדאי לנסות שוב.',
+    },
+  },
+
+  appError: {
+    title: 'משהו השתבש',
+    body: 'אירעה שגיאה בטעינת המסך. רענון הדף בדרך כלל פותר את זה.',
+    reload: 'רענון הדף',
+    home: 'חזרה לדף הבית',
+  },
 
   brand: {
-    beta: 'בטא',
     headline: 'חשבון אחד. כל הפרויקטים במקום אחד.',
     sub: 'קבלנים ראשיים, קבלני משנה וספקים — כולם משתמשים שווים, על פלטפורמה אחת.',
     featuresLabel: 'עיקרי הפלטפורמה',
@@ -24,7 +71,7 @@ export const he = {
       'ציוני אמון מהתנהגות אמיתית — לא מדיווח עצמי',
     ],
     footerNote:
-      'אותו קבלן יכול להיות קבלן ראשי בפרויקט אחד וקבלן משנה באחר. התפקיד עוקב אחר העבודה, לא אחרי האדם.',
+      'אותו קבלן יכול להיות קבלן ביצוע ראשי בפרויקט אחד וקבלן משנה באחר. התפקיד עוקב אחר העבודה, לא אחרי האדם.',
   },
 
   form: {
@@ -38,10 +85,12 @@ export const he = {
     signIn: 'התחברות',
     secureNote: 'TLS · חיבור מוצפן מקצה לקצה',
     togglePassword: 'הצגת סיסמה',
+    /** One sentence for every field left empty, so a missing answer always reads the same. */
+    required: 'זהו שדה חובה',
 
-    firstName: { label: 'שם פרטי', placeholder: 'ישראל' },
-    lastName: { label: 'שם משפחה', placeholder: 'ישראלי' },
-    companyName: { label: 'שם חברה', placeholder: 'ישראלי בנייה בע״מ' },
+    firstName: { label: 'שם פרטי', placeholder: 'ישראל', error: 'השם חייב לכלול לפחות אות אחת' },
+    lastName: { label: 'שם משפחה', placeholder: 'ישראלי', error: 'השם חייב לכלול לפחות אות אחת' },
+    companyName: { label: 'שם חברה', placeholder: 'ישראלי בנייה בע״מ', error: 'שם החברה חייב לכלול לפחות אות אחת' },
     email: { label: 'כתובת אימייל', placeholder: 'you@example.com', error: 'יש להזין כתובת אימייל תקינה' },
     registrationCategory: {
       label: 'מסלול הרשמה',
@@ -49,15 +98,18 @@ export const he = {
       hint: 'המסלול קובע אילו תחומים מוצגים בהמשך.',
     },
     specialty: { label: 'תחום עיקרי', placeholder: 'בחירת תחום…', hint: 'אפשר להוסיף ולשנות תחומים בהמשך' },
-    specialtyOther: { label: 'פירוט התחום', placeholder: 'לדוגמה: פיגומים, גינון, מעליות' },
+    specialtyOther: { label: 'פירוט התחום', placeholder: 'לדוגמה: פיגומים, גינון, מעליות', error: 'יש לפרט את התחום במילים' },
     drillingTypes: { label: 'תחומי קידוח', hint: 'אפשר לסמן את סוגי הקידוח הרלוונטיים.' },
-    city: { label: 'עיר', placeholder: 'תל אביב' },
+    city: { label: 'עיר', placeholder: 'תל אביב', error: 'שם היישוב חייב לכלול לפחות אות אחת' },
     region: { label: 'אזור', placeholder: 'בחירת אזור…' },
-    officePhone: { label: 'טלפון משרד', placeholder: '03-1234567' },
-    businessPhone: { label: 'טלפון עסקי', placeholder: '050-1234567' },
+    // The same sentence on both numbers: it describes the shape of a phone number, and that does
+    // not change between the office line and the business one.
+    officePhone: { label: 'טלפון משרד', placeholder: '03-1234567', error: 'מספר טלפון יכול לכלול ספרות, רווח, מקף, סוגריים ו-+ בלבד, ולפחות 7 ספרות' },
+    businessPhone: { label: 'טלפון עסקי', placeholder: '050-1234567', error: 'מספר טלפון יכול לכלול ספרות, רווח, מקף, סוגריים ו-+ בלבד, ולפחות 7 ספרות' },
     availability: { label: 'זמינות', hint: 'אפשר לשנות בכל שלב בפרופיל.' },
+    contractorCategory: { label: 'סוג העסק', hint: 'קובע אילו יכולות זמינות לחשבון.' },
     standing: {
-      label: 'איך מצטרפים ל-FieldSync?',
+      label: 'איך מצטרפים ל-Blokta?',
       placeholder: 'בחירה…',
       owner: 'בעלות על חברה',
       employee: 'העסקה בחברה',
@@ -67,7 +119,7 @@ export const he = {
     companyPosition: { label: 'תפקיד בחברה', placeholder: 'בחירת תפקיד…' },
     password: { label: 'סיסמה', placeholder: '••••••••', hint: 'לפחות 8 תווים', error: 'הסיסמה חייבת להכיל לפחות 8 תווים' },
     confirmPassword: { label: 'אימות סיסמה', placeholder: '••••••••', error: 'הסיסמאות אינן תואמות' },
-    terms: { before: 'אישור קריאה והסכמה ל', tos: 'תנאי השימוש', between: ' ול', privacy: 'מדיניות הפרטיות' },
+    terms: { before: 'אישור קריאה והסכמה ל', tos: 'תנאי השימוש', open: 'פתיחת תנאי השימוש', error: 'יש לאשר את תנאי השימוש כדי להמשיך' },
 
     steps: {
       label: 'שלבי ההרשמה',
@@ -81,17 +133,17 @@ export const he = {
     // The owner-approved wording, unchanged. Refusing email blocks nothing.
     emailNotifications: {
       legend: 'התראות בדוא״ל',
-      body: 'FieldSync יכולה לשלוח הודעות תפעוליות בדוא״ל בנוגע לפרויקטים, משימות, בקשות, אישורים ושינויים בלוחות זמנים שעשויים לדרוש התייחסות.',
-      inApp: 'ההתראות עצמן יופיעו גם בתוך FieldSync בהתאם לאופי האירוע ולהגדרות החשבון.',
-      optOut: 'אפשר לבחור שלא לקבל הודעות בדוא״ל ולהמשיך להשתמש במערכת כרגיל. במקרה כזה, חשוב לעקוב אחר ההתראות בתוך FieldSync, משום שעדכון שדורש התייחסות בזמן עלול שלא להיקרא מיד.',
+      body: 'Blokta יכולה לשלוח הודעות תפעוליות בדוא״ל בנוגע לפרויקטים, משימות, בקשות, אישורים ושינויים בלוחות זמנים שעשויים לדרוש התייחסות.',
+      inApp: 'ההתראות עצמן יופיעו גם בתוך Blokta בהתאם לאופי האירוע ולהגדרות החשבון.',
+      optOut: 'אפשר לבחור שלא לקבל הודעות בדוא״ל ולהמשיך להשתמש במערכת כרגיל. במקרה כזה, חשוב לעקוב אחר ההתראות בתוך Blokta, משום שעדכון שדורש התייחסות בזמן עלול שלא להיקרא מיד.',
       accept: 'קבלת הודעות תפעוליות בדוא״ל',
-      decline: 'הסתמכות על ההתראות בתוך FieldSync בלבד',
+      decline: 'הסתמכות על ההתראות בתוך Blokta בלבד',
       changeable: 'אפשר לשנות את הבחירה בהמשך בהגדרות ההתראות.',
     },
 
     /**
      * Shown when Register is completing a Google sign-in. Google supplies the identity and nothing
-     * else — the trade, the business and the location are FieldSync's own onboarding and are still
+     * else — the trade, the business and the location are Blokta's own onboarding and are still
      * asked for here, with no value guessed at from the Google account.
      */
     googleOnboarding: {
@@ -206,8 +258,8 @@ export const he = {
 
   /** Browse Contractors and the Public Profile embedded in it. */
   browse: {
-    title: 'עיון בקבלנים',
-    lede: 'חיפוש בעלי מקצוע לפי תחום, אזור, זמינות ומרחק נסיעה בפועל.',
+    title: 'חיפוש בעלי מקצוע',
+    lede: 'סינון לפי תחום, אזור, זמינות ומרחק נסיעה בפועל.',
     resultsCount: '{count} תוצאות',
     loading: 'טוען קבלנים…',
     loadMore: 'טעינת תוצאות נוספות',
@@ -263,8 +315,8 @@ export const he = {
       noRating: 'אין עדיין דירוג',
       ratingCount: '{count} דירוגים',
       drivingDistance: '{km} ק״מ נסיעה',
-      /** Never a number: no approved flexibility arithmetic exists. */
-      noFlexibility: 'אין עדיין ציון גמישות',
+      flexibilityScore: '{score}/100 — {category}',
+      noFlexibility: 'אין עדיין נתונים רלוונטיים',
     },
 
     profile: {
@@ -279,14 +331,20 @@ export const he = {
       noApprovedPlaces: 'לא הוגדרו מקומות מאושרים.',
       work: 'עבודות שהושלמו',
       noWork: 'אין עדיין עבודות שהושלמו.',
-      badge: 'הושלם ב־FieldSync',
+      badge: 'הושלם ב־Blokta',
       phones: 'פרטי קשר',
       officePhone: 'טלפון משרד',
       businessPhone: 'טלפון עסקי',
       phonesHidden: 'אין פרטי קשר זמינים.',
+      blockUser: 'חסימת המשתמש',
+      blockNote: 'חסימה מסתירה את שני הצדדים זה מזה ומונעת פתיחת שיחות חדשות. עבודה משותפת קיימת בפרויקט אינה מושפעת.',
+      blockConfirm: 'חסימה',
+      blockCancel: 'ביטול',
+      blockDone: 'המשתמש נחסם.',
       ratings: 'דירוג',
       noRatings: 'אין עדיין דירוג.',
       rate: 'דירוג בעל המקצוע',
+      message: 'שליחת הודעה',
       cannotRateSelf: 'אי אפשר לדרג פרופיל עצמי.',
       cannotRateYet: 'דירוג אפשרי רק לאחר עבודה משותפת שהושלמה במערכת.',
       loading: 'טוען פרופיל…',
@@ -343,12 +401,13 @@ export const he = {
 
   /** The app navbar, shared by every authenticated screen. */
   nav: {
-    home: 'FieldSync — דף הבית',
+    home: 'Blokta — דף הבית',
     label: 'ניווט ראשי',
-    browse: 'עיון בקבלנים',
+    browse: 'חיפוש בעלי מקצוע',
     network: 'הרשת שלי',
     projects: 'פרויקטים',
     myTasks: 'המשימות שלי',
+    messages: 'הודעות',
     notifications: 'התראות',
     accountMenu: 'תפריט חשבון',
     account: {
@@ -362,8 +421,7 @@ export const he = {
 
   login: {
     brand: {
-      beta: 'בטא',
-      headline: 'תיאום שזז במהירות של הבנייה.',
+        headline: 'תיאום שזז במהירות של הבנייה.',
       sub: 'משימות, תלויות ותזמונים מחדש — מנוהלים בפנים, לא בטלפון.',
       featuresLabel: 'עיקרי הפלטפורמה',
       features: [
@@ -375,7 +433,7 @@ export const he = {
         'ציוני אמון מהתנהגות אמיתית — לא מדיווח עצמי',
       ],
       footerNote:
-        'אותו קבלן יכול להיות קבלן ראשי בפרויקט אחד וקבלן משנה באחר. התפקיד עוקב אחר העבודה, לא אחרי האדם.',
+        'אותו קבלן יכול להיות קבלן ביצוע ראשי בפרויקט אחד וקבלן משנה באחר. התפקיד עוקב אחר העבודה, לא אחרי האדם.',
     },
     title: 'ברוכים השבים',
     subtitle: 'התחברות לחשבון כדי להמשיך',
@@ -405,10 +463,10 @@ export const he = {
      * and can name internals, so every case here is answered in the product's own words.
      */
     googleErrors: {
-      // The address already has a FieldSync account with no Google link. It says whose move it is,
+      // The address already has a Blokta account with no Google link. It says whose move it is,
       // because the person cannot fix this from the Google side.
       linkRequired: 'לכתובת הזו כבר קיים חשבון עם סיסמה. יש להתחבר עם הסיסמה, ואז לקשר את Google מתוך החשבון.',
-      identityClaimed: 'חשבון ה-Google הזה כבר מקושר לחשבון FieldSync אחר.',
+      identityClaimed: 'חשבון ה-Google הזה כבר מקושר לחשבון Blokta אחר.',
       emailNotVerified: 'Google לא אימת את כתובת האימייל של החשבון הזה.',
       notConfigured: 'התחברות עם Google אינה זמינה כרגע. אפשר להתחבר עם אימייל וסיסמה.',
       credential: 'לא הצלחנו לאמת את חשבון ה-Google. אפשר לנסות שוב.',
@@ -417,14 +475,39 @@ export const he = {
   },
 
   /**
-   * Copy lifted verbatim from `screens/forgot-password.html`. The non-committal wording is the
+   * Copy lifted verbatim from the approved Forgot password screen. The non-committal wording is the
    * point of the screen: the same answer is shown whether or not an account exists, so the form
    * cannot be used to discover who is registered.
    */
+  accountRecovery: {
+    entry: 'שחזור חשבון שנמחק',
+    title: 'שחזור חשבון שנמחק',
+    subtitle: 'חשבון שנמחק ניתן לשחזור בתוך 60 יום. הזנת האימייל המשויך לחשבון תשלח קישור שחזור.',
+    email: { label: 'כתובת אימייל', placeholder: 'you@example.com', error: 'יש להזין כתובת אימייל תקינה' },
+    submit: 'שליחת קישור שחזור',
+    backToSignIn: 'חזרה להתחברות',
+    sentTitle: 'אם קיים חשבון מתאים — נשלח קישור',
+    sentSubtitle: 'אם הכתובת שייכת לחשבון שנמחק בתוך תקופת השחזור, קישור שחזור חד-פעמי ממתין באימייל. תוקפו 60 דקות.',
+    privacyNote: 'מטעמי פרטיות מוצגת אותה הודעה בכל מקרה.',
+    confirmTitle: 'השלמת שחזור החשבון',
+    confirmSubtitle: 'אישור הקישור משחזר את החשבון ומאפשר התחברות רגילה.',
+    confirmAction: 'שחזור החשבון',
+    restoring: 'משחזר…',
+    successTitle: 'החשבון שוחזר',
+    successSubtitle: 'החשבון חזר לפעילות. ההתחברות מתבצעת עם פרטי ההתחברות הקיימים.',
+    toLogin: 'מעבר להתחברות',
+    missingToken: 'הקישור חסר או שבור. אפשר לבקש קישור שחזור חדש.',
+    errors: {
+      invalid: 'הקישור אינו תקף עוד. אפשר לבקש קישור שחזור חדש.',
+      expired: 'תקופת השחזור של 60 יום הסתיימה, ולא ניתן עוד לשחזר את החשבון.',
+      network: 'לא הצלחנו להגיע לשרת. כדאי לבדוק את החיבור ולנסות שוב.',
+      generic: 'הפעולה לא הושלמה. כדאי לנסות שוב.',
+    },
+  },
+
   forgotPassword: {
     brand: {
-      beta: 'בטא',
-      headline: 'הפרויקטים ממתינים — הגישה תחזור.',
+        headline: 'הפרויקטים ממתינים — הגישה תחזור.',
       sub: 'איפוס סיסמה מאובטח. נשלח קישור חד-פעמי לאימייל שבחשבון, והוא יפוג בתוך 30 דקות.',
       featuresLabel: 'עיקרי האיפוס',
       features: [
@@ -446,6 +529,8 @@ export const he = {
     backButton: 'חזרה להתחברות',
     noMail: 'לא הגיע כלום?',
     resend: 'שליחה מחדש',
+    resent: 'הקישור נשלח שוב.',
+    resendFailed: 'השליחה החוזרת נכשלה. כדאי לנסות שוב מעט מאוחר יותר.',
     /** The honest build state, in the same voice the other screens use for an absent endpoint. */
     errors: {
       network: 'לא ניתן להתחבר לשרת. יש לבדוק את החיבור לאינטרנט ולנסות שוב.',
@@ -455,8 +540,7 @@ export const he = {
 
   resetPassword: {
     brand: {
-      beta: 'בטא',
-      headline: 'סיסמה חדשה, וחזרה פנימה.',
+        headline: 'סיסמה חדשה, וחזרה פנימה.',
       sub: 'בחירת סיסמה חזקה שלא הייתה בשימוש בעבר. לאחר האיפוס כל הסשנים הפעילים יינותקו.',
       featuresLabel: 'הנחיות לסיסמה',
       features: [
@@ -540,9 +624,13 @@ export const he = {
       'project.member.manage': 'ניהול משתתפים',
       'project.permission.grant': 'מתן הרשאות',
       'task.create': 'יצירת משימות',
+      'task.edit': 'עריכת משימות',
       'task.assign': 'שיוך משימות',
       'schedule.exception.approve': 'אישור חריגים בלוח',
       'schedule.partial_release.manage': 'שחרור חלקי של עבודה להמשך',
+      'workplan.manage': 'ניהול תוכניות עבודה',
+      'schedule.change.manage': 'ניהול שינויים בלוח הזמנים',
+      'room.moderate': 'ניהול שיחת הפרויקט (הסרה ושימור הודעות)',
     },
 
     roles: {
@@ -585,6 +673,21 @@ export const he = {
     kind: {
       project: 'משימה בפרויקט',
       standalone: 'עבודה עצמאית',
+      agreement: 'עבודה מתוך הסכם',
+    },
+
+    commissioned: {
+      title: 'עבודות שהזמנתי',
+      lede: 'מעקב קריאה בלבד אחר עבודה שהוזמנה בהסכם. הביצוע מנוהל אצל בעל המקצוע.',
+      loading: 'טעינת העבודות שהוזמנו…',
+      failure: 'לא ניתן לטעון את העבודות שהוזמנו.',
+      empty: 'עדיין לא הוזמנה עבודה בהסכם.',
+      performer: 'מבצע העבודה: {name}',
+      roleOversight: 'פיקוח · הוזמן על ידי {name}',
+      roleTrackee: 'במעקב שלי · הוזמן על ידי {name}',
+      arrangementOwnerOnly: 'מעקב אצל הבעלים',
+      arrangementTransferred: 'מעקב הועבר אל {name}',
+      arrangementShared: 'מעקב משותף עם {name}',
     },
 
     groups: {
@@ -598,6 +701,9 @@ export const he = {
       from: 'מאת {name}',
       /** Owner-approved 2026-08-30 for the rows with no counterparty at all. */
       selfOpened: 'עבודה שפתחתי',
+      workOwner: 'בעל העבודה: {name}',
+      workOwnerLabel: 'בעל העבודה',
+      performerSelf: 'מבצע העבודה: אני',
       delegated: 'העבודה הועברה לביצוע',
       performing: 'העבודה התקבלה לביצוע',
       pendingProposal: 'ממתין לתגובה שלי על שינוי תאריך',
@@ -620,6 +726,11 @@ export const he = {
       title: 'פרטי העבודה',
       back: 'חזרה למשימות',
       loading: 'טעינת פרטי העבודה…',
+      documents: {
+        title: 'מסמכי ההסכם',
+        lede: 'הקבצים שצורפו להסכם העבודה שממנו נוצרה העבודה הזו.',
+        download: 'הורדת הקובץ',
+      },
       notFound: 'העבודה לא נמצאה, או שאין גישה אליה.',
       dates: 'מ-{start} עד {due}',
 
@@ -664,6 +775,13 @@ export const he = {
         remove: 'מחיקה',
         none: 'עדיין אין פריטים בארגון הפרטי.',
         noEffect: 'סימון תת-משימה אינו משנה את מצב העבודה כלפי חוץ.',
+        openDetail: 'פתיחה',
+        closeDetail: 'סגירה',
+        createdAt: 'נוצר בתאריך {date}',
+        stateDone: 'בוצע',
+        stateOpen: 'טרם בוצע',
+        editLabel: 'עריכת הפריט',
+        saveEdit: 'שמירת השינוי',
       },
 
       dateChange: {
@@ -680,6 +798,7 @@ export const he = {
         beyondCeiling: 'הבקשה חורגת מתקרת האיחור של הפרויקט, ולכן לא ניתן להגיש אותה כפי שהיא.',
         sent: 'הבקשה נשלחה וממתינה להחלטת הגורם המוסמך.',
         failed: 'לא ניתן לשלוח את הבקשה כרגע.',
+        standaloneOnly: 'בקשת שינוי תאריך במערכת פועלת על לוח זמנים של פרויקט. העבודה הזו אינה חלק מפרויקט, ולכן שינוי תאריך בה מתואם ישירות מול הצד השני, בשיחת העבודה שבה נקבע ההסכם.',
         emptyChange: 'צריך לבקש לפחות שינוי אחד — תוספת ימים או תאריך חלופי.',
         openRequest: 'מעבר לבקשה',
         request: 'בקשה לשינוי תאריך',
@@ -835,6 +954,8 @@ export const he = {
       members: 'ניהול המשתתפים',
       permissions: 'ניהול ההרשאות',
       calendar: 'לוח ימי העבודה',
+      conversation: 'שיחת הפרויקט',
+      conversationFailed: 'לא ניתן לפתוח את שיחת הפרויקט.',
       none: 'אין פעולות ניהול זמינות בפרויקט הזה.',
     },
 
@@ -891,6 +1012,14 @@ export const he = {
     backToProjects: 'חזרה לפרויקטים',
 
     active: { title: 'משתתפים', none: 'אין עדיין משתתפים בפרויקט הזה.' },
+
+    removeDialog: {
+      title: 'הסרת משתתף מהפרויקט',
+      question: 'מה ייעשה בהודעות של המשתתף בשיחת הפרויקט?',
+      keepMessages: 'שמירת ההודעות',
+      deleteMessages: 'מחיקת ההודעות',
+      cancel: 'ביטול',
+    },
     pending: { title: 'הזמנות שממתינות לתשובה', none: 'אין הזמנות פתוחות.' },
 
     row: {
@@ -1074,7 +1203,7 @@ export const he = {
     },
 
     empty: {
-      connected: 'אין עדיין קשרים פעילים. אפשר למצוא בעלי מקצוע דרך מסך העיון בקבלנים.',
+      connected: 'אין עדיין קשרים פעילים. אפשר למצוא בעלי מקצוע דרך מסך חיפוש בעלי מקצוע.',
       incoming: 'אין בקשות חיבור שממתינות למענה.',
       outgoing: 'אין בקשות חיבור פתוחות שנשלחו.',
       blocked: 'לא נוצרו חסימות.',
@@ -1089,6 +1218,7 @@ export const he = {
 
     actions: {
       viewProfile: 'צפייה בפרופיל',
+      message: 'הודעה',
       accept: 'אישור',
       decline: 'דחייה',
       withdraw: 'ביטול הבקשה',
@@ -1127,7 +1257,7 @@ export const he = {
       incoming: 'בקשות שהתקבלו',
       outgoing: 'בקשות שנשלחו',
       blocked: 'חסימות שנוצרו',
-      browse: 'עיון בקבלנים',
+      browse: 'חיפוש בעלי מקצוע',
     },
 
     team: {
@@ -1210,11 +1340,59 @@ export const he = {
       nameMissing: 'ללא שם',
       positionMissing: 'ללא תפקיד',
     },
+    permissions: {
+      title: 'הרשאות חברה',
+      'project.create': 'פתיחת פרויקטים',
+      'task.create': 'פתיחת עבודות והזמנת עבודה בהסכם',
+      'company.manage': 'ניהול פרטי החברה',
+      'company.invite_employees': 'הזמנת עובדים ואישורם',
+    },
 
     /**
      * One label per lifecycle code, and this is the only place they are written. The wording says
      * what has happened to the relationship, never what the code is called.
      */
+    departure: {
+      titleOffboard: 'סיום העסקה: {name}',
+      titleManage: 'ניהול העבודה של {name}',
+      lede: 'העבודה הפתוחה שבאחריות העובד. לכל פריט נקבע הסדר, והאישור מחיל את הכול יחד.',
+      loading: 'טעינת העבודה הפתוחה…',
+      failed: 'הפעולה לא הושלמה, ואף הסדר לא הוחל.',
+      empty: 'אין עבודה פתוחה שדורשת הסדר.',
+      commissionsTitle: 'עבודות שהוזמנו בהסכם',
+      assignedTitle: 'משימות בביצוע העובד',
+      selectAll: 'בחירת הכול',
+      selectNone: 'ביטול הבחירה',
+      selectedCount: 'נבחרו {count}',
+      pickEmployee: 'בחירת עובד',
+      actionOwnerOnly: 'מעקב אצל הבעלים',
+      actionTransfer: 'העברת מעקב',
+      actionShare: 'מעקב משותף',
+      actionMove: 'העברת ביצוע',
+      actionAwait: 'ממתין לשיבוץ',
+      choiceOwnerOnly: 'מעקב אצל הבעלים',
+      choiceTransferred: 'מעקב הועבר',
+      choiceShared: 'מעקב משותף',
+      choiceMoved: 'ביצוע הועבר',
+      choiceAwaiting: 'ממתין לשיבוץ מחדש',
+      awaitingBadge: 'ממתין לשיבוץ מחדש',
+      performer: 'מבצע: {name}',
+      summary: 'סיכום: {ownerOnly} אצל הבעלים · {transferred} הועברו למעקב · {shared} במעקב משותף · {moved} הועבר ביצועם · {awaiting} ממתינים לשיבוץ · {unset} לפי ברירת המחדל',
+      confirmOffboard: 'אישור וסיום ההעסקה',
+      confirmManage: 'החלת ההסדרים',
+    },
+
+    departureDefaults: {
+      title: 'ברירת מחדל לעזיבת עובד',
+      lede: 'ההסדר שיוחל אוטומטית על עבודה שלא נקבע לה הסדר מפורש כשעובד עוזב.',
+      commissionedLabel: 'עבודות שהוזמנו בהסכם',
+      assignedLabel: 'משימות בביצוע',
+      assignedNone: 'ללא ברירת מחדל (ממתין לשיבוץ)',
+      save: 'שמירת ברירת המחדל',
+      saved: 'ברירת המחדל נשמרה.',
+      failed: 'השמירה נכשלה.',
+    },
+
     status: {
       invited: 'הזמנה פתוחה — טרם בוצעה הרשמה',
       pending_company_approval: 'ההרשמה בוצעה — ההצטרפות ממתינה לאישור החברה',
@@ -1225,6 +1403,8 @@ export const he = {
     actions: {
       approve: 'אישור ההצטרפות',
       cancelInvitation: 'ביטול ההזמנה',
+      offboard: 'סיום העסקה',
+      manageDeparture: 'ניהול עבודה שנותרה',
       approveAll: 'אישור כל הממתינים ({count})',
       refresh: 'רענון הרשימה',
     },
@@ -1292,14 +1472,16 @@ export const he = {
     },
     flexibility: {
       label: 'ציון הגמישות',
+      category: { high: 'גמישות גבוהה', medium: 'גמישות בינונית', low: 'גמישות נמוכה' },
       foot: 'מבוסס על {count} אירועי תיאום שהסתיימו',
-      empty: 'אין עדיין ציון גמישות',
+      empty: 'אין עדיין נתונים רלוונטיים',
       // Aggregate counts only — לא שמות, לא פרויקטים, לא תאריכים ולא צד שני.
       context: {
         workable: 'ב-{workable} מתוך {events} אירועי תיאום נמצא פתרון שאיפשר להמשיך בעבודה.',
         alternatives: 'ב-{count} מהמקרים הוצע מועד חלופי או פתרון אחר שהתקבל.',
         notice: 'ב-{count} מהמקרים ההודעה המוקדמת איפשרה תיאום מראש.',
         justified: '{count} סירובים מנומקים אינם נכללים בחישוב הציון.',
+        history: 'היסטוריה ישנה מחמש שנים נכללת בציון, מפני שהתנהלות שלילית בתיאום לוחות זמנים נמשכה גם בתקופה האחרונה.',
       },
     },
     explain: {
@@ -1307,13 +1489,13 @@ export const he = {
       answerOne:
         'הציון נבנה מהאופן שבו נענות בפועל בקשות לשינוי תאריך — אישור, דחייה או הצעה נגדית. הוא אינו מדווח עצמית ואי אפשר לערוך אותו, ולכן הוא אומר משהו אמיתי לקבלן שרואה אותו.',
       answerTwo:
-        'כל עוד אין מספיק תגובות, לא מוצג ציון כלל — עדיף בלי ציון מאשר ציון שנשען על תגובה אחת.',
+        'הציון קיים כבר מהאירוע הראשון שהסתיים, ומתעדכן עם כל אירוע נוסף. כל עוד לא נרשם אף אירוע — לא מוצג ציון כלל.',
     },
     about: 'על עצמי',
     work: {
       title: 'עבודות שהושלמו',
-      lede: 'הסימון "הושלם ב־FieldSync" מציין שההשלמה רשומה במערכת, ואינו חוות דעת על איכות העבודה.',
-      badge: 'הושלם ב־FieldSync',
+      lede: 'הסימון "הושלם ב־Blokta" מציין שההשלמה רשומה במערכת, ואינו חוות דעת על איכות העבודה.',
+      badge: 'הושלם ב־Blokta',
     },
     details: {
       title: 'פרטים ואזור עבודה',
@@ -1346,7 +1528,7 @@ export const he = {
     lede: 'עדכון הפרטים שקבלנים אחרים רואים והעדפות התיאום. הדירוג וציון הגמישות מחושבים לבד — אי אפשר לערוך אותם.',
     identity: {
       title: 'פרטים מזהים',
-      lede: 'אלה הפרטים שקבלנים אחרים מוצאים לפיהם בעיון בקבלנים.',
+      lede: 'אלה הפרטים שקבלנים אחרים מוצאים לפיהם בחיפוש בעלי מקצוע.',
     },
     avatar: {
       upload: 'העלאת תמונה',
@@ -1454,9 +1636,9 @@ export const he = {
   },
 
   landing: {
-    documentTitle: 'FieldSync — תיאום עבודה באתר / Construction coordination',
+    documentTitle: 'Blokta — תיאום עבודה באתר / Construction coordination',
     metaDescription:
-      'FieldSync — a coordination platform for construction professionals: assign work, link the tasks that depend on each other, and manage dates and changes in one place.',
+      'Blokta — a coordination platform for construction professionals: assign work, link the tasks that depend on each other, and manage dates and changes in one place.',
     skip: 'דילוג',
     navLabel: 'תפריט',
     signIn: 'כניסה',
@@ -1464,7 +1646,7 @@ export const he = {
 
     hero: {
       title: 'משימות, תאריכים ותלויות — מתואמים במקום אחד, לא בטלפון.',
-      lede: 'FieldSync היא פלטפורמת תיאום לאנשי מקצוע בענף הבנייה: הקצאת עבודה, קישור בין משימות שתלויות זו בזו, וניהול תאריכים ושינויים — הכול במקום אחד.',
+      lede: 'Blokta היא פלטפורמת תיאום לאנשי מקצוע בענף הבנייה: הקצאת עבודה, קישור בין משימות שתלויות זו בזו, וניהול תאריכים ושינויים — הכול במקום אחד.',
     },
 
     example: {
@@ -1502,7 +1684,7 @@ export const he = {
       cards: [
         {
           title: 'כולם משתמשים שווים',
-          body: 'אותו קבלן יכול להיות קבלן ראשי בפרויקט אחד וקבלן משנה באחר. התפקיד עוקב אחר העבודה, לא אחרי האדם — והפלטפורמה מתווכת בין הצדדים במקום לשרת צד אחד.',
+          body: 'אותו קבלן יכול להיות קבלן ביצוע ראשי בפרויקט אחד וקבלן משנה באחר. התפקיד עוקב אחר העבודה, לא אחרי האדם — והפלטפורמה מתווכת בין הצדדים במקום לשרת צד אחד.',
         },
         {
           title: 'סימני אמון שקשה לשחק בהם',
@@ -1529,7 +1711,39 @@ export const he = {
       cta: 'יצירת חשבון',
     },
 
-    footerNote: 'FieldSync — אב־טיפוס אקדמי בפיתוח.',
+    contact: {
+      title: 'יצירת קשר',
+      lede: 'שאלה, בקשה או פנייה אחרת — הטופס נשלח לצוות הפלטפורמה.',
+      name: { label: 'שם מלא', placeholder: 'שם פרטי ומשפחה' },
+      email: { label: 'דואר אלקטרוני', placeholder: 'name@example.com', error: 'כתובת הדואר האלקטרוני אינה תקינה' },
+      topic: {
+        label: 'נושא הפנייה',
+        placeholder: 'בחירת נושא',
+        general: 'שאלה כללית',
+        support: 'תמיכה טכנית',
+        partnership: 'שיתוף פעולה עסקי',
+        other: 'אחר',
+      },
+      message: {
+        label: 'תוכן הפנייה',
+        placeholder: 'פירוט הפנייה',
+        hint: 'לפחות 10 תווים, עד 2000.',
+        error: 'תוכן הפנייה קצר מדי',
+      },
+      submit: 'שליחת פנייה',
+      submittedTitle: 'הפנייה נשלחה',
+      submitted: 'הפנייה התקבלה ונשמרה. מענה יישלח לכתובת הדואר האלקטרוני שהוזנה.',
+      again: 'שליחת פנייה נוספת',
+      errors: {
+        validation: 'חלק מהפרטים אינם תקינים. כדאי לבדוק את השדות ולנסות שוב.',
+        rateLimited: 'נשלחו יותר מדי פניות מהמכשיר הזה. אפשר לנסות שוב בעוד שעה.',
+        network: 'אין חיבור לשרת. כדאי לבדוק את החיבור לאינטרנט ולנסות שוב.',
+        unknown: 'שליחת הפנייה נכשלה. אפשר לנסות שוב.',
+      },
+    },
+
+    footerContact: 'יצירת קשר',
+    footerNote: 'Blokta — אב־טיפוס אקדמי בפיתוח.',
   },
 
   coordination: {
@@ -1796,8 +2010,53 @@ export const he = {
       'work.handoff_initiated': 'הוצעה העברת אחריות',
       'work.handoff_accepted': 'האחריות הועברה',
       'work.handoff_declined': 'העברת האחריות נדחתה',
+      'room.message_removed': 'הודעה הוסרה משיחת הפרויקט',
+      'room.message_kept': 'הודעה סומנה לשמירה',
+      'room.messages_removal_decision': 'נרשמה החלטה על הודעות של משתתף שהוסר',
     },
   },
+
+  terms: {
+    title: 'תנאי השימוש',
+    version: 'גרסה {version} · עדכון אחרון: 31 באוגוסט 2026',
+    close: 'סגירה',
+    done: 'קריאתי את התנאים',
+    sections: [
+      {
+        heading: 'השירות',
+        body: 'Blokta היא פלטפורמה לתיאום מקצועי ולניהול מידע בענף הבנייה. הפלטפורמה מרכזת משימות, תאריכים, תלויות ואנשי קשר במקום אחד.',
+      },
+      {
+        heading: 'דיוק המידע',
+        body: 'האחריות לדיוק המידע המוזן לפלטפורמה היא של המשתמש שהזין אותו — פרטי חשבון, פרטי פרויקט, משימות ותאריכים כאחד.',
+      },
+      {
+        heading: 'שימוש חוקי ומקצועי',
+        body: 'השימוש בפלטפורמה נועד לפעילות מקצועית, ועליו להיות חוקי והוגן.',
+      },
+      {
+        heading: 'שימוש אסור',
+        body: 'אין לעשות שימוש לרעה בפלטפורמה. בכלל זה התחזות לאדם או לגוף אחר, שליחת ספאם, הטרדה, והעלאת תוכן פוגעני, בלתי חוקי או מפר זכויות.',
+      },
+      {
+        heading: 'אחריות מקצועית',
+        body: 'מידע על פרויקטים, משימות ולוחות זמנים המוזן לפלטפורמה אינו מחליף אחריות מקצועית, חוזית, הנדסית, משפטית, בטיחותית או רגולטורית. האחריות להחלטות מקצועיות ולהתחייבויות נותרת אצל המשתמש.',
+      },
+      {
+        heading: 'הגבלת גישה',
+        body: 'במקרה של שימוש לרעה ניתן להגביל את הגישה לפלטפורמה, בהתאם לכללי הפלטפורמה.',
+      },
+      {
+        heading: 'פרטיות ונתוני חשבון',
+        body: 'הפלטפורמה שומרת את נתוני החשבון ואת המידע המוזן אליה לצורך הפעלת השירות. מסמך מדיניות פרטיות נפרד ומלא טרם פורסם.',
+      },
+      {
+        heading: 'שינויים בשירות',
+        body: 'הפלטפורמה נמצאת בפיתוח, והשירות עשוי להשתנות ככל שהיא מתפתחת.',
+      },
+    ],
+  },
+
   reports: {
     trigger: 'דיווח',
     dialogTitle: 'דיווח על משתמש',
@@ -1831,8 +2090,8 @@ export const he = {
 
   moderation: {
     navLabel: 'מודרציה',
-    documentTitle: 'תור המודרציה / Moderation queue — FieldSync',
-    detailDocumentTitle: 'פרטי דיווח / Report detail — FieldSync',
+    documentTitle: 'תור המודרציה / Moderation queue — Blokta',
+    detailDocumentTitle: 'פרטי דיווח / Report detail — Blokta',
     queueTitle: 'תור המודרציה',
     queueLede: 'דיווחים שהוגשו על ידי משתמשים, החדש ביותר תחילה.',
     filterLabel: 'סינון לפי מצב',
@@ -1920,12 +2179,12 @@ export const he = {
   },
 
   /**
-   * From the approved static prototype, with the reconciliations the decision log records: the
+   * From the approved earlier static screen, with the reconciliations the decision log records: the
    * visual-simulation rows are gone with the feature they metered, the project labels follow the
    * current My projects wording, and dependencies are named between stages.
    */
   subscriptions: {
-    documentTitle: 'תוכניות ומנוי / Plans & subscription — FieldSync',
+    documentTitle: 'תוכניות ומנוי / Plans & subscription — Blokta',
     title: 'תוכניות ומנוי',
     lede: 'בחירת התוכנית שמתאימה לקצב העבודה. אפשר לשדרג, לרדת תוכנית או לבטל בכל שלב — הפרויקטים נשמרים בכל מקרה.',
     loading: 'טעינת התוכניות…',
@@ -2003,10 +2262,10 @@ export const he = {
       rows: [
         { label: 'משימות לפרויקט', value: 'ללא הגבלה' },
         { label: 'חברי צוות לפרויקט', value: 'ללא הגבלה' },
-        // The current My projects wording. The prototype's `פרויקטים בהשתתפותכם` predates it.
+        // The current My projects wording. The earlier screen's `פרויקטים בהשתתפותכם` predates it.
         { label: 'פרויקטים שאינם בניהולי', value: 'ללא הגבלה' },
         { label: 'בקשות לשינוי תאריך', value: 'כלול' },
-        // Dependencies run between stages. The prototype's `תלויות בין משימות` names a task-level
+        // Dependencies run between stages. The earlier screen's `תלויות בין משימות` names a task-level
         // graph this product does not have.
         { label: 'תלויות בין שלבים', value: 'כלול, עם בדיקת התנגשויות' },
         // No longer a plan difference: work plans are append-only, so every version is kept on
@@ -2057,7 +2316,7 @@ export const he = {
   },
 
   notFound: {
-    documentTitle: 'הדף אינו זמין / Page unavailable — FieldSync',
+    documentTitle: 'הדף אינו זמין / Page unavailable — Blokta',
     code: '404',
     title: 'הדף הזה אינו זמין',
     lede: 'לא ניתן להציג את הדף המבוקש. אפשר לחזור ולהמשיך משם.',
@@ -2069,9 +2328,33 @@ export const he = {
     ],
     ctaHome: 'חזרה לדף הבית',
   },
-
+  audit: {
+    documentTitle: 'יומן ביקורת — Blokta',
+    title: 'יומן ביקורת פלטפורמה',
+    lede: 'פעולות ניהול, מהחדשה לישנה. להיסטוריית הפרויקט יש יומן נפרד.',
+    filterAction: 'פעולה',
+    filterTarget: 'יעד',
+    allActions: 'כל הפעולות',
+    allTargets: 'כל היעדים',
+    loading: 'טעינת יומן הביקורת…',
+    failure: 'לא ניתן לטעון את יומן הביקורת.',
+    empty: 'טרם נרשמו פעולות ניהול.',
+    loadMore: 'טעינת עוד',
+    unknownActor: 'החשבון אינו זמין עוד',
+    actions: {
+      'report.claimed': 'דיווח הועבר לבדיקה',
+      'report.dismissed': 'דיווח נדחה',
+      'report.actioned': 'טופל דיווח',
+      'report.note_redacted': 'הערת הדיווח הוסתרה',
+      'account.restricted': 'חשבון הוגבל',
+      'account.unrestricted': 'ההגבלה הוסרה',
+      'account.deleted': 'חשבון נמחק',
+      'account.restored': 'חשבון שוחזר',
+    },
+    targets: { report: 'דיווח', user: 'חשבון' },
+  },
   notifications: {
-    documentTitle: 'התראות — FieldSync',
+    documentTitle: 'התראות — Blokta',
     title: 'התראות',
     lede: 'כל מה שממתין, וכל מה שכדאי לדעת.',
     empty: 'אין התראות כרגע.',
@@ -2084,6 +2367,7 @@ export const he = {
     loading: 'טוען התראות…',
     unreadBadge: 'התראות שלא נקראו',
     blocking: 'ממתין לתשובה',
+    resolvedBadge: 'טופל',
     nonblocking: 'לידיעה',
     mutedNote: 'הפרויקט מושתק — ההתראה נרשמה ולא נשלחה בדוא״ל.',
     open: 'פתיחה',
@@ -2093,6 +2377,8 @@ export const he = {
     },
     types: {
       'project.invitation': 'הזמנה לפרויקט',
+      'project.cancelled': 'פרויקט בוטל לפני תחילת העבודה',
+      'company.employee_left': 'עובד עזב את החברה',
       'task.assigned': 'משימה חדשה באחריותך',
       'task.updated': 'עודכנו פרטים במשימה',
       'task.early_completion': 'עבודה בפרויקט הסתיימה מוקדם',
@@ -2107,11 +2393,16 @@ export const he = {
       'responsibility.transfer_invited': 'הוצעה לך העברת אחריות על עבודה',
       'responsibility.transfer_accepted': 'העברת אחריות אושרה',
       'workplan.version_added': 'נוספה גרסה לתוכנית עבודה',
+      'message.received': 'הודעה חדשה',
+      'message.request_received': 'בקשת התכתבות חדשה',
+      'agreement.received': 'הצעת סיכום עבודה חדשה',
+      'agreement.answered': 'התקבלה תשובה להצעת סיכום עבודה',
+      'connection.request_received': 'בקשת קשר חדשה ברשת המקצועית',
+      'connection.accepted': 'בקשת הקשר שלך אושרה',
+      'connection.declined': 'בקשת הקשר שלך נדחתה',
     },
-  },
-
-  settings: {
-    documentTitle: 'הגדרות — FieldSync',
+  },  settings: {
+    documentTitle: 'הגדרות — Blokta',
     title: 'הגדרות',
     lede: 'העדפות החשבון, ההתראות ופרטי הקשר.',
     loading: 'טוען הגדרות…',
@@ -2145,13 +2436,38 @@ export const he = {
     contact: {
       title: 'פרטי קשר בפרופיל',
       note: 'טלפון אישי לא מוצג בשום מקום, ואינו נשמר במערכת.',
-      automaticNote: 'ניהול משותף בפרויקט ושני הצדדים למשימה רואים את המספר בכל מקרה. ההגדרות כאן חלות על כל השאר.',
+      automaticNote: 'ברירת המחדל: ניהול משותף בפרויקט ושני הצדדים להסכם עבודה שאושר רואים את המספר. בחירה מפורשת כאן גוברת גם על ברירת המחדל הזו.',
       connectionNote: 'קשר ברשת אינו חושף מספר טלפון.',
       email: 'הצגת כתובת הדוא״ל',
-      businessPhone: 'הצגת הטלפון העסקי',
-      officePhone: 'הצגת טלפון המשרד',
+      businessPhone: 'נראות הטלפון העסקי',
+      officePhone: 'נראות טלפון המשרד',
+      phoneChoices: {
+        default: 'לפי שותפויות מאושרות (ברירת המחדל)',
+        always: 'מוצג לכל מי שצופה בפרופיל',
+        hidden: 'מוסתר תמיד, גם משותפים מאושרים',
+      },
       save: 'שמירת נראות',
     },
+    companyMembership: {
+      title: 'שייכות לחברה',
+      ownerInactiveTitle: 'החברה אינה פעילה כרגע ב-Blokta',
+      ownerInactiveNote: 'בעל החברה אינו פעיל במערכת, ולכן פתיחת פעילות חברה חדשה חסומה זמנית. ההיסטוריה העסקית נשארת זמינה לפי ההרשאות הקיימות, החשבון האישי נשאר פעיל, ואפשר לעזוב את החברה ולהצטרף לחברה אחרת.',
+      ownerRecoveryNote: 'אם בעל החברה ישחזר את חשבונו בתוך תקופת השחזור, החברה תחזור לפעילות מלאה.',
+      leaveNote: 'סיום היחסים עם החברה. הגישה לעבודת החברה נפסקת מידית.',
+      leave: 'עזיבת החברה',
+      leaveConsequences: 'לאחר העזיבה: הגישה לחברה נפסקת מידית, המעקב אחר עבודות שהוזמנו עובר לבעל החברה, והחשבון האישי נשאר פעיל. את העזיבה אין אפשרות לבטל מכאן.',
+      leaveConfirm: 'אישור העזיבה',
+      cancel: 'ביטול',
+      leftNote: 'העזיבה הושלמה. החשבון פעיל וללא שייכות לחברה.',
+      claimNote: 'הצטרפות למושב פתוח שנפתח על שם המשתמש בחברה. ההצטרפות ממתינה לאישור בעל החברה.',
+      claimCompanyLabel: 'שם החברה',
+      claimPositionLabel: 'תפקיד',
+      claim: 'הצטרפות לחברה',
+      claimedNote: 'הבקשה נשלחה וממתינה לאישור בעל החברה.',
+      claimBlocked: 'ההצטרפות אינה זמינה זמנית עד להשלמת עדכון נתונים.',
+      failed: 'הפעולה לא הושלמה.',
+    },
+
     mutes: {
       title: 'פרויקטים מושתקים',
       note: 'השתקה מפחיתה משלוח בדוא״ל בלבד. היא אינה משנה הרשאות, גישה או מה שקורה בפרויקט.',
@@ -2167,19 +2483,32 @@ export const he = {
     },
     account: {
       title: 'החשבון',
+      googleTitle: 'חשבון Google מקושר',
+      googleNote: 'קישור חשבון Google מאפשר התחברות עם Google במקום סיסמה. הקישור אינו משנה את כתובת האימייל של החשבון.',
+      googleLinkedNote: 'החשבון מקושר ל-Google. התחברות עם Google זמינה במסך הכניסה.',
+      googleLinkedAs: 'קושר כעת חשבון Google: {email}. מהכניסה הבאה אפשר להתחבר עם Google.',
+      googleLinkFailed: 'קישור חשבון ה-Google לא הושלם. אפשר לנסות שוב.',
       deactivationTitle: 'סגירת חשבון',
-      deactivationNote: 'בקשת מחיקה היא השבתה עם תקופת שחזור של 60 יום, והיסטוריית העבודה המשותפת נשמרת.',
-      deactivationPending: 'הפעולה אינה זמינה עדיין: הטיפול בהתחייבויות פעילות טרם נסגר.',
+      deactivationNote: 'בקשת מחיקה היא השבתה מיידית עם תקופת שחזור של 60 יום, והיסטוריית העבודה המשותפת נשמרת.',
+      deactivationObligations: 'התחייבויות מקצועיות וחוזיות אינן מתבטלות עם סגירת החשבון — הן ממשיכות מחוץ למערכת.',
+      requestClosure: 'בקשת סגירת חשבון',
+      confirmTitle: 'אישור סגירת החשבון',
+      confirmBody: 'החשבון יושבת מיידית ויהיה ניתן לשחזור בתוך 60 יום. היסטוריית העבודה המשותפת נשמרת, והתחייבויות מקצועיות וחוזיות אינן מתבטלות — הן ממשיכות מחוץ למערכת.',
+      confirmAnonymization: 'ללא שחזור בתוך 60 יום, פרטי החשבון האישיים עוברים אנונימיזציה. פרטי זיהוי הנדרשים כרשומה עסקית — כגון שם מבצע העבודה — נשמרים ברשומות ההיסטוריות המורשות.',
+      confirmOwnerCompany: 'החברה שבבעלות החשבון תהפוך ללא פעילה: העובדים שומרים על חשבונותיהם האישיים ועל צפייה בהיסטוריה המורשית, פעולות חברה חדשות ייחסמו, ואפשר יהיה לעזוב ולהצטרף לחברה אחרת. החברה אינה נמחקת ואינה מועברת אוטומטית.',
+      confirmAction: 'סגירת החשבון',
+      closureDone: 'בקשת הסגירה התקבלה והחשבון הושבת.',
+      blockedInCompany: 'אי אפשר לסגור את החשבון בזמן חברות פעילה בחברה. עזיבת החברה מתבצעת בקטע החברות שבעמוד זה.',
+      closureCancel: 'ביטול',
+      closureFailed: 'הבקשה לא הושלמה. כדאי לנסות שוב.',
     },
     errors: {
       load: 'לא הצלחנו לטעון את ההגדרות.',
       save: 'לא הצלחנו לשמור את השינוי.',
       network: 'לא הצלחנו להגיע לשרת. כדאי לבדוק את החיבור ולנסות שוב.',
     },
-  },
-
-  scheduleExceptions: {
-    documentTitle: 'חריגים בלוח הזמנים — FieldSync',
+  },  scheduleExceptions: {
+    documentTitle: 'חריגים בלוח הזמנים — Blokta',
     title: 'חריגים בלוח הזמנים',
     lede: 'תאריכים חד-פעמיים שיוצאים מהשבוע הרגיל, בשני הכיוונים.',
     noHolidayNote: 'אין מקור נתונים מאושר לחגים, ולכן שום תאריך אינו נוסף אוטומטית. כל שורה כאן ביקש אדם ואישר בעל סמכות.',
@@ -2235,9 +2564,7 @@ export const he = {
       projectScope: 'חריג לכל הפרויקט אינו בקשה עבור עצמך, ולכן נדרשת הרשאת אישור.',
       network: 'לא הצלחנו להגיע לשרת. כדאי לבדוק את החיבור ולנסות שוב.',
     },
-  },
-
-  editTask: {
+  },  editTask: {
     title: 'עריכת משימה',
     lede: 'שינוי פרטי העבודה. מועדים מתואמים בנפרד.',
     loading: 'טוען…',
@@ -2265,4 +2592,103 @@ export const he = {
       network: 'לא הצלחנו להגיע לשרת. כדאי לבדוק את החיבור ולנסות שוב.',
     },
   },
+  messaging: {
+    documentTitle: 'הודעות — Blokta',
+    title: 'הודעות',
+    lede: 'שיחות אישיות וחדרי פרויקט.',
+    inbox: 'תיבת הדואר',
+    requests: 'בקשות',
+    sentRequests: 'בקשות שנשלחו',
+    loading: 'טעינת השיחות…',
+    failure: 'לא ניתן לטעון את השיחות.',
+    emptyInbox: 'אין שיחות עדיין.',
+    emptyRequests: 'אין בקשות שממתינות להחלטתך.',
+    emptySent: 'אין בקשות שנשלחו וממתינות לתשובה.',
+    pickConversation: 'בחירת שיחה מהרשימה.',
+    projectRoom: 'חדר פרויקט',
+    pendingRequest: 'בקשה שממתינה לתשובה',
+    accept: 'אישור',
+    decline: 'דחייה',
+    loadOlder: 'טעינת הודעות קודמות',
+    removedMessage: 'ההודעה הוסרה',
+    composerPlaceholder: 'כתיבת הודעה',
+    send: 'שליחה',
+    report: 'דיווח',
+    reported: 'הדיווח נשלח',
+    cancel: 'ביטול',
+    reportReasons: { spam: 'ספאם', harassment: 'הטרדה', impersonation: 'התחזות', other: 'אחר' },
+    muteConversation: 'השתקת שיחה',
+    unmuteConversation: 'ביטול השתקת שיחה',
+    muteContractor: 'השתקת איש הקשר',
+    unmuteContractor: 'ביטול השתקת איש הקשר',
+    deleteChat: 'מחיקת שיחה',
+    newMessage: 'הודעה חדשה',
+    chooseRecipient: 'בחירת נמען מתוך החיבורים המאושרים',
+    noConnections: 'אין עדיין חיבורים מאושרים. אפשר לפתוח שיחה גם מפרופיל ציבורי.',
+    recipientsFailure: 'לא ניתן לטעון את רשימת החיבורים.',
+    startErrors: {
+      self: 'אי אפשר לשלוח הודעה לעצמך.',
+      noContact: 'אי אפשר לפתוח שיחה עם המשתמש הזה.',
+      awaiting: 'כבר נשלחה בקשת הודעה שממתינה לתשובה.',
+      notFound: 'המשתמש אינו זמין.',
+      network: 'לא הצלחנו להגיע לשרת. כדאי לבדוק את החיבור ולנסות שוב.',
+      unknown: 'ההודעה לא נשלחה. כדאי לנסות שוב.',
+    },
+    deletedMessage: 'הודעה זו נמחקה',
+    deletedByMessage: 'הודעה זאת נמחקה על ידי {name}',
+    removedByRoleMessage: 'הודעה זאת נמחקה על ידי {role}',
+    removedByRoles: {
+      main_contractor: 'קבלן הביצוע הראשי',
+      subcontractor: 'קבלן המשנה',
+      professional: 'בעל המקצוע',
+      supplier: 'הספק',
+      viewer: 'המשתתף הצופה',
+    },
+    deleteMessage: 'מחיקת הודעה',
+    deleteForEveryone: 'ההודעה תימחק אצל כל המשתתפים.',
+    confirmDelete: 'מחיקה',
+    removeMessage: 'הסרת הודעה',
+    keepMessage: 'שמירת הודעה',
+    keptBadge: 'הודעה שמורה',
+    actionFailed: 'הפעולה לא הושלמה. כדאי לנסות שוב.',
+    attach: 'צירוף קובץ',
+    attachRemove: 'הסרת הצירוף',
+    attachTooLarge: 'הקובץ גדול מדי. תמונה עד 5MB וקובץ PDF עד 30MB.',
+    attachUnsupported: 'אפשר לצרף תמונה (JPG, PNG, WebP) או קובץ PDF בלבד.',
+    attachFailed: 'העלאת הקובץ נכשלה. כדאי לנסות שוב.',
+    download: 'הורדה',
+    proposeAgreement: 'הצעת הסכם עבודה',
+    sendFailed: 'ההודעה לא נשלחה. כדאי לנסות שוב.',
+    sendAwaitingRequest: 'השיחה ממתינה לאישור בקשת ההודעה, ועד אז אי אפשר לשלוח בה.',
+    requestPendingNotice: 'בקשת ההודעה נשלחה. המשך השיחה יתאפשר לאחר אישור הנמען.',
+    requestAnswerFirst: 'בקשת הודעה ממתינה להחלטתך.',
+    requestSent: 'נשלח',
+    requestSentNote: 'בקשת ההודעה נשלחה. המשך השיחה יתאפשר לאחר אישור הנמען.',
+    openThread: 'מעבר לשיחה',
+    closeDialog: 'סגירה',
+    hideForMe: 'הסתרה אצלי',
+    hideForMeNote: 'ההודעה תוסתר אצלך בלבד.',
+    confirmHide: 'הסתרה',
+    requestIncomingTag: 'בקשה שממתינה להחלטתך',
+    requestOutgoingTag: 'ממתינה לתשובת הנמען',
+    requestsBadgeLabel: 'בקשות שממתינות להחלטתך',
+    agreementForm: {
+      title: 'הצעת הסכם עבודה',
+      titleLabel: 'כותרת ההסכם',
+      descriptionLabel: 'תיאור (לא חובה)',
+      startLabel: 'תאריך התחלה',
+      dueLabel: 'תאריך יעד',
+      submit: 'שליחת ההצעה',
+      failed: 'ההצעה לא נשלחה. כדאי לבדוק את הפרטים ולנסות שוב.',
+    },
+    acceptAgreement: 'אישור הסיכום',
+    declineAgreement: 'דחיית הסיכום',
+    agreementStates: {
+      proposed: 'ממתין לתשובה',
+      accepted: 'אושר, ונפתחה משימה',
+      declined: 'נדחה',
+      withdrawn: 'בוטל',
+    },
+  },
+  contractorCategories: { main_contractor: 'קבלן ביצוע ראשי', subcontractor: 'קבלן משנה' },
 } as const;

@@ -12,7 +12,7 @@ export interface WorkVerificationService {
 }
 
 /**
- * Decides whether an entry may carry the `Completed on FieldSync` badge, from canonical data only.
+ * Decides whether an entry may carry the `Completed on Blokta` badge, from canonical data only.
  *
  * Projects and tasks are Stage 3, so today there is nothing to look up and nothing that can be
  * proved. Refusing every link is the honest answer: guessing `true` would also risk publishing the

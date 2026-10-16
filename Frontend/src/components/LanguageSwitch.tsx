@@ -3,10 +3,8 @@ import { useLanguage } from '../i18n/useLanguage';
 /**
  * The עב / EN pill.
  *
- * The prototype used two hidden radio inputs, because CSS alone can only remember a choice by
- * storing it in a form control. Here the choice lives in the language context, so these are plain
- * buttons — which also means they can be reached by keyboard in the obvious way, and announce
- * which one is currently selected.
+ * The choice lives in the language context, so these are plain buttons — reachable by keyboard
+ * in the obvious way, and they announce which one is currently selected.
  */
 export const LanguageSwitch = () => {
   const { lang, t, setLang } = useLanguage();

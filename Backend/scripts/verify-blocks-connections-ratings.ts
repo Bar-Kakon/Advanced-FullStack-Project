@@ -52,7 +52,7 @@ interface Account { readonly email: string; readonly token: string; readonly id:
 const makeAccount = async (name: string): Promise<Account> => {
   const email = `${MARKER}-${name}@example.com`.toLowerCase();
   const registered = await send('POST', '/auth/register', {
-    firstName: name, lastName: 'Tester', standing: 'owner',
+    firstName: name, lastName: 'Tester', standing: 'owner', contractorCategory: 'subcontractor',
     companyName: `${MARKER} ${name} Ltd`,
     email, password: PASSWORD, confirmPassword: PASSWORD,
     registrationCategory: 'contractor', specialty: 'electrical', city: 'חיפה', region: 'haifa',

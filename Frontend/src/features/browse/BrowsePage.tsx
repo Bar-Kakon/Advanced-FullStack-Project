@@ -18,7 +18,6 @@ import { AdvancedFilters } from './components/AdvancedFilters';
 import { ContractorCard } from './components/ContractorCard';
 import { FilterRail } from './components/FilterRail';
 import { PublicProfilePanel } from './components/PublicProfilePanel';
-import { TravelPreferences } from './components/TravelPreferences';
 import { useBrowse } from './useBrowse';
 import profileCss from '../profile/profile.css?inline';
 import editProfileCss from '../profile/edit-profile.css?inline';
@@ -36,7 +35,6 @@ export const BrowsePage = () => {
   const [profileLoading, setProfileLoading] = useState(false);
   const [profileMissing, setProfileMissing] = useState(false);
   const [connecting, setConnecting] = useState<string | null>(null);
-  const [travelOpen, setTravelOpen] = useState(false);
 
   const profileRequest = useRef<AbortController | null>(null);
 
@@ -46,7 +44,7 @@ export const BrowsePage = () => {
     { id: 'browse.css', css: browseCss },
     { id: 'place.css', css: placeCss },
   );
-  useDocumentTitle('עיון בקבלנים / Browse contractors — FieldSync');
+  useDocumentTitle('חיפוש בעלי מקצוע / Find professionals — Blokta');
 
   useEffect(() => {
     if (selectedId === null) {
@@ -117,7 +115,7 @@ export const BrowsePage = () => {
             <p className="browse__sub">{t.browse.lede}</p>
           </div>
           <div className="browse__head-actions">
-            {/* The order the prototype approved, minus the two the product cannot compute. */}
+            {/* The order the earlier screen approved, minus the two the product cannot compute. */}
             <div className="browse__sort">
               <label className="field-label" htmlFor="browse-sort">{t.browse.sort.label}</label>
               <div className="select-wrap">
@@ -138,9 +136,6 @@ export const BrowsePage = () => {
               </div>
             </div>
 
-            <button type="button" className="btn btn--ghost btn--sm" onClick={() => setTravelOpen(true)}>
-              {t.browse.travel.openEditor}
-            </button>
           </div>
         </header>
 
@@ -218,12 +213,12 @@ export const BrowsePage = () => {
               loading={profileLoading}
               notFound={profileMissing}
               onClose={() => setSelectedId(null)}
+              onBlocked={() => state.retry()}
             />
           ) : null}
         </div>
       </main>
 
-      {travelOpen ? <TravelPreferences onClose={() => setTravelOpen(false)} /> : null}
     </div>
   );
 };

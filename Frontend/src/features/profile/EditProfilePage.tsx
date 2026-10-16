@@ -26,6 +26,7 @@ import { CompletedWorkPanel } from './components/CompletedWorkPanel';
 import { EditNumber, EditSelect, EditText, EditTextarea } from './components/EditField';
 import { EquipmentPicker } from './components/EquipmentPicker';
 import { RatingsPanel } from './components/RatingsPanel';
+import { TravelPreferences } from './components/TravelPreferences';
 import { TrustPanel } from './components/TrustPanel';
 import { WorkEntryForm } from './components/WorkEntryForm';
 import { LocationField } from '../../location/LocationField';
@@ -78,9 +79,10 @@ export const EditProfilePage = () => {
     { id: 'edit-profile.css', css: editProfileCss },
     { id: 'place.css', css: placeCss },
   );
-  useDocumentTitle('עריכת הפרופיל / Edit profile — FieldSync');
+  useDocumentTitle('עריכת הפרופיל / Edit profile — Blokta');
 
   const [equipmentOpen, setEquipmentOpen] = useState(false);
+  const [travelOpen, setTravelOpen] = useState(false);
   /** `null` = closed, `'new'` = the add form, an entry = that entry being edited. */
   const [workForm, setWorkForm] = useState<'new' | CompletedWorkEntry | null>(null);
   const [workBusy, setWorkBusy] = useState(false);
@@ -426,6 +428,15 @@ export const EditProfilePage = () => {
                     </>
                   }
                 />
+
+                <button
+                  type="button"
+                  className="btn btn--ghost btn--sm"
+                  onClick={() => setTravelOpen(true)}
+                >
+                  {t.browse.travel.openEditor}
+                </button>
+                {travelOpen ? <TravelPreferences onClose={() => setTravelOpen(false)} /> : null}
               </section>
 
               <section className="panel" aria-labelledby="sched-title">

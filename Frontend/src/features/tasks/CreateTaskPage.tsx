@@ -46,7 +46,7 @@ export const CreateTaskPage = () => {
     { id: 'tasks.css', css: tasksCss },
     { id: 'create-task.css', css: createTaskCss },
   );
-  useDocumentTitle('פתיחת עבודה / Open work — FieldSync');
+  useDocumentTitle('פתיחת עבודה / Open work — Blokta');
 
   const firstName = user?.firstName ?? '';
   const lastName = user?.lastName ?? '';

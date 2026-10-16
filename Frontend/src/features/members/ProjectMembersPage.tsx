@@ -31,6 +31,8 @@ export const ProjectMembersPage = () => {
     useProjectMembers(projectId);
 
   const [templates, setTemplates] = useState<readonly PermissionTemplate[]>([]);
+  // Removing an active member first asks the approved question about their room messages.
+  const [removing, setRemoving] = useState<{ id: string; name: string } | null>(null);
 
   useScreenStylesheet(
     { id: 'profile.css', css: profileCss },
@@ -38,7 +40,7 @@ export const ProjectMembersPage = () => {
     { id: 'permissions.css', css: permissionsCss },
     { id: 'members.css', css: membersCss },
   );
-  useDocumentTitle('משתתפים בפרויקט / Project members — FieldSync');
+  useDocumentTitle('משתתפים בפרויקט / Project members — Blokta');
 
   // Templates are company-owned and live on the Permissions surface; this screen only applies them.
   useEffect(() => {
@@ -102,6 +104,49 @@ export const ProjectMembersPage = () => {
           <>
             <section className="panel" aria-labelledby="members-title" aria-live="polite">
               <h2 id="members-title" className="panel__title">{t.members.active.title}</h2>
+              {removing !== null ? (
+                <div className="panel" role="alertdialog" aria-labelledby="remove-member-title">
+                  <h3 id="remove-member-title" className="panel__title">
+                    {t.members.removeDialog.title}
+                  </h3>
+                  <p className="panel__lede" dir="auto">{removing.name}</p>
+                  <p className="panel__lede">{t.members.removeDialog.question}</p>
+                  <div className="member-row__actions">
+                    <button
+                      type="button"
+                      className="btn btn--ghost btn--sm"
+                      disabled={busy}
+                      onClick={() => {
+                        const target = removing;
+                        setRemoving(null);
+                        void remove(target.id, 'keep');
+                      }}
+                    >
+                      {t.members.removeDialog.keepMessages}
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn--ghost btn--sm"
+                      disabled={busy}
+                      onClick={() => {
+                        const target = removing;
+                        setRemoving(null);
+                        void remove(target.id, 'delete');
+                      }}
+                    >
+                      {t.members.removeDialog.deleteMessages}
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn--quiet btn--sm"
+                      onClick={() => setRemoving(null)}
+                    >
+                      {t.members.removeDialog.cancel}
+                    </button>
+                  </div>
+                </div>
+              ) : null}
+
               {data.members.length === 0 ? (
                 <p className="panel__lede">{t.members.active.none}</p>
               ) : (
@@ -115,7 +160,7 @@ export const ProjectMembersPage = () => {
                       busy={busy}
                       busyId={busyId}
                       onChangeRole={(id, role) => void changeRole(id, role)}
-                      onRemove={(id) => void remove(id)}
+                      onRemove={(id) => setRemoving({ id, name: member.name })}
                     />
                   ))}
                 </ul>

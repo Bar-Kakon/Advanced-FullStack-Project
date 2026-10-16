@@ -3,7 +3,7 @@ import { Schema, model, type Types } from 'mongoose';
 /**
  * One completed-work entry on a contractor's profile.
  *
- * Two kinds are legitimate and the schema requires neither link: a **FieldSync-linked** entry
+ * Two kinds are legitimate and the schema requires neither link: a **Blokta-linked** entry
  * references work coordinated on the platform, and a **free-standing** entry is portfolio work
  * done anywhere else, including before the account existed.
  *

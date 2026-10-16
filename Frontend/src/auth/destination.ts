@@ -17,7 +17,7 @@ export const destinationFor = (user: SessionUser | null): string => {
   const company = user.company;
   if (company === null) return DASHBOARD;
   if (company.membershipStatus === 'pending_company_approval') return WAITING_FOR_APPROVAL;
-  if (!company.employeeSetupComplete && canManageEmployees(user)) return EMPLOYEE_ONBOARDING;
-
+  // Owner decision 2026-10-13: a successful login lands on the personal dashboard. Employee
+  // onboarding stays a screen, reachable from the employees surface — never a forced landing.
   return DASHBOARD;
 };

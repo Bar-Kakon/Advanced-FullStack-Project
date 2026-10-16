@@ -1,4 +1,5 @@
 import { Fragment, useEffect } from 'react';
+import { Bidi } from '../../components/Bidi';
 import { Link } from 'react-router-dom';
 
 import { LanguageSwitch } from '../../components/LanguageSwitch';
@@ -6,6 +7,7 @@ import { useLanguage } from '../../i18n/useLanguage';
 import { useDocumentTitle } from '../../routes/useDocumentTitle';
 import { useScreenStylesheet } from '../../styles/useScreenStylesheet';
 import { BrandMark } from './components/BrandMark';
+import { ContactForm } from './components/ContactForm';
 import { DependencyExample } from './components/DependencyExample';
 import landingCss from './landing.css?inline';
 
@@ -64,7 +66,7 @@ export const LandingPage = () => {
           {/* Identity mark only, deliberately not a link: this is the page it would point at. */}
           <div className="site-nav__brand">
             <span className="site-nav__mark" aria-hidden="true"><BrandMark size={26} on="dark" /></span>
-            <span className="site-nav__name">FieldSync</span>
+            <span className="site-nav__name">Blokta</span>
           </div>
 
           <div className="site-nav__actions">
@@ -80,7 +82,7 @@ export const LandingPage = () => {
         <section className="hero" aria-labelledby="hero-title">
           <div className="hero__text">
             <h1 className="hero__title" id="hero-title" dir="auto">{landing.hero.title}</h1>
-            <p className="hero__lede" dir="auto">{landing.hero.lede}</p>
+            <p className="hero__lede" dir="auto"><Bidi text={landing.hero.lede} /></p>
 
             <div className="hero__actions">
               <Link to="/register" className="btn btn--onboard hero__cta">{landing.createAccount}</Link>
@@ -139,17 +141,32 @@ export const LandingPage = () => {
             <Link to="/register" className="btn btn--onboard">{landing.direct.cta}</Link>
           </div>
         </section>
+
+        {/* The Contact entry point is the form itself, on this page. The earlier screen reserved a
+            separate `contact.html`; that filename is still not a route, and a section here is
+            what makes Contact real without inventing one. */}
+        <section className="contact" id="contact" aria-labelledby="contact-title">
+          <h2 className="section-title" id="contact-title" dir="auto">{landing.contact.title}</h2>
+          <p className="contact__lede" dir="auto">{landing.contact.lede}</p>
+          <ContactForm />
+        </section>
       </main>
 
       <footer className="site-foot">
         <div className="site-foot__inner">
           <div className="site-foot__brand">
             <span className="site-foot__mark" aria-hidden="true"><BrandMark size={22} on="dark" /></span>
-            <span className="site-foot__name">FieldSync</span>
+            <span className="site-foot__name">Blokta</span>
           </div>
 
+          {/* The one footer link. Plans and Help stay absent — they have no destination — and
+              Contact points at this page's own section rather than a route that does not exist. */}
+          <nav className="site-foot__links" aria-label={landing.contact.title}>
+            <a href="#contact" className="site-foot__link">{landing.footerContact}</a>
+          </nav>
+
           {/* Stated plainly so the page is never mistaken for a live commercial service. */}
-          <p className="site-foot__note" dir="auto">{landing.footerNote}</p>
+          <p className="site-foot__note" dir="auto"><Bidi text={landing.footerNote} /></p>
         </div>
       </footer>
     </div>

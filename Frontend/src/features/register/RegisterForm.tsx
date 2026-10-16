@@ -1,3 +1,5 @@
+import { useState } from 'react';
+
 import {
   COMPANY_POSITIONS,
   COMPANY_STANDINGS,
@@ -8,13 +10,17 @@ import {
   SPECIALTIES_BY_CATEGORY,
   type CompanyPosition,
   type CompanyStanding,
-  type DrillingType,
   type Region,
   type RegistrationCategory,
   type Specialty,
 } from '../../api/types';
 import { useLanguage } from '../../i18n/useLanguage';
-import { MIN_PASSWORD_LENGTH, REGISTER_STEPS, useRegisterForm } from './useRegisterForm';
+import {
+  MIN_PASSWORD_LENGTH,
+  REGISTER_STEPS,
+  type FieldName,
+  type useRegisterForm,
+} from './useRegisterForm';
 import { isOtherSpecialty } from './buildRegisterPayload';
 import { ButtonSpinner } from '../../components/ButtonSpinner';
 import { FieldLabel } from '../../components/FieldLabel';
@@ -23,8 +29,10 @@ import { PasswordField } from '../../components/PasswordField';
 import { SelectField } from '../../components/SelectField';
 import { TextField } from '../../components/TextField';
 import { AvailabilityChoice } from './components/AvailabilityChoice';
+import { ContractorCategoryChoice } from './components/ContractorCategoryChoice';
 import { EmailNotificationChoice } from './components/EmailNotificationChoice';
 import { TermsCheckbox } from './components/TermsCheckbox';
+import { TermsModal } from './components/TermsModal';
 import { LocationField } from '../../location/LocationField';
 
 /** Bounds copied from the endpoint's schema, so the box refuses what the server would reject. */
@@ -34,8 +42,12 @@ const MAX = {
 
 export const RegisterForm = ({ form }: { form: ReturnType<typeof useRegisterForm> }) => {
   const { t } = useLanguage();
+  // Held here rather than in `useRegisterForm`: reading the terms is not an answer the form
+  // collects, so opening the document never touches a value the payload is built from.
+  const [termsOpen, setTermsOpen] = useState(false);
   const {
-    values, setValue, setStanding, setCategory, setSpecialty, touched, markTouched, errors,
+    values, setValue, setStanding, setCategory, setSpecialty, toggleDrillingType,
+    touched, markTouched, errors,
     step, goNext, goBack, detailsComplete, isComplete, submitting, failure, viaGoogle,
   } = form;
 
@@ -47,6 +59,38 @@ export const RegisterForm = ({ form }: { form: ReturnType<typeof useRegisterForm
     : failure === 'NETWORK' ? t.errors.network
     : failure ? t.errors.generic
     : null;
+
+  /**
+   * A field shows its error only once the person has been in it and left something wrong behind.
+   * Both halves matter: without `touched` a pristine form is red on arrival, and without the issue
+   * a field that has since been corrected stays red after it is already valid.
+   */
+  const shows = (field: FieldName): boolean => !!touched[field] && errors[field] !== undefined;
+
+  /**
+   * The wording for whatever is wrong with one field. `formatText` is the field's own sentence
+   * about its shape; the other three answers are the same on every field that can give them.
+   */
+  const issueText = (field: FieldName, formatText?: string): string | undefined => {
+    switch (errors[field]) {
+      case 'required':
+        return t.form.required;
+      case 'tooShort':
+        return t.form.password.error;
+      case 'mismatch':
+        return t.form.confirmPassword.error;
+      case 'format':
+        return formatText;
+      default:
+        return undefined;
+    }
+  };
+
+  /** `exactOptionalPropertyTypes` refuses `error={undefined}`, so the prop is spread or absent. */
+  const errorProps = (field: FieldName, formatText?: string): { error?: string } => {
+    const text = issueText(field, formatText);
+    return text === undefined ? {} : { error: text };
+  };
 
   /** An employee claims a seat their employer opened; an owner creates the business. */
   const isEmployee = values.standing === 'employee';
@@ -115,6 +159,8 @@ export const RegisterForm = ({ form }: { form: ReturnType<typeof useRegisterForm
               onChange={(v) => { if (v) setCategory(v); }}
               onBlur={() => markTouched('registrationCategory')}
               touched={!!touched.registrationCategory}
+              invalid={shows('registrationCategory')}
+              {...errorProps('registrationCategory')}
             />
 
             <TextField
@@ -122,12 +168,16 @@ export const RegisterForm = ({ form }: { form: ReturnType<typeof useRegisterForm
               placeholder={t.form.firstName.placeholder} autoComplete="given-name" maxLength={MAX.name} required
               value={values.firstName} onChange={(v) => setValue('firstName', v)}
               onBlur={() => markTouched('firstName')} touched={!!touched.firstName}
+              invalid={shows('firstName')}
+              {...errorProps('firstName', t.form.firstName.error)}
             />
             <TextField
               className="col--half" id="lastName" label={t.form.lastName.label}
               placeholder={t.form.lastName.placeholder} autoComplete="family-name" maxLength={MAX.name} required
               value={values.lastName} onChange={(v) => setValue('lastName', v)}
               onBlur={() => markTouched('lastName')} touched={!!touched.lastName}
+              invalid={shows('lastName')}
+              {...errorProps('lastName', t.form.lastName.error)}
             />
             {/* Standing decides what the rest of the form means, so it is asked before the fields it
                 governs. It is organizational standing only — never a permission or a job title. */}
@@ -143,6 +193,8 @@ export const RegisterForm = ({ form }: { form: ReturnType<typeof useRegisterForm
               placeholder={t.form.companyName.placeholder} autoComplete="organization" maxLength={MAX.companyName} required
               value={values.companyName} onChange={(v) => setValue('companyName', v)}
               onBlur={() => markTouched('companyName')} touched={!!touched.companyName}
+              invalid={shows('companyName')}
+              {...errorProps('companyName', t.form.companyName.error)}
             />
 
             {/* One of the three values the server matches the invitation on. Typing a company name is
@@ -153,6 +205,8 @@ export const RegisterForm = ({ form }: { form: ReturnType<typeof useRegisterForm
                 placeholder={t.form.companyPosition.placeholder} options={positionOptions} required
                 value={values.companyPosition} onChange={(v) => setValue('companyPosition', v)}
                 onBlur={() => markTouched('companyPosition')} touched={!!touched.companyPosition}
+                invalid={shows('companyPosition')}
+                {...errorProps('companyPosition')}
               />
             ) : null}
             <TextField
@@ -160,10 +214,11 @@ export const RegisterForm = ({ form }: { form: ReturnType<typeof useRegisterForm
               placeholder={t.form.email.placeholder} autoComplete="email" maxLength={MAX.email} required
               // The address Google verified is the one the account is opened for, and the server
               // refuses any other, so it is not offered as an editable field.
-              {...(viaGoogle ? { readOnly: true } : {})}
+              {...(viaGoogle ? { readOnly: true, hint: t.form.googleOnboarding.emailLocked } : {})}
               value={values.email} onChange={(v) => setValue('email', v)}
               onBlur={() => markTouched('email')} touched={!!touched.email}
-              {...(errors.email ? { error: t.form.email.error } : {})}
+              invalid={shows('email')}
+              {...errorProps('email', t.form.email.error)}
             />
 
             {/* Absent until a route is chosen: there is no list to show before then. */}
@@ -174,6 +229,8 @@ export const RegisterForm = ({ form }: { form: ReturnType<typeof useRegisterForm
                 hint={t.form.specialty.hint}
                 value={values.specialty} onChange={(v) => setSpecialty(v)}
                 onBlur={() => markTouched('specialty')} touched={!!touched.specialty}
+                invalid={shows('specialty')}
+                {...errorProps('specialty')}
               >
                 {/* Revealed by the value rather than by a CSS `:has()` on the checked option — same
                     condition the server enforces, which is why it can never send a stale value. */}
@@ -181,11 +238,19 @@ export const RegisterForm = ({ form }: { form: ReturnType<typeof useRegisterForm
                   <div className="other-trade other-trade--visible">
                     <FieldLabel plain text={t.form.specialtyOther.label} />
                     <input
-                      className="form-input" type="text" name="specialtyOther"
+                      className={`form-input${shows('specialtyOther') ? ' touched is-invalid' : ''}`}
+                      type="text" name="specialtyOther"
+                      aria-invalid={shows('specialtyOther')}
                       maxLength={MAX.specialtyOther} placeholder={t.form.specialtyOther.placeholder}
                       value={values.specialtyOther}
                       onChange={(e) => setValue('specialtyOther', e.target.value)}
+                      onBlur={() => markTouched('specialtyOther')}
                     />
+                    {shows('specialtyOther') ? (
+                      <p className="field-error field-error--visible" aria-live="polite">
+                        {issueText('specialtyOther', t.form.specialtyOther.error)}
+                      </p>
+                    ) : null}
                   </div>
                 ) : null}
 
@@ -199,14 +264,7 @@ export const RegisterForm = ({ form }: { form: ReturnType<typeof useRegisterForm
                           className="avail-option__input" id={`drillingTypes-${code}`}
                           type="checkbox" name="drillingTypes" value={code}
                           checked={values.drillingTypes.includes(code)}
-                          onChange={(e) =>
-                            setValue(
-                              'drillingTypes',
-                              e.target.checked
-                                ? [...values.drillingTypes, code]
-                                : values.drillingTypes.filter((held: DrillingType) => held !== code),
-                            )
-                          }
+                          onChange={(e) => toggleDrillingType(code, e.target.checked)}
                         />
                         <span className="avail-option__box" aria-hidden="true">
                           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor"
@@ -229,15 +287,19 @@ export const RegisterForm = ({ form }: { form: ReturnType<typeof useRegisterForm
                 placeholder={t.form.city.placeholder}
                 place={values.place}
                 city={values.city}
-                onPlace={(place) => setValue('place', place)}
-                onCity={(city) => setValue('city', city)}
+                onPlace={(place) => { setValue('place', place); markTouched('city'); }}
+                onCity={(city) => { setValue('city', city); markTouched('city'); }}
                 required
+                invalid={shows('city')}
+                {...errorProps('city', t.form.city.error)}
               />
               <SelectField<Region>
                 id="region" label={t.form.region.label} placeholder={t.form.region.placeholder}
                 options={regionOptions} required
                 value={values.region} onChange={(v) => setValue('region', v)}
                 onBlur={() => markTouched('region')} touched={!!touched.region}
+                invalid={shows('region')}
+                {...errorProps('region')}
               />
               {/* Two independent numbers. Each is optional on its own, and neither is derived from
                   the other — they are stored on two different documents server-side. The office line
@@ -248,6 +310,9 @@ export const RegisterForm = ({ form }: { form: ReturnType<typeof useRegisterForm
                   type="tel" dir="ltr" placeholder={t.form.officePhone.placeholder}
                   autoComplete="work tel" maxLength={MAX.phone}
                   value={values.officePhone} onChange={(v) => setValue('officePhone', v)}
+                  onBlur={() => markTouched('officePhone')} touched={!!touched.officePhone}
+                  invalid={shows('officePhone')}
+                  {...errorProps('officePhone', t.form.officePhone.error)}
                 />
               )}
               <TextField
@@ -255,11 +320,29 @@ export const RegisterForm = ({ form }: { form: ReturnType<typeof useRegisterForm
                 type="tel" dir="ltr" placeholder={t.form.businessPhone.placeholder}
                 autoComplete="tel" maxLength={MAX.phone}
                 value={values.businessPhone} onChange={(v) => setValue('businessPhone', v)}
+                onBlur={() => markTouched('businessPhone')} touched={!!touched.businessPhone}
+                invalid={shows('businessPhone')}
+                {...errorProps('businessPhone', t.form.businessPhone.error)}
               />
             </div>
 
             {/* Availability is the organization's, set by whoever runs it — so an employee is not
                 asked, and the server refuses the field on that path anyway. */}
+            {/* Contractor route only: it classifies a CONTRACTING business, so a supplier and an
+                architectural professional are never asked. An employee inherits their company's,
+                and the server refuses the field on both of those paths. */}
+            {isEmployee || values.registrationCategory !== 'contractor' ? null : (
+              <ContractorCategoryChoice
+                legend={t.form.contractorCategory.label} hint={t.form.contractorCategory.hint}
+                labels={t.contractorCategories}
+                value={values.contractorCategory}
+                onChange={(v) => setValue('contractorCategory', v)}
+                onBlur={() => markTouched('contractorCategory')}
+                invalid={shows('contractorCategory')}
+                {...errorProps('contractorCategory')}
+              />
+            )}
+
             {isEmployee ? null : (
               <AvailabilityChoice
                 legend={t.form.availability.label} hint={t.form.availability.hint}
@@ -281,7 +364,8 @@ export const RegisterForm = ({ form }: { form: ReturnType<typeof useRegisterForm
                   minLength={MIN_PASSWORD_LENGTH} maxLength={MAX.password}
                   value={values.password} onChange={(v) => setValue('password', v)}
                   onBlur={() => markTouched('password')} touched={!!touched.password}
-                  {...(errors.password ? { error: t.form.password.error } : {})}
+                  invalid={shows('password')}
+                  {...errorProps('password')}
                 />
                 <PasswordField
                   className="col--half"
@@ -290,7 +374,8 @@ export const RegisterForm = ({ form }: { form: ReturnType<typeof useRegisterForm
                   maxLength={MAX.password}
                   value={values.confirmPassword} onChange={(v) => setValue('confirmPassword', v)}
                   onBlur={() => markTouched('confirmPassword')} touched={!!touched.confirmPassword}
-                  {...(errors.confirmPassword ? { error: t.form.confirmPassword.error } : {})}
+                  invalid={shows('confirmPassword')}
+                  {...errorProps('confirmPassword')}
                 />
               </>
             )}
@@ -314,8 +399,13 @@ export const RegisterForm = ({ form }: { form: ReturnType<typeof useRegisterForm
 
             <TermsCheckbox
               terms={t.form.terms} checked={values.acceptedTerms}
-              onChange={(v) => setValue('acceptedTerms', v)}
+              // Marked touched on the change rather than only on the blur: a checkbox has no
+              // half-answered state, so unticking consent should say why submit went away.
+              onChange={(v) => { setValue('acceptedTerms', v); markTouched('acceptedTerms'); }}
               onBlur={() => markTouched('acceptedTerms')} touched={!!touched.acceptedTerms}
+              invalid={shows('acceptedTerms')}
+              {...(shows('acceptedTerms') ? { error: t.form.terms.error } : {})}
+              onOpenTerms={() => setTermsOpen(true)}
             />
 
             <div className="reg-nav col--full">
@@ -328,13 +418,16 @@ export const RegisterForm = ({ form }: { form: ReturnType<typeof useRegisterForm
                 disabled={!isComplete || submitting}
                 aria-busy={submitting}
               >
-                {t.form.submit}
+                {viaGoogle ? t.form.googleOnboarding.submit : t.form.submit}
                 {submitting ? <ButtonSpinner /> : null}
               </button>
             </div>
           </>
         )}
       </form>
+
+      {/* Outside the <form>: a dialog nested in it would submit Register on any stray Enter. */}
+      <TermsModal open={termsOpen} onClose={() => setTermsOpen(false)} />
     </>
   );
 };

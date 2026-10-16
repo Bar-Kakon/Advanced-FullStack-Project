@@ -3,7 +3,10 @@ import { Types } from 'mongoose';
 import type { ParticipantRepository } from '../projectmembers/participant.repository.js';
 import type { ProjectRepository } from '../projects/project.repository.js';
 import { formatCalendarDate } from '../projects/projectDates.js';
-import type { MyTaskDto, MyTasksPageDto } from './task.dto.js';
+import type { CompanyContextService } from '../companies/companyContext.service.js';
+import type { AgreementOrigin, AgreementOriginPort } from './agreementOrigin.port.js';
+import type { CommissionTrackingRepository } from './commissionTracking.repository.js';
+import type { CommissionedWorkPageDto, MyTaskDto, MyTasksPageDto } from './task.dto.js';
 import type { TaskKind, TaskRecord } from './task.model.js';
 import type { ProposalMarkerPort } from './proposals.port.js';
 import {
@@ -38,6 +41,8 @@ export interface MyTasksService {
   list(userId: string, filters: MyTasksFilters): Promise<MyTasksPageDto>;
   start(userId: string, taskId: string): Promise<MyTaskDto>;
   complete(userId: string, taskId: string): Promise<MyTaskDto>;
+  /** The commissioning party's read-only view of work they commissioned through agreements. */
+  commissioned(userId: string): Promise<CommissionedWorkPageDto>;
 }
 
 export interface MyTasksDependencies {
@@ -45,6 +50,9 @@ export interface MyTasksDependencies {
   readonly projects: ProjectRepository;
   readonly participants: ParticipantRepository;
   readonly proposals: ProposalMarkerPort;
+  readonly origins: AgreementOriginPort;
+  readonly companyContext: CompanyContextService;
+  readonly trackings: CommissionTrackingRepository;
 }
 
 const encodeCursor = ({ dueDate, id }: MyTasksCursor): string =>
@@ -68,6 +76,9 @@ export const createMyTasksService = ({
   projects,
   participants,
   proposals,
+  origins,
+  companyContext,
+  trackings,
 }: MyTasksDependencies): MyTasksService => {
   /**
    * Turns one stored task into what THIS viewer is allowed to read. Every field that could cross
@@ -80,12 +91,17 @@ export const createMyTasksService = ({
     names: ReadonlyMap<string, string>,
     projectNames: ReadonlyMap<string, string>,
     pending: ReadonlyMap<string, boolean>,
+    agreementOrigins: ReadonlyMap<string, AgreementOrigin>,
     now: Date,
   ): MyTaskDto => {
     const isDelegate = viewpoint === 'delegate';
     const delegateView = isDelegate ? projectForDelegate(task) : null;
 
-    const counterpartyId = counterpartyIdFor(task, viewpoint, viewerId);
+    // Agreement-born work names the commissioning party as the counterparty — read from the
+    // agreement message, and never shown to a delegate, who sees only their delegator.
+    const origin = viewpoint === 'assignee' ? agreementOrigins.get(task._id.toString()) : undefined;
+    const counterpartyId =
+      origin !== undefined ? origin.proposer : counterpartyIdFor(task, viewpoint, viewerId);
     const counterpartyName =
       counterpartyId === null ? null : names.get(counterpartyId.toString()) ?? null;
 
@@ -114,6 +130,8 @@ export const createMyTasksService = ({
           ? null
           : { userId: counterpartyId.toString(), name: counterpartyName },
 
+      fromAgreement: origin !== undefined,
+
       delegated: maySeeDelegation(viewpoint) && task.delegation !== undefined,
       viewerIsDelegate: isDelegate,
       orphaned: task.orphanedAt !== undefined,
@@ -140,7 +158,26 @@ export const createMyTasksService = ({
     const now = new Date();
     const viewpoints = new Map(rows.map((row) => [row._id.toString(), viewpointOf(row, { userId, reachesProject: false })]));
 
+    // Standalone rows the viewer performs may have arrived through an agreement; one batched
+    // reverse lookup names their commissioning party.
+    const originCandidates = rows.flatMap((row) =>
+      row.kind === 'standalone' && viewpoints.get(row._id.toString()) === 'assignee'
+        ? [row._id]
+        : [],
+    );
+    const agreementOrigins = new Map(
+      (await origins.findByTaskIds(originCandidates)).map((origin) => [
+        origin.task.toString(),
+        origin,
+      ]),
+    );
+
     const counterpartyIds = rows.flatMap((row) => {
+      const origin =
+        viewpoints.get(row._id.toString()) === 'assignee'
+          ? agreementOrigins.get(row._id.toString())
+          : undefined;
+      if (origin !== undefined) return [origin.proposer];
       const id = counterpartyIdFor(row, viewpoints.get(row._id.toString()) ?? 'none', userId);
       return id === null ? [] : [id];
     });
@@ -159,7 +196,16 @@ export const createMyTasksService = ({
     const pending = await proposals.pendingFor(userId, rows.map((row) => row._id.toString()));
 
     return rows.map((row) =>
-      toDto(row, viewpoints.get(row._id.toString()) ?? 'none', userId, names, projectNames, pending, now),
+      toDto(
+        row,
+        viewpoints.get(row._id.toString()) ?? 'none',
+        userId,
+        names,
+        projectNames,
+        pending,
+        agreementOrigins,
+        now,
+      ),
     );
   };
 
@@ -213,6 +259,14 @@ export const createMyTasksService = ({
       const task = await loadPerformable(userId, taskId);
       if (task.startedAt !== undefined) throw alreadyStarted();
 
+      // PRJ-07's race guard: a project mid-cancellation (or already gone) takes no first start.
+      // Every start after the stamp is refused here; every start before it is caught by the
+      // cancellation's own re-check behind the same stamp.
+      if (task.project !== undefined) {
+        const project = await projects.findById(task.project.toString());
+        if (project === null || project.cancellingAt !== undefined) throw taskNotFound();
+      }
+
       const updated = await tasks.setStarted(task._id, new Date());
       if (updated === null) throw alreadyStarted();
       return single(updated, userId);
@@ -226,6 +280,114 @@ export const createMyTasksService = ({
       const updated = await tasks.setCompleted(task._id, new Date());
       if (updated === null) throw alreadyCompleted();
       return single(updated, userId);
+    },
+
+    /**
+     * Strictly read-only, and structurally scoped: only task ids taken from the caller's own
+     * accepted agreements are ever read, so nothing else of a performer's world can appear here.
+     * It feeds no group, count or filter of the performer's My Tasks.
+     */
+    async commissioned(userId) {
+      // Authority and membership are read live. No active company membership means no
+      // commissioned-work data at all — stored history is never a current capability (§3.6 rule 6).
+      const context = await companyContext.forUser(userId);
+      const activeMember = context !== null && context.membershipStatus === 'active';
+      const canCommission = activeMember && context.permissions.includes('task.create');
+      if (!activeMember || context === null) return { canCommission: false, commissioned: [] };
+
+      const me = new Types.ObjectId(userId);
+      const company = new Types.ObjectId(context.id);
+
+      // Attribution reads the immutable company stamp, never a membership: the viewer's own
+      // commissions only inside their CURRENT company, so nothing follows anybody between firms.
+      const own = (await origins.listByProposer(me)).filter(
+        (origin) => origin.company !== null && origin.company.equals(company),
+      );
+      // Company-wide read-only owner oversight, by the same stamp.
+      const oversight =
+        context.standing === 'owner'
+          ? (await origins.listByCompany(company)).filter(
+              (origin) => !origin.proposer.equals(me),
+            )
+          : [];
+      // Appointed tracking: rows explicitly transferred or shared onto this viewer.
+      const trackeeRows = (await trackings.listByTrackee(me)).filter((row) =>
+        row.company.equals(company),
+      );
+
+      type Entry = { origin: AgreementOrigin; role: 'commissioner' | 'owner_oversight' | 'trackee' };
+      const entries = new Map<string, Entry>();
+      for (const origin of oversight) {
+        entries.set(origin.task.toString(), { origin, role: 'owner_oversight' });
+      }
+      const trackedTasks = new Set(trackeeRows.map((row) => row.task.toString()));
+      const trackedOrigins = await origins.findByTaskIds(trackeeRows.map((row) => row.task));
+      for (const origin of trackedOrigins) {
+        if (trackedTasks.has(origin.task.toString())) {
+          entries.set(origin.task.toString(), { origin, role: 'trackee' });
+        }
+      }
+      for (const origin of own) {
+        entries.set(origin.task.toString(), { origin, role: 'commissioner' });
+      }
+      if (entries.size === 0) return { canCommission, commissioned: [] };
+
+      const rows = await tasks.listByIds([...entries.values()].map((entry) => entry.origin.task));
+      const trackingRows = await trackings.listByTasks(rows.map((task) => task._id));
+      const trackingByTask = new Map(trackingRows.map((row) => [row.task.toString(), row]));
+
+      const nameIds = [
+        ...[...entries.values()].flatMap((entry) => [entry.origin.accepter, entry.origin.proposer]),
+        ...trackingRows.flatMap((row) => (row.trackee === undefined ? [] : [row.trackee])),
+      ];
+      const people = await participants.findByIds([
+        ...new Set(nameIds.map((id) => id.toString())),
+      ].map((id) => new Types.ObjectId(id)));
+      const names = new Map(
+        people.map((person) => [
+          person._id.toString(),
+          `${person.firstName} ${person.lastName}`.trim(),
+        ]),
+      );
+      const ref = (id: Types.ObjectId | undefined) =>
+        id === undefined ? null : { userId: id.toString(), name: names.get(id.toString()) ?? '' };
+
+      const now = new Date();
+      const commissioned = rows
+        .slice()
+        .sort((a, b) => a.dueDate.getTime() - b.dueDate.getTime())
+        .flatMap((task) => {
+          const entry = entries.get(task._id.toString());
+          if (entry === undefined) return [];
+          // The viewer's own full history only while they hold the authority; everything that is
+          // not their own commission tracks ACTIVE work alone, and never permanently.
+          const unfinished = task.completedAt === undefined;
+          if (entry.role === 'commissioner' && !canCommission && !unfinished) return [];
+          if (entry.role !== 'commissioner' && !unfinished) return [];
+
+          const tracking = trackingByTask.get(task._id.toString());
+          return [
+            {
+              id: task._id.toString(),
+              title: task.title,
+              startDate: formatCalendarDate(task.startDate),
+              dueDate: formatCalendarDate(task.dueDate),
+              state: deriveTaskState(task),
+              overdue: isOverdue(task, now),
+              performer: ref(entry.origin.accepter),
+              role: entry.role,
+              commissionedBy: entry.origin.proposer.equals(me)
+                ? null
+                : ref(entry.origin.proposer),
+              tracking:
+                tracking === undefined
+                  ? null
+                  : { arrangement: tracking.arrangement, trackee: ref(tracking.trackee) },
+            },
+          ];
+        });
+
+      return { canCommission, commissioned };
     },
   };
 };

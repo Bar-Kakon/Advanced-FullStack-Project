@@ -73,7 +73,7 @@ export const EditTextarea = ({
 }) => (
   <div className="form-group">
     <label className="field-label" htmlFor={id}>{label}</label>
-    {/* One textarea, so `dir="auto"` can sit on the element itself: the prototype needed two,
+    {/* One textarea, so `dir="auto"` can sit on the element itself: the earlier screen needed two,
         one per language, and a shared parent would have resolved direction from the Hebrew. */}
     <textarea
       className="form-input form-textarea"
@@ -106,7 +106,7 @@ export const EditSelect = <T extends string>({
   <div className="form-group">
     <label className="field-label" htmlFor={id}>{label}</label>
     <div className="select-wrap">
-      {/* One control, its options rendered from the string resource. The prototype had to carry a
+      {/* One control, its options rendered from the string resource. The earlier screen had to carry a
           whole second select per language, because option text is not a span it could hide. */}
       <select
         className={`form-select${touched ? ' touched' : ''}`}

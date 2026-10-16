@@ -366,3 +366,26 @@
 .mute-state {
   margin: 0 0 8px;
 }
+
+/* The date-change and stage forms: a field is a labelled column, an input speaks the form language. */
+.field { display: flex; flex-direction: column; gap: 8px; flex: 1 1 180px; }
+.input {
+  width: 100%;
+  height: 54px;
+  padding: 0 16px;
+  font-family: var(--font-sans);
+  font-size: 17px;
+  color: var(--text);
+  background: var(--surface);
+  border: 1.5px solid var(--secondary-30);
+  border-inline-start-width: 5px;
+  border-radius: var(--r-sm);
+  outline: none;
+  transition: border-color 0.16s, box-shadow 0.16s;
+}
+.input:hover { border-color: var(--secondary-55); border-inline-start-color: var(--secondary); }
+.input:focus {
+  border-color: var(--primary);
+  border-inline-start-color: var(--primary);
+  box-shadow: 0 0 0 4px var(--primary-08);
+}

@@ -2,7 +2,7 @@ import type { Profile, ReceivedRatingDto, WorkEntry } from '../../api/profile.ap
 
 /**
  * What the two profile screens render. Every value comes from `GET /users/me`; nothing on these
- * screens is invented, defaulted or carried over from the static prototype.
+ * screens is invented, defaulted or carried over from the earlier static screen.
  */
 export type ProfileView = Profile;
 

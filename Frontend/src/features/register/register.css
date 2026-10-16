@@ -1,6 +1,6 @@
 /* ─────────────────────────────────────────────
-   FieldSync — Register / Create account
-   Static HTML/CSS prototype for the academic project.
+   Blokta — Register / Create account
+   Blokta register styling.
    The visual language is a luxury blueprint board:
    deep technical grid, warm vellum sheet, precise
    registration marks, and calm construction geometry.
@@ -365,19 +365,6 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   font-weight: 700;
   letter-spacing: -0.3px;
   color: var(--surface);
-}
-
-.brand-logo__badge {
-  font-family: var(--font-mono);
-  font-size: 12px;
-  font-weight: 500;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--surface);
-  background: var(--surface-08);
-  border: 1px solid var(--secondary-55);
-  padding: 4px 9px;
-  border-radius: 999px;
 }
 
 /* Headline copy */
@@ -763,7 +750,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 }
 
 /* ── Trade select — native <select> dressed as a field ──
-   One control per field. The prototype needed two, one per language, because option text is not
+   One control per field. The earlier screen needed two, one per language, because option text is not
    a span and could not be toggled; here the options are rendered from the string resource. */
 .select-wrap { position: relative; }
 .form-select {
@@ -787,7 +774,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
    :has() lets the form-group react to the currently-checked <option>; works for
    whichever language select is active since both carry an option[value="other"]. */
 /* React only renders this block when the trade is "other", so the modifier class is what shows
-   it. The prototype had to ask the DOM the same question with :has(), because it could not
+   it. The earlier screen had to ask the DOM the same question with :has(), because it could not
    choose whether to render the element at all. */
 .other-trade { display: none; }
 .other-trade--visible {
@@ -871,6 +858,40 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   box-shadow: 0 0 0 4px var(--error-bg);
 }
 
+/* The same red state for the rules a stylesheet cannot see — a name carrying digits, a phone that
+   is not a number, two passwords that differ. React adds `.is-invalid` only while an issue is
+   actually held against the field, so it leaves on the keystroke that fixes the value.
+   `:not(:focus)` hides the red while the person is back in the field correcting it. */
+.form-input.is-invalid:not(:focus),
+.form-select.is-invalid:not(:focus) {
+  border-color: var(--error);
+  border-inline-start-color: var(--error);
+  box-shadow:
+    0 0 0 4px var(--error-bg),
+    inset 0 -2px 0 var(--error),
+    4px 4px 0 rgba(166, 50, 50, 0.08);
+}
+
+.checkbox-input.is-invalid:not(:focus) + .checkbox-box {
+  border-color: var(--error);
+  box-shadow: 0 0 0 4px var(--error-bg);
+}
+
+/* The in-field hard-hat, which the city box is the only field here to carry. It is hidden by
+   default and positioned on the trailing edge; React renders it only for a field actually in
+   error, so nothing shows it on a form nobody has filled in yet. */
+.input-warn {
+  position: absolute;
+  top: 0;
+  right: 12px;
+  height: 54px;
+  display: none;
+  align-items: center;
+  color: var(--error);
+  pointer-events: none;
+}
+.form-input.is-invalid:not(:focus) ~ .input-warn { display: flex; }
+
 /* React decides when a message applies — including the passwords-do-not-match case, which no CSS
    selector can express, since a stylesheet cannot compare two values. The two native rules below
    are kept because they still hold for the fields they name and cost nothing. */
@@ -881,7 +902,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   display: block;
 }
 
-/* The prototype's `.password-error` rule stood here. It is gone rather than kept, because React
+/* The earlier screen's `.password-error` rule stood here. It is gone rather than kept, because React
    renders no such element: the password message is now shown by `.field-error--visible` on the
    same terms as every other message, including the match check CSS could never express. */
 
@@ -891,7 +912,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 }
 
 /* "Create account" stays disabled until every required field is filled and valid.
-   The prototype computed this in CSS with a chain of :has() rules, because it had no JavaScript.
+   The earlier screen computed this in CSS with a chain of :has() rules, because it had no JavaScript.
    Here the form's validity is already in React state, so the button carries a real `disabled`
    attribute and this rule only paints it. Two reasons for the move: deriving validity a second
    time from the DOM would give one answer two sources that can disagree, and `pointer-events`
@@ -990,6 +1011,122 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
   font-weight: 600;
 }
 .checkbox-label a:hover { text-decoration: underline; }
+
+/* The document opener is a button, so the browser's own button chrome is cleared and it inherits
+   the label's type. It stays underlined, because it has to read as the thing that opens. */
+button.checkbox-label__doc {
+  padding: 0;
+  font-family: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+button.checkbox-label__doc:hover { color: var(--primary); text-decoration-thickness: 2px; }
+button.checkbox-label__doc:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 3px;
+  border-radius: 3px;
+}
+
+/* ─────────────────────────────────────────────
+   Terms of Use — read without leaving Register
+   ───────────────────────────────────────────── */
+.terms-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 18px;
+}
+
+.terms-modal__backdrop {
+  position: absolute;
+  inset: 0;
+  cursor: pointer;
+  background: rgba(31, 36, 40, 0.62);
+  backdrop-filter: blur(2px);
+  border: none;
+}
+
+.terms-modal__panel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: min(720px, 100%);
+  max-height: min(84vh, 720px);
+  background: var(--surface);
+  border: 1px solid var(--secondary-45);
+  border-block-start: 4px solid var(--secondary);
+  border-radius: var(--r-md);
+  box-shadow: 0 30px 80px -50px rgba(31, 36, 40, 0.9);
+}
+.terms-modal__panel:focus-visible { outline: 2px solid var(--primary); outline-offset: 3px; }
+
+.terms-modal__head {
+  flex-shrink: 0;
+  padding: 24px 26px 14px;
+  border-bottom: 1px solid var(--secondary-30);
+}
+
+.terms-modal__title {
+  font-family: var(--font-serif);
+  font-size: 25px;
+  font-weight: 700;
+  line-height: 1.15;
+  color: var(--primary);
+}
+
+.terms-modal__version {
+  margin-top: 6px;
+  font-size: 13.5px;
+  color: var(--text-mute);
+}
+
+/* The one scrolling region: the heading and the close control stay put while the text moves. */
+.terms-modal__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 18px 26px 22px;
+}
+
+.terms-modal__section + .terms-modal__section { margin-top: 18px; }
+
+.terms-modal__heading {
+  font-family: var(--font-serif);
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--primary);
+  margin-bottom: 5px;
+}
+
+.terms-modal__text {
+  font-size: 15.5px;
+  line-height: 1.65;
+  color: var(--text-soft);
+}
+
+.terms-modal__actions {
+  flex-shrink: 0;
+  display: flex;
+  justify-content: flex-end;
+  padding: 14px 26px 18px;
+  border-top: 1px solid var(--secondary-30);
+}
+
+@media (max-width: 520px) {
+  .terms-modal { padding: 12px; }
+  .terms-modal__head { padding: 18px 18px 12px; }
+  .terms-modal__body { padding: 14px 18px 18px; }
+  .terms-modal__actions { padding: 12px 18px 14px; }
+  .terms-modal__actions .btn { flex: 1 1 auto; }
+}
 
 /* ─────────────────────────────────────────────
    Buttons
@@ -1161,7 +1298,7 @@ button { font-family: inherit; cursor: pointer; border: none; background: none; 
 
 /* ─────────────────────────────────────────────
    Language — Hebrew + RTL is the default, English + LTR on toggle
-   The prototype stored the language in a hidden radio because it had no JavaScript, and rendered
+   The earlier screen stored the language in a hidden radio because it had no JavaScript, and rendered
    every string and every field twice so CSS could hide one copy. React holds the language in a
    context and renders one of each, so all that duplication is gone: what remains is the part that
    was never about duplication — the direction and the typeface, still set on the root element.

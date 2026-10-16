@@ -57,6 +57,14 @@ export const REGIONS = [
   'nationwide', 'north', 'haifa', 'sharon', 'center', 'telaviv', 'jerusalem', 'lowlands', 'south',
 ] as const;
 
+/**
+ * The account/company-level business classification. It is what gates Confidential Delegation, and
+ * it is deliberately NOT a per-project role — a קבלן ביצוע ראשי invited into somebody else's
+ * project is still a קבלן ביצוע ראשי.
+ */
+export const CONTRACTOR_CATEGORIES = ['main_contractor', 'subcontractor'] as const;
+export type ContractorCategory = (typeof CONTRACTOR_CATEGORIES)[number];
+
 export const AVAILABILITY_STATUSES = ['open', 'limited', 'closed'] as const;
 
 /** The ten machine codes that refine `heavy_equipment`. Mirrored from `user.model.ts`. */
@@ -131,6 +139,8 @@ export interface RegisterPayload {
   readonly operationalEmail: boolean;
   /** The structured place behind `city`, when the browser resolved one. */
   readonly place?: StructuredPlace;
+  /** Owner path only; the server refuses it for an employee. */
+  contractorCategory?: ContractorCategory;
 }
 
 /**
@@ -160,10 +170,15 @@ export interface AuthenticatedUser {
  * nothing else.
  *
  * `accessToken` is deliberately absent, and the server agrees: Register creates an account, and
- * Login is the authentication boundary.
+ * Login is the authentication boundary. The one approved exception is a Google registration,
+ * which answers `GoogleRegisterResponse` — the identity was verified inside the same request.
  */
 export interface RegisterResponse {
   readonly user: AuthenticatedUser;
+}
+
+export interface GoogleRegisterResponse extends LoginResponse {
+  readonly outcome: 'signed_in';
 }
 
 /** The four capability codes, mirrored from `COMPANY_PERMISSIONS`. The list is closed on purpose. */
@@ -184,6 +199,8 @@ export interface CompanyContext {
   readonly permissions: readonly CompanyPermission[];
   /** Whether the business has been through employee setup, by inviting somebody or by skipping. */
   readonly employeeSetupComplete: boolean;
+  /** Derived from the owner's account lifecycle; anything but `active` means no company writes. */
+  readonly ownerState: 'active' | 'recovery' | 'inactive';
 }
 
 /**
@@ -268,11 +285,58 @@ export interface EmployeeMembership {
   readonly invitedFullName: string | null;
   readonly companyPosition: CompanyPosition | null;
   readonly userId: string | null;
+  readonly permissions: readonly CompanyPermission[];
 }
 
 /** Every relationship in the caller's company, oldest first. The owner's own row is among them. */
 export interface EmployeeListResponse {
   readonly memberships: readonly EmployeeMembership[];
+  /** Permission management is the owner's alone; the server computes this, the UI only renders. */
+  readonly viewer: { readonly canManagePermissions: boolean };
+}
+
+/** One unsettled work item of a departing (or departed) member, as the owner's workbench shows it. */
+export interface DepartureWorkItem {
+  readonly id: string;
+  readonly title: string;
+  readonly startDate: string;
+  readonly dueDate: string;
+  readonly state: string;
+  readonly overdue: boolean;
+  readonly awaitingReassignment: boolean;
+  readonly performer: { readonly userId: string; readonly name: string } | null;
+  readonly projectName: string | null;
+  readonly arrangement: { readonly kind: string; readonly trackeeName: string | null } | null;
+}
+
+export interface DepartureWork {
+  readonly commissions: readonly DepartureWorkItem[];
+  readonly assigned: readonly DepartureWorkItem[];
+}
+
+export interface CommissionArrangement {
+  readonly taskId: string;
+  readonly arrangement: 'owner_only' | 'transferred' | 'shared';
+  readonly trackeeUserId?: string;
+}
+
+export interface AssignedArrangement {
+  readonly taskId: string;
+  readonly action: 'transfer' | 'await_reassignment';
+  readonly assigneeUserId?: string;
+}
+
+export interface DepartureArrangements {
+  readonly commissions: readonly CommissionArrangement[];
+  readonly assigned: readonly AssignedArrangement[];
+}
+
+export interface DepartureDefaultsPayload {
+  readonly commissioned?: {
+    readonly arrangement: 'owner_only' | 'transferred' | 'shared';
+    readonly trackeeUserId?: string;
+  };
+  readonly assigned?: { readonly assigneeUserId?: string };
 }
 
 /**

@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
 import { AppNav } from '../../components/AppNav';
 import { FormAlert } from '../../components/FormAlert';
@@ -11,6 +13,7 @@ import type { PublicProfile } from '../../api/browse.types';
 import { NETWORK_TABS, type NetworkTab } from '../../api/network.types';
 import { initialsOf } from '../profile/profileModel';
 import { PublicProfilePanel } from '../browse/components/PublicProfilePanel';
+import { StartMessageDialog } from '../messaging/components/StartMessageDialog';
 import { NetworkRow } from './components/NetworkRow';
 import { useMyNetwork } from './useMyNetwork';
 import profileCss from '../profile/profile.css?inline';
@@ -20,18 +23,24 @@ import networkCss from './network.css?inline';
 export const MyNetworkPage = () => {
   const { t } = useLanguage();
   const { user } = useAuth();
-  const [tab, setTab] = useState<NetworkTab>('connected');
+  const [searchParams] = useSearchParams();
+  const requestedTab = searchParams.get('tab');
+  const [tab, setTab] = useState<NetworkTab>(
+    NETWORK_TABS.includes(requestedTab as NetworkTab) ? (requestedTab as NetworkTab) : 'connected',
+  );
 
+  const navigate = useNavigate();
   const [profile, setProfile] = useState<PublicProfile | null>(null);
   const [profileLoading, setProfileLoading] = useState(false);
   const [profileNotFound, setProfileNotFound] = useState(false);
+  const [messaging, setMessaging] = useState<{ userId: string; name: string } | null>(null);
 
   useScreenStylesheet(
     { id: 'profile.css', css: profileCss },
     { id: 'browse.css', css: browseCss },
     { id: 'network.css', css: networkCss },
   );
-  useDocumentTitle('הרשת שלי / My network — FieldSync');
+  useDocumentTitle('הרשת שלי / My network — Blokta');
 
   const { rows, loading, loadingMore, failure, pendingUserId, hasMore, reload, loadMore, act } =
     useMyNetwork(tab);
@@ -40,6 +49,7 @@ export const MyNetworkPage = () => {
   useEffect(() => {
     setProfile(null);
     setProfileNotFound(false);
+    setMessaging(null);
   }, [tab]);
 
   const viewProfile = useCallback(async (userId: string): Promise<void> => {
@@ -107,6 +117,15 @@ export const MyNetworkPage = () => {
 
             {loading ? <p className="panel__lede" role="status">{t.network.loading}</p> : null}
 
+            {messaging !== null ? (
+              <StartMessageDialog
+                recipientId={messaging.userId}
+                recipientName={messaging.name}
+                onClose={() => setMessaging(null)}
+                onOpened={(conversationId) => void navigate(`/messages?c=${conversationId}`)}
+              />
+            ) : null}
+
             {!loading && rows !== null && rows.length === 0 ? (
               <p className="panel__lede">{t.network.empty[tab]}</p>
             ) : null}
@@ -121,6 +140,7 @@ export const MyNetworkPage = () => {
                     pending={pendingUserId === row.person.userId}
                     onAct={(action, userId) => void act(action, userId)}
                     onViewProfile={(userId) => void viewProfile(userId)}
+                    onMessage={(userId, name) => setMessaging({ userId, name })}
                   />
                 ))}
               </ul>
@@ -147,6 +167,7 @@ export const MyNetworkPage = () => {
                 setProfile(null);
                 setProfileNotFound(false);
               }}
+              onBlocked={() => void reload()}
             />
           ) : null}
         </div>

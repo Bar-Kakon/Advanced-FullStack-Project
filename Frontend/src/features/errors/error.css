@@ -1,6 +1,6 @@
 /* ─────────────────────────────────────────────
-   FieldSync — error screens (404 now, 403 / 500 later)
-   Migrated from screens/error.css. Only the bilingual mechanism
+   Blokta — error screens (404 now, 403 / 500 later)
+   Blokta error styling. Only the bilingual mechanism
    changed; every visual declaration is the approved one.
 
    Shared stylesheet, so a second error screen reuses this file
@@ -411,7 +411,7 @@ a { text-decoration: none; color: inherit; }
 /* ─────────────────────────────────────────────
    Bilingual
 
-   The prototype's twin `.he-text` / `.en-text` spans and the two hidden
+   The earlier screen's twin `.he-text` / `.en-text` spans and the two hidden
    radios that drove them are gone: one language's strings are rendered,
    from the language context. The declarations below are unchanged.
    ───────────────────────────────────────────── */
@@ -422,7 +422,7 @@ a { text-decoration: none; color: inherit; }
 .lang-switch__btn--inactive { color: var(--text-soft); background: none; }
 
 /* ── English selected: swap direction + fonts ──
-   The prototype set these on `.app` because a static page had no way to write to <html>, and its
+   The earlier screen set these on `.app` because a static page had no way to write to <html>, and its
    own comment called that debt the React migration resolves. `data-lang` is written by the
    language context, so direction now lives on the root where the whole document inherits it. */
 html[data-lang="en"] {

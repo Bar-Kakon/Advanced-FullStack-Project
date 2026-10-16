@@ -3,13 +3,21 @@ import { Router, type RequestHandler } from 'express';
 import { validateRequest } from '../../middleware/validateRequest.js';
 import { reportRepository } from '../reports/report.repository.js';
 import { userRepository } from '../users/user.repository.js';
+import { companyMembershipRepository } from '../companies/companyMembership.repository.js';
+import { refreshTokenRepository } from '../auth/refreshToken.repository.js';
+import { createAccountLifecycleService } from '../users/accountLifecycle.service.js';
 import { createModerationController } from './moderation.controller.js';
+import { platformAuditService } from './platformAudit.instance.js';
+import { createReportedMessageAdapter } from '../messaging/reportedMessage.adapter.js';
 import { createModerationService, type ModerationService } from './moderation.service.js';
 import {
   accountActionBodySchema,
+  auditQuerySchema,
   queueQuerySchema,
   reportIdParamsSchema,
   resolveBodySchema,
+  restoreAccountBodySchema,
+  userIdParamsSchema,
 } from './moderation.validation.js';
 import { createRequirePlatformAdmin } from './platformAuthority.js';
 
@@ -21,8 +29,16 @@ export const createModerationModule = (requireAccessToken: RequestHandler): Rout
   const service: ModerationService = createModerationService({
     reports: reportRepository,
     users: userRepository,
+    audit: platformAuditService,
+    reportedMessages: createReportedMessageAdapter(),
   });
-  const controller = createModerationController(service);
+  const lifecycle = createAccountLifecycleService({
+    users: userRepository,
+    audit: platformAuditService,
+    memberships: companyMembershipRepository,
+    refreshTokens: refreshTokenRepository,
+  });
+  const controller = createModerationController(service, platformAuditService, lifecycle);
 
   const router = Router();
   router.use(requireAccessToken);
@@ -52,6 +68,14 @@ export const createModerationModule = (requireAccessToken: RequestHandler): Rout
     '/reports/:reportId/account-action',
     validateRequest({ params: reportIdParamsSchema, body: accountActionBodySchema }),
     controller.handleAccountAction,
+  );
+
+  router.get('/audit', validateRequest({ query: auditQuerySchema }), controller.handleAuditLog);
+
+  router.post(
+    '/accounts/:userId/restore',
+    validateRequest({ params: userIdParamsSchema, body: restoreAccountBodySchema }),
+    controller.handleRestoreAccount,
   );
 
   return router;

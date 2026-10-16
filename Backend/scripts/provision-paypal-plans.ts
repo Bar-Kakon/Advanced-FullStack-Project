@@ -21,7 +21,7 @@ loadEnvFile({ quiet: true });
 /** The same currency the subscription lifecycle quotes every sale in. */
 const CURRENCY: Currency = 'ILS';
 
-const PRODUCT_NAME = 'FieldSync subscription';
+const PRODUCT_NAME = 'Blokta subscription';
 
 interface ProductResponse {
   readonly id?: string;
@@ -92,7 +92,7 @@ const run = async (): Promise<void> => {
 
     const created = await client.request<PlanResponse>('POST', '/v1/billing/plans', {
       product_id: productId,
-      name: `FieldSync ${plan.code}`,
+      name: `Blokta ${plan.code}`,
       status: 'ACTIVE',
       billing_cycles: [
         {

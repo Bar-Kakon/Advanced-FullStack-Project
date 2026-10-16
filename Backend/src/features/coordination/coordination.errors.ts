@@ -24,6 +24,10 @@ export const counterNeedsDates = (): AppError =>
 export const changeIsEmpty = (): AppError =>
   new AppError('A request must ask for at least one change', 400, 'PROPOSAL_CHANGE_EMPTY');
 
+/** The proposal workflow coordinates a PROJECT schedule; standalone work has no decider in it. */
+export const taskNotInProject = (): AppError =>
+  new AppError('Date-change requests apply to project schedules only.', 409, 'TASK_NOT_IN_PROJECT');
+
 export const beyondProjectCeiling = (date: string, ceiling: string): AppError =>
   new AppError(
     `The change would place work on ${date}, past the project ceiling of ${ceiling}`,

@@ -1,3 +1,5 @@
+import { Link } from 'react-router-dom';
+
 import { ButtonSpinner } from '../../../components/ButtonSpinner';
 import { useLanguage } from '../../../i18n/useLanguage';
 import type { ContractorSummary } from '../../../api/browse.types';
@@ -75,7 +77,13 @@ export const ContractorCard = ({
             ? `★ ${contractor.rating.average.toFixed(1)} · ${t.browse.card.ratingCount.replace('{count}', String(contractor.rating.count))}`
             : t.browse.card.noRating}
         </span>
-        <span>{t.browse.card.noFlexibility}</span>
+        <span>
+          {contractor.flexibility?.schedule
+            ? t.browse.card.flexibilityScore
+                .replace('{score}', String(contractor.flexibility.schedule.score))
+                .replace('{category}', t.profile.flexibility.category[contractor.flexibility.schedule.category])
+            : t.browse.card.noFlexibility}
+        </span>
       </p>
 
       {contractor.relationship !== 'none' ? (
@@ -107,11 +115,13 @@ export const ContractorCard = ({
           </button>
         ) : null}
 
-        {/* Disabled rather than linked: My network is not migrated, as in the navbar. */}
         {contractor.relationship === 'outgoing_request' || contractor.relationship === 'incoming_request' ? (
-          <button type="button" className="btn btn--quiet btn--sm" disabled aria-disabled="true">
+          <Link
+            to={`/network?tab=${contractor.relationship === 'incoming_request' ? 'incoming' : 'outgoing'}`}
+            className="btn btn--quiet btn--sm"
+          >
             {t.browse.card.manageInNetwork}
-          </button>
+          </Link>
         ) : null}
       </div>
     </article>

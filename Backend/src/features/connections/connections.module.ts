@@ -3,6 +3,7 @@ import { Router, type RequestHandler } from 'express';
 import { validateRequest } from '../../middleware/validateRequest.js';
 import type { BlocksService } from '../blocks/blocks.service.js';
 import { requireUnrestricted } from '../moderation/restriction.js';
+import { buildNotificationDispatchService } from '../notifications/notifications.module.js';
 import { userRepository } from '../users/user.repository.js';
 import { connectionRepository } from './connection.repository.js';
 import { createConnectionsController } from './connections.controller.js';
@@ -24,6 +25,7 @@ export const createConnectionsModule = (
     connections: connectionRepository,
     users: userRepository,
     blocks,
+    notifications: buildNotificationDispatchService(),
   });
   const controller = createConnectionsController(service);
 

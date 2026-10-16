@@ -33,6 +33,9 @@ export const invitationAmbiguous = (): AppError =>
 export const invalidResetToken = (): AppError =>
   new AppError('Reset link is not usable', 401, 'INVALID_RESET_TOKEN');
 
+export const invalidRecoveryToken = (): AppError =>
+  new AppError('Recovery link is not usable', 401, 'INVALID_RECOVERY_TOKEN');
+
 /**
  * Register only. A signup form has to say which field to correct, and it is already an enumeration
  * surface by nature. Login and password reset keep their unified answers unchanged.
@@ -56,7 +59,7 @@ export const googleEmailNotVerified = (): AppError =>
   new AppError('Google has not verified this email address', 401, 'GOOGLE_EMAIL_NOT_VERIFIED');
 
 /**
- * The verified Google email already belongs to a FieldSync account carrying no Google link.
+ * The verified Google email already belongs to a Blokta account carrying no Google link.
  *
  * Linking on the strength of that match alone would be unsafe: registration never proves the
  * person controls the address they typed, so an account opened under somebody else's email would

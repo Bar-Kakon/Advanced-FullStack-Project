@@ -2,6 +2,7 @@ import { AppNav } from '../../components/AppNav';
 import { FormAlert } from '../../components/FormAlert';
 import { useAuth } from '../../auth/useAuth';
 import { useLanguage } from '../../i18n/useLanguage';
+import { localeOf } from '../../i18n/dateFormat';
 import { useDocumentTitle } from '../../routes/useDocumentTitle';
 import { useScreenStylesheet } from '../../styles/useScreenStylesheet';
 import { initialsOf } from '../profile/profileModel';
@@ -13,16 +14,16 @@ import subscriptionsCss from './subscriptions.css?inline';
 
 /** The account's own dates, in the interface language rather than the browser's. */
 const formatDate = (iso: string, lang: 'he' | 'en'): string =>
-  new Date(iso).toLocaleDateString(lang === 'he' ? 'he-IL' : 'en-GB', {
+  new Date(iso).toLocaleDateString(localeOf(lang), {
     year: 'numeric',
     month: 'long',
     day: 'numeric',
   });
 
 /**
- * The Subscriptions screen, migrated from the approved static prototype.
+ * The Subscriptions screen.
  *
- * Three reconciliations against that prototype, each recorded in the decision log: the visual
+ * Three reconciliations recorded in the decision log: the visual
  * simulation rows and the weekly usage strip are gone with the feature they metered, the project
  * labels follow the current My projects wording, and dependencies are named between stages.
  *

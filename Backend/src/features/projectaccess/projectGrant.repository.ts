@@ -38,7 +38,7 @@ export interface ProjectGrantRepository {
   ): Promise<ProjectMembershipRecord | null>;
   revoke(id: Types.ObjectId): Promise<boolean>;
   /** A cancelled project takes its memberships and open invitations with it. */
-  deleteByProject(project: Types.ObjectId): Promise<number>;
+  deleteByProject(project: Types.ObjectId, session?: DbSession): Promise<number>;
   listForProjects(projects: readonly Types.ObjectId[]): Promise<ProjectMembershipRecord[]>;
 }
 
@@ -61,7 +61,7 @@ export const projectGrantRepository: ProjectGrantRepository = {
           ...(grant.company ? { company: grant.company } : {}),
         },
       },
-      { new: true, upsert: true },
+      { returnDocument: 'after', upsert: true },
     )
       .lean<ProjectMembershipRecord>()
       .exec();
@@ -85,7 +85,7 @@ export const projectGrantRepository: ProjectGrantRepository = {
         },
         $unset: { respondedAt: '' },
       },
-      { new: true, upsert: true },
+      { returnDocument: 'after', upsert: true },
     )
       .lean<ProjectMembershipRecord>()
       .exec();
@@ -98,7 +98,7 @@ export const projectGrantRepository: ProjectGrantRepository = {
     return ProjectMembershipModel.findOneAndUpdate(
       { _id: id, status: 'invited' },
       { $set: { status, respondedAt: new Date() } },
-      { new: true, ...(session ? { session } : {}) },
+      { returnDocument: 'after', ...(session ? { session } : {}) },
     )
       .lean<ProjectMembershipRecord>()
       .exec();
@@ -117,7 +117,7 @@ export const projectGrantRepository: ProjectGrantRepository = {
     if (update.permissions !== undefined) set['permissions'] = [...update.permissions];
     if (update.fullAuthority !== undefined) set['fullAuthority'] = update.fullAuthority;
 
-    return ProjectMembershipModel.findByIdAndUpdate(id, { $set: set }, { new: true })
+    return ProjectMembershipModel.findByIdAndUpdate(id, { $set: set }, { returnDocument: 'after' })
       .lean<ProjectMembershipRecord>()
       .exec();
   },
@@ -131,8 +131,10 @@ export const projectGrantRepository: ProjectGrantRepository = {
     return result.matchedCount === 1;
   },
 
-  async deleteByProject(project) {
-    const result = await ProjectMembershipModel.deleteMany({ project }).exec();
+  async deleteByProject(project, session) {
+    const query = ProjectMembershipModel.deleteMany({ project });
+    if (session) query.session(session);
+    const result = await query.exec();
     return result.deletedCount;
   },
 

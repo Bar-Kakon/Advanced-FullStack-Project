@@ -7,7 +7,7 @@ import type { MailMessage } from './mailer.js';
  * digest of what did not need immediate attention.
  *
  * Both are delivery only. Neither carries an approve, a decline or any other response — every
- * operational action happens inside FieldSync, so the only control an email offers is a link back
+ * operational action happens inside Blokta, so the only control an email offers is a link back
  * to the screen that owns the decision.
  *
  * Written in the account's own `users.language`, the same preference every screen reads.
@@ -32,9 +32,9 @@ const WORDING: Record<UserLanguage, Wording> = {
   he: {
     dir: 'rtl',
     align: 'right',
-    brand: 'FieldSync',
-    openLabel: 'פתיחה ב-FieldSync',
-    digestSubject: 'סיכום יומי — FieldSync',
+    brand: 'Blokta',
+    openLabel: 'פתיחה ב-Blokta',
+    digestSubject: 'סיכום יומי — Blokta',
     digestHeading: 'הסיכום היומי',
     digestIntro: (count) =>
       count === 1 ? 'עדכון אחד מהיום שטרם נצפה:' : `${count} עדכונים מהיום שטרם נצפו:`,
@@ -42,6 +42,8 @@ const WORDING: Record<UserLanguage, Wording> = {
     noActionNote: 'ההודעה הזו נועדה ליידע בלבד. כל פעולה מתבצעת במערכת.',
     titles: {
       'project.invitation': 'הזמנה לפרויקט',
+      'project.cancelled': 'פרויקט בוטל לפני תחילת העבודה',
+      'company.employee_left': 'עובד עזב את החברה',
       'task.assigned': 'משימה חדשה באחריותך',
       'task.updated': 'עודכנו פרטים במשימה',
       'task.early_completion': 'עבודה בפרויקט הסתיימה מוקדם',
@@ -56,14 +58,21 @@ const WORDING: Record<UserLanguage, Wording> = {
       'responsibility.transfer_invited': 'הוצעה לך העברת אחריות על עבודה',
       'responsibility.transfer_accepted': 'העברת אחריות אושרה',
       'workplan.version_added': 'נוספה גרסה לתוכנית עבודה',
+      'message.received': 'הודעה חדשה',
+      'message.request_received': 'בקשת התכתבות חדשה',
+      'agreement.received': 'הצעת סיכום עבודה חדשה',
+      'agreement.answered': 'התקבלה תשובה להצעת סיכום עבודה',
+      'connection.request_received': 'בקשת קשר חדשה ברשת המקצועית',
+      'connection.accepted': 'בקשת הקשר שלך אושרה',
+      'connection.declined': 'בקשת הקשר שלך נדחתה',
     },
   },
   en: {
     dir: 'ltr',
     align: 'left',
-    brand: 'FieldSync',
-    openLabel: 'Open in FieldSync',
-    digestSubject: 'Daily summary — FieldSync',
+    brand: 'Blokta',
+    openLabel: 'Open in Blokta',
+    digestSubject: 'Daily summary — Blokta',
     digestHeading: 'Your daily summary',
     digestIntro: (count) =>
       count === 1 ? 'One update from today that you have not seen:' : `${count} updates from today that you have not seen:`,
@@ -71,6 +80,8 @@ const WORDING: Record<UserLanguage, Wording> = {
     noActionNote: 'This message is for information only. Every action happens in the platform.',
     titles: {
       'project.invitation': 'Project invitation',
+      'project.cancelled': 'A project was cancelled before work began',
+      'company.employee_left': 'An employee left the company',
       'task.assigned': 'A task is now your responsibility',
       'task.updated': 'A task’s details were updated',
       'task.early_completion': 'Work on the project finished early',
@@ -85,6 +96,13 @@ const WORDING: Record<UserLanguage, Wording> = {
       'responsibility.transfer_invited': 'A responsibility transfer was offered to you',
       'responsibility.transfer_accepted': 'A responsibility transfer was accepted',
       'workplan.version_added': 'A work plan version was added',
+      'message.received': 'A new message',
+      'message.request_received': 'A new message request',
+      'agreement.received': 'A work agreement was proposed',
+      'agreement.answered': 'A work agreement was answered',
+      'connection.request_received': 'A new connection request',
+      'connection.accepted': 'Your connection request was accepted',
+      'connection.declined': 'Your connection request was declined',
     },
   },
 };
