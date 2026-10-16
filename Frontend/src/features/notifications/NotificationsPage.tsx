@@ -27,6 +27,9 @@ const destinationOf = (row: AppNotification): string | null => {
     return row.type === 'connection.request_received' ? '/network?tab=incoming' : '/network';
   }
   if (row.proposalId !== null) return `/proposals/${row.proposalId}`;
+  if (row.type === 'task.updated' && row.projectId === null && row.taskId !== null) {
+    return `/tasks?commissioned=${row.taskId}`;
+  }
   if (row.taskId !== null) return `/tasks/${row.taskId}`;
   if (row.scheduleExceptionId !== null && row.projectId !== null) {
     return `/projects/${row.projectId}/schedule-exceptions`;

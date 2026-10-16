@@ -712,7 +712,6 @@ export const en: Strings = {
         end: 'End the hand-over',
         endedNote: 'Ending it returns performance to me.',
         receivedNote: 'This work was received to perform. The wider project is not shown here.',
-        ownCrewOnly: 'The party above required your own crew, so this work cannot be handed over.',
         onSite: 'I am required on site even after handing the performance over.',
         noRedelegate: 'Work received to perform cannot be handed on again.',
       },

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 
 import { AppNav } from '../../components/AppNav';
 import { FormAlert } from '../../components/FormAlert';
@@ -63,6 +63,15 @@ export const MyTasksPage = () => {
     commissionedFailed ||
     (commissionedPage !== null &&
       (commissionedPage.canCommission || commissionedPage.commissioned.length > 0));
+
+  const [searchParams] = useSearchParams();
+  const focusId = searchParams.get('commissioned');
+  useEffect(() => {
+    if (focusId === null || commissioned === null) return;
+    const target =
+      document.getElementById(`commissioned-${focusId}`) ?? document.getElementById('commissioned-title');
+    target?.scrollIntoView({ block: 'center' });
+  }, [focusId, commissioned]);
 
   useScreenStylesheet(
     { id: 'profile.css', css: profileCss },
@@ -251,7 +260,14 @@ export const MyTasksPage = () => {
             ) : (
               <ul className="task-list">
                 {commissioned.map((row) => (
-                  <li key={row.id} className={`task-row${row.overdue ? ' task-row--overdue' : ''}`}>
+                  <li
+                    key={row.id}
+                    id={`commissioned-${row.id}`}
+                    className={`task-row${row.overdue ? ' task-row--overdue' : ''}${
+                      row.id === focusId ? ' task-row--focus' : ''
+                    }`}
+                    aria-current={row.id === focusId ? 'true' : undefined}
+                  >
                     <div className="task-row__head">
                       <h3 className="task-row__title" dir="auto">{row.title}</h3>
                       <span className="task-row__badges">

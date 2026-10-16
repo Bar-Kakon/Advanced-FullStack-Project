@@ -180,9 +180,8 @@ export const TaskDetailPage = () => {
               </section>
             ) : null}
 
-            {/* Dependencies are between stages. Standalone work has no stage, so the section
-                is not drawn at all; a delegate receives none of this either way. */}
-            {task.kind === 'standalone' ? null : (
+            {/* Dependencies are between stages. Drawn only where this viewer can see the project. */}
+            {task.project === null ? null : (
             <section className="panel" aria-labelledby="stage-title">
               <h2 id="stage-title" className="panel__title">{copy.stage.title}</h2>
               <p className="panel__lede">{copy.stage.note}</p>
@@ -234,9 +233,9 @@ export const TaskDetailPage = () => {
               />
             ) : null}
 
-            {task.kind === 'standalone' ? (
-              task.viewerIsDelegate ? null : <StandaloneDatesPanel task={task} />
-            ) : (
+            {task.kind === 'standalone' && !task.viewerIsDelegate ? <StandaloneDatesPanel task={task} /> : null}
+
+            {task.project === null ? null : (
               <DateChangePanel
                 taskId={task.id}
                 available={task.rescheduleAvailable && task.viewer.canRequestDateChange}
@@ -244,11 +243,13 @@ export const TaskDetailPage = () => {
               />
             )}
 
-            <HandoffPanel
-              taskId={task.id}
-              projectId={task.project?.id ?? null}
-              onResponsibilityChanged={() => void reload()}
-            />
+            {task.project === null ? null : (
+              <HandoffPanel
+                taskId={task.id}
+                projectId={task.project.id}
+                onResponsibilityChanged={() => void reload()}
+              />
+            )}
 
             <WorkPlansPanel
               taskId={task.id}

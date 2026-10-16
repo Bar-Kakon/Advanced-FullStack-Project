@@ -19,6 +19,7 @@ export const StandaloneDatesPanel = ({ task }: StandaloneDatesPanelProps) => {
 
   const span = (start: string, due: string): string =>
     `${formatCalendarDate(start, lang)} – ${formatCalendarDate(due, lang)}`;
+  const dateChanges = task.dateChanges ?? [];
 
   return (
     <section className="panel" aria-labelledby="standalone-dates-title">
@@ -33,7 +34,7 @@ export const StandaloneDatesPanel = ({ task }: StandaloneDatesPanelProps) => {
           {task.originalDatesSource === 'migration_baseline' ? copy.baselineLabel : copy.originalLabel}
         </dt>
         <dd>
-          {task.originalStartDate !== null && task.originalDueDate !== null
+          {task.originalStartDate != null && task.originalDueDate != null
             ? span(task.originalStartDate, task.originalDueDate)
             : copy.originalUnknown}
         </dd>
@@ -48,11 +49,11 @@ export const StandaloneDatesPanel = ({ task }: StandaloneDatesPanelProps) => {
       </Link>
 
       <h3 className="dash-subtitle">{copy.historyTitle}</h3>
-      {task.dateChanges.length === 0 ? (
+      {dateChanges.length === 0 ? (
         <p className="panel__lede">{copy.historyEmpty}</p>
       ) : (
         <ul className="dash-history">
-          {task.dateChanges.map((row, index) => (
+          {dateChanges.map((row, index) => (
             <li key={`${row.at}-${index}`} className="dash-history__row">
               <span>
                 {copy.historyRow

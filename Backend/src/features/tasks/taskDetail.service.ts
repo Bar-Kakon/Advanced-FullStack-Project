@@ -313,7 +313,7 @@ export const createTaskDetailService = ({
           task.completedAt === undefined &&
           (viewpoint === 'assignee' || manages),
       },
-      rescheduleImpact: await reschedule.impactOf(task._id.toString()),
+      rescheduleImpact: isDelegate ? null : await reschedule.impactOf(task._id.toString()),
       rescheduleAvailable: reschedule.available,
     };
   };
