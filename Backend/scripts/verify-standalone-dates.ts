@@ -23,7 +23,11 @@ import { ProjectMembershipModel } from '../src/features/projectaccess/projectMem
 import { ProjectStageModel } from '../src/features/tasks/projectStage.model.js';
 import { TaskDateChangeModel } from '../src/features/tasks/taskDateChange.model.js';
 import { TaskModel } from '../src/features/tasks/task.model.js';
-import { backfillOriginalDates } from './migrate-original-dates.js';
+import {
+  applyOriginalDates,
+  planOriginalDates,
+  rollbackOriginalDates,
+} from './migrate-original-dates.js';
 import { createAccount } from './support/accounts.js';
 import { check, finish, request, section, startHarness } from './support/harness.js';
 
@@ -267,12 +271,33 @@ const run = async (): Promise<void> => {
     { $unset: { originalStartDate: '', originalDueDate: '', originalDatesSource: '' } },
   ).exec();
 
-  const report = await backfillOriginalDates();
-  check(report.missing === 3, 'three legacy rows had no originals', report.missing);
-  check(report.fromAgreement === 1, 'the agreement-born one recovered its verified originals', report.fromAgreement);
-  check(report.baselined === 1, 'the plain standalone one took a migration baseline', report.baselined);
-  check(report.leftUnknown === 1, 'the project row is reported and left unknown', report.leftUnknown);
-  check(report.sourceStamped === 1, 'an already-filled creation stamp is marked creation, never baseline', report.sourceStamped);
+  const snapshot = async () =>
+    JSON.stringify(
+      await TaskModel.find({})
+        .sort({ _id: 1 })
+        .select('originalStartDate originalDueDate originalDatesSource startDate dueDate')
+        .lean()
+        .exec(),
+    );
+  const legacy = await snapshot();
+
+  const plan = await planOriginalDates();
+  check(plan.missing === 3, 'the dry run sees three legacy rows without originals', plan.missing);
+  check(plan.fromAgreement.length === 1, 'it plans one agreement recovery', plan.fromAgreement.length);
+  check(plan.baseline.length === 1, 'it plans one standalone baseline', plan.baseline.length);
+  check(plan.projectLeftUnknown === 1, 'it leaves the project row unknown', plan.projectLeftUnknown);
+  check(plan.creationUnmarked.length === 1, 'it finds the stamped row missing its marker', plan.creationUnmarked.length);
+  check(plan.conflicts.length === 0, 'it reports no conflicts', plan.conflicts.length);
+  check((await snapshot()) === legacy, 'and the dry run wrote nothing');
+
+  const report = await applyOriginalDates('blokta-verify-standalone-dates');
+  check(report.agreement.length === 1, 'the agreement-born one recovered its verified originals', report.agreement.length);
+  check(report.baseline.length === 1, 'the plain standalone one took a migration baseline', report.baseline.length);
+  check(report.creationMarked.length === 1, 'an already-filled creation stamp is marked creation, never baseline', report.creationMarked.length);
+  check(
+    report.agreement[0] === bornId && report.baseline[0] === soloId && report.creationMarked[0] === thirdId,
+    'the manifest names exactly the rows that were written',
+  );
 
   const bornHealed = await TaskModel.findById(bornId).lean().exec();
   check(
@@ -310,6 +335,27 @@ const run = async (): Promise<void> => {
       projectUnknown?.originalDatesSource === undefined,
     'project work gains no invented originals',
   );
+
+  const migrated = await snapshot();
+  const again = await applyOriginalDates('blokta-verify-standalone-dates');
+  check(
+    again.agreement.length + again.baseline.length + again.creationMarked.length === 0 &&
+      (await snapshot()) === migrated,
+    'a second apply writes nothing — the migration is idempotent',
+  );
+
+  const preview = await rollbackOriginalDates(report, false);
+  check(
+    preview.agreementReverted === 1 && preview.baselineReverted === 1 && preview.creationUnmarked === 1 &&
+      (await snapshot()) === migrated,
+    'the rollback dry run counts the three rows and writes nothing',
+  );
+  const undone = await rollbackOriginalDates(report, true);
+  check(undone.skipped === 0, 'the rollback reverts every manifest row', undone);
+  check((await snapshot()) === legacy, 'and restores the collection exactly to its pre-migration state');
+
+  await applyOriginalDates('blokta-verify-standalone-dates');
+  check((await snapshot()) === migrated, 're-applying after a rollback reproduces the same result');
 
   await finish(harness);
 };

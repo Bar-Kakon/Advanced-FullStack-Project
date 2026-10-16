@@ -10,6 +10,7 @@
     "preview": "vite preview",
     "typecheck": "tsc -p tsconfig.json",
     "verify:layout": "node scripts/verify-browse-layout.mjs",
+    "verify:standalone-dates-cloud": "node scripts/verify-standalone-dates-cloud.mjs",
     "verify:profile-data": "node scripts/verify-profile-real-data.mjs",
     "verify:invitation-ui": "node scripts/verify-invitation-ui.mjs",
     "verify:account-menu": "node scripts/verify-account-menu.mjs",
