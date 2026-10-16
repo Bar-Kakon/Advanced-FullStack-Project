@@ -2,7 +2,7 @@
  * Imported first by every development browser and API test, and it has no override: a script that
  * may touch production is an authorized procedure and never imports this file.
  */
-import { chromium } from 'playwright';
+import { chromium, firefox, request, webkit } from 'playwright';
 
 const LOCAL_HOSTS = new Set(['127.0.0.1', 'localhost', '::1']);
 const isLocalHost = (hostname) => LOCAL_HOSTS.has(hostname.replace(/^\[|\]$/g, '').toLowerCase());
@@ -65,14 +65,42 @@ const guardRoute = async (route) => {
   await route.continue().catch(() => {});
 };
 
-const launch = chromium.launch.bind(chromium);
-chromium.launch = async (...args) => {
-  const browser = await launch(...args);
-  const newContext = browser.newContext.bind(browser);
-  browser.newContext = async (...options) => {
-    const context = await newContext(...options);
-    await context.route('**/*', guardRoute);
-    return context;
-  };
-  return browser;
+const guardApiClient = (client) => {
+  for (const method of ['fetch', 'get', 'post', 'put', 'patch', 'delete', 'head']) {
+    const send = client[method].bind(client);
+    client[method] = async (target, ...rest) => {
+      const href = typeof target === 'string' ? target : target.url();
+      let url;
+      try {
+        url = new URL(href);
+      } catch {
+        refuse(`the API-client request ${href} has no absolute URL to check`);
+      }
+      await check(url);
+      return send(target, ...rest);
+    };
+  }
+  return client;
 };
+
+const guardContext = async (context) => {
+  await context.route('**/*', guardRoute);
+  guardApiClient(context.request);
+  return context;
+};
+
+for (const browserType of [chromium, firefox, webkit]) {
+  const launch = browserType.launch.bind(browserType);
+  browserType.launch = async (...args) => {
+    const browser = await launch(...args);
+    const newContext = browser.newContext.bind(browser);
+    browser.newContext = async (...options) => guardContext(await newContext(...options));
+    return browser;
+  };
+  const launchPersistentContext = browserType.launchPersistentContext.bind(browserType);
+  browserType.launchPersistentContext = async (...args) => guardContext(await launchPersistentContext(...args));
+  browserType.connect = browserType.connectOverCDP = async () => refuse('a browser this guard did not launch cannot be checked');
+}
+
+const newRequestContext = request.newContext.bind(request);
+request.newContext = async (...options) => guardApiClient(await newRequestContext(...options));

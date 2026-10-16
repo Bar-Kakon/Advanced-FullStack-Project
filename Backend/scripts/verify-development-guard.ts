@@ -170,6 +170,36 @@ console.log('NOT BLOCKED');
   page.close();
   rmSync(probe, { force: true });
 
+  const clientProbe = join(FRONTEND, 'scripts', 'support', `.guard-client-probe-${process.pid}.mjs`);
+  writeFileSync(clientProbe, `import './developmentGuard.mjs';
+import { chromium, request } from 'playwright';
+const [mode, target] = process.argv.slice(2);
+if (mode === 'page') {
+  const browser = await chromium.launch();
+  const page = await browser.newPage();
+  await page.request.post(target, { data: 'probe' }).catch(() => {});
+  await browser.close();
+} else {
+  const client = await request.newContext();
+  await client.post(target, { data: 'probe' }).catch(() => {});
+  await client.dispose();
+}
+console.log('NOT BLOCKED');
+`);
+  const viaPage = await run('node', [clientProbe, 'page', 'https://api.production.example.invalid/api/auth/refresh'], probeDir, childEnv());
+  check("Playwright's page API client, which bypasses browser routing, is refused at a remote API", refusedFast(viaPage) && !viaPage.out.includes('NOT BLOCKED'), viaPage.out.slice(-200));
+  const unconfirmedForClient = await fakeApi(false);
+  const viaClient = await run('node', [clientProbe, 'client', `${unconfirmedForClient.url}/auth/refresh`], probeDir, childEnv());
+  check('a standalone API client is stopped at an API that cannot confirm a local database, which receives no write',
+    refusedFast(viaClient) && unconfirmedForClient.hits.every((hit) => hit === 'GET /api/health'), { out: viaClient.out.slice(-200), hits: unconfirmedForClient.hits });
+  unconfirmedForClient.close();
+  const confirmedForClient = await fakeApi(true);
+  const clientLocal = await run('node', [clientProbe, 'page', `${confirmedForClient.url}/auth/refresh`], probeDir, childEnv());
+  check('the page API client reaches a local API that confirms its local database',
+    clientLocal.code === 0 && confirmedForClient.hits.includes('POST /api/auth/refresh'), { code: clientLocal.code, hits: confirmedForClient.hits });
+  confirmedForClient.close();
+  rmSync(clientProbe, { force: true });
+
   section('5. Authorized operations stay separate from development tests');
   const op = await run(TSX, [join(BACKEND, 'scripts', 'migrate-original-dates.ts')], checkout('mongodb+srv://simulated:x@cluster.example.invalid/test'));
   check('an authorized operation is not blocked by the development guard (it tries to connect, and fails only on the fake host)', op.code !== 2 && !op.out.includes('REFUSED: development tests'), op.out.slice(-200));
