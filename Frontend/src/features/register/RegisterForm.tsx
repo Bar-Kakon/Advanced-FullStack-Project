@@ -10,6 +10,7 @@ import {
   SPECIALTIES_BY_CATEGORY,
   type CompanyPosition,
   type CompanyStanding,
+  type LoginResponse,
   type Region,
   type RegistrationCategory,
   type Specialty,
@@ -18,8 +19,9 @@ import { useLanguage } from '../../i18n/useLanguage';
 import {
   MIN_PASSWORD_LENGTH,
   REGISTER_STEPS,
+  useRegisterForm,
   type FieldName,
-  type useRegisterForm,
+  type GoogleRegistration,
 } from './useRegisterForm';
 import { isOtherSpecialty } from './buildRegisterPayload';
 import { ButtonSpinner } from '../../components/ButtonSpinner';
@@ -40,8 +42,15 @@ const MAX = {
   name: 100, companyName: 120, email: 254, city: 80, phone: 30, password: 200, specialtyOther: 60,
 } as const;
 
-export const RegisterForm = ({ form }: { form: ReturnType<typeof useRegisterForm> }) => {
+export const RegisterForm = ({
+  google,
+  onComplete,
+}: {
+  google: GoogleRegistration | null;
+  onComplete: (session: LoginResponse | null) => void;
+}) => {
   const { t } = useLanguage();
+  const form = useRegisterForm(onComplete, google);
   // Held here rather than in `useRegisterForm`: reading the terms is not an answer the form
   // collects, so opening the document never touches a value the payload is built from.
   const [termsOpen, setTermsOpen] = useState(false);
