@@ -11,7 +11,7 @@ import { useLanguage } from '../../i18n/useLanguage';
 import { useDocumentTitle } from '../../routes/useDocumentTitle';
 import { useScreenStylesheet } from '../../styles/useScreenStylesheet';
 import { RegisterForm } from './RegisterForm';
-import { useRegisterForm, type GoogleRegistration } from './useRegisterForm';
+import type { GoogleRegistration } from './useRegisterForm';
 import type { LoginResponse } from '../../api/types';
 import registerCss from './register.css?inline';
 import placeCss from '../../location/place.css?inline';
@@ -41,9 +41,9 @@ export const RegisterPage = () => {
   useDocumentTitle('יצירת חשבון / Create account — Blokta');
 
   /**
-   * Set by Login when Google verified somebody who has no Blokta account yet. It carries the
-   * identity and the credential, and nothing about their trade or their business: those are this
-   * screen's own questions and are still asked.
+   * Set by Login, or by this screen's own Google button, when Google verified somebody who has no
+   * Blokta account yet. It carries the identity and the credential, and nothing about their trade
+   * or their business: those are this screen's own questions and are still asked.
    */
   const google = (location.state as { google?: GoogleRegistration } | null)?.google ?? null;
 
@@ -57,7 +57,6 @@ export const RegisterPage = () => {
     navigate(destinationFor(session.user), { replace: true });
   }, [navigate, signIn, setLang]);
 
-  const form = useRegisterForm(onComplete, google);
   const googleAuth = useGoogleAuth();
 
   return (
@@ -73,7 +72,8 @@ export const RegisterPage = () => {
         </p>
       )}
 
-      <RegisterForm form={form} />
+      {/* Register's own Google button lands on this same route, so each navigation's key gives the arriving identity a fresh form. */}
+      <RegisterForm key={location.key} google={google} onComplete={onComplete} />
 
       {/* Absent once Google has already identified this person: they are finishing that signup,
           not starting a second one. */}
