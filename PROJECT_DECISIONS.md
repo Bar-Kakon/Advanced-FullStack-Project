@@ -1485,6 +1485,13 @@ into a proper section or the logs below._
 > - Notes: anything to remember / how to avoid it next time
 > ```
 
+### [2026-10-17] Google Sign-Up from the Register screen kept the password form — FIXED on `develop`, not yet on `main`
+
+- **Symptom.** Owner production QA (QA-005/006/007): after choosing a Google account on Register, the screen showed the Google notice, but the email was not the Google address, it was editable, and a password was required.
+- **Cause.** Register's Google button navigates to `/register`, the route already mounted. React Router keeps the component, and `useRegisterForm` reads the Google identity only into its initial state, so the form never switched to Google mode.
+- **Fix.** `RegisterPage` keys `RegisterForm` by the navigation's `location.key`, never by the token, and `RegisterForm` owns the form hook, so the Google arrival mounts a fresh Google-mode form.
+- **Notes.** State read once at mount does not follow a navigation to the same route. A test that only ever arrives from another route cannot see this; `verify-google-signup-from-register.mjs` presses Google on Register itself.
+
 ### [2026-08-30] The whole backend suite has to restart the API between scripts, or the auth rate limiters answer for it — OPEN (harness, not product)
 
 - **Symptom.** Running every `verify:*` script back to back against the shared dev API, `verify:rate-limit` passed while the four scripts after it died with `A rate limiter answered on /auth/register` and `verify:rate-limit` itself reported *2 allowed, limit 10*. Raw: `FAIL it allows exactly the configured budget first — 2 allowed, limit 10`, then `exit=2 verify:employee-lifecycle`, `verify:blocks-connections-ratings`, `verify:browse`, `verify:travel-exclusions`.
@@ -2011,6 +2018,21 @@ My projects, and a row that acts inside an `Invited` project fails.
 > Every change (code, structure, scope) gets a dated line **with the reason**. Newest at top.
 >
 > **Format:** `[YYYY-MM-DD] What changed — why.`
+
+- `[2026-10-17]` **QA-005/006/007: Google Sign-Up started on the Register screen lost the Google identity; the form now resets to it. IMPLEMENTED · TYPECHECKED · BUILT · VERIFIED LOCALLY WITH A SIMULATED GOOGLE IDENTITY (`verify-google-signup-from-register.mjs`, 76 PASS, 0 FAIL; its first 63 checks failed 19 times on the unfixed code) · MERGED INTO `develop` · NOT ON `main`, NOT DEPLOYED · REAL GOOGLE OAUTH NOT VERIFIED.**
+  - **One cause behind all three.** Register's own Google button navigates to `/register`, the route already on screen. React keeps the mounted form, and `useRegisterForm` reads the Google identity only when the form first mounts. The Google notice rendered, but the form kept the hand-typed email (QA-005), an editable email (QA-006) and both password fields (QA-007). Submitting it would have opened an ordinary password account. Login's Google button was never affected: it navigates *to* Register, which mounts a fresh form.
+  - **Why earlier verification missed it.** `verify-google-flows.mjs` entered Google-mode Register from `/login` with injected route state, the one entry that works. Nothing pressed Google on Register itself.
+  - **The fix.** `RegisterForm` now owns `useRegisterForm`, and `RegisterPage` keys it by `location.key`, the random id React Router gives every navigation. The Google arrival is a new navigation, so it mounts a fresh Google-mode form, while the page, its brand panel and its stylesheets stay mounted. The key is never derived from the ID token (owner's security review). Nothing on Register navigates while the form is being filled, and a language switch mid-form keeps every value. Anything typed before pressing Google is discarded, a password included. No backend change: the server already re-verified the token, refused a mismatched email, refused a password beside a token and required none.
+  - **Approved behaviour applied, nothing new decided.** The 2026-10-14 entries stand: the verified email locked, names prefilled and correctable, no password fields, the Blokta details still asked, a passwordless account linked to Google in one transaction, and the D30 Google exception's immediate session. Linking stays explicit (`GOOGLE_LINK_REQUIRED`, then Settings).
+  - **Verification.** One procedure on an isolated stack: a scratch MongoDB replica set, the API and Vite on their own ports, and the development guard confirming a local database. Google was simulated in two places only. The browser received a stand-in for Google's script, and the API process was started with `Backend/scripts/support/simulatedGoogleIdentity.ts`, which trusts one locally generated signing key instead of Google's and refuses to load without a local database. The library's real signature, issuer, audience and expiry checks still ran. Covered:
+    - QA-005/006/007 started directly on `/register`, in Hebrew and English, through account creation, the session, `/auth/me` and refresh rotation;
+    - the backend refusing a mismatched email, a password beside a token, a foreign signing key, a foreign audience and an unverified email, creating nothing;
+    - Google sign-up from Login, an existing Google user signing in from Login and from Register, and no duplicate account;
+    - linking unchanged, and password registration unchanged (no token, no cookie, lands on Login);
+    - the ID token absent from the DOM, the address, browser storage, every request URL and Referer, every console message, every server answer including errors, and the backend log. It travels only in the history entry's navigation state, as approved on 2026-10-14, and leaves it once registration completes;
+    - no page errors and no backend error lines.
+  - **Not proven.** Google's real button and account chooser, and a token signed by Google's real keys. Both belong to the owner's live test after deployment.
+  - **Production QA note.** If the broken form was completed during QA, a password account exists for that Google address, and Google sign-in to it answers `GOOGLE_LINK_REQUIRED`. Re-testing QA-005 needs a Google address with no Blokta account. No production data was read or changed.
 
 - `[2026-10-17]` **Security release record: the development-test guard is on `develop` (`4ac577b`) and `main` (`a47b923`); the obsolete QA branch is archived and removed from GitHub; the historical hostname exposure now survives only in GitHub's storage of five commit IDs.**
   - **Protection.** 51 backend and 36 frontend development scripts load the fail-closed guard first. `verify:development-guard` passed 34/34 on isolated local databases with fictional production-like targets. The 12 authorized operations and the 2 production procedures stay outside the guard.
