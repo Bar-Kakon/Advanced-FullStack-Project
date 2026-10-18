@@ -23,6 +23,7 @@ export interface PasswordResetTokenRepository {
   issueFor(userId: Types.ObjectId, expiresAt: Date): Promise<IssuedResetToken>;
   findByHash(tokenHash: string): Promise<PasswordResetTokenRecord | null>;
   markUsed(id: Types.ObjectId, session?: DbSession): Promise<void>;
+  invalidateAllFor(userId: Types.ObjectId, session?: DbSession): Promise<void>;
 }
 
 /** SHA-256, as `refreshtokens` uses: the input is machine entropy, so bcrypt cost buys nothing. */
@@ -51,6 +52,15 @@ export const passwordResetTokenRepository: PasswordResetTokenRepository = {
 
   async markUsed(id, session) {
     const query = PasswordResetTokenModel.updateOne({ _id: id }, { $set: { usedAt: new Date() } });
+    if (session) query.session(session);
+    await query.exec();
+  },
+
+  async invalidateAllFor(userId, session) {
+    const query = PasswordResetTokenModel.updateMany(
+      { user: userId, usedAt: null, invalidatedAt: null },
+      { $set: { invalidatedAt: new Date() } },
+    );
     if (session) query.session(session);
     await query.exec();
   },

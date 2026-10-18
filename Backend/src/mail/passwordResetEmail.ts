@@ -5,10 +5,13 @@ import type { MailMessage } from './mailer.js';
  * Written in the account's own `users.language`, which is the same preference every screen reads.
  * No second email-language setting exists, and nothing about the language reaches the requester.
  */
+export type PasswordEmailPurpose = 'reset' | 'create';
+
 export interface PasswordResetEmailInput {
   readonly resetUrl: string;
   readonly expiryMinutes: number;
   readonly language: UserLanguage;
+  readonly purpose?: PasswordEmailPurpose;
 }
 
 const escapeHtml = (value: string): string =>
@@ -24,7 +27,7 @@ interface Wording {
   readonly align: 'right' | 'left';
 }
 
-const WORDING: Record<UserLanguage, Wording> = {
+const RESET_WORDING: Record<UserLanguage, Wording> = {
   he: {
     subject: 'איפוס סיסמה — Blokta',
     heading: 'איפוס סיסמה',
@@ -45,11 +48,34 @@ const WORDING: Record<UserLanguage, Wording> = {
   },
 };
 
+const CREATE_WORDING: Record<UserLanguage, Wording> = {
+  he: {
+    subject: 'הוספת סיסמה לחשבון — Blokta',
+    heading: 'הוספת כניסה עם מייל וסיסמה',
+    intro:
+      'התקבלה בקשה להוסיף לחשבון כניסה עם מייל וסיסמה. הכניסה עם Google תישאר זמינה גם אחרי ההוספה. ליצירת הסיסמה:',
+    expiry: (minutes) => `הקישור תקף ל-${minutes} דקות והוא חד-פעמי.`,
+    ignore: 'אם הבקשה לא נשלחה ממך, אפשר להתעלם מההודעה הזו — לא בוצע שום שינוי.',
+    dir: 'rtl',
+    align: 'right',
+  },
+  en: {
+    subject: 'Add a password to your account — Blokta',
+    heading: 'Add email and password sign-in',
+    intro:
+      'A request was made to add email and password sign-in to your account. Google sign-in stays available after this. To create the password:',
+    expiry: (minutes) => `The link is valid for ${minutes} minutes and can be used once.`,
+    ignore: 'If you did not make this request, you can ignore this email — nothing has changed.',
+    dir: 'ltr',
+    align: 'left',
+  },
+};
+
 export const buildPasswordResetEmail = (
   to: string,
-  { resetUrl, expiryMinutes, language }: PasswordResetEmailInput,
+  { resetUrl, expiryMinutes, language, purpose = 'reset' }: PasswordResetEmailInput,
 ): MailMessage => {
-  const w = WORDING[language];
+  const w = (purpose === 'create' ? CREATE_WORDING : RESET_WORDING)[language];
   const url = escapeHtml(resetUrl);
 
   const text = [w.heading, '', w.intro, resetUrl, w.expiry(expiryMinutes), w.ignore].join('\n');

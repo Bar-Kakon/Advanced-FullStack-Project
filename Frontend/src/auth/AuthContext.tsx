@@ -27,19 +27,26 @@ import { unreadNotificationsCleared } from '../store/sessionSlice';
  * client-side gate exists to keep a signed-out visitor off an authenticated screen, never to be
  * the check that protects the data.
  */
+export type SessionNotice = 'password_changed';
+
 export interface AuthValue {
   readonly user: SessionUser | null;
   readonly isAuthenticated: boolean;
+  /** A server-ended session that stays on screen until its notice is acknowledged. */
+  readonly sessionNotice: SessionNotice | null;
   signIn(response: LoginResponse): void;
   /** Replaces the cached identity with a fresher read of the same thing. No token is touched. */
   setUser(user: SessionUser): void;
   signOut(): Promise<void>;
+  endSessionWithNotice(notice: SessionNotice): void;
+  acknowledgeSessionNotice(): Promise<void>;
 }
 
 export const AuthContext = createContext<AuthValue | null>(null);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [revision, setRevision] = useState(0);
+  const [sessionNotice, setSessionNotice] = useState<SessionNotice | null>(null);
   const dispatch = useAppDispatch();
   const reread = useCallback(() => setRevision((current) => current + 1), []);
 
@@ -104,18 +111,30 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [reread]);
 
+  const endSessionWithNotice = useCallback((notice: SessionNotice): void => {
+    clearAccessToken();
+    setSessionNotice(notice);
+  }, []);
+
+  const acknowledgeSessionNotice = useCallback(async (): Promise<void> => {
+    await signOut();
+    setSessionNotice(null);
+  }, [signOut]);
 
   const value = useMemo<AuthValue>(
     () => ({
       user: readStoredUser(),
-      isAuthenticated: getAccessToken() !== null,
+      isAuthenticated: sessionNotice !== null || getAccessToken() !== null,
+      sessionNotice,
       signIn,
       setUser,
       signOut,
+      endSessionWithNotice,
+      acknowledgeSessionNotice,
     }),
     // `revision` is the dependency doing the work: it changes when storage does, and nothing else
     // here is derived from React state.
-    [revision, signIn, setUser, signOut],
+    [revision, sessionNotice, signIn, setUser, signOut, endSessionWithNotice, acknowledgeSessionNotice],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

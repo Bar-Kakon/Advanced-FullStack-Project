@@ -18,6 +18,7 @@ import {
  * document would lose that.
  */
 export interface SettingsRow {
+  readonly email: string;
   readonly language: UserLanguage;
   readonly identities?: readonly { readonly provider: string }[];
   readonly notificationPreferences?: {
@@ -44,7 +45,7 @@ export interface SettingsRepository {
   setContactVisibility(user: Types.ObjectId, update: Partial<ContactVisibility>): Promise<void>;
 }
 
-const SELECT = 'language notificationPreferences contactVisibility identities';
+const SELECT = 'email language notificationPreferences contactVisibility identities';
 
 export const settingsRepository: SettingsRepository = {
   async find(user) {

@@ -1,5 +1,6 @@
 import { Types } from 'mongoose';
 
+import type { EmailChangeTokenRepository } from '../auth/emailChangeToken.repository.js';
 import type { EntitlementService } from '../billing/entitlements.service.js';
 import type { MuteRepository } from '../mutes/mute.repository.js';
 import type { ProjectRepository } from '../projects/project.repository.js';
@@ -10,6 +11,7 @@ import {
   type UserLanguage,
 } from '../users/user.model.js';
 import { profileNotFound } from '../users/profile.errors.js';
+import type { UserRepository } from '../users/user.repository.js';
 import type { SettingsRepository } from './settings.repository.js';
 
 /**
@@ -20,6 +22,9 @@ import type { SettingsRepository } from './settings.repository.js';
  * authoritative on the server: every write below re-checks them.
  */
 export interface SettingsDto {
+  readonly email: string;
+  readonly hasPassword: boolean;
+  readonly pendingEmailChange: { readonly email: string; readonly expiresAt: string } | null;
   readonly language: UserLanguage;
   readonly notifications: {
     readonly operationalEmail: boolean;
@@ -55,6 +60,8 @@ export interface SettingsDependencies {
   readonly mutes: MuteRepository;
   readonly projects: ProjectRepository;
   readonly entitlements: EntitlementService;
+  readonly credentials: Pick<UserRepository, 'hasPassword'>;
+  readonly emailChanges: Pick<EmailChangeTokenRepository, 'findPendingFor'>;
 }
 
 export const createSettingsService = ({
@@ -62,13 +69,17 @@ export const createSettingsService = ({
   mutes,
   projects,
   entitlements,
+  credentials,
+  emailChanges,
 }: SettingsDependencies): SettingsService => {
   const read = async (userId: string): Promise<SettingsDto> => {
     const user = new Types.ObjectId(userId);
-    const [row, plan, muted] = await Promise.all([
+    const [row, plan, muted, hasPassword, pending] = await Promise.all([
       settings.find(user),
       entitlements.forUser(userId),
       mutes.listForUser(user),
+      credentials.hasPassword(userId),
+      emailChanges.findPendingFor(user),
     ]);
     if (row === null) throw profileNotFound();
 
@@ -78,6 +89,12 @@ export const createSettingsService = ({
     const mayControlTiming = plan.limits.notificationTimingControls;
 
     return {
+      email: row.email,
+      hasPassword,
+      pendingEmailChange:
+        pending === null
+          ? null
+          : { email: pending.newEmail, expiresAt: pending.expiresAt.toISOString() },
       language: row.language,
       notifications: {
         operationalEmail: row.notificationPreferences?.operationalEmail === true,
