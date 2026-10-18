@@ -80,3 +80,18 @@ export const googleIdentityClaimed = (): AppError =>
 /** Registration opens the account for the address Google verified, never for another one. */
 export const googleEmailMismatch = (): AppError =>
   new AppError('The email does not match the Google account', 409, 'GOOGLE_EMAIL_MISMATCH');
+
+export const invalidEmailChangeToken = (): AppError =>
+  new AppError('Email change link is not usable', 400, 'INVALID_EMAIL_CHANGE_TOKEN');
+
+export const emailChangeSameAddress = (): AppError =>
+  new AppError('The new email matches the current one', 400, 'EMAIL_CHANGE_SAME_ADDRESS');
+
+export const currentPasswordIncorrect = (): AppError =>
+  new AppError('The current password is incorrect', 400, 'CURRENT_PASSWORD_INCORRECT');
+
+export const noLocalPassword = (): AppError =>
+  new AppError('This account has no password to change', 409, 'NO_LOCAL_PASSWORD');
+
+export const localPasswordAlreadySet = (): AppError =>
+  new AppError('This account already has a password', 409, 'LOCAL_PASSWORD_ALREADY_SET');

@@ -360,7 +360,7 @@ footer.foot { margin-top: 56px; padding-top: 22px; border-top: 1px solid var(--p
       <span class="meta-chip">Collections <b id="stat-collections">—</b></span>
       <span class="meta-chip">Relations <b id="stat-relations">—</b></span>
       <span class="meta-chip">Source of truth <b>PROJECT_DECISIONS.md</b></span>
-      <span class="meta-chip">Updated <b id="stat-updated">2026-10-16</b></span>
+      <span class="meta-chip">Updated <b id="stat-updated">2026-10-18</b></span>
     </div>
   </div>
 </header>
@@ -652,7 +652,7 @@ const COLLECTIONS = [
   fields: [
     { group: 'Credentials & account state' },
     { name: '_id', type: 'ObjectId', note: 'Auto-generated. Used as the JWT subject.' },
-    { name: 'email', type: 'String', req: true, uniq: true, idx: true, note: 'Lowercased and trimmed before save. The unique index is what actually prevents duplicate accounts — an application-level check alone has a race condition between two concurrent signups.' },
+    { name: 'email', type: 'String', req: true, uniq: true, idx: true, note: 'Lowercased and trimmed before save. The unique index is what actually prevents duplicate accounts — an application-level check alone has a race condition between two concurrent signups. **2026-10-18:** after registration it changes only through the verified email-change flow ([[emailchangetokens]]): the new address must confirm a single-use link first, and the write is conditional on the old address, so two confirmations cannot both land. Google sign-in never reads it — a linked account is resolved by `identities.subject`.' },
     { name: 'passwordHash', type: 'String', req: true, select: true, note: 'bcrypt, cost 12. `select: false` means it is excluded from every query unless explicitly asked for, so an accidental `res.json(user)` cannot leak it.' },
     { name: 'status', type: "'active' | 'restricted' | 'deactivated' | 'banned' | 'deleted'", req: true, idx: true, note: '**`restricted` added 2026-08-31** — the ban sheet\'s approved *restricted-only* enforcement, in the same enum rather than a second status system. A restricted account **keeps its session, its dashboard and its committed work**: restriction removes discovery, new connections and new projects, and leaves existing commitments to run to completion, because the platform has no standing to void a commercial commitment. `PARTICIPATING_STATUSES = [active, restricted]` is the single predicate every session check reads. The terminal ban is deliberately not implemented — see D31.' },
     { name: 'deletedAt', type: 'Date', note: '**Built 2026-10-13.** Stamped by the deletion request itself — one write moves the status and starts the clock. The D8 window is measured from it: restoration is refused once 60 days pass (`ACCOUNT_RESTORE_EXPIRED`), and the anonymization sweep selects on it. Unset again by a restoration inside the window.' },
@@ -2493,7 +2493,7 @@ module.exports = mongoose.model('RefreshToken', refreshTokenSchema);`
   id: 'passwordresettokens', model: 'PasswordResetToken', domain: 'identity', stage: 1,
   tag: 'one-time reset links, hashed',
   pos: { x: 30, y: 430 },
-  purpose: 'One row per issued password-reset link. Added 2026-08-29 with the reset flow, and it is where the design on this page changed: `users.security.resetTokenHash` + `resetTokenExpiresAt` were what this file specified, and the code uses a collection instead. See the why below — the pair of fields cannot express a lifecycle. **2026-10-13: a sibling collection, `accountrecoverytokens`, carries the deleted-account self-service recovery links** — same shape (SHA-256 hash, TTL, single-use, newer-invalidates-older), deliberately a separate collection so a reset token can never restore an account and a recovery token can never reset a password, by construction rather than by a purpose flag.',
+  purpose: 'One row per issued password-reset link. Added 2026-08-29 with the reset flow, and it is where the design on this page changed: `users.security.resetTokenHash` + `resetTokenExpiresAt` were what this file specified, and the code uses a collection instead. See the why below — the pair of fields cannot express a lifecycle. **2026-10-13: a sibling collection, `accountrecoverytokens`, carries the deleted-account self-service recovery links** — same shape (SHA-256 hash, TTL, single-use, newer-invalidates-older), deliberately a separate collection so a reset token can never restore an account and a recovery token can never reset a password, by construction rather than by a purpose flag. **2026-10-18: the same links also add a FIRST password to a Google-only account** (Settings → add a password, or Forgot password on such an account) — the email is worded as adding a sign-in method and Google stays linked; and **every live link is invalidated when the account email changes**, because it was sent to the old address.',
   fields: [
     { name: '_id', type: 'ObjectId', note: '' },
     { name: 'tokenHash', type: 'String', req: true, idx: true, note: 'SHA-256 of the raw token, hex. The raw value exists only in the email, so a database leak yields nothing replayable. SHA-256 rather than bcrypt for the same reason [[refreshtokens]] uses it: the input is 32 bytes of machine entropy, and there is no dictionary for bcrypt cost to defend against.' },
@@ -2537,6 +2537,60 @@ module.exports = mongoose.model('RefreshToken', refreshTokenSchema);`
 passwordResetTokenSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 
 module.exports = mongoose.model('PasswordResetToken', passwordResetTokenSchema);`
+},
+
+/* ─────────── emailchangetokens ─────────── */
+{
+  id: 'emailchangetokens', model: 'EmailChangeToken', domain: 'identity', stage: 1,
+  tag: 'verify the new address first',
+  pos: { x: 30, y: 510 },
+  purpose: 'One row per email-change request. **Added 2026-10-18 (SET-03).** A signed-in account asks to move its login address; a single-use link goes to the NEW address, and `users.email` changes only when that link is confirmed. Until then the current address keeps working. A sibling of [[passwordresettokens]] rather than a purpose flag on it, because this token carries the address it would install and must never be able to reset a password.',
+  fields: [
+    { name: '_id', type: 'ObjectId', note: '' },
+    { name: 'tokenHash', type: 'String', req: true, idx: true, note: 'SHA-256 of the raw token, hex. The raw value exists only in the email to the new address and is never logged.' },
+    { name: 'user', type: 'ObjectId', ref: 'users', req: true, idx: true, note: 'Whose email would change. Indexed because every request retires that user\'s other live rows.' },
+    { name: 'newEmail', type: 'String', req: true, note: 'The address to install, lowercased. Written even when the address is already taken — no email is sent then, and confirmation re-checks uniqueness — so the Settings screen and the API answer identically and reveal nothing about other accounts.' },
+    { name: 'expiresAt', type: 'Date', req: true, idx: true, note: 'Thirty minutes after issue, the same figure the reset links use. Checked directly on confirmation; the TTL index is housekeeping.' },
+    { name: 'usedAt', type: 'Date | null', note: 'Set inside the confirmation transaction by a conditional update, so a link confirmed twice at once is spent by exactly one of them.' },
+    { name: 'invalidatedAt', type: 'Date | null', note: 'Set when a newer request replaced this row, or when another confirmation completed for the same account.' },
+    { name: 'createdAt / updatedAt', type: 'Date', note: 'Mongoose `timestamps: true`.' }
+  ],
+  indexes: [
+    { def: '{ tokenHash: 1 }', opts: 'unique', serves: 'The confirmation lookup', why: 'The only read path for a link.' },
+    { def: '{ user: 1 }', serves: 'Retiring older rows, and the pending request Settings shows', why: 'Every request runs an updateMany over that user\'s live rows.' },
+    { def: '{ expiresAt: 1 }', opts: 'expireAfterSeconds: 0', serves: 'Automatic cleanup', why: 'A row is worthless once its link has expired.' }
+  ],
+  why: [
+    '**Verify before replace.** Owner decision, 2026-10-18: the account email changes only after the new address proves it receives mail. The signed-in session is enough to ask; no password or fresh Google sign-in is required.',
+    '**One transaction, four writes.** Confirmation spends the token, moves `users.email` only while it still holds the old address, retires the user\'s other email-change rows, and invalidates live [[passwordresettokens]] sent to the old address. The unique index on `users.email` settles two accounts racing for the same address.',
+    '**Sessions survive.** Access and Refresh Tokens carry no email, so nothing becomes inconsistent and no re-login is forced. The old address receives a notice after the change.',
+    '**Google is untouched.** A linked Google identity is matched by its subject, never by this address.'
+  ],
+  relations: [
+    { to: 'users', via: 'user', store: 'ref', card: 'N:1', why: 'At most one live row per user; spent and superseded rows survive until the TTL removes them.' }
+  ],
+  sample: `{
+  _id:           ObjectId("6712f100c2b9e30012af4401"),
+  tokenHash:     "3c71a9d0e4b2f5867a19c3de05b2d8c4471f6a83d2e0b5c7a91d43e6f8027c22",
+  user:          ObjectId("6650a1f4c2b9e30012af0b21"),
+  newEmail:      "office@example.com",
+  expiresAt:     ISODate("2026-10-18T20:33:17Z"),
+  usedAt:        null,
+  invalidatedAt: null,
+  createdAt:     ISODate("2026-10-18T20:03:17Z")
+}`,
+  schema: `const emailChangeTokenSchema = new Schema({
+  tokenHash:     { type: String, required: true, unique: true },
+  user:          { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
+  newEmail:      { type: String, required: true, lowercase: true, trim: true },
+  expiresAt:     { type: Date, required: true },
+  usedAt:        { type: Date, default: null },
+  invalidatedAt: { type: Date, default: null }
+}, { timestamps: true });
+
+emailChangeTokenSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
+
+module.exports = mongoose.model('EmailChangeToken', emailChangeTokenSchema);`
 },
 
 /* ─────────── mutes ─────────── */

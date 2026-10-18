@@ -157,3 +157,101 @@ export const classifyAccountRecoveryError = (error: unknown): AccountRecoveryFai
       return 'UNKNOWN';
   }
 };
+
+const errorCodeOf = (error: unknown): string | 'NETWORK' | null => {
+  if (!isAxiosError(error)) return null;
+  if (!error.response) return 'NETWORK';
+  return (error.response.data as ApiErrorBody | undefined)?.code ?? null;
+};
+
+export type EmailChangeRequestFailure =
+  | 'SAME_ADDRESS'
+  | 'INVALID_EMAIL'
+  | 'TOO_MANY'
+  | 'NETWORK'
+  | 'UNKNOWN';
+
+export const requestEmailChange = async (newEmail: string): Promise<void> => {
+  await api.post<StatusResponse>('/auth/email-change', { newEmail });
+};
+
+export const classifyEmailChangeRequestError = (error: unknown): EmailChangeRequestFailure => {
+  switch (errorCodeOf(error)) {
+    case 'NETWORK':
+      return 'NETWORK';
+    case 'EMAIL_CHANGE_SAME_ADDRESS':
+      return 'SAME_ADDRESS';
+    case 'REQUEST_VALIDATION_FAILED':
+      return 'INVALID_EMAIL';
+    case 'TOO_MANY_REQUESTS':
+      return 'TOO_MANY';
+    default:
+      return 'UNKNOWN';
+  }
+};
+
+export type EmailChangeConfirmFailure = 'INVALID' | 'TOO_MANY' | 'NETWORK' | 'UNKNOWN';
+
+export const confirmEmailChange = async (token: string): Promise<void> => {
+  await api.post<StatusResponse>('/auth/email-change/confirm', { token });
+};
+
+export const classifyEmailChangeConfirmError = (error: unknown): EmailChangeConfirmFailure => {
+  switch (errorCodeOf(error)) {
+    case 'NETWORK':
+      return 'NETWORK';
+    case 'INVALID_EMAIL_CHANGE_TOKEN':
+    case 'REQUEST_VALIDATION_FAILED':
+      return 'INVALID';
+    case 'TOO_MANY_REQUESTS':
+      return 'TOO_MANY';
+    default:
+      return 'UNKNOWN';
+  }
+};
+
+export type PasswordChangeFailure =
+  | 'CURRENT_INCORRECT'
+  | 'WEAK_PASSWORD'
+  | 'TOO_MANY'
+  | 'NETWORK'
+  | 'UNKNOWN';
+
+export const changePassword = async (payload: {
+  currentPassword: string;
+  newPassword: string;
+}): Promise<void> => {
+  await api.post<StatusResponse>('/auth/password/change', payload);
+};
+
+export const classifyPasswordChangeError = (error: unknown): PasswordChangeFailure => {
+  switch (errorCodeOf(error)) {
+    case 'NETWORK':
+      return 'NETWORK';
+    case 'CURRENT_PASSWORD_INCORRECT':
+      return 'CURRENT_INCORRECT';
+    case 'REQUEST_VALIDATION_FAILED':
+      return 'WEAK_PASSWORD';
+    case 'TOO_MANY_REQUESTS':
+      return 'TOO_MANY';
+    default:
+      return 'UNKNOWN';
+  }
+};
+
+export type PasswordSetupFailure = 'TOO_MANY' | 'NETWORK' | 'UNKNOWN';
+
+export const requestPasswordSetup = async (): Promise<void> => {
+  await api.post<StatusResponse>('/auth/password/setup');
+};
+
+export const classifyPasswordSetupError = (error: unknown): PasswordSetupFailure => {
+  switch (errorCodeOf(error)) {
+    case 'NETWORK':
+      return 'NETWORK';
+    case 'TOO_MANY_REQUESTS':
+      return 'TOO_MANY';
+    default:
+      return 'UNKNOWN';
+  }
+};

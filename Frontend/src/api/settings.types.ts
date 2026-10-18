@@ -28,6 +28,9 @@ export interface SettingsEntitlements {
 }
 
 export interface AccountSettings {
+  readonly email: string;
+  readonly hasPassword: boolean;
+  readonly pendingEmailChange: { readonly email: string; readonly expiresAt: string } | null;
   readonly language: SettingsLanguage;
   readonly notifications: {
     readonly operationalEmail: boolean;

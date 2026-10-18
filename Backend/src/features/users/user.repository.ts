@@ -181,6 +181,10 @@ export interface UserRepository {
   linkProviderIdentity(id: Types.ObjectId, identity: ProviderIdentity): Promise<boolean>;
   /** Whether a local password exists, without the hash leaving the repository. */
   hasPassword(id: string): Promise<boolean>;
+  /** `null` when the account has no local password. */
+  findPasswordHashById(id: string): Promise<string | null>;
+  /** Moves the login address only while the account still holds `fromEmail`. */
+  updateEmail(id: Types.ObjectId, fromEmail: string, toEmail: string, session: DbSession): Promise<boolean>;
   /** The cached tier. `null` only when no such account exists. */
   findPlanCode(id: string): Promise<PlanCode | null>;
   /** Written only by the subscription lifecycle, and only ever inside its transaction. */
@@ -534,6 +538,27 @@ export const userRepository: UserRepository = {
       .exec();
 
     return typeof found?.passwordHash === 'string' && found.passwordHash.length > 0;
+  },
+
+  async findPasswordHashById(id) {
+    if (!Types.ObjectId.isValid(id)) return null;
+
+    const found = await UserModel.findById(id)
+      .select('+passwordHash')
+      .lean<{ passwordHash?: string }>()
+      .exec();
+
+    return typeof found?.passwordHash === 'string' && found.passwordHash.length > 0
+      ? found.passwordHash
+      : null;
+  },
+
+  async updateEmail(id, fromEmail, toEmail, session) {
+    const result = await UserModel.updateOne({ _id: id, email: fromEmail }, { $set: { email: toEmail } })
+      .session(session)
+      .exec();
+
+    return result.modifiedCount === 1;
   },
 
   async findPlanCode(id) {

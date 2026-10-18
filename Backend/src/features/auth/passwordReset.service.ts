@@ -1,10 +1,10 @@
 import type { DbSession } from '../../db/mongoose.js';
-import { buildPasswordResetEmail } from '../../mail/passwordResetEmail.js';
+import { buildPasswordResetEmail, type PasswordEmailPurpose } from '../../mail/passwordResetEmail.js';
 import type { Mailer } from '../../mail/mailer.js';
 import { logger } from '../../shared/logger.js';
 import type { UserLanguage } from '../users/user.model.js';
 import type { UserRepository } from '../users/user.repository.js';
-import { invalidResetToken } from './auth.errors.js';
+import { invalidResetToken, localPasswordAlreadySet, unauthenticated } from './auth.errors.js';
 import { isSessionPermitted } from './auth.service.js';
 import type { PasswordService } from './password.service.js';
 import type { PasswordResetTokenRepository } from './passwordResetToken.repository.js';
@@ -24,6 +24,8 @@ export interface ResetPasswordInput {
 
 export interface PasswordResetService {
   requestReset(input: ForgotPasswordInput): Promise<void>;
+  /** A signed-in account with no local password asks for a link to add one. */
+  requestSetup(userId: string): Promise<void>;
   resetPassword(input: ResetPasswordInput): Promise<void>;
 }
 
@@ -37,8 +39,8 @@ export interface PasswordResetDependencies {
   readonly transactions: { run<T>(work: (session: DbSession) => Promise<T>): Promise<T> };
 }
 
-const buildResetUrl = (frontendUrl: string, rawToken: string): string =>
-  `${frontendUrl}/reset-password?token=${encodeURIComponent(rawToken)}`;
+const buildResetUrl = (frontendUrl: string, rawToken: string, purpose: PasswordEmailPurpose): string =>
+  `${frontendUrl}/reset-password?token=${encodeURIComponent(rawToken)}${purpose === 'create' ? '&purpose=create' : ''}`;
 
 export const createPasswordResetService = ({
   users,
@@ -54,12 +56,18 @@ export const createPasswordResetService = ({
    * work here, so awaiting it would make a known address answer measurably slower than an unknown
    * one — the enumeration oracle the identical response exists to close.
    */
-  const dispatch = (to: string, rawToken: string, language: UserLanguage): void => {
-    const resetUrl = buildResetUrl(frontendUrl, rawToken);
+  const dispatch = (
+    to: string,
+    rawToken: string,
+    language: UserLanguage,
+    purpose: PasswordEmailPurpose,
+  ): void => {
+    const resetUrl = buildResetUrl(frontendUrl, rawToken, purpose);
     const message = buildPasswordResetEmail(to, {
       resetUrl,
       expiryMinutes: RESET_TOKEN_TTL_MINUTES,
       language,
+      purpose,
     });
 
     // Only when no SMTP is configured, and only because there is then no mailbox to read the link
@@ -88,10 +96,22 @@ export const createPasswordResetService = ({
 
       const expiresAt = new Date(Date.now() + RESET_TOKEN_TTL_MINUTES * 60 * 1000);
       const { rawToken } = await resetTokens.issueFor(user._id, expiresAt);
+      const purpose = (await users.hasPassword(user._id.toString())) ? 'reset' : 'create';
 
       // `users.language` is read here and nowhere near the response: the answer this endpoint
       // gives is identical whether or not the account exists, so it can carry no such fact.
-      dispatch(user.email, rawToken, user.language);
+      dispatch(user.email, rawToken, user.language, purpose);
+    },
+
+    async requestSetup(userId) {
+      const user = await users.findById(userId);
+      if (user === null || !isSessionPermitted(user)) throw unauthenticated();
+      if (await users.hasPassword(userId)) throw localPasswordAlreadySet();
+
+      const expiresAt = new Date(Date.now() + RESET_TOKEN_TTL_MINUTES * 60 * 1000);
+      const { rawToken } = await resetTokens.issueFor(user._id, expiresAt);
+
+      dispatch(user.email, rawToken, user.language, 'create');
     },
 
     /**

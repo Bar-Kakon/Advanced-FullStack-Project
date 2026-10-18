@@ -4,6 +4,9 @@ import { getValidated } from '../../middleware/validateRequest.js';
 import { getAuthenticatedUserId } from './requireAccessToken.middleware.js';
 import type { AuthService } from './auth.service.js';
 import type {
+  ChangePasswordBody,
+  EmailChangeConfirmBody,
+  EmailChangeRequestBody,
   ForgotPasswordBody,
   GoogleCredentialBody,
   LoginBody,
@@ -13,8 +16,10 @@ import type {
   RestoreAccountBody,
 } from './auth.validation.js';
 import { googleAuthNotConfigured } from './auth.errors.js';
+import { EMAIL_CHANGE_TOKEN_TTL_MINUTES, type EmailChangeService } from './emailChange.service.js';
 import type { GoogleAuthService } from './googleAuth.service.js';
-import type { PasswordResetService } from './passwordReset.service.js';
+import type { PasswordChangeService } from './passwordChange.service.js';
+import { RESET_TOKEN_TTL_MINUTES, type PasswordResetService } from './passwordReset.service.js';
 import type { AccountRecoveryService } from './accountRecovery.service.js';
 import type { RegistrationService } from './registration.service.js';
 import { REFRESH_TOKEN_COOKIE, type RefreshTokenCookie } from './refreshTokenCookie.js';
@@ -31,6 +36,10 @@ export interface AuthController {
   readonly handleRestoreAccount: RequestHandler;
   readonly handleGoogleSignIn: RequestHandler;
   readonly handleGoogleLink: RequestHandler;
+  readonly handleRequestEmailChange: RequestHandler;
+  readonly handleConfirmEmailChange: RequestHandler;
+  readonly handleChangePassword: RequestHandler;
+  readonly handleRequestPasswordSetup: RequestHandler;
 }
 
 export interface AuthControllerDependencies {
@@ -38,6 +47,8 @@ export interface AuthControllerDependencies {
   readonly registrationService: RegistrationService;
   readonly passwordResetService: PasswordResetService;
   readonly accountRecoveryService: AccountRecoveryService;
+  readonly emailChangeService: EmailChangeService;
+  readonly passwordChangeService: PasswordChangeService;
   readonly cookie: RefreshTokenCookie;
   /** `null` when no OAuth client is configured. Both Google routes then answer 503 and write nothing. */
   readonly googleAuthService: GoogleAuthService | null;
@@ -55,6 +66,8 @@ export const createAuthController = ({
   registrationService,
   passwordResetService,
   accountRecoveryService,
+  emailChangeService,
+  passwordChangeService,
   cookie,
   googleAuthService,
 }: AuthControllerDependencies): AuthController => {
@@ -177,6 +190,38 @@ export const createAuthController = ({
       const { linkedEmail } = await google().link(getAuthenticatedUserId(res), idToken);
 
       res.json({ linkedEmail });
+    },
+
+    handleRequestEmailChange: async (req: Request, res: Response) => {
+      const { newEmail } = getValidated<EmailChangeRequestBody>(res, 'body');
+      await emailChangeService.requestChange(getAuthenticatedUserId(res), newEmail);
+
+      res.json({ status: 'ok', expiresInMinutes: EMAIL_CHANGE_TOKEN_TTL_MINUTES });
+    },
+
+    handleConfirmEmailChange: async (req: Request, res: Response) => {
+      const { token } = getValidated<EmailChangeConfirmBody>(res, 'body');
+      await emailChangeService.confirmChange(token);
+
+      res.json({ status: 'ok' });
+    },
+
+    handleChangePassword: async (req: Request, res: Response) => {
+      const { currentPassword, newPassword } = getValidated<ChangePasswordBody>(res, 'body');
+      await passwordChangeService.changePassword(
+        getAuthenticatedUserId(res),
+        currentPassword,
+        newPassword,
+      );
+
+      res.clearCookie(REFRESH_TOKEN_COOKIE, cookie.clearOptions);
+      res.json({ status: 'signed_out' });
+    },
+
+    handleRequestPasswordSetup: async (req: Request, res: Response) => {
+      await passwordResetService.requestSetup(getAuthenticatedUserId(res));
+
+      res.json({ status: 'ok', expiresInMinutes: RESET_TOKEN_TTL_MINUTES });
     },
   };
 };
