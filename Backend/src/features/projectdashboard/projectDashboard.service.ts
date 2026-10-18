@@ -18,6 +18,7 @@ import {
 } from '../projects/projectAuthorization.js';
 import type { ProjectExecutionPort } from '../projects/projectLifecycle.service.js';
 import type { CoordinationService } from '../coordination/coordination.service.js';
+import type { CalendarChangeGuard } from '../projects/calendarChangeGuard.js';
 import type { CalendarAdoptionDto, ProjectDashboardDto } from './projectDashboard.dto.js';
 
 export interface ProjectDashboardService {
@@ -32,6 +33,7 @@ export interface ProjectDashboardDependencies {
   readonly participants: ParticipantRepository;
   readonly execution: ProjectExecutionPort;
   readonly coordination: CoordinationService;
+  readonly calendarGuard: Pick<CalendarChangeGuard, 'previewAdoption'>;
 }
 
 const holds = (resolved: ResolvedProjectAccess, permission: ProjectPermission): boolean =>
@@ -50,6 +52,7 @@ export const createProjectDashboardService = ({
   participants,
   execution,
   coordination,
+  calendarGuard,
 }: ProjectDashboardDependencies): ProjectDashboardService => ({
   async get(userId, projectId) {
     const authority = requireActiveCompany(await companyContext.forUser(userId), userId);
@@ -101,6 +104,8 @@ export const createProjectDashboardService = ({
         mayManage(resolved),
         await execution.hasFirstTaskStarted(project._id.toString()),
         configOrDefault(pinned),
+        0,
+        holds(resolved, 'project.calendar.manage') ? await calendarGuard.previewAdoption(project) : null,
       ),
       viewer: {
         manages: mayManage(resolved),

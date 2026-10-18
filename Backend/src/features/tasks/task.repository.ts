@@ -31,6 +31,10 @@ export interface TaskRepository {
   listForTimeline(project: Types.ObjectId): Promise<
     readonly Pick<TaskRecord, '_id' | 'title' | 'startDate' | 'dueDate' | 'startedAt' | 'completedAt' | 'stage'>[]
   >;
+  /** Work someone is still responsible for: assigned, not completed and not orphaned. */
+  listLiveAssignedInProject(
+    project: Types.ObjectId,
+  ): Promise<readonly Pick<TaskRecord, '_id' | 'assignee' | 'startDate' | 'dueDate'>[]>;
   /** The departing member's unfinished responsibilities inside the company's own projects. */
   listUnfinishedAssignedInCompany(
     assignee: Types.ObjectId,
@@ -84,6 +88,18 @@ export const taskRepository: TaskRepository = {
       .select('title startDate dueDate startedAt completedAt stage')
       .sort({ startDate: 1, _id: 1 })
       .lean<Pick<TaskRecord, '_id' | 'title' | 'startDate' | 'dueDate' | 'startedAt' | 'completedAt' | 'stage'>[]>()
+      .exec();
+  },
+
+  async listLiveAssignedInProject(project) {
+    return TaskModel.find({
+      project,
+      assignee: { $ne: null },
+      completedAt: null,
+      orphanedAt: null,
+    })
+      .select('assignee startDate dueDate')
+      .lean<Pick<TaskRecord, '_id' | 'assignee' | 'startDate' | 'dueDate'>[]>()
       .exec();
   },
 

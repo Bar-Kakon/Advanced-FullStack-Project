@@ -1,4 +1,5 @@
 import { resolveEffectiveCalendar, type WorkingCalendarConfig } from '../calendar/workingCalendar.types.js';
+import type { AdoptionImpactPreview } from './calendarChangeGuard.js';
 import type { ProjectDto } from './project.dto.js';
 import type { ProjectRecord } from './project.model.js';
 import { formatCalendarDate, overrunCeiling, overrunFromOriginal } from './projectDates.js';
@@ -16,6 +17,7 @@ export const toProjectDto = (
   firstTaskStarted: boolean,
   baseConfig?: WorkingCalendarConfig,
   pendingActions = 0,
+  adoptionImpact: AdoptionImpactPreview | null = null,
 ): ProjectDto => ({
   id: project._id.toString(),
   companyId: project.company.toString(),
@@ -32,6 +34,7 @@ export const toProjectDto = (
         ? null
         : resolveEffectiveCalendar(baseConfig, project.calendarOverrides),
     adoptionCount: project.calendarAdoptions.length,
+    adoptionImpact,
   },
   location: {
     place: project.location?.place ?? null,

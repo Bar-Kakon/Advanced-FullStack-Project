@@ -108,7 +108,11 @@ export const projectListQuerySchema = Joi.object<ProjectListQuery>({
 const hoursSchema = Joi.object({
   startMinute: Joi.number().integer().min(0).max(1440).required(),
   endMinute: Joi.number().integer().min(0).max(1440).required(),
-});
+})
+  .custom((value: { startMinute: number; endMinute: number }, helpers) =>
+    value.endMinute > value.startMinute ? value : helpers.error('hours.order'),
+  )
+  .messages({ 'hours.order': 'working hours must end after they start' });
 
 /** A whole field is replaced or left alone; nothing merges inside `workingDays`. */
 export const calendarOverridesSchema = Joi.object({

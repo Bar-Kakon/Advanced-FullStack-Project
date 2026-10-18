@@ -2,7 +2,13 @@ import { Types } from 'mongoose';
 
 import type { DbSession } from '../../db/mongoose.js';
 
-import { ProjectModel, type ProjectRecord, type TargetChangeRecord } from './project.model.js';
+import type { WorkingCalendarOverrides } from '../calendar/workingCalendar.types.js';
+import {
+  ProjectModel,
+  type CalendarAdoptionRecord,
+  type ProjectRecord,
+  type TargetChangeRecord,
+} from './project.model.js';
 
 export interface NewProject {
   readonly company: Types.ObjectId;
@@ -41,6 +47,16 @@ export interface ProjectUpdateOptions {
   readonly clearLocation?: boolean;
 }
 
+export interface CalendarStateOperation {
+  readonly set?: {
+    readonly calendarVersion?: Types.ObjectId;
+    readonly calendarOverrides?: WorkingCalendarOverrides;
+  };
+  readonly unsetOverrides?: boolean;
+  readonly pushAdoption?: CalendarAdoptionRecord;
+  readonly popAdoption?: boolean;
+}
+
 export interface ProjectCursor {
   readonly createdAt: Date;
   readonly id: Types.ObjectId;
@@ -74,6 +90,13 @@ export interface ProjectRepository {
     toVersion: Types.ObjectId,
     adoption: ProjectRecord['calendarAdoptions'][number],
     clearOverrides: boolean,
+  ): Promise<ProjectRecord | null>;
+  /** Writes calendar state only while the project is still the version the caller assessed. */
+  writeCalendarState(
+    id: Types.ObjectId,
+    expectedUpdatedAt: Date,
+    operation: CalendarStateOperation,
+    session?: DbSession,
   ): Promise<ProjectRecord | null>;
   update(
     id: Types.ObjectId,
@@ -165,6 +188,20 @@ export const projectRepository: ProjectRepository = {
     if (clearOverrides) operation['$unset'] = { calendarOverrides: '' };
 
     return ProjectModel.findByIdAndUpdate(id, operation, { returnDocument: 'after' }).lean<ProjectRecord>().exec();
+  },
+
+  async writeCalendarState(id, expectedUpdatedAt, operation, session) {
+    const update: Record<string, unknown> = {};
+    if (operation.set !== undefined) update['$set'] = operation.set;
+    if (operation.unsetOverrides === true) update['$unset'] = { calendarOverrides: '' };
+    if (operation.pushAdoption !== undefined) update['$push'] = { calendarAdoptions: operation.pushAdoption };
+    if (operation.popAdoption === true) update['$pop'] = { calendarAdoptions: 1 };
+
+    const query = ProjectModel.findOneAndUpdate({ _id: id, updatedAt: expectedUpdatedAt }, update, {
+      returnDocument: 'after',
+    });
+    if (session) query.session(session);
+    return query.lean<ProjectRecord>().exec();
   },
 
   async listByCompany(company, cursor, limit) {

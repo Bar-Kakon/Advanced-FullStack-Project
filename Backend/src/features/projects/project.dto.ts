@@ -3,6 +3,7 @@ import type { Region } from '../users/user.model.js';
 import type { ProjectStatus } from './projectLifecycle.service.js';
 import type { ProjectType } from './projectType.js';
 import type { WorkingCalendarConfig, WorkingCalendarOverrides } from '../calendar/workingCalendar.types.js';
+import type { AdoptionImpactPreview } from './calendarChangeGuard.js';
 
 export interface ProjectLocationDto {
   readonly place: StructuredPlace | null;
@@ -32,6 +33,8 @@ export interface ProjectCalendarDto {
   /** Base plus overrides — what the project actually works by. */
   readonly effective: WorkingCalendarConfig | null;
   readonly adoptionCount: number;
+  /** What adopting the company's current version would require; only for a calendar manager. */
+  readonly adoptionImpact: AdoptionImpactPreview | null;
 }
 
 export interface ProjectDto {
