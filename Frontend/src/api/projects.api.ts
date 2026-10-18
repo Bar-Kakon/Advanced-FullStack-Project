@@ -77,6 +77,8 @@ export type ProjectFailure =
   | 'OVERRUN_CEILING_EXCEEDED'
   | 'ALREADY_STARTED'
   | 'VALIDATION'
+  | 'CALENDAR_NEEDS_APPROVAL'
+  | 'CALENDAR_CHANGED'
   | 'NETWORK'
   | 'UNKNOWN';
 
@@ -105,6 +107,10 @@ export const classifyProjectError = (error: unknown): ProjectFailure => {
       return 'ALREADY_STARTED';
     case 'REQUEST_VALIDATION_FAILED':
       return 'VALIDATION';
+    case 'CALENDAR_CHANGE_NEEDS_APPROVAL':
+      return 'CALENDAR_NEEDS_APPROVAL';
+    case 'CALENDAR_CHANGED_CONCURRENTLY':
+      return 'CALENDAR_CHANGED';
     default:
       return 'UNKNOWN';
   }
