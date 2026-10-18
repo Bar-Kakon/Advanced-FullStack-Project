@@ -47,6 +47,7 @@ export const ResetPasswordPage = () => {
   useDocumentTitle('סיסמה חדשה / New Password — Blokta');
 
   const token = params.get('token') ?? '';
+  const copy = params.get('purpose') === 'create' ? t.resetPassword.create : null;
 
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
@@ -126,8 +127,8 @@ export const ResetPasswordPage = () => {
           </span>
 
           <header className="form-header">
-            <h2 className="form-title">{t.resetPassword.doneTitle}</h2>
-            <p className="form-subtitle">{t.resetPassword.doneSubtitle}</p>
+            <h2 className="form-title">{copy?.doneTitle ?? t.resetPassword.doneTitle}</h2>
+            <p className="form-subtitle">{copy?.doneSubtitle ?? t.resetPassword.doneSubtitle}</p>
           </header>
 
           {/* The reset issued nothing, so the person signs in with the new password. */}
@@ -178,8 +179,8 @@ export const ResetPasswordPage = () => {
         {backLink}
 
         <header className="form-header">
-          <h2 className="form-title">{t.resetPassword.title}</h2>
-          <p className="form-subtitle">{t.resetPassword.subtitle}</p>
+          <h2 className="form-title">{copy?.title ?? t.resetPassword.title}</h2>
+          <p className="form-subtitle">{copy?.subtitle ?? t.resetPassword.subtitle}</p>
         </header>
 
         {alertMessage ? <FormAlert message={alertMessage} /> : null}
@@ -220,7 +221,7 @@ export const ResetPasswordPage = () => {
             disabled={!canSubmit || submitting}
             aria-busy={submitting}
           >
-            {t.resetPassword.submit}
+            {copy?.submit ?? t.resetPassword.submit}
             {submitting ? <ButtonSpinner /> : null}
           </button>
         </form>

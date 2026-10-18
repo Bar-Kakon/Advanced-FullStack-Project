@@ -12,6 +12,8 @@ import { useLanguage } from '../../i18n/useLanguage';
 import { useDocumentTitle } from '../../routes/useDocumentTitle';
 import { useScreenStylesheet } from '../../styles/useScreenStylesheet';
 import { initialsOf } from '../profile/profileModel';
+import { AccountEmailSection } from './AccountEmailSection';
+import { AccountPasswordSection } from './AccountPasswordSection';
 import { CompanyMembershipSection } from './CompanyMembershipSection';
 import { useSettings } from './useSettings';
 import {
@@ -37,7 +39,7 @@ export const SettingsPage = () => {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
   const {
-    settings, loading, busy, savedSection, failure,
+    settings, loading, busy, savedSection, failure, reload,
     setLanguage, setNotifications, setContactVisibility, unmuteProject,
   } = useSettings();
 
@@ -325,6 +327,14 @@ export const SettingsPage = () => {
               <h2 className="settings-section__title" id="settings-account">
                 {t.settings.account.title}
               </h2>
+
+              <AccountEmailSection
+                email={settings.email}
+                pending={settings.pendingEmailChange}
+                onRequested={reload}
+              />
+
+              <AccountPasswordSection hasPassword={settings.hasPassword} email={settings.email} />
 
               {googleClientId() === undefined ? null : (
                 <>

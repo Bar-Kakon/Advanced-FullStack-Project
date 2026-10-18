@@ -5,6 +5,7 @@ import { AuthProvider } from './auth/AuthContext';
 import { AppErrorBoundary } from './components/AppErrorBoundary';
 import { LanguageProvider } from './i18n/LanguageContext';
 import { RouteFallback } from './components/RouteFallback';
+import { SessionNoticeDialog } from './components/SessionNoticeDialog';
 import { PrivateRoute } from './routes/PrivateRoute';
 import { MembershipRoute } from './routes/MembershipRoute';
 import { AdminRoute } from './routes/AdminRoute';
@@ -28,6 +29,8 @@ const RecoverAccountPage = lazy(() =>
   import('./features/account-recovery/RecoverAccountPage').then((m) => ({ default: m.RecoverAccountPage })));
 const RestoreAccountPage = lazy(() =>
   import('./features/account-recovery/RestoreAccountPage').then((m) => ({ default: m.RestoreAccountPage })));
+const ConfirmEmailChangePage = lazy(() =>
+  import('./features/email-change/ConfirmEmailChangePage').then((m) => ({ default: m.ConfirmEmailChangePage })));
 const PersonalDashboardPage = lazy(() =>
   import('./features/dashboard/PersonalDashboardPage').then((m) => ({ default: m.PersonalDashboardPage })));
 const MyProfilePage = lazy(() =>
@@ -120,6 +123,7 @@ export const App = () => (
             {/* Deleted-account self-service recovery: a person with no session is exactly who needs it. */}
             <Route path="/recover-account" element={<RecoverAccountPage />} />
             <Route path="/restore-account" element={<RestoreAccountPage />} />
+            <Route path="/confirm-email-change" element={<ConfirmEmailChangePage />} />
 
             <Route element={<PrivateRoute />}>
               {/* A profile belongs to the person, so it stays reachable while a company decides. */}
@@ -178,6 +182,7 @@ export const App = () => (
             <Route path="*" element={<NotFoundPage />} />
           </Routes>
         </Suspense>
+        <SessionNoticeDialog />
         </AppErrorBoundary>
       </BrowserRouter>
     </AuthProvider>

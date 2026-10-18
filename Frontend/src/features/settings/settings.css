@@ -193,3 +193,68 @@
 .google-signin { display: flex; justify-content: center; width: 100%; }
 .google-signin__host { width: 100%; display: flex; justify-content: center; }
 .google-signin--busy { opacity: 0.55; cursor: progress; }
+
+.settings-account-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-width: 460px;
+  margin-block: 12px 8px;
+}
+.settings-account-form .form-group { display: flex; flex-direction: column; gap: 8px; margin: 0; }
+.settings-account-form .form-label { font-size: 15px; font-weight: 600; color: var(--text); cursor: pointer; }
+.settings-account-form .form-input {
+  width: 100%;
+  height: 52px;
+  padding: 0 16px;
+  font-family: var(--font-sans);
+  font-size: 17px;
+  color: var(--text);
+  background: var(--background);
+  border: 1.5px solid var(--secondary-30);
+  border-radius: var(--r-sm);
+  outline: none;
+  appearance: none;
+}
+.settings-account-form .form-input:hover { border-color: var(--secondary-55); }
+.settings-account-form .form-input:focus {
+  border-color: var(--primary);
+  background: var(--surface);
+  box-shadow: 0 0 0 4px var(--primary-08);
+}
+.settings-account-form .input-wrapper { position: relative; }
+.settings-account-form .input-wrapper:has(.input-action) .form-input { padding-right: 56px; }
+.settings-account-form .input-action {
+  position: absolute;
+  right: 0;
+  top: 0;
+  height: 52px;
+  width: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-mute);
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+.settings-account-form .input-action:hover { color: var(--primary); }
+.settings-account-form .icon-eye-off { display: none; }
+.settings-account-form .input-action.is-revealed .icon-eye { display: none; }
+.settings-account-form .input-action.is-revealed .icon-eye-off { display: block; }
+.settings-account-form .field-hint { font-size: 14.5px; color: var(--text-soft); margin: 0; }
+.settings-account-form .field-error {
+  display: none;
+  font-size: 14.5px;
+  color: var(--error);
+  margin: 0;
+  padding: 8px 10px;
+  background: var(--error-bg);
+  border: 1px solid var(--error-border);
+  border-inline-start: 4px solid var(--error);
+  border-radius: var(--r-sm);
+}
+.settings-account-form .field-error--visible { display: block; }
+.settings-account-form .btn { align-self: flex-start; }
+.settings-account-form .btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; box-shadow: none; }
+.settings-account__current { font-size: 17px; }

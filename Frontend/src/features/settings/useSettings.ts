@@ -72,12 +72,18 @@ export const useSettings = () => {
     [],
   );
 
+  const reload = useCallback(async (): Promise<void> => {
+    const next = await fetchSettings();
+    if (mounted.current) setSettings(next);
+  }, []);
+
   return {
     settings,
     loading,
     busy,
     savedSection,
     failure,
+    reload,
     setLanguage: (language: SettingsLanguage) => run('language', () => saveLanguage(language)),
     setNotifications: (payload: {
       operationalEmail?: boolean;
