@@ -146,6 +146,30 @@ export const resetPasswordBodySchema = Joi.object<ResetPasswordBody>({
   password: password(MIN_PASSWORD_LENGTH, MAX_PASSWORD_LENGTH).required(),
 });
 
+export interface EmailChangeRequestBody {
+  readonly newEmail: string;
+}
+
+export const emailChangeRequestBodySchema = Joi.object<EmailChangeRequestBody>({ newEmail: email });
+
+export interface EmailChangeConfirmBody {
+  readonly token: string;
+}
+
+export const emailChangeConfirmBodySchema = Joi.object<EmailChangeConfirmBody>({
+  token: Joi.string().trim().min(1).max(MAX_RESET_TOKEN_LENGTH).required(),
+});
+
+export interface ChangePasswordBody {
+  readonly currentPassword: string;
+  readonly newPassword: string;
+}
+
+export const changePasswordBodySchema = Joi.object<ChangePasswordBody>({
+  currentPassword: Joi.string().min(1).max(MAX_PASSWORD_LENGTH).required(),
+  newPassword: password(MIN_PASSWORD_LENGTH, MAX_PASSWORD_LENGTH).required(),
+});
+
 /**
  * The whole Register contract, in one place. `validateRequest` strips unknown keys, so a body that
  * also carries `status`, `isAdmin` or `passwordHash` loses them here rather than downstream.

@@ -14,6 +14,9 @@ import { createGoogleAuthService } from './googleAuth.service.js';
 import { createGoogleIdentityService } from './googleIdentity.service.js';
 import { passwordService } from './password.service.js';
 import { createAccountRecoveryService } from './accountRecovery.service.js';
+import { createEmailChangeService } from './emailChange.service.js';
+import { emailChangeTokenRepository } from './emailChangeToken.repository.js';
+import { createPasswordChangeService } from './passwordChange.service.js';
 import { accountRecoveryTokenRepository } from './accountRecoveryToken.repository.js';
 import { platformAuditService } from '../moderation/platformAudit.instance.js';
 import { createPasswordResetService } from './passwordReset.service.js';
@@ -118,6 +121,22 @@ export const createAuthModule = (config: AppConfig): AuthModule => {
     transactions: { run: runInTransaction },
   });
 
+  const emailChangeService = createEmailChangeService({
+    users: userRepository,
+    tokens: emailChangeTokenRepository,
+    resetTokens: passwordResetTokenRepository,
+    mailer: createMailer(config.mail),
+    frontendUrl: config.frontendUrl,
+    transactions: { run: runInTransaction },
+  });
+
+  const passwordChangeService = createPasswordChangeService({
+    users: userRepository,
+    passwords: passwordService,
+    refreshTokenStore: refreshTokenRepository,
+    transactions: { run: runInTransaction },
+  });
+
   const cookie = createRefreshTokenCookie(config.nodeEnv, config.tokens.refreshTtlSeconds);
   const requireAccessToken = createRequireAccessToken(accessTokens, userRepository);
 
@@ -128,6 +147,8 @@ export const createAuthModule = (config: AppConfig): AuthModule => {
         registrationService,
         passwordResetService,
         accountRecoveryService,
+        emailChangeService,
+        passwordChangeService,
         cookie,
         googleAuthService,
       }),

@@ -3,9 +3,11 @@ import { Router, type RequestHandler } from 'express';
 
 import { getValidated, validateRequest } from '../../middleware/validateRequest.js';
 import { getAuthenticatedUserId } from '../auth/requireAccessToken.middleware.js';
+import { emailChangeTokenRepository } from '../auth/emailChangeToken.repository.js';
 import { buildEntitlementService } from '../billing/billing.module.js';
 import { muteRepository } from '../mutes/mute.repository.js';
 import { projectRepository } from '../projects/project.repository.js';
+import { userRepository } from '../users/user.repository.js';
 import type { ContactVisibility, NotificationTimingRule, UserLanguage } from '../users/user.model.js';
 import { settingsRepository } from './settings.repository.js';
 import { createSettingsService, type SettingsService } from './settings.service.js';
@@ -45,6 +47,8 @@ export const buildSettingsService = (): SettingsService =>
     mutes: muteRepository,
     projects: projectRepository,
     entitlements: buildEntitlementService(),
+    credentials: userRepository,
+    emailChanges: emailChangeTokenRepository,
   });
 
 /**

@@ -4,6 +4,9 @@ import { createAuthRateLimiter } from '../../middleware/rateLimit.js';
 import { validateRequest } from '../../middleware/validateRequest.js';
 import type { AuthController } from './auth.controller.js';
 import {
+  changePasswordBodySchema,
+  emailChangeConfirmBodySchema,
+  emailChangeRequestBodySchema,
   forgotPasswordBodySchema,
   googleCredentialBodySchema,
   loginBodySchema,
@@ -97,6 +100,33 @@ export const createAuthRouter = (
     createAuthRateLimiter('restoreAccount'),
     validateRequest({ body: restoreAccountBodySchema }),
     controller.handleRestoreAccount,
+  );
+
+  router.post(
+    '/email-change',
+    requireAccessToken,
+    createAuthRateLimiter('emailChangeRequest'),
+    validateRequest({ body: emailChangeRequestBodySchema }),
+    controller.handleRequestEmailChange,
+  );
+  router.post(
+    '/email-change/confirm',
+    createAuthRateLimiter('emailChangeConfirm'),
+    validateRequest({ body: emailChangeConfirmBodySchema }),
+    controller.handleConfirmEmailChange,
+  );
+  router.post(
+    '/password/change',
+    requireAccessToken,
+    createAuthRateLimiter('changePassword'),
+    validateRequest({ body: changePasswordBodySchema }),
+    controller.handleChangePassword,
+  );
+  router.post(
+    '/password/setup',
+    requireAccessToken,
+    createAuthRateLimiter('passwordSetup'),
+    controller.handleRequestPasswordSetup,
   );
 
   return router;
