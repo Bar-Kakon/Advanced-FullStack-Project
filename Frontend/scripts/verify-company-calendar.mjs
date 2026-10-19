@@ -122,8 +122,8 @@ const register = async (tag, given) => {
 };
 const login = async (person) => (await call('POST', '/auth/login', { body: { email: person.email, password: PASSWORD } })).body?.accessToken ?? null;
 
-const insertTask = ({ project, company, createdBy, assignee, start, due, completed = false, orphaned = false }) =>
-  run(`print(d.tasks.insertOne({ kind: "project", project: ${O(project)}, company: ${O(company)}, title: "QA work",
+const insertTask = ({ project, company, createdBy, assignee, start, due, completed = false, orphaned = false, stage }) =>
+  run(`print(d.tasks.insertOne({ kind: "project", project: ${O(project)}, company: ${O(company)}, title: "QA work", ${stage ? `stage: ${O(stage)},` : ''}
     createdBy: ${O(createdBy)}, ${assignee ? `assignee: ${O(assignee)},` : ''} startDate: ${D(start)}, dueDate: ${D(due)},
     ${completed ? `startedAt: ${D(start)}, completedAt: ${D(due)},` : ''} ${orphaned ? `orphanedAt: new Date(), previousAssignee: ${O(createdBy)},` : ''}
     ownCrewOnly: false, delegatorOnSiteRequired: false, createdAt: new Date(), updatedAt: new Date() }).insertedId.toHexString())`);
@@ -179,8 +179,8 @@ const runVerification = async () => {
     return answer.body.project.id;
   };
   const P = {};
-  for (const key of ['ext', 'int', 'mix', 'stale', 'formerExt', 'overdue', 'clean', 'prop', 'uiInt', 'race']) P[key] = await newProject(key);
-  check('ten projects created through the API, each pinned to the company calendar', Object.keys(P).length === 10);
+  for (const key of ['ext', 'int', 'mix', 'stale', 'formerExt', 'overdue', 'clean', 'prop', 'uiInt']) P[key] = await newProject(key);
+  check('nine projects created through the API, each pinned to the company calendar', Object.keys(P).length === 9);
   const v1 = projectState(P.ext).calendarVersion.$oid;
   check('every project is pinned to the same first company version', Object.values(P).every((id) => projectState(id).calendarVersion.$oid === v1));
 
@@ -209,7 +209,6 @@ const runVerification = async () => {
     currentStart: ${D(weekday(0))}, currentDue: ${D(weekday(4))}, proposedStart: ${D(weekday(1))}, proposedDue: ${D(weekday(4))},
     reason: "initiating", response: "pending", resolution: "none", excluded: false }], createdAt: new Date(), updatedAt: new Date() })`);
   insertTask({ project: P.uiInt, company: GC.company, createdBy: GC.id, assignee: I1.id, ...week });
-  addMember(P.race, E1.id, E1.company, GC.id);
   check(`commitments seeded for the week of ${isoDay(W)} (Sunday–Thursday windows)`, true);
 
   const before = Object.fromEntries(Object.entries(P).map(([key, id]) => [key, snapshot(id)]));
@@ -296,12 +295,12 @@ const runVerification = async () => {
   const v1Row = answer.body?.versions?.find((row) => row.version === 1);
   check('version 2 is current and stores 06:30–15:30', answer.body?.current?.version === 2 && answer.body?.current?.config?.hours?.startMinute === 390);
   check('version 1 is unchanged (still 07:00–16:00)', v1Row?.config?.hours?.startMinute === 420 && v1Row?.config?.hours?.endMinute === 960);
-  check('no existing project moved: all ten stay pinned to version 1', Object.values(P).every((id) => projectState(id).calendarVersion.$oid === v1));
+  check('no existing project moved: all nine stay pinned to version 1', Object.values(P).every((id) => projectState(id).calendarVersion.$oid === v1));
   answer = await call('GET', '/projects/calendar/outdated', { token: gc });
   check('the outdated count and the named list reach a company manager',
-    answer.body?.outdated === 10 && answer.body?.projects?.length === 10, `outdated=${answer.body?.outdated}`);
+    answer.body?.outdated === 9 && answer.body?.projects?.length === 9, `outdated=${answer.body?.outdated}`);
   answer = await call('GET', '/projects/calendar/outdated', { token: i2 });
-  check('an employee gets the count only, no project names', answer.body?.outdated === 10 && answer.body?.projects === null);
+  check('an employee gets the count only, no project names', answer.body?.outdated === 9 && answer.body?.projects === null);
 
   section('ADOPTION — explicit, guarded and recorded');
   answer = await call('GET', `/projects/${P.ext}`, { token: gc });
@@ -320,19 +319,111 @@ const runVerification = async () => {
   check('the pin moved to version 2 and one adoption is recorded', cleanState.calendarVersion.$oid !== v1 && cleanState.calendarAdoptions.length === 1);
   check('the adoption is also in the audit history', auditActions(P.clean).some((row) => row.action === 'project.calendar_adopted' && row.details?.toVersion === 2));
 
-  section('CONCURRENCY — a commitment written between the check and the write');
-  const raceRun = spawnSync(`${BACKEND_DIR}/node_modules/.bin/tsx`, [`${BACKEND_DIR}/scripts/verify-calendar-guard-race.ts`], {
+  section('D22 GUARD — dependency impact through the stage graph (stages and edges set through the API)');
+  const stageIn = async (project, name) => {
+    const made = await call('POST', `/projects/${project}/stages`, { token: gc, body: { name } });
+    if (made.status !== 201) throw new Error(`stage ${name}: ${made.status}`);
+    return made.body.stage._id;
+  };
+  const depend = (project, stage, on) => call('PATCH', `/projects/${project}/stages/${stage}/dependencies`, { token: gc, body: { dependsOn: on } });
+  const revision = (project) => query(`d.projects.findOne({ _id: ${O(project)} }, { scheduleRevision: 1 })`).scheduleRevision ?? 0;
+  const nextWeek = { start: weekday(7), due: weekday(10) };
+  const Q = {};
+  for (const key of ['dep', 'chain', 'none', 'internal', 'upstream', 'added', 'oldProposal']) Q[key] = await newProject(key);
+  const graph = async (project, edges) => {
+    const ids = {};
+    for (const name of ['A', 'B', 'C']) ids[name] = await stageIn(project, name);
+    for (const [from, to] of edges) {
+      const linked = await depend(project, ids[from], [ids[to]]);
+      if (linked.status !== 200) throw new Error(`edge ${from}→${to}: ${linked.status}`);
+    }
+    addMember(project, E1.id, E1.company, GC.id);
+    return ids;
+  };
+
+  let g = await graph(Q.dep, [['B', 'A']]);
+  insertTask({ project: Q.dep, company: GC.company, createdBy: GC.id, assignee: I1.id, stage: g.A, ...week });
+  insertTask({ project: Q.dep, company: GC.company, createdBy: GC.id, assignee: E1.id, stage: g.B, ...nextWeek });
+  answer = await overrides(gc, Q.dep, { workingDays: SUN_WED });
+  check('internal work affected directly; external work in a dependent stage (its own days unchanged) → 409 external',
+    answer.status === 409 && /external/.test(answer.body?.message ?? ''), `status=${answer.status}`);
+  check('…and the refused change left no calendar state behind', projectState(Q.dep).calendarOverrides === undefined && auditActions(Q.dep).length === 0);
+
+  g = await graph(Q.chain, [['B', 'A'], ['C', 'B']]);
+  insertTask({ project: Q.chain, company: GC.company, createdBy: GC.id, assignee: I1.id, stage: g.A, ...week });
+  insertTask({ project: Q.chain, company: GC.company, createdBy: GC.id, assignee: E1.id, stage: g.C, ...nextWeek });
+  answer = await overrides(gc, Q.chain, { workingDays: SUN_WED });
+  check('external work two stages downstream (A → B → C) → 409 external', answer.status === 409 && /external/.test(answer.body?.message ?? ''), `status=${answer.status}`);
+
+  g = await graph(Q.none, []);
+  insertTask({ project: Q.none, company: GC.company, createdBy: GC.id, assignee: I1.id, stage: g.A, ...week });
+  insertTask({ project: Q.none, company: GC.company, createdBy: GC.id, assignee: E1.id, stage: g.B, ...nextWeek });
+  answer = await overrides(gc, Q.none, { workingDays: SUN_WED });
+  check('the same work with no dependency between the stages → allowed', answer.status === 200, `status=${answer.status}`);
+  check('…counting only the one internal task', auditActions(Q.none)[0]?.details?.internalTasksAffected === 1);
+
+  g = await graph(Q.internal, [['B', 'A']]);
+  insertTask({ project: Q.internal, company: GC.company, createdBy: GC.id, assignee: I1.id, stage: g.A, ...week });
+  insertTask({ project: Q.internal, company: GC.company, createdBy: GC.id, assignee: R1.id, stage: g.B, ...nextWeek });
+  answer = await overrides(gc, Q.internal, { workingDays: SUN_WED });
+  check('only internal employees downstream → allowed under the GC\'s authority', answer.status === 200, `status=${answer.status}`);
+  check('…counting the directly affected task and its dependent', auditActions(Q.internal)[0]?.details?.internalTasksAffected === 2,
+    `counted=${auditActions(Q.internal)[0]?.details?.internalTasksAffected}`);
+
+  g = await graph(Q.upstream, [['B', 'A']]);
+  insertTask({ project: Q.upstream, company: GC.company, createdBy: GC.id, assignee: E1.id, stage: g.A, ...nextWeek });
+  insertTask({ project: Q.upstream, company: GC.company, createdBy: GC.id, assignee: I1.id, stage: g.B, ...week });
+  answer = await overrides(gc, Q.upstream, { workingDays: SUN_WED });
+  check('external work UPSTREAM of the affected internal work is not a dependent → allowed', answer.status === 200, `status=${answer.status}`);
+
+  g = await graph(Q.added, []);
+  insertTask({ project: Q.added, company: GC.company, createdBy: GC.id, assignee: I1.id, stage: g.A, ...week });
+  insertTask({ project: Q.added, company: GC.company, createdBy: GC.id, assignee: E1.id, stage: g.B, ...nextWeek });
+  answer = await overrides(gc, Q.added, { workingDays: SUN_WED });
+  check('before any dependency exists, the change is allowed', answer.status === 200, `status=${answer.status}`);
+  const revisionBeforeEdge = revision(Q.added);
+  answer = await depend(Q.added, g.B, [g.A]);
+  check('a dependency added through the API advances the schedule revision', answer.status === 200 && revision(Q.added) === revisionBeforeEdge + 1,
+    `status=${answer.status} Δ=${revision(Q.added) - revisionBeforeEdge}`);
+  answer = await overrides(gc, Q.added, { workingDays: SUN_THU });
+  check('…after which changing the same day back is refused → 409 external', answer.status === 409 && /external/.test(answer.body?.message ?? ''), `status=${answer.status}`);
+
+  section('D22 GUARD — every unresolved proposal is seen, however many newer ones exist');
+  const oldTask = insertTask({ project: Q.oldProposal, company: GC.company, createdBy: GC.id, assignee: I1.id, ...week });
+  run(`const item = (status) => ({ project: ${O(Q.oldProposal)}, initiatingTask: ${O(oldTask)}, requestedBy: ${O(GC.id)}, changes: {}, status,
+    responseHours: 72, items: [{ _id: new ObjectId(), task: ${O(oldTask)}, respondent: ${O(I1.id)}, currentStart: ${D(weekday(0))},
+    currentDue: ${D(weekday(4))}, proposedStart: ${D(weekday(1))}, proposedDue: ${D(weekday(4))}, reason: "initiating",
+    response: "pending", resolution: "none", excluded: false }] });
+    d.rescheduleproposals.insertOne({ ...item("open"), createdAt: new Date(Date.now() - 3600000), updatedAt: new Date() });
+    d.rescheduleproposals.insertMany(Array.from({ length: 500 }, () => ({ ...item("resolved"), createdAt: new Date(), updatedAt: new Date() })));`);
+  answer = await overrides(gc, Q.oldProposal, { workingDays: SUN_WED });
+  check('one open proposal older than 500 resolved ones still locks a change inside its span → 409 proposals',
+    answer.status === 409 && /proposals/.test(answer.body?.message ?? ''), `status=${answer.status}`);
+
+  section('BACKEND LEG — real concurrency, no temporary state, write-path coverage, approvals');
+  const L = {};
+  for (const key of ['orderA', 'orderB', 'noTemp', 'propCalc', 'cover', 'seam']) L[key] = await newProject(`leg-${key}`);
+  const legRun = spawnSync(`${BACKEND_DIR}/node_modules/.bin/tsx`, [`${BACKEND_DIR}/scripts/verify-calendar-presave.ts`], {
     cwd: RUN_DIR,
-    env: { ...BASE_ENV, PORT: API_PORT, RACE_PROJECT_ID: P.race, RACE_ACTOR_ID: GC.id, RACE_EXTERNAL_ID: E1.id,
-      RACE_START: weekday(0).toISOString(), RACE_DUE: weekday(4).toISOString() },
+    env: { ...BASE_ENV, PORT: API_PORT, LEG: JSON.stringify({
+      gc: GC.id, gcCompany: GC.company, i1: I1.id, i2: I2.id, e1: E1.id, e1Company: E1.company, week: W.toISOString(), projects: L,
+    }) },
     encoding: 'utf8',
+    timeout: 600000,
   });
-  const raceLines = `${raceRun.stdout}`.split('\n').filter((line) => /^\s+(PASS|FAIL)/.test(line));
-  for (const line of raceLines) {
-    console.log(line);
-    if (/^\s+PASS/.test(line)) passes += 1; else failures += 1;
+  let legChecks = 0;
+  for (const line of `${legRun.stdout}`.split('\n')) {
+    if (/^\s+(PASS|FAIL)/.test(line)) {
+      legChecks += 1;
+      if (/^\s+PASS/.test(line)) passes += 1; else failures += 1;
+      console.log(line);
+    } else if (/^[A-Z]/.test(line) && !line.startsWith('LEG COMPLETE')) console.log(`\n${line}`);
   }
-  if (raceLines.length !== 4) { failures += 1; console.log(`  FAIL  the race leg did not report its four checks  ${raceRun.stderr?.slice(0, 300)}`); }
+  const completion = /LEG COMPLETE (\d+) (\d+)/.exec(`${legRun.stdout}`);
+  if (completion === null || Number(completion[1]) !== legChecks) {
+    failures += 1;
+    console.log(`  FAIL  the backend leg did not complete  ${`${legRun.stderr}`.slice(0, 600)}`);
+  }
 
   section('NOTHING CHANGED SILENTLY');
   for (const key of ['ext', 'int', 'mix', 'formerExt', 'overdue', 'clean', 'prop', 'uiInt']) {
@@ -365,7 +456,7 @@ const runVerification = async () => {
   check('the limitation note says sector and holidays do not yet affect working days',
     (await gcPage.textContent('[data-testid="company-calendar-limitation"]'))?.includes('אינם משפיעים') === true);
   check('the version history lists both versions', (await gcPage.locator('[data-testid="company-calendar-history"] li').count()) === 2);
-  check('the outdated projects are named for the manager', (await gcPage.locator('[data-testid="company-calendar-outdated"] li').count()) === 9);
+  check('the outdated projects are named for the manager', (await gcPage.locator('[data-testid="company-calendar-outdated"] li').count()) === 8);
   await gcPage.fill('#company-calendar-end', '06:00');
   check('an end time before the start shows the error and disables saving',
     (await gcPage.locator('text=שעת הסיום חייבת להיות אחרי שעת ההתחלה').count()) > 0 && (await gcPage.isDisabled('#company-calendar-save')));
