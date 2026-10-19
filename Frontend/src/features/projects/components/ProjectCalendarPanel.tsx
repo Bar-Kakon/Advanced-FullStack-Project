@@ -1,6 +1,7 @@
 import { useState } from 'react';
 
 import { ButtonSpinner } from '../../../components/ButtonSpinner';
+import { FormAlert } from '../../../components/FormAlert';
 import { useLanguage } from '../../../i18n/useLanguage';
 import type { Project, Weekday } from '../../../api/projects.types';
 
@@ -13,6 +14,7 @@ export interface ProjectCalendarPanelProps {
   readonly busy: boolean;
   readonly canManage: boolean;
   readonly onAdopt: (keepOverrides: boolean) => void;
+  readonly failure?: string | null;
 }
 
 /**
@@ -25,12 +27,22 @@ export const ProjectCalendarPanel = ({
   busy,
   canManage,
   onAdopt,
+  failure = null,
 }: ProjectCalendarPanelProps) => {
   const { t } = useLanguage();
   const [keepOverrides, setKeepOverrides] = useState(true);
 
   const effective = project.calendar.effective;
   if (effective === null) return null;
+
+  const preview = project.calendar.adoptionImpact;
+  const impact =
+    preview === null ? null : keepOverrides ? preview.keepOverrides : preview.dropOverrides ?? preview.keepOverrides;
+  const lockMessage =
+    impact?.lock === 'external' ? t.projects.calendar.lockExternal
+    : impact?.lock === 'proposals' ? t.projects.calendar.lockProposals
+    : impact?.lock === 'responsibility' ? t.projects.calendar.lockResponsibility
+    : null;
 
   return (
     <section className="panel" aria-labelledby="project-calendar-title">
@@ -68,15 +80,30 @@ export const ProjectCalendarPanel = ({
             </label>
           ) : null}
 
-          <button
-            type="button"
-            className="btn btn--ghost btn--sm"
-            disabled={busy}
-            onClick={() => onAdopt(keepOverrides)}
-          >
-            {t.projects.calendar.adopt}
-            {busy ? <ButtonSpinner /> : null}
-          </button>
+          {failure === null ? null : <FormAlert message={failure} />}
+
+          {lockMessage !== null ? (
+            <p className="panel__lede" role="note" data-testid="calendar-lock">{lockMessage}</p>
+          ) : (
+            <>
+              {impact !== null && impact.internal > 0 ? (
+                <p className="panel__lede" role="note" data-testid="calendar-internal-note">
+                  {t.projects.calendar.internalNote.replace('{count}', String(impact.internal))}
+                </p>
+              ) : null}
+              <button
+                type="button"
+                className="btn btn--ghost btn--sm"
+                id="calendar-adopt"
+                disabled={busy}
+                aria-busy={busy}
+                onClick={() => onAdopt(keepOverrides)}
+              >
+                {t.projects.calendar.adopt}
+                {busy ? <ButtonSpinner /> : null}
+              </button>
+            </>
+          )}
         </div>
       ) : null}
     </section>

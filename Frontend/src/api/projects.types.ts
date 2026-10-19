@@ -45,12 +45,29 @@ export interface WorkingCalendarConfig {
 
 export type WorkingCalendarOverrides = Partial<WorkingCalendarConfig>;
 
+export type CalendarChangeLock = 'external' | 'proposals' | 'responsibility';
+
+export interface CalendarChangeImpact {
+  readonly internal: number;
+  readonly external: number;
+  readonly responsibility: number;
+  readonly proposals: number;
+  readonly lock: CalendarChangeLock | null;
+}
+
+export interface AdoptionImpactPreview {
+  readonly keepOverrides: CalendarChangeImpact;
+  readonly dropOverrides: CalendarChangeImpact | null;
+}
+
 export interface ProjectCalendar {
   /** The company version this project is pinned to. A company edit does not move it. */
   readonly versionId: string;
   readonly overrides: WorkingCalendarOverrides | null;
   readonly effective: WorkingCalendarConfig | null;
   readonly adoptionCount: number;
+  /** Present only for someone who may manage this project's calendar. */
+  readonly adoptionImpact: AdoptionImpactPreview | null;
 }
 
 export interface Project {

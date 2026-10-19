@@ -10,6 +10,7 @@ import { buildNotificationDispatchService } from '../notifications/notifications
 import { projectAccessRepository } from '../projectaccess/projectAccess.repository.js';
 import { participantRepository } from '../projectmembers/participant.repository.js';
 import { projectRepository } from '../projects/project.repository.js';
+import { scheduleWrites } from '../projects/scheduleWrites.instance.js';
 import { commissionTrackingRepository } from '../tasks/commissionTracking.repository.js';
 import { createDepartureWorkService } from '../tasks/departureWork.service.js';
 import { taskRepository } from '../tasks/task.repository.js';
@@ -61,6 +62,7 @@ export const createCompaniesModule = (
       projects: projectRepository,
       audit: auditRepository,
       notifications: buildNotificationDispatchService(),
+      schedule: scheduleWrites,
     }),
     origins,
     notifications: buildNotificationDispatchService(),

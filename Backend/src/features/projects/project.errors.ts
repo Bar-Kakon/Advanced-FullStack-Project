@@ -35,3 +35,18 @@ export const calendarVersionMissing = (): AppError =>
  */
 export const projectPlanLimitReached = (): AppError =>
   new AppError('The current plan allows no further projects.', 409, 'PROJECT_PLAN_LIMIT_REACHED');
+
+const CALENDAR_LOCK_MESSAGES = {
+  external: 'This calendar change affects work of external professionals and needs their approval.',
+  proposals: 'Unresolved schedule proposals depend on the current calendar.',
+  responsibility: 'Responsibility for affected work is unresolved; it must be reassigned first.',
+} as const;
+
+export const calendarChangeNeedsApproval = (lock: keyof typeof CALENDAR_LOCK_MESSAGES): AppError =>
+  new AppError(CALENDAR_LOCK_MESSAGES[lock], 409, 'CALENDAR_CHANGE_NEEDS_APPROVAL');
+
+export const calendarChangedConcurrently = (): AppError =>
+  new AppError('The project changed while its calendar was being updated.', 409, 'CALENDAR_CHANGED_CONCURRENTLY');
+
+export const calendarManageDenied = (): AppError =>
+  new AppError('This account may not manage the company calendar.', 403, 'COMPANY_PERMISSION_DENIED');

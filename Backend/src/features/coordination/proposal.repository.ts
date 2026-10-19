@@ -37,13 +37,20 @@ export interface ItemDecision {
 export interface ProposalRepository {
   /** PRJ-07: negotiation artifacts of a cancelled project go with it. */
   deleteByProject(project: Types.ObjectId, session?: DbSession): Promise<number>;
-  create(proposal: NewProposal): Promise<ProposalRecord>;
+  create(proposal: NewProposal, session?: DbSession): Promise<ProposalRecord>;
   findById(id: string): Promise<ProposalRecord | null>;
   listOpenForRespondent(respondent: Types.ObjectId): Promise<ProposalRecord[]>;
   listForProject(project: Types.ObjectId, limit: number): Promise<ProposalRecord[]>;
+  /** Every requested, open or expired proposal on the project, with no limit. */
+  listUnresolvedForProject(project: Types.ObjectId): Promise<ProposalRecord[]>;
   listResolvedForRespondent(respondent: Types.ObjectId): Promise<ProposalRecord[]>;
   listAwaitingAction(respondent: Types.ObjectId, managedProjects: readonly Types.ObjectId[]): Promise<ProposalRecord[]>;
-  launch(id: Types.ObjectId, by: Types.ObjectId, expiresAt: Date): Promise<ProposalRecord | null>;
+  launch(
+    id: Types.ObjectId,
+    by: Types.ObjectId,
+    expiresAt: Date,
+    session?: DbSession,
+  ): Promise<ProposalRecord | null>;
   expire(id: Types.ObjectId, at: Date): Promise<ProposalRecord | null>;
   cancel(id: Types.ObjectId, by: Types.ObjectId, at: Date): Promise<ProposalRecord | null>;
   recordResponse(
@@ -52,16 +59,19 @@ export interface ProposalRepository {
     respondent: Types.ObjectId,
     recorded: RecordedResponse,
     at: Date,
+    session?: DbSession,
   ): Promise<ProposalRecord | null>;
   setAlternativesContext(
     id: Types.ObjectId,
     context: ProposalRecord['alternativesContext'],
+    session?: DbSession,
   ): Promise<ProposalRecord | null>;
   replaceItems(
     id: Types.ObjectId,
     changes: ProposalRecord['changes'],
     items: readonly Omit<ProposalRecord['items'][number], '_id'>[],
     selectedAlternative: string,
+    session?: DbSession,
   ): Promise<ProposalRecord | null>;
   setExcluded(
     id: Types.ObjectId,
@@ -82,6 +92,7 @@ export interface ProposalRepository {
 const RESOLVABLE: readonly ProposalStatus[] = ['open', 'expired'];
 const CANCELLABLE: readonly ProposalStatus[] = ['requested', 'open', 'expired'];
 const ADJUSTABLE: readonly ProposalStatus[] = ['requested', 'open', 'expired'];
+const UNRESOLVED: readonly ProposalStatus[] = ['requested', 'open', 'expired'];
 
 export const proposalRepository: ProposalRepository = {
   async deleteByProject(project, session) {
@@ -91,13 +102,13 @@ export const proposalRepository: ProposalRepository = {
     return result.deletedCount;
   },
 
-  async create(proposal) {
+  async create(proposal, session) {
     const created = new RescheduleProposalModel({
       ...proposal,
       items: [...proposal.items],
       status: 'requested',
     });
-    await created.save();
+    await created.save(session ? { session } : {});
     return created.toObject() as unknown as ProposalRecord;
   },
 
@@ -120,6 +131,12 @@ export const proposalRepository: ProposalRepository = {
       .exec();
   },
 
+  async listUnresolvedForProject(project) {
+    return RescheduleProposalModel.find({ project, status: { $in: [...UNRESOLVED] } })
+      .lean<ProposalRecord[]>()
+      .exec();
+  },
+
   async listResolvedForRespondent(respondent) {
     return RescheduleProposalModel.find({ 'items.respondent': respondent, status: 'resolved' })
       .sort({ 'resolution.at': 1 })
@@ -138,11 +155,11 @@ export const proposalRepository: ProposalRepository = {
       .exec();
   },
 
-  async launch(id, by, expiresAt) {
+  async launch(id, by, expiresAt, session) {
     return RescheduleProposalModel.findOneAndUpdate(
       { _id: id, status: 'requested' },
       { $set: { status: 'open', launchedBy: by, launchedAt: new Date(), expiresAt } },
-      { returnDocument: 'after' },
+      { returnDocument: 'after', ...(session ? { session } : {}) },
     )
       .lean<ProposalRecord>()
       .exec();
@@ -168,7 +185,7 @@ export const proposalRepository: ProposalRepository = {
       .exec();
   },
 
-  async recordResponse(id, itemId, respondent, recorded, at) {
+  async recordResponse(id, itemId, respondent, recorded, at, session) {
     const set: Record<string, unknown> = {
       'items.$[row].response': recorded.response,
       'items.$[row].respondedAt': at,
@@ -199,27 +216,28 @@ export const proposalRepository: ProposalRepository = {
         arrayFilters: [
           { 'row._id': itemId, 'row.respondent': respondent, 'row.response': 'pending', 'row.excluded': false },
         ],
+        ...(session ? { session } : {}),
       },
     )
       .lean<ProposalRecord>()
       .exec();
   },
 
-  async setAlternativesContext(id, context) {
+  async setAlternativesContext(id, context, session) {
     return RescheduleProposalModel.findOneAndUpdate(
       { _id: id, status: 'requested' },
       { $set: { alternativesContext: context } },
-      { returnDocument: 'after' },
+      { returnDocument: 'after', ...(session ? { session } : {}) },
     )
       .lean<ProposalRecord>()
       .exec();
   },
 
-  async replaceItems(id, changes, items, selectedAlternative) {
+  async replaceItems(id, changes, items, selectedAlternative, session) {
     return RescheduleProposalModel.findOneAndUpdate(
       { _id: id, status: 'requested' },
       { $set: { changes, items: [...items], selectedAlternative } },
-      { returnDocument: 'after' },
+      { returnDocument: 'after', ...(session ? { session } : {}) },
     )
       .lean<ProposalRecord>()
       .exec();

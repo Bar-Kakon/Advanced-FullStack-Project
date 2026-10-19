@@ -22,6 +22,7 @@ import { scheduleExceptionRepository } from '../scheduleexceptions/scheduleExcep
 import { taskRepository } from '../tasks/task.repository.js';
 import { userRepository } from '../users/user.repository.js';
 import { createProjectCancellationService } from './projectCancellation.service.js';
+import { calendarChangeGuard, calendarChangeService } from './calendarGuard.instance.js';
 import {
   adoptCalendarBodySchema,
   calendarOverridesSchema,
@@ -62,6 +63,8 @@ export const createProjectsModule = (requireAccessToken: RequestHandler): Router
       pendingActions: { forUser: (userId) => coordination.pendingActionsFor(userId) },
       planCapacity: planCapacityAdapter,
       cancellation,
+      calendarChange: calendarChangeService,
+      calendarGuard: calendarChangeGuard,
     }),
   );
 

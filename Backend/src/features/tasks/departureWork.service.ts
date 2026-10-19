@@ -9,6 +9,7 @@ import type { ParticipantRepository } from '../projectmembers/participant.reposi
 import type { ProjectAccessRepository } from '../projectaccess/projectAccess.repository.js';
 import type { ProjectRepository } from '../projects/project.repository.js';
 import { formatCalendarDate } from '../projects/projectDates.js';
+import type { ScheduleWrites } from '../projects/scheduleWrites.js';
 import type { AgreementOriginPort } from './agreementOrigin.port.js';
 import type { TrackingArrangement } from './commissionTracking.model.js';
 import type { CommissionTrackingRepository } from './commissionTracking.repository.js';
@@ -62,7 +63,7 @@ export interface DepartureWorkService {
       readonly commissions: readonly CommissionArrangementInput[];
       readonly assigned: readonly AssignedArrangementInput[];
     },
-    session?: DbSession,
+    session: DbSession,
   ): Promise<void>;
   /**
    * Step 3 of the precedence: the saved company default, applied only where no explicit
@@ -74,7 +75,7 @@ export interface DepartureWorkService {
     company: Types.ObjectId,
     departing: Types.ObjectId,
     defaults: CompanyRecord['departureDefaults'],
-    session?: DbSession,
+    session: DbSession,
   ): Promise<void>;
 }
 
@@ -88,6 +89,7 @@ export interface DepartureWorkDependencies {
   readonly projects: ProjectRepository;
   readonly audit: AuditRepository;
   readonly notifications: NotificationDispatchService;
+  readonly schedule: Pick<ScheduleWrites, 'claim'>;
 }
 
 export const createDepartureWorkService = ({
@@ -100,6 +102,7 @@ export const createDepartureWorkService = ({
   projects,
   audit,
   notifications,
+  schedule,
 }: DepartureWorkDependencies): DepartureWorkService => {
   const namesFor = async (ids: readonly Types.ObjectId[]): Promise<Map<string, string>> => {
     const unique = [...new Set(ids.map((id) => id.toString()))].map((id) => new Types.ObjectId(id));
@@ -133,9 +136,10 @@ export const createDepartureWorkService = ({
     target: Types.ObjectId,
     ownerId: Types.ObjectId,
     ownerName: string,
-    session: DbSession | undefined,
+    session: DbSession,
     announcements: { userId: Types.ObjectId; taskTitle: string; projectId?: Types.ObjectId }[],
   ): Promise<void> => {
+    if (task.project !== undefined) await schedule.claim(task.project, session);
     const moved =
       task.assignee !== undefined
         ? await tasks.replaceAssignee(task._id, departing, target, session)

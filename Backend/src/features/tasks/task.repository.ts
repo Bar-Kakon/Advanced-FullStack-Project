@@ -31,6 +31,8 @@ export interface TaskRepository {
   listForTimeline(project: Types.ObjectId): Promise<
     readonly Pick<TaskRecord, '_id' | 'title' | 'startDate' | 'dueDate' | 'startedAt' | 'completedAt' | 'stage'>[]
   >;
+  /** Every project task not yet completed, assigned or orphaned. */
+  listOpenInProject(project: Types.ObjectId): Promise<readonly OpenProjectTask[]>;
   /** The departing member's unfinished responsibilities inside the company's own projects. */
   listUnfinishedAssignedInCompany(
     assignee: Types.ObjectId,
@@ -56,8 +58,13 @@ export interface TaskRepository {
   findById(id: string): Promise<TaskRecord | null>;
   setStarted(id: Types.ObjectId, at: Date): Promise<TaskRecord | null>;
   setCompleted(id: Types.ObjectId, at: Date): Promise<TaskRecord | null>;
-  create(task: Omit<TaskRecord, '_id' | 'createdAt' | 'updatedAt'>): Promise<TaskRecord>;
+  create(task: Omit<TaskRecord, '_id' | 'createdAt' | 'updatedAt'>, session?: DbSession): Promise<TaskRecord>;
 }
+
+export type OpenProjectTask = Pick<
+  TaskRecord,
+  '_id' | 'assignee' | 'orphanedAt' | 'stage' | 'startDate' | 'dueDate'
+>;
 
 /** The two states a person can be in on a task: responsible for it, or hidden performer of it. */
 const minePredicate = (userId: Types.ObjectId): Record<string, unknown> => ({
@@ -84,6 +91,13 @@ export const taskRepository: TaskRepository = {
       .select('title startDate dueDate startedAt completedAt stage')
       .sort({ startDate: 1, _id: 1 })
       .lean<Pick<TaskRecord, '_id' | 'title' | 'startDate' | 'dueDate' | 'startedAt' | 'completedAt' | 'stage'>[]>()
+      .exec();
+  },
+
+  async listOpenInProject(project) {
+    return TaskModel.find({ project, completedAt: null })
+      .select('assignee orphanedAt stage startDate dueDate')
+      .lean<OpenProjectTask[]>()
       .exec();
   },
 
@@ -203,7 +217,7 @@ export const taskRepository: TaskRepository = {
       .exec();
   },
 
-  async create(task) {
+  async create(task, session) {
     // The dates first agreed are stamped once here, so every creation path preserves them.
     const created = new TaskModel({
       ...task,
@@ -211,7 +225,7 @@ export const taskRepository: TaskRepository = {
       originalDueDate: task.dueDate,
       originalDatesSource: 'creation',
     });
-    await created.save();
+    await created.save(session ? { session } : {});
     return created.toObject() as TaskRecord;
   },
 };

@@ -48,6 +48,8 @@ export interface ProjectRecord {
   readonly calendarVersion: Types.ObjectId;
   readonly calendarOverrides?: WorkingCalendarOverrides;
   readonly calendarAdoptions: readonly CalendarAdoptionRecord[];
+  /** Advanced in the same transaction as every write that can change what a calendar change affects. */
+  readonly scheduleRevision?: number;
   readonly proposalResponseHours?: number;
   readonly completedAt?: Date;
   readonly pausedAt?: Date;
@@ -152,6 +154,7 @@ const projectSchema = new Schema(
     },
     calendarOverrides: { type: overridesSchema, required: false },
     calendarAdoptions: { type: [calendarAdoptionSchema], default: [] },
+    scheduleRevision: { type: Number, min: 0, default: 0 },
 
     proposalResponseHours: { type: Number, min: 1, max: 8760 },
 

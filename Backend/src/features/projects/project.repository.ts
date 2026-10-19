@@ -2,7 +2,13 @@ import { Types } from 'mongoose';
 
 import type { DbSession } from '../../db/mongoose.js';
 
-import { ProjectModel, type ProjectRecord, type TargetChangeRecord } from './project.model.js';
+import type { WorkingCalendarOverrides } from '../calendar/workingCalendar.types.js';
+import {
+  ProjectModel,
+  type CalendarAdoptionRecord,
+  type ProjectRecord,
+  type TargetChangeRecord,
+} from './project.model.js';
 
 export interface NewProject {
   readonly company: Types.ObjectId;
@@ -29,7 +35,6 @@ export interface ProjectUpdate {
   readonly projectType?: ProjectRecord['projectType'];
   readonly projectTypeOther?: string;
   readonly size?: string;
-  readonly calendarOverrides?: ProjectRecord['calendarOverrides'];
 }
 
 /**
@@ -39,6 +44,15 @@ export interface ProjectUpdate {
  */
 export interface ProjectUpdateOptions {
   readonly clearLocation?: boolean;
+}
+
+export interface CalendarStateOperation {
+  readonly set?: {
+    readonly calendarVersion?: Types.ObjectId;
+    readonly calendarOverrides?: WorkingCalendarOverrides;
+  };
+  readonly unsetOverrides?: boolean;
+  readonly pushAdoption?: CalendarAdoptionRecord;
 }
 
 export interface ProjectCursor {
@@ -69,11 +83,12 @@ export interface ProjectRepository {
   countByCompany(company: Types.ObjectId): Promise<number>;
   countOnOutdatedCalendar(company: Types.ObjectId, currentVersion: Types.ObjectId): Promise<number>;
   listOnOutdatedCalendar(company: Types.ObjectId, currentVersion: Types.ObjectId): Promise<ProjectRecord[]>;
-  adoptCalendarVersion(
+  /** Advances the schedule revision inside `session`, holding the project until that transaction ends. */
+  claimSchedule(id: Types.ObjectId, session: DbSession): Promise<ProjectRecord | null>;
+  writeCalendarState(
     id: Types.ObjectId,
-    toVersion: Types.ObjectId,
-    adoption: ProjectRecord['calendarAdoptions'][number],
-    clearOverrides: boolean,
+    operation: CalendarStateOperation,
+    session: DbSession,
   ): Promise<ProjectRecord | null>;
   update(
     id: Types.ObjectId,
@@ -156,15 +171,25 @@ export const projectRepository: ProjectRepository = {
       .exec();
   },
 
-  /** The only path that moves a pin. Always explicit, always recorded. */
-  async adoptCalendarVersion(id, toVersion, adoption, clearOverrides) {
-    const operation: Record<string, unknown> = {
-      $set: { calendarVersion: toVersion },
-      $push: { calendarAdoptions: adoption },
-    };
-    if (clearOverrides) operation['$unset'] = { calendarOverrides: '' };
+  async claimSchedule(id, session) {
+    return ProjectModel.findOneAndUpdate(
+      { _id: id },
+      { $inc: { scheduleRevision: 1 } },
+      { returnDocument: 'after', timestamps: false, session },
+    )
+      .lean<ProjectRecord>()
+      .exec();
+  },
 
-    return ProjectModel.findByIdAndUpdate(id, operation, { returnDocument: 'after' }).lean<ProjectRecord>().exec();
+  async writeCalendarState(id, operation, session) {
+    const update: Record<string, unknown> = {};
+    if (operation.set !== undefined) update['$set'] = operation.set;
+    if (operation.unsetOverrides === true) update['$unset'] = { calendarOverrides: '' };
+    if (operation.pushAdoption !== undefined) update['$push'] = { calendarAdoptions: operation.pushAdoption };
+
+    return ProjectModel.findOneAndUpdate({ _id: id }, update, { returnDocument: 'after', session })
+      .lean<ProjectRecord>()
+      .exec();
   },
 
   async listByCompany(company, cursor, limit) {

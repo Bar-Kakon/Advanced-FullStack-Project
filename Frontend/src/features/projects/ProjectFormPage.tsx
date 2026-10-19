@@ -69,7 +69,11 @@ export const ProjectFormPage = () => {
                 ? t.projects.errors.targetBeforeStart
                 : failure === 'OVERRUN_CEILING_EXCEEDED'
                   ? t.projects.errors.overrunCeiling
-                  : t.projects.errors.unknown;
+                  : failure === 'CALENDAR_NEEDS_APPROVAL'
+                    ? t.projects.errors.calendarNeedsApproval
+                    : failure === 'CALENDAR_CHANGED'
+                      ? t.projects.errors.calendarChanged
+                      : t.projects.errors.unknown;
 
   const onSubmit = async (event: React.FormEvent) => {
     event.preventDefault();

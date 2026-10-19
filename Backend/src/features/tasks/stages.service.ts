@@ -1,6 +1,7 @@
 import { Types } from 'mongoose';
 
 import { AppError } from '../../shared/errors.js';
+import type { ScheduleWrites } from '../projects/scheduleWrites.js';
 import { ProjectStageModel, type ProjectStageRecord } from './projectStage.model.js';
 
 export const stageNotFound = (): AppError =>
@@ -63,7 +64,11 @@ const reaches = (
   return false;
 };
 
-export const createStagesService = (): StagesService => ({
+export interface StagesDependencies {
+  readonly schedule: Pick<ScheduleWrites, 'run'>;
+}
+
+export const createStagesService = ({ schedule }: StagesDependencies): StagesService => ({
   async list(project) {
     return ProjectStageModel.find({ project })
       .sort({ order: 1 })
@@ -117,36 +122,38 @@ export const createStagesService = (): StagesService => ({
   async setDependencies(project, stageId, dependsOn) {
     if (!Types.ObjectId.isValid(stageId)) throw stageNotFound();
 
-    const all = await ProjectStageModel.find({ project }).lean<ProjectStageRecord[]>().exec();
-    const stage = all.find((row) => row._id.toString() === stageId);
-    if (stage === undefined) throw stageNotFound();
+    return schedule.run(project, async (session) => {
+      const all = await ProjectStageModel.find({ project }).lean<ProjectStageRecord[]>().exec();
+      const stage = all.find((row) => row._id.toString() === stageId);
+      if (stage === undefined) throw stageNotFound();
 
-    const known = new Set(all.map((row) => row._id.toString()));
-    for (const id of dependsOn) {
-      if (id === stageId) throw selfDependency();
-      if (!known.has(id)) throw dependencyOutsideProject();
-    }
+      const known = new Set(all.map((row) => row._id.toString()));
+      for (const id of dependsOn) {
+        if (id === stageId) throw selfDependency();
+        if (!known.has(id)) throw dependencyOutsideProject();
+      }
 
-    // Walk the graph as it WOULD be, so the refusal happens before anything is written.
-    const edges = new Map<string, readonly string[]>(
-      all.map((row) => [
-        row._id.toString(),
-        row._id.toString() === stageId ? [...dependsOn] : row.dependsOn.map((id) => id.toString()),
-      ]),
-    );
-    for (const id of dependsOn) {
-      if (reaches(id, stageId, edges)) throw dependencyCycle();
-    }
+      // Walk the graph as it WOULD be, so the refusal happens before anything is written.
+      const edges = new Map<string, readonly string[]>(
+        all.map((row) => [
+          row._id.toString(),
+          row._id.toString() === stageId ? [...dependsOn] : row.dependsOn.map((id) => id.toString()),
+        ]),
+      );
+      for (const id of dependsOn) {
+        if (reaches(id, stageId, edges)) throw dependencyCycle();
+      }
 
-    const updated = await ProjectStageModel.findByIdAndUpdate(
-      stage._id,
-      { $set: { dependsOn: dependsOn.map((id) => new Types.ObjectId(id)) } },
-      { returnDocument: 'after' },
-    )
-      .lean<ProjectStageRecord>()
-      .exec();
+      const updated = await ProjectStageModel.findByIdAndUpdate(
+        stage._id,
+        { $set: { dependsOn: dependsOn.map((id) => new Types.ObjectId(id)) } },
+        { returnDocument: 'after', session },
+      )
+        .lean<ProjectStageRecord>()
+        .exec();
 
-    if (updated === null) throw stageNotFound();
-    return updated;
+      if (updated === null) throw stageNotFound();
+      return updated;
+    });
   },
 });
