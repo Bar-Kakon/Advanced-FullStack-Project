@@ -16,6 +16,7 @@ import {
   resolveProjectAccess,
 } from '../projects/projectAuthorization.js';
 import { projectScopeParamsSchema } from '../projectmembers/projectMembers.validation.js';
+import { scheduleWrites } from '../projects/scheduleWrites.instance.js';
 import { createStagesService } from './stages.service.js';
 import {
   createStageBodySchema,
@@ -36,7 +37,7 @@ const stageParamsSchema = projectScopeParamsSchema.keys({
  * metadata only and carries no authority over the construction sequence.
  */
 export const createStagesModule = (requireAccessToken: RequestHandler): Router => {
-  const stages = createStagesService();
+  const stages = createStagesService({ schedule: scheduleWrites });
   const companyContext = createCompanyContextService({
     memberships: companyMembershipRepository,
     companies: companyRepository,

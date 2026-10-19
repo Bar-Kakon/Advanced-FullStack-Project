@@ -12,6 +12,7 @@ import { participantRepository } from '../projectmembers/participant.repository.
 import { projectAccessRepository } from '../projectaccess/projectAccess.repository.js';
 import { projectRepository } from '../projects/project.repository.js';
 import { parseCalendarDate } from '../projects/projectDates.js';
+import { scheduleWrites } from '../projects/scheduleWrites.instance.js';
 import { createAgreementOriginAdapter } from '../messaging/agreementOrigin.adapter.js';
 import { fileAssetRepository } from '../files/fileAsset.repository.js';
 import { taskNotFound } from './task.errors.js';
@@ -128,6 +129,7 @@ export const createTasksModule = (requireAccessToken: RequestHandler): Router =>
       companies: companyRepository,
     }),
     notifications: buildNotificationDispatchService(),
+    schedule: scheduleWrites,
   });
 
   const edit = createTaskEditService({
@@ -139,6 +141,7 @@ export const createTasksModule = (requireAccessToken: RequestHandler): Router =>
     }),
     notifications: buildNotificationDispatchService(),
     origins,
+    schedule: scheduleWrites,
   });
 
   const router = Router();

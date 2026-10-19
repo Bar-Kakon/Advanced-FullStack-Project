@@ -6,7 +6,9 @@ import type { NotificationDispatchService } from '../notifications/notificationD
 import type { ProjectAccessRepository } from '../projectaccess/projectAccess.repository.js';
 import { projectNotFound } from '../projects/project.errors.js';
 import type { ProjectRecord } from '../projects/project.model.js';
+import type { DbSession } from '../../db/mongoose.js';
 import type { ProjectRepository } from '../projects/project.repository.js';
+import type { ScheduleWrites } from '../projects/scheduleWrites.js';
 import {
   hasProjectPermission,
   requireActiveCompany,
@@ -90,6 +92,7 @@ export interface TaskEditDependencies {
   readonly companyContext: CompanyContextService;
   readonly notifications: NotificationDispatchService;
   readonly origins: AgreementOriginPort;
+  readonly schedule: Pick<ScheduleWrites, 'run'>;
 }
 
 export const notPermittedToEdit = (): AppError =>
@@ -125,6 +128,7 @@ export const createTaskEditService = ({
   companyContext,
   notifications,
   origins,
+  schedule,
 }: TaskEditDependencies): TaskEditService => {
   const loadTask = async (taskId: string): Promise<TaskRecord> => {
     if (!Types.ObjectId.isValid(taskId)) throw taskNotFound();
@@ -241,16 +245,19 @@ export const createTaskEditService = ({
 
       if (Object.keys($set).length === 0 && Object.keys($unset).length === 0) throw editedNothing();
 
-      const updated = await TaskModel.findOneAndUpdate(
-        { _id: task._id },
-        {
-          ...(Object.keys($set).length === 0 ? {} : { $set }),
-          ...(Object.keys($unset).length === 0 ? {} : { $unset }),
-        },
-        { returnDocument: 'after' },
-      )
-        .lean<TaskRecord>()
-        .exec();
+      const write = (session?: DbSession) =>
+        TaskModel.findOneAndUpdate(
+          { _id: task._id },
+          {
+            ...(Object.keys($set).length === 0 ? {} : { $set }),
+            ...(Object.keys($unset).length === 0 ? {} : { $unset }),
+          },
+          { returnDocument: 'after', ...(session ? { session } : {}) },
+        )
+          .lean<TaskRecord>()
+          .exec();
+      const updated =
+        stage !== null && task.project !== undefined ? await schedule.run(task.project, write) : await write();
       if (updated === null) throw taskNotFound();
 
       const datesMoved =

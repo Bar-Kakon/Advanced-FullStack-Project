@@ -1956,7 +1956,6 @@ export const en: Strings = {
     auditAction: {
       'project.calendar_adopted': 'The project moved to a newer working-calendar version',
       'project.calendar_overrides_changed': 'The project\u2019s calendar adjustments were changed',
-      'project.calendar_change_reverted': 'A calendar change was reverted automatically because an affected commitment appeared',
       'proposal.requested': 'A date change was requested',
       'proposal.launched': 'The request was launched to those affected',
       'proposal.item_excluded': 'Work was excluded from the impact',

@@ -3,7 +3,6 @@ import { Schema, model, type Types } from 'mongoose';
 export const AUDIT_ACTIONS = [
   'project.calendar_adopted',
   'project.calendar_overrides_changed',
-  'project.calendar_change_reverted',
   'proposal.requested',
   'proposal.launched',
   'proposal.item_excluded',

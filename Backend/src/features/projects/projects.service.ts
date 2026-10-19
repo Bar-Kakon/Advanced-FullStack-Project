@@ -299,18 +299,20 @@ export const createProjectsService = ({
     /** The only way a project moves to a newer company version. Never automatic. */
     async adoptCurrentCalendar(userId, projectId, keepOverrides) {
       const { authority, project, resolved } = await load(userId, projectId);
-      requireProjectPermission(resolved, 'project.calendar.manage');
 
-      const updated = await calendarChange.adopt(new Types.ObjectId(authority.userId), project, keepOverrides);
+      const updated = await calendarChange.adopt(
+        { id: new Types.ObjectId(authority.userId), access: resolved },
+        project,
+        keepOverrides,
+      );
       return toProjectDto(updated, mayManage(resolved), await execution.hasFirstTaskStarted(projectId));
     },
 
     async setCalendarOverrides(userId, projectId, overrides) {
       const { authority, project, resolved } = await load(userId, projectId);
-      requireProjectPermission(resolved, 'project.calendar.manage');
 
       const updated = await calendarChange.setOverrides(
-        new Types.ObjectId(authority.userId),
+        { id: new Types.ObjectId(authority.userId), access: resolved },
         project,
         overrides as WorkingCalendarOverrides,
       );

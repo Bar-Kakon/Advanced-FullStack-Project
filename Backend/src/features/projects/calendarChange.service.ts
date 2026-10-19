@@ -15,14 +15,22 @@ import {
   calendarChangeNeedsApproval,
   calendarChangedConcurrently,
   calendarVersionMissing,
+  projectNotFound,
 } from './project.errors.js';
 import type { ProjectRecord } from './project.model.js';
 import type { CalendarStateOperation, ProjectRepository } from './project.repository.js';
+import { requireProjectPermission, type ResolvedProjectAccess } from './projectAuthorization.js';
+import type { ScheduleWrites } from './scheduleWrites.js';
+
+export interface CalendarActor {
+  readonly id: Types.ObjectId;
+  readonly access: ResolvedProjectAccess;
+}
 
 export interface CalendarChangeService {
-  adopt(actor: Types.ObjectId, project: ProjectRecord, keepOverrides: boolean): Promise<ProjectRecord>;
+  adopt(actor: CalendarActor, project: ProjectRecord, keepOverrides: boolean): Promise<ProjectRecord>;
   setOverrides(
-    actor: Types.ObjectId,
+    actor: CalendarActor,
     project: ProjectRecord,
     overrides: WorkingCalendarOverrides,
   ): Promise<ProjectRecord>;
@@ -34,17 +42,20 @@ export interface CalendarChangeDependencies {
   readonly guard: Pick<CalendarChangeGuard, 'assess'>;
   readonly audit: Pick<AuditRepository, 'append'>;
   readonly names: Pick<UserRepository, 'findDisplayNames'>;
-  readonly transactions: { run<T>(work: (session: DbSession) => Promise<T>): Promise<T> };
+  readonly schedule: Pick<ScheduleWrites, 'run'>;
 }
 
 interface PlannedChange {
   readonly before: WorkingCalendarConfig | null;
   readonly after: WorkingCalendarConfig;
-  readonly forward: CalendarStateOperation;
-  readonly backward: CalendarStateOperation;
+  readonly operation: CalendarStateOperation;
   readonly action: AuditAction;
   readonly details: Record<string, unknown>;
 }
+
+const sameCalendarState = (a: ProjectRecord, b: ProjectRecord): boolean =>
+  a.calendarVersion.equals(b.calendarVersion) &&
+  JSON.stringify(a.calendarOverrides ?? null) === JSON.stringify(b.calendarOverrides ?? null);
 
 export const createCalendarChangeService = ({
   projects,
@@ -52,7 +63,7 @@ export const createCalendarChangeService = ({
   guard,
   audit,
   names,
-  transactions,
+  schedule,
 }: CalendarChangeDependencies): CalendarChangeService => {
   const record = async (
     actor: Types.ObjectId,
@@ -69,102 +80,70 @@ export const createCalendarChangeService = ({
   };
 
   const apply = async (
-    actor: Types.ObjectId,
-    project: ProjectRecord,
-    change: PlannedChange,
+    actor: CalendarActor,
+    loaded: ProjectRecord,
+    plan: (current: ProjectRecord) => Promise<PlannedChange>,
   ): Promise<ProjectRecord> => {
-    const before = await guard.assess(project, change.before, change.after);
-    if (before.lock !== null) throw calendarChangeNeedsApproval(before.lock);
+    requireProjectPermission(actor.access, 'project.calendar.manage');
 
-    const written = await transactions.run(async (session) => {
-      const row = await projects.writeCalendarState(project._id, project.updatedAt, change.forward, session);
-      if (row === null) throw calendarChangedConcurrently();
-      await record(actor, project, change.action, { ...change.details, internalTasksAffected: before.internal }, session);
-      return row;
+    return schedule.run(loaded._id, async (session, claimed) => {
+      if (!sameCalendarState(loaded, claimed)) throw calendarChangedConcurrently();
+
+      const change = await plan(claimed);
+      const impact = await guard.assess(claimed, change.before, change.after, (claimed.scheduleRevision ?? 1) - 1);
+      if (impact.lock !== null) throw calendarChangeNeedsApproval(impact.lock);
+
+      const written = await projects.writeCalendarState(claimed._id, change.operation, session);
+      if (written === null) throw projectNotFound();
+      await record(actor.id, claimed, change.action, { ...change.details, internalTasksAffected: impact.internal }, session);
+      return written;
     });
-
-    const after = await guard.assess(project, change.before, change.after);
-    if (after.lock === null) return written;
-
-    const reverted = await transactions.run(async (session) => {
-      const row = await projects.writeCalendarState(project._id, written.updatedAt, change.backward, session);
-      if (row === null) return false;
-      await record(
-        actor,
-        project,
-        'project.calendar_change_reverted',
-        {
-          reverted: change.action,
-          reason: after.lock,
-          internal: after.internal,
-          external: after.external,
-          responsibility: after.responsibility,
-          proposals: after.proposals,
-        },
-        session,
-      );
-      return true;
-    });
-
-    if (!reverted) throw calendarChangedConcurrently();
-    throw calendarChangeNeedsApproval(after.lock);
   };
 
   return {
     async adopt(actor, project, keepOverrides) {
-      const [pinned, current] = await Promise.all([
-        calendars.findById(project.calendarVersion),
-        calendars.findCurrent(project.company),
-      ]);
-      if (current === null) throw calendarVersionMissing();
+      return apply(actor, project, async (current) => {
+        const [pinned, latest] = await Promise.all([
+          calendars.findById(current.calendarVersion),
+          calendars.findCurrent(current.company),
+        ]);
+        if (latest === null) throw calendarVersionMissing();
 
-      const dropsOverrides = !keepOverrides && project.calendarOverrides !== undefined;
-
-      return apply(actor, project, {
-        before: pinned === null ? null : resolveEffectiveCalendar(pinned.config, project.calendarOverrides),
-        after: resolveEffectiveCalendar(current.config, keepOverrides ? project.calendarOverrides : undefined),
-        forward: {
-          set: { calendarVersion: current._id },
-          unsetOverrides: dropsOverrides,
-          pushAdoption: {
-            fromVersion: project.calendarVersion,
-            toVersion: current._id,
-            adoptedAt: new Date(),
-            adoptedBy: actor,
+        return {
+          before: pinned === null ? null : resolveEffectiveCalendar(pinned.config, current.calendarOverrides),
+          after: resolveEffectiveCalendar(latest.config, keepOverrides ? current.calendarOverrides : undefined),
+          operation: {
+            set: { calendarVersion: latest._id },
+            unsetOverrides: !keepOverrides && current.calendarOverrides !== undefined,
+            pushAdoption: {
+              fromVersion: current.calendarVersion,
+              toVersion: latest._id,
+              adoptedAt: new Date(),
+              adoptedBy: actor.id,
+              overridesKept: keepOverrides,
+            },
+          },
+          action: 'project.calendar_adopted',
+          details: {
+            fromVersion: pinned?.version ?? null,
+            toVersion: latest.version,
             overridesKept: keepOverrides,
           },
-        },
-        backward: {
-          set: {
-            calendarVersion: project.calendarVersion,
-            ...(dropsOverrides && project.calendarOverrides !== undefined
-              ? { calendarOverrides: project.calendarOverrides }
-              : {}),
-          },
-          popAdoption: true,
-        },
-        action: 'project.calendar_adopted',
-        details: {
-          fromVersion: pinned?.version ?? null,
-          toVersion: current.version,
-          overridesKept: keepOverrides,
-        },
+        };
       });
     },
 
     async setOverrides(actor, project, overrides) {
-      const pinned = await calendars.findById(project.calendarVersion);
+      return apply(actor, project, async (current) => {
+        const pinned = await calendars.findById(current.calendarVersion);
 
-      return apply(actor, project, {
-        before: pinned === null ? null : resolveEffectiveCalendar(pinned.config, project.calendarOverrides),
-        after: resolveEffectiveCalendar(configOrDefault(pinned), overrides),
-        forward: { set: { calendarOverrides: overrides } },
-        backward:
-          project.calendarOverrides === undefined
-            ? { unsetOverrides: true }
-            : { set: { calendarOverrides: project.calendarOverrides } },
-        action: 'project.calendar_overrides_changed',
-        details: { before: project.calendarOverrides ?? null, after: overrides },
+        return {
+          before: pinned === null ? null : resolveEffectiveCalendar(pinned.config, current.calendarOverrides),
+          after: resolveEffectiveCalendar(configOrDefault(pinned), overrides),
+          operation: { set: { calendarOverrides: overrides } },
+          action: 'project.calendar_overrides_changed',
+          details: { before: current.calendarOverrides ?? null, after: overrides },
+        };
       });
     },
   };

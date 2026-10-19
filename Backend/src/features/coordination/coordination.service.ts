@@ -12,6 +12,7 @@ import { effectiveProjectPermissions } from '../projectaccess/projectPermission.
 import type { ParticipantRepository } from '../projectmembers/participant.repository.js';
 import type { ProjectRecord } from '../projects/project.model.js';
 import type { ProjectRepository } from '../projects/project.repository.js';
+import type { ScheduleWrites } from '../projects/scheduleWrites.js';
 import { projectNotFound } from '../projects/project.errors.js';
 import { formatCalendarDate } from '../projects/projectDates.js';
 import {
@@ -207,6 +208,7 @@ export interface CoordinationDependencies {
   readonly companyContext: CompanyContextService;
   readonly transactions: { run<T>(work: (session: DbSession) => Promise<T>): Promise<T> };
   readonly notifications: NotificationDispatchService;
+  readonly schedule: ScheduleWrites;
 }
 
 export const createCoordinationService = ({
@@ -221,6 +223,7 @@ export const createCoordinationService = ({
   companyContext,
   transactions,
   notifications,
+  schedule,
 }: CoordinationDependencies): CoordinationService => {
   const reach = async (
     userId: string,
@@ -289,7 +292,7 @@ export const createCoordinationService = ({
     from: readonly HandoffState[],
   ): Promise<HandoffRecord | null> => {
     try {
-      return await transactions.run(async (session) => {
+      return await schedule.run(handoff.project, async (session) => {
         const won = await handoffs.accept(handoff._id, by, at, from, session);
         if (won === null) throw new ResponsibilityAlreadyMoved();
 
@@ -669,33 +672,42 @@ export const createCoordinationService = ({
     const alreadyHandled = new Set(resolved.items.map((item) => item.task.toString()));
 
     for (const item of countered) {
-      const graph = await graphFor(project, resolved._id);
-      const task = graph.tasks.find((row) => row._id.equals(item.task));
-      if (task === undefined) continue;
-
       const changes: RequestedChanges = {
         ...(item.counterStart === undefined ? {} : { alternativeStart: item.counterStart }),
         ...(item.counterDue === undefined ? {} : { alternativeDue: item.counterDue }),
       };
-      const { items } = buildItems(graph, task, changes, false, resolver);
-      const fresh = items.filter((row) => !alreadyHandled.has(row.task.toString()));
-      if (fresh.length === 0) continue;
+      const created = await schedule.run(project._id, async (session, claimed) => {
+        const graph = await graphFor(claimed, resolved._id);
+        const counterTask = graph.tasks.find((row) => row._id.equals(item.task));
+        if (counterTask === undefined) return null;
 
-      const child = await proposals.create({
-        project: project._id,
-        initiatingTask: task._id,
-        requestedBy: item.respondent,
-        ...(resolved.reason === undefined ? {} : { reason: resolved.reason }),
-        changes,
-        responseHours: resolved.responseHours,
-        parentProposal: resolved._id,
-        items: fresh,
+        const { items } = buildItems(graph, counterTask, changes, false, resolver);
+        const rows = items.filter((row) => !alreadyHandled.has(row.task.toString()));
+        if (rows.length === 0) return null;
+
+        const proposal = await proposals.create(
+          {
+            project: project._id,
+            initiatingTask: counterTask._id,
+            requestedBy: item.respondent,
+            ...(resolved.reason === undefined ? {} : { reason: resolved.reason }),
+            changes,
+            responseHours: resolved.responseHours,
+            parentProposal: resolved._id,
+            items: rows,
+          },
+          session,
+        );
+        await proposals.launch(
+          proposal._id,
+          resolver,
+          new Date(Date.now() + resolved.responseHours * MS_PER_HOUR),
+          session,
+        );
+        return { task: counterTask, child: proposal, fresh: rows };
       });
-      const launched = await proposals.launch(
-        child._id,
-        resolver,
-        new Date(Date.now() + resolved.responseHours * MS_PER_HOUR),
-      );
+      if (created === null) continue;
+      const { task, child, fresh } = created;
 
       await audit.append([
         {
@@ -711,7 +723,6 @@ export const createCoordinationService = ({
         },
       ]);
       for (const row of fresh) alreadyHandled.add(row.task.toString());
-      void launched;
     }
   };
 
@@ -737,28 +748,28 @@ export const createCoordinationService = ({
       const { project, viewer } = await reach(userId, (task.project as Types.ObjectId).toString());
       if (!mayRequestChange(viewer, task)) throw notPermittedToRequest();
 
-      const graph = await graphFor(project);
       const requester = new Types.ObjectId(userId);
-      const { items, ceiling } = buildItems(
-        graph,
-        task,
-        input.changes,
-        task.assignee?.toString() === userId,
-        requester,
-      );
-      if (ceiling.exceeded) {
-        throw beyondProjectCeiling(ceiling.latestProposedDue ?? '', ceiling.ceilingDate);
-      }
+      const { created, items } = await schedule.run(project._id, async (session, claimed) => {
+        const graph = await graphFor(claimed);
+        const built = buildItems(graph, task, input.changes, task.assignee?.toString() === userId, requester);
+        if (built.ceiling.exceeded) {
+          throw beyondProjectCeiling(built.ceiling.latestProposedDue ?? '', built.ceiling.ceilingDate);
+        }
 
-      const created = await proposals.create({
-        project: project._id,
-        initiatingTask: task._id,
-        requestedBy: requester,
-        ...(input.reason === undefined ? {} : { reason: input.reason }),
-        changes: input.changes,
-        responseHours:
-          input.responseHours ?? project.proposalResponseHours ?? DEFAULT_PROPOSAL_RESPONSE_HOURS,
-        items,
+        const proposal = await proposals.create(
+          {
+            project: project._id,
+            initiatingTask: task._id,
+            requestedBy: requester,
+            ...(input.reason === undefined ? {} : { reason: input.reason }),
+            changes: input.changes,
+            responseHours:
+              input.responseHours ?? project.proposalResponseHours ?? DEFAULT_PROPOSAL_RESPONSE_HOURS,
+            items: built.items,
+          },
+          session,
+        );
+        return { created: proposal, items: built.items };
       });
 
       await audit.append([
@@ -886,18 +897,21 @@ export const createCoordinationService = ({
       }
 
       const actor = new Types.ObjectId(userId);
-      const updated = await proposals.recordResponse(
-        proposal._id,
-        item._id,
-        actor,
-        {
-          response: input.response,
-          ...(input.declineReason === undefined ? {} : { declineReason: input.declineReason }),
-          ...(input.counterStart === undefined ? {} : { counterStart: input.counterStart }),
-          ...(input.counterDue === undefined ? {} : { counterDue: input.counterDue }),
-          ...(input.otherSolution === undefined ? {} : { otherSolution: input.otherSolution.trim() }),
-        },
-        new Date(),
+      const updated = await schedule.run(project._id, (session) =>
+        proposals.recordResponse(
+          proposal._id,
+          item._id,
+          actor,
+          {
+            response: input.response,
+            ...(input.declineReason === undefined ? {} : { declineReason: input.declineReason }),
+            ...(input.counterStart === undefined ? {} : { counterStart: input.counterStart }),
+            ...(input.counterDue === undefined ? {} : { counterDue: input.counterDue }),
+            ...(input.otherSolution === undefined ? {} : { otherSolution: input.otherSolution.trim() }),
+          },
+          new Date(),
+          session,
+        ),
       );
       if (updated === null) throw alreadyAnswered();
 
@@ -1005,7 +1019,7 @@ export const createCoordinationService = ({
       const actor = new Types.ObjectId(userId);
       const at = new Date();
 
-      const outcome = await transactions.run(async (session) => {
+      const outcome = await schedule.run(proposal.project, async (session) => {
         const settled = await proposals.resolve(
           proposal._id,
           actor,
@@ -1319,17 +1333,25 @@ export const createCoordinationService = ({
       if (proposal.status !== 'requested') throw proposalNotOpen();
 
       const actor = new Types.ObjectId(userId);
-      const updated = await proposals.setAlternativesContext(proposal._id, {
-        ...(input.earliestStart === undefined ? {} : { earliestStart: input.earliestStart }),
-        ...(input.latestFinishForWork === undefined ? {} : { latestFinishForWork: input.latestFinishForWork }),
-        ...(input.latestFinishForChain === undefined ? {} : { latestFinishForChain: input.latestFinishForChain }),
-        mustNotMove: (input.mustNotMove ?? [])
-          .filter((id) => Types.ObjectId.isValid(id))
-          .map((id) => new Types.ObjectId(id)),
-        ...(input.note === undefined || input.note.trim() === '' ? {} : { note: input.note.trim() }),
-        requestedBy: actor,
-        requestedAt: new Date(),
-      });
+      const updated = await schedule.run(project._id, (session) =>
+        proposals.setAlternativesContext(
+          proposal._id,
+          {
+            ...(input.earliestStart === undefined ? {} : { earliestStart: input.earliestStart }),
+            ...(input.latestFinishForWork === undefined ? {} : { latestFinishForWork: input.latestFinishForWork }),
+            ...(input.latestFinishForChain === undefined
+              ? {}
+              : { latestFinishForChain: input.latestFinishForChain }),
+            mustNotMove: (input.mustNotMove ?? [])
+              .filter((id) => Types.ObjectId.isValid(id))
+              .map((id) => new Types.ObjectId(id)),
+            ...(input.note === undefined || input.note.trim() === '' ? {} : { note: input.note.trim() }),
+            requestedBy: actor,
+            requestedAt: new Date(),
+          },
+          session,
+        ),
+      );
       if (updated === null) throw proposalNotOpen();
 
       await audit.append([
@@ -1362,29 +1384,32 @@ export const createCoordinationService = ({
       if (proposal.status !== 'requested') throw proposalNotOpen();
       if (proposal.alternativesContext === undefined) throw alternativeNotFound();
 
-      const graph = await graphFor(project, proposal._id);
-      const task = graph.tasks.find((row) => row._id.equals(proposal.initiatingTask));
-      if (task === undefined) throw alternativeNotFound();
+      const { task, found, items, updated } = await schedule.run(project._id, async (session, claimed) => {
+        const graph = await graphFor(claimed, proposal._id);
+        const initiating = graph.tasks.find((row) => row._id.equals(proposal.initiatingTask));
+        if (initiating === undefined) throw alternativeNotFound();
 
-      const found = guardCalendar(() =>
-        candidateSchedules(graph, task, proposal.changes, constraintsOf(proposal)),
-      ).candidates.find((candidate) => candidate.token === token);
-      if (found === undefined) throw alternativeNotFound();
+        const candidate = guardCalendar(() =>
+          candidateSchedules(graph, initiating, proposal.changes, constraintsOf(proposal)),
+        ).candidates.find((row) => row.token === token);
+        if (candidate === undefined) throw alternativeNotFound();
 
-      const chosen: RequestedChanges = {
-        alternativeStart: new Date(`${found.startDate}T00:00:00.000Z`),
-        alternativeDue: new Date(`${found.dueDate}T00:00:00.000Z`),
-        ...(proposal.changes.note === undefined ? {} : { note: proposal.changes.note }),
-      };
-      const { items } = buildItems(
-        graph,
-        task,
-        chosen,
-        task.assignee?.toString() === proposal.requestedBy.toString(),
-        proposal.requestedBy,
-      );
-      const updated = await proposals.replaceItems(proposal._id, chosen, items, token);
-      if (updated === null) throw proposalNotOpen();
+        const chosen: RequestedChanges = {
+          alternativeStart: new Date(`${candidate.startDate}T00:00:00.000Z`),
+          alternativeDue: new Date(`${candidate.dueDate}T00:00:00.000Z`),
+          ...(proposal.changes.note === undefined ? {} : { note: proposal.changes.note }),
+        };
+        const built = buildItems(
+          graph,
+          initiating,
+          chosen,
+          initiating.assignee?.toString() === proposal.requestedBy.toString(),
+          proposal.requestedBy,
+        );
+        const replaced = await proposals.replaceItems(proposal._id, chosen, built.items, token, session);
+        if (replaced === null) throw proposalNotOpen();
+        return { task: initiating, found: candidate, items: built.items, updated: replaced };
+      });
 
       const actor = new Types.ObjectId(userId);
       await audit.append([

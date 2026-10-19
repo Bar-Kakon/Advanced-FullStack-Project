@@ -2019,7 +2019,6 @@ export const he = {
     auditAction: {
       'project.calendar_adopted': 'הפרויקט עבר לגרסה חדשה של לוח העבודה',
       'project.calendar_overrides_changed': 'התאמות לוח העבודה של הפרויקט שונו',
-      'project.calendar_change_reverted': 'שינוי לוח העבודה בוטל אוטומטית כי התגלתה התחייבות מושפעת',
       'proposal.requested': 'הוגשה בקשה לשינוי תאריך',
       'proposal.launched': 'הבקשה הופעלה ונשלחה למושפעים',
       'proposal.item_excluded': 'עבודה הוצאה מההשפעה',

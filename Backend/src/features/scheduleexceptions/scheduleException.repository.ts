@@ -53,6 +53,7 @@ export interface ScheduleExceptionRepository {
       >
     >,
     entry: ExceptionHistoryEntry,
+    session?: DbSession,
   ): Promise<ScheduleExceptionRecord | null>;
 }
 
@@ -120,11 +121,11 @@ export const scheduleExceptionRepository: ScheduleExceptionRepository = {
    * One write for the change and the line recording it, so a row can never carry a new state with
    * no history entry explaining how it got there.
    */
-  async update(id, patch, entry) {
+  async update(id, patch, entry, session) {
     return ScheduleExceptionModel.findOneAndUpdate(
       { _id: id },
       { $set: patch, $push: { history: entry } },
-      { returnDocument: 'after' },
+      { returnDocument: 'after', ...(session ? { session } : {}) },
     )
       .lean<ScheduleExceptionRecord>()
       .exec();
