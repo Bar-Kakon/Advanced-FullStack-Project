@@ -7,7 +7,7 @@ import { companyMembershipRepository } from '../companies/companyMembership.repo
 import { createCompanyContextService } from '../companies/companyContext.service.js';
 import { getAuthenticatedUserId } from '../auth/requireAccessToken.middleware.js';
 import { companyCalendarBodySchema } from '../projects/projects.validation.js';
-import { noActiveCompany, notPermittedToCreate } from '../projects/project.errors.js';
+import { calendarManageDenied, noActiveCompany } from '../projects/project.errors.js';
 import { companyCalendarRepository, configOrDefault } from './companyCalendar.repository.js';
 import type { WorkingCalendarConfig } from './workingCalendar.types.js';
 
@@ -54,7 +54,7 @@ export const createCalendarModule = (requireAccessToken: RequestHandler): Router
   router.put('/company', validateRequest({ body: companyCalendarBodySchema }), async (req, res) => {
     const userId = getAuthenticatedUserId(res);
     const context = await activeCompany(userId);
-    if (!context.permissions.includes('company.manage')) throw notPermittedToCreate();
+    if (!context.permissions.includes('company.manage')) throw calendarManageDenied();
 
     const config = getValidated<WorkingCalendarConfig>(res, 'body');
     const appended = await companyCalendarRepository.append(

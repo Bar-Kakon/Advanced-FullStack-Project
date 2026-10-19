@@ -68,9 +68,7 @@ export const createProjectsController = (service: ProjectsService): ProjectsCont
   },
 
   handleOutdatedCalendarCount: async (req: Request, res: Response) => {
-    const outdated = await service.outdatedCalendarCount(getAuthenticatedUserId(res));
-
-    res.json({ outdated });
+    res.json(await service.outdatedCalendars(getAuthenticatedUserId(res)));
   },
 
   handleCancel: async (req: Request, res: Response) => {

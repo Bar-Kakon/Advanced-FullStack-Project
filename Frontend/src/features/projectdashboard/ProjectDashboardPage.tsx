@@ -9,7 +9,7 @@ import { formatCalendarDate } from '../../i18n/dateFormat';
 import { useDocumentTitle } from '../../routes/useDocumentTitle';
 import { useScreenStylesheet } from '../../styles/useScreenStylesheet';
 import { openProjectRoom } from '../../api/messaging.api';
-import { adoptCurrentCalendar } from '../../api/projects.api';
+import { adoptCurrentCalendar, classifyProjectError } from '../../api/projects.api';
 import { initialsOf } from '../profile/profileModel';
 import { ProjectCalendarPanel } from '../projects/components/ProjectCalendarPanel';
 import { CalendarVersionPanel } from './components/CalendarVersionPanel';
@@ -39,6 +39,7 @@ export const ProjectDashboardPage = () => {
   const { data, loading, failure, reload } = useProjectDashboard(projectId);
   const navigate = useNavigate();
   const [busy, setBusy] = useState(false);
+  const [calendarFailure, setCalendarFailure] = useState<string | null>(null);
   const [roomBusy, setRoomBusy] = useState(false);
   const [roomFailed, setRoomFailed] = useState(false);
 
@@ -59,8 +60,17 @@ export const ProjectDashboardPage = () => {
   const adopt = async (keepOverrides: boolean): Promise<void> => {
     if (busy) return;
     setBusy(true);
+    setCalendarFailure(null);
     try {
       await adoptCurrentCalendar(projectId, keepOverrides);
+    } catch (error) {
+      const failure = classifyProjectError(error);
+      setCalendarFailure(
+        failure === 'CALENDAR_NEEDS_APPROVAL' ? t.projects.errors.calendarNeedsApproval
+        : failure === 'CALENDAR_CHANGED' ? t.projects.errors.calendarChanged
+        : failure === 'NETWORK' ? t.projects.errors.network
+        : t.projects.errors.unknown,
+      );
     } finally {
       setBusy(false);
     }
@@ -227,6 +237,7 @@ export const ProjectDashboardPage = () => {
               busy={busy}
               canManage={viewer.canManageCalendar}
               onAdopt={(keepOverrides) => void adopt(keepOverrides)}
+              failure={calendarFailure}
             />
 
             <CoordinationPanel

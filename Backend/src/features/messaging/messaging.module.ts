@@ -21,6 +21,7 @@ import { buildNotificationDispatchService } from '../notifications/notifications
 import { projectAccessRepository } from '../projectaccess/projectAccess.repository.js';
 import { participantRepository } from '../projectmembers/participant.repository.js';
 import { projectRepository } from '../projects/project.repository.js';
+import { scheduleWrites } from '../projects/scheduleWrites.instance.js';
 import { reportRepository } from '../reports/report.repository.js';
 import type { ReportReason } from '../reports/report.model.js';
 import { createTaskCreationService } from '../tasks/taskCreation.service.js';
@@ -72,6 +73,7 @@ export const createMessagingModule = (requireAccessToken: RequestHandler): Route
     calendars: companyCalendarRepository,
     companyContext,
     notifications,
+    schedule: scheduleWrites,
   });
 
   const service = createMessagingService({

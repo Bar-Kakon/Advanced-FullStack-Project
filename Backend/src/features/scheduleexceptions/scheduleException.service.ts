@@ -10,6 +10,7 @@ import type { ParticipantRepository } from '../projectmembers/participant.reposi
 import { projectNotFound } from '../projects/project.errors.js';
 import type { ProjectRecord } from '../projects/project.model.js';
 import type { ProjectRepository } from '../projects/project.repository.js';
+import type { ScheduleWrites } from '../projects/scheduleWrites.js';
 import {
   hasProjectPermission,
   requireActiveCompany,
@@ -87,6 +88,7 @@ export interface ScheduleExceptionDependencies {
   readonly calendars: CompanyCalendarRepository;
   readonly companyContext: CompanyContextService;
   readonly notifications: NotificationDispatchService;
+  readonly schedule: Pick<ScheduleWrites, 'run'>;
 }
 
 const iso = (value: Date): string => value.toISOString().slice(0, 10);
@@ -99,6 +101,7 @@ export const createScheduleExceptionService = ({
   calendars,
   companyContext,
   notifications,
+  schedule,
 }: ScheduleExceptionDependencies): ScheduleExceptionService => {
   const reachProject = async (
     userId: string,
@@ -443,27 +446,30 @@ export const createScheduleExceptionService = ({
 
       const now = new Date();
       const decider = new Types.ObjectId(userId);
-      const updated = await exceptions.update(
-        row._id,
-        approve
-          ? {
-              status: 'approved',
-              approvedBy: decider,
-              approvedAt: now,
-              ...(note === undefined ? {} : { decisionNote: note }),
-            }
-          : {
-              status: 'rejected',
-              rejectedBy: decider,
-              rejectedAt: now,
-              ...(note === undefined ? {} : { decisionNote: note }),
-            },
-        {
-          action: approve ? 'approved' : 'rejected',
-          by: decider,
-          at: now,
-          ...(note === undefined ? {} : { note }),
-        },
+      const updated = await schedule.run(project._id, (session) =>
+        exceptions.update(
+          row._id,
+          approve
+            ? {
+                status: 'approved',
+                approvedBy: decider,
+                approvedAt: now,
+                ...(note === undefined ? {} : { decisionNote: note }),
+              }
+            : {
+                status: 'rejected',
+                rejectedBy: decider,
+                rejectedAt: now,
+                ...(note === undefined ? {} : { decisionNote: note }),
+              },
+          {
+            action: approve ? 'approved' : 'rejected',
+            by: decider,
+            at: now,
+            ...(note === undefined ? {} : { note }),
+          },
+          session,
+        ),
       );
       if (updated === null) throw exceptionNotFound();
 

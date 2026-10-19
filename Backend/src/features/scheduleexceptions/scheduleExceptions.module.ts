@@ -12,6 +12,7 @@ import { projectAccessRepository } from '../projectaccess/projectAccess.reposito
 import { participantRepository } from '../projectmembers/participant.repository.js';
 import { projectRepository } from '../projects/project.repository.js';
 import { parseCalendarDate } from '../projects/projectDates.js';
+import { scheduleWrites } from '../projects/scheduleWrites.instance.js';
 import { invalidWindow } from './scheduleException.errors.js';
 import { EXCEPTION_KINDS, EXCEPTION_SCOPES } from './scheduleException.model.js';
 import { scheduleExceptionRepository } from './scheduleException.repository.js';
@@ -81,6 +82,7 @@ export const buildScheduleExceptionService = (): ScheduleExceptionService =>
       companies: companyRepository,
     }),
     notifications: buildNotificationDispatchService(),
+    schedule: scheduleWrites,
   });
 
 export const createScheduleExceptionsModule = (

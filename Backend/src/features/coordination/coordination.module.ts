@@ -13,6 +13,7 @@ import { projectGrantRepository } from '../projectaccess/projectGrant.repository
 import { participantRepository } from '../projectmembers/participant.repository.js';
 import { projectRepository } from '../projects/project.repository.js';
 import { parseCalendarDate } from '../projects/projectDates.js';
+import { scheduleWrites } from '../projects/scheduleWrites.instance.js';
 import { auditRepository } from './audit.repository.js';
 import { handoffRepository } from './handoff.repository.js';
 import { changeIsEmpty, counterNeedsDates } from './coordination.errors.js';
@@ -85,6 +86,7 @@ export const buildCoordinationService = (): CoordinationService =>
     }),
     transactions: { run: runInTransaction },
     notifications: buildNotificationDispatchService(),
+    schedule: scheduleWrites,
   });
 
 export const createCoordinationModule = (

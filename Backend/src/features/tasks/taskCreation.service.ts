@@ -11,6 +11,7 @@ import { projectNotFound } from '../projects/project.errors.js';
 import { overrunCeiling } from '../projects/projectDates.js';
 import type { ProjectRecord } from '../projects/project.model.js';
 import type { ProjectRepository } from '../projects/project.repository.js';
+import type { ScheduleWrites } from '../projects/scheduleWrites.js';
 import {
   hasProjectPermission,
   requireActiveCompany,
@@ -92,6 +93,7 @@ export interface TaskCreationDependencies {
   readonly calendars: CompanyCalendarRepository;
   readonly companyContext: CompanyContextService;
   readonly notifications: NotificationDispatchService;
+  readonly schedule: Pick<ScheduleWrites, 'run'>;
 }
 
 const iso = (value: Date): string => value.toISOString().slice(0, 10);
@@ -104,6 +106,7 @@ export const createTaskCreationService = ({
   calendars,
   companyContext,
   notifications,
+  schedule,
 }: TaskCreationDependencies): TaskCreationService => {
   const reachProject = async (
     userId: string,
@@ -250,20 +253,25 @@ export const createTaskCreationService = ({
         throw assigneeNotMember();
       }
 
-      const created = await tasks.create({
-        kind: 'project',
-        project: project._id,
-        stage: stage._id,
-        company: project.company,
-        title: input.title,
-        ...(input.description === undefined ? {} : { description: input.description }),
-        createdBy: new Types.ObjectId(userId),
-        assignee,
-        startDate: input.startDate,
-        dueDate: input.dueDate,
-        ownCrewOnly: input.ownCrewOnly,
-        delegatorOnSiteRequired: input.delegatorOnSiteRequired,
-      });
+      const created = await schedule.run(project._id, (session) =>
+        tasks.create(
+          {
+            kind: 'project',
+            project: project._id,
+            stage: stage._id,
+            company: project.company,
+            title: input.title,
+            ...(input.description === undefined ? {} : { description: input.description }),
+            createdBy: new Types.ObjectId(userId),
+            assignee,
+            startDate: input.startDate,
+            dueDate: input.dueDate,
+            ownCrewOnly: input.ownCrewOnly,
+            delegatorOnSiteRequired: input.delegatorOnSiteRequired,
+          },
+          session,
+        ),
+      );
 
       // Work becoming somebody's responsibility is the notice. Naming yourself is not news, so it
       // is skipped rather than sent and ignored.

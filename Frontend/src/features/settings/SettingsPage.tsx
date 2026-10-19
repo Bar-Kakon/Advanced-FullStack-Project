@@ -14,6 +14,7 @@ import { useScreenStylesheet } from '../../styles/useScreenStylesheet';
 import { initialsOf } from '../profile/profileModel';
 import { AccountEmailSection } from './AccountEmailSection';
 import { AccountPasswordSection } from './AccountPasswordSection';
+import { CompanyCalendarSection } from './CompanyCalendarSection';
 import { CompanyMembershipSection } from './CompanyMembershipSection';
 import { useSettings } from './useSettings';
 import {
@@ -322,6 +323,8 @@ export const SettingsPage = () => {
             </section>
 
             <CompanyMembershipSection />
+
+            <CompanyCalendarSection />
 
             <section className="settings-section" aria-labelledby="settings-account">
               <h2 className="settings-section__title" id="settings-account">
